@@ -7,6 +7,7 @@ load_dotenv()
 
 # Upstage API Key
 UPSTAGE_API_KEY = os.getenv("UPSTAGE_API_KEY")
+SOLAR_MODEL = os.getenv("SOLAR_MODEL", "solar-pro4")
 
 # Agent 설정 (필요시 사용)
 

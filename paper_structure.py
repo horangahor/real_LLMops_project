@@ -2,7 +2,7 @@ import os
 import json
 import requests
 from pathlib import Path
-from config import STRUCTURE_AGENT_ID, STRUCTURE_CONFIG_ID, UPSTAGE_API_KEY
+from config import STRUCTURE_AGENT_ID, STRUCTURE_CONFIG_ID, UPSTAGE_API_KEY, SOLAR_MODEL
 
 PARSE_URL = "https://api.upstage.ai/v1/document-ai/document-parse"
 CHAT_URL = "https://api.upstage.ai/v1/chat/completions"
@@ -76,7 +76,7 @@ def parse_pdf(pdf_path: str) -> str:
 
 def run_chat(prompt: str, content: str) -> str:
     payload = {
-        "model": "solar-pro",
+        "model": SOLAR_MODEL,
         "messages": [
             {"role": "system", "content": prompt},
             {"role": "user", "content": content}
