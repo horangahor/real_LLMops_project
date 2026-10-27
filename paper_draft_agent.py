@@ -13,6 +13,7 @@ from paper_prompts import (
     GENERATION_ORDER, GROUNDING_RULES, PAPER_TITLE,
     SECTION_INSTRUCTIONS, SECTION_TITLES,
     PAPER_OUTLINE_RULES, SECTION_SUBSECTIONS, section_outline_instruction, CONCLUSION_LIMITS,
+    PAPER_EDITORIAL_RULES,
 )
 from paper_quality import known_quality_issues, prepare_research_evidence
 from paper_quality import extraction_fingerprint
@@ -111,7 +112,7 @@ class SectionWriter:
               context_sections: Dict[str, str]) -> str:
         system_prompt = (
             f"당신은 제{section}장 {SECTION_TITLES[section]} 작성 담당자입니다.\n"
-            f"{GROUNDING_RULES}\n{SECTION_INSTRUCTIONS[section]}\n"
+            f"{GROUNDING_RULES}\n{PAPER_EDITORIAL_RULES}\n{SECTION_INSTRUCTIONS[section]}\n"
             f"{section_outline_instruction(section)}\n"
             "이 장의 본문만 출력하세요. 장 제목은 생략하세요."
         )
@@ -145,6 +146,8 @@ class PaperReviewer:
     def review(self, sections: Dict[str, str], evidence: Dict[str, Any]) -> Dict[str, Any]:
         system_prompt = f"""당신은 논문 초안의 근거와 논리를 검토하는 심사자입니다.
 {GROUNDING_RULES}
+독자 관점의 편집 기준:
+{PAPER_EDITORIAL_RULES}
 필수 절 구성:
 {PAPER_OUTLINE_RULES}
 결론 분량·수치 허용 기준:
@@ -242,6 +245,8 @@ class PaperSynthesizer:
                    structure_guide: str, review_report: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         system_prompt = f"""당신은 전체 논문 초안의 종합 편집 담당자입니다.
 {GROUNDING_RULES}
+독자 관점의 편집 기준:
+{PAPER_EDITORIAL_RULES}
 필수 절 구성:
 {PAPER_OUTLINE_RULES}
 입력된 1·3·4·5·6장 초안을 모두 읽고 다음 작업을 수행하세요.
@@ -304,6 +309,7 @@ def write_paper(extracted_data: Dict[str, Any], structure_guide: str = "",
         "evidence": extracted_data, "style": structure_guide, "model": MODEL_NAME,
         "grounding": GROUNDING_RULES, "instructions": SECTION_INSTRUCTIONS,
         "outline": PAPER_OUTLINE_RULES,
+        "editorial": PAPER_EDITORIAL_RULES,
     })
     if checkpoint_path and checkpoint_path.exists():
         saved = json.loads(checkpoint_path.read_text(encoding="utf-8"))

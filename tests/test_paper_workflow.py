@@ -177,6 +177,17 @@ class PaperWorkflowTests(unittest.TestCase):
         issues = known_quality_issues({"6": "### 6.1 요약\n13.939ms로 CPU 대비 5.3배 빨라졌다.\n커널 호출 40% 감소."})
         self.assertGreaterEqual(len(issues), 4)
 
+    def test_writing_policy_leakage_is_advisory_but_scientific_limits_are_preserved(self):
+        body = ("연구 자료에서 CROWN이라는 명칭이 등장한다. 약어의 풀이는 검토된 자료에서 "
+                "확인되지 않았으므로 이 장에서는 약어를 풀지 않는다.")
+        issues = known_quality_issues({"1": body})
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0]["severity"], "warning")
+        self.assertIn(issues[0]["quote"], body)
+        self.assertFalse(known_quality_issues({"1": "CROWN 검증 계산의 GPU 실행을 다룬다. "
+                                             "개별 최적화 효과를 분리하지 못했다. "
+                                             "[확인 필요: GPU 모델]"}))
+
     def test_conclusion_number_count_is_advisory_and_does_not_block_saving(self):
         sections = {section: chapter_body(section, "body") for section in paper.GENERATION_ORDER}
         sections["6"] = conclusion(", ".join(f"{index}ms" for index in range(1, 14)))
@@ -310,6 +321,10 @@ class PaperWorkflowTests(unittest.TestCase):
             self.assertEqual(worker.call_args_list[0].args[0], "4")
             worker.reset_mock()
             paper.write_paper(RESEARCH, "changed style", "key", checkpoint_path=checkpoint)
+            self.assertEqual(worker.call_count, 5)
+            worker.reset_mock()
+            with patch.object(paper, "PAPER_EDITORIAL_RULES", "updated editorial rules"):
+                paper.write_paper(RESEARCH, "changed style", "key", checkpoint_path=checkpoint)
             self.assertEqual(worker.call_count, 5)
 
 

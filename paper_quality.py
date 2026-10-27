@@ -83,6 +83,15 @@ def known_quality_issues(sections: dict[str, str]) -> list[dict[str, Any]]:
          "근거를 보증하는 문장을 삭제하고 실험의 한계와 측정 조건을 명시한다.", []),
     ]
     for section, text in sections.items():
+        for pattern in (
+            r"약어의\s*풀이는?[^.\n]*(?:확인되지|검증하지)",
+            r"문헌\s*검색\s*없이[^.\n]*(?:신규성|최초|유일|최고)[^.\n]*주장하지\s*않",
+        ):
+            match = re.search(pattern, text)
+            if match:
+                add(section, match.group(), "연구 설명에 작성 방침이 노출됨",
+                    "작성 방침 설명을 제거하고 연구 대상과 확인된 방법·결과를 직접 서술한다.",
+                    severity="warning")
         for pattern, reason, revision, evidence_ids in patterns:
             for match in re.finditer(pattern, text, re.IGNORECASE):
                 add(section, match.group(), reason, revision, evidence_ids)
