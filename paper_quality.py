@@ -6,6 +6,10 @@ import re
 from pathlib import Path
 from typing import Any
 
+from paper_prompts import (
+    SECTION_SUBSECTIONS, CONCLUSION_MAX_CHARACTERS, CONCLUSION_RECOMMENDED_PERFORMANCE_VALUES,
+)
+
 
 def extraction_fingerprint(data: dict[str, Any]) -> str:
     content = json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
@@ -45,10 +49,24 @@ def known_quality_issues(sections: dict[str, str]) -> list[dict[str, Any]]:
     """이번에 확인한 오류의 재발을 검사한다. 범용 사실 검증기는 아니다."""
     issues = []
 
-    def add(section, quote, reason, revision, evidence_ids=None):
-        issues.append({"section": section, "severity": "error", "quote": quote,
+    def add(section, quote, reason, revision, evidence_ids=None, severity="error"):
+        issues.append({"section": section, "severity": severity, "quote": quote,
                        "reason": reason, "revision": revision,
                        "evidence_ids": evidence_ids or [], "checker": "local_regression"})
+
+    for section, text in sections.items():
+        if section not in SECTION_SUBSECTIONS:
+            continue
+        headings = re.findall(r"(?m)^#{1,6}\s+(.+)$", text)
+        expected = [f"{section}.{index}" for index in range(1, len(SECTION_SUBSECTIONS[section]) + 1)]
+        actual = []
+        for heading in headings:
+            match = re.match(r"(\d+(?:\.\d+)+)\s", heading)
+            actual.append(match.group(1) if match else None)
+        if actual != expected:
+            add(section, "", "소절 구성이 합의한 논문 구조와 다름",
+                ("소절 제목을 제거하고 연결된 문단으로 작성한다." if not expected
+                 else f"소절을 {', '.join(expected)} 세 개만 순서대로 사용하고 추가 하위 제목을 제거한다."))
 
     patterns = [
         (r"커널\s*실행\s*횟수\s*감소에\s*대한\s*근거는\s*(?:자료에\s*)?없[^\n。]*",
@@ -76,12 +94,14 @@ def known_quality_issues(sections: dict[str, str]) -> list[dict[str, Any]]:
     conclusion = sections.get("6", "")
     if conclusion:
         result_values = re.findall(r"(?<![\w.])\d+(?:\.\d+)?(?=\s*(?:ms|밀리초|초|분|배|%))", conclusion)
-        if len(set(result_values)) > 5:
-            add("6", "", "결론이 중간 실험의 수치를 과도하게 나열함",
-                "대표 성과의 수치만 최대 다섯 개 남기고 중간 버전·모든 표의 숫자는 5장에 둔다.")
-        if len(conclusion) > 2200:
-            add("6", "", "결론이 대표 성과보다 전체 수치와 검토 지침을 반복함",
-                "1,000~1,800자 정도로 편집하고, 대표 성과만 남겨 핵심 발견과 의미를 중심으로 쓴다.")
+        value_count = len(set(result_values))
+        if value_count > CONCLUSION_RECOMMENDED_PERFORMANCE_VALUES:
+            add("6", "", f"결론의 성능 수치 개수 권장량 초과 ({value_count}개 / 권장 {CONCLUSION_RECOMMENDED_PERFORMANCE_VALUES}개)",
+                f"대표 성과와 비교에 필요한 수치를 우선하여 {CONCLUSION_RECOMMENDED_PERFORMANCE_VALUES}개 이내로 줄이는 것을 권장한다. 저장을 막는 오류는 아니다.",
+                severity="warning")
+        if len(conclusion) > CONCLUSION_MAX_CHARACTERS:
+            add("6", "", f"결론의 분량 초과 ({len(conclusion):,}자 / 최대 {CONCLUSION_MAX_CHARACTERS:,}자)",
+                f"결론을 {CONCLUSION_MAX_CHARACTERS:,}자 이내로 편집하고 핵심 발견과 의미를 중심으로 쓴다.")
         if re.search(r"^\s*(?:#{1,6}\s|[-*+]\s|\d+[.)]\s)", conclusion, re.MULTILINE):
             add("6", "", "결론이 소절·목록으로 쪼개져 본문을 반복함",
                 "소절 제목·목록을 제거하고 발견→성과→한계와 후속 과제의 3~5개 문단으로 쓴다.")

@@ -12,6 +12,7 @@ from config import UPSTAGE_API_KEY, SOLAR_MODEL
 from paper_prompts import (
     GENERATION_ORDER, GROUNDING_RULES, PAPER_TITLE,
     SECTION_INSTRUCTIONS, SECTION_TITLES,
+    PAPER_OUTLINE_RULES, SECTION_SUBSECTIONS, section_outline_instruction, CONCLUSION_LIMITS,
 )
 from paper_quality import known_quality_issues, prepare_research_evidence
 from paper_quality import extraction_fingerprint
@@ -111,9 +112,8 @@ class SectionWriter:
         system_prompt = (
             f"당신은 제{section}장 {SECTION_TITLES[section]} 작성 담당자입니다.\n"
             f"{GROUNDING_RULES}\n{SECTION_INSTRUCTIONS[section]}\n"
-            "이 장의 본문만 출력하세요. 장 제목은 생략하세요. "
-            + ("결론은 소절 제목과 목록 없이 연결된 문단으로 쓰세요." if section == "6"
-               else f"소절은 ### {section}.1 형식으로 작성하세요.")
+            f"{section_outline_instruction(section)}\n"
+            "이 장의 본문만 출력하세요. 장 제목은 생략하세요."
         )
         user_prompt = (
             "[이 장에서 전달할 핵심 주장과 근거 선택]\n"
@@ -145,11 +145,16 @@ class PaperReviewer:
     def review(self, sections: Dict[str, str], evidence: Dict[str, Any]) -> Dict[str, Any]:
         system_prompt = f"""당신은 논문 초안의 근거와 논리를 검토하는 심사자입니다.
 {GROUNDING_RULES}
+필수 절 구성:
+{PAPER_OUTLINE_RULES}
+결론 분량·수치 허용 기준:
+{CONCLUSION_LIMITS}
 초안을 다시 쓰지 말고 원문 검토 근거와 대조하여 구체적인 수정 지적을 작성하세요.
 특히 수치의 비교 대상·측정 범위, 초기화/예열 포함 여부, 단일 지연과 처리량,
 FP32 결과의 혼동, 복수 변경의 단일 원인 귀속을 점검하세요.
 1·3·4·5·6장의 핵심 주장을 각각 하나 이상 검토하세요. 하나의 숫자가 맞아도
 그 숫자의 원인이나 비교 대상이 틀리면 오류입니다. 추측을 검증된 사실로 쓰면 오류입니다.
+서론·결론은 소절 제목이 없어야 합니다. 3·4·5장은 각각 세 소절만 허용합니다.
 결론은 연구의 핵심 발견과 의미를 3~5개 문단으로 논해야 하며 소절·목록으로
 앞 장을 반복하면 오류입니다. 자료에 없는 약어 풀이·이론·성능 보증도 오류입니다.
 근거 없는 신규성, 실시간성 입증, 정밀도 전환 성공/실패 단정도 점검하세요.
@@ -237,6 +242,8 @@ class PaperSynthesizer:
                    structure_guide: str, review_report: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         system_prompt = f"""당신은 전체 논문 초안의 종합 편집 담당자입니다.
 {GROUNDING_RULES}
+필수 절 구성:
+{PAPER_OUTLINE_RULES}
 입력된 1·3·4·5·6장 초안을 모두 읽고 다음 작업을 수행하세요.
 - 연구 목표, 문제 정의, 방법, 결과, 결론 사이의 논리적 연결을 정돈한다.
 - 용어와 문체를 통일하고 장 사이의 중복 설명을 정리한다.
@@ -244,9 +251,13 @@ class PaperSynthesizer:
 - 검토 지적의 이유를 읽고 해당 주장뿐 아니라 같은 오류가 반복되는 다른 장도 고친다.
 - 단순 복사로 끝내지 말고 검토에서 지적한 실험 조건과 논리적 연결을 실제로 수정한다.
 - 표와 근거 있는 구현 설명을 유지한다. 요약본으로 축소하지 않는다.
-- 각 장의 목적과 소절 번호를 유지한다. 제2장 관련 연구는 생성하지 않는다.
-- 제6장은 소절·목록 없이 핵심 발견→조건을 밝힌 성과→한계 및 후속 과제의 네 문단,
-  1,000~1,800자로 편집한다. 중간 버전 수치를 모두 나열하거나 주의 지침을 반복하지 않는다.
+- 각 장의 목적을 유지하되 필수 절 구성으로 재편한다. 기존의 과도한 소절은 그대로 유지하지 않는다.
+- 4장의 커널·런타임 설명은 4.3에, 5장의 전송·대규모 입력 결과는 5.2에 합친다.
+- 별도 5.6 결과 요약은 없애고 중복 종합은 6장에 맡긴다. 제2장 관련 연구는 생성하지 않는다.
+- 제6장은 소절·목록 없이 핵심 발견→조건을 밝힌 성과→한계 및 후속 과제의 네 문단으로
+  편집한다. 중간 버전 수치를 모두 나열하거나 주의 지침을 반복하지 않는다.
+결론 분량·수치 허용 기준:
+{CONCLUSION_LIMITS}
 JSON 객체 하나만 출력한다. 코드 블록이나 앞뒤 설명을 쓰지 않는다.
 형식: {{"sections": {{"1": "서론 본문", "3": "배경 및 문제 정의 본문",
 "4": "방법론 본문", "5": "결과 및 고찰 본문", "6": "결론 본문"}}}}
@@ -292,6 +303,7 @@ def write_paper(extracted_data: Dict[str, Any], structure_guide: str = "",
     checkpoint_key = extraction_fingerprint({
         "evidence": extracted_data, "style": structure_guide, "model": MODEL_NAME,
         "grounding": GROUNDING_RULES, "instructions": SECTION_INSTRUCTIONS,
+        "outline": PAPER_OUTLINE_RULES,
     })
     if checkpoint_path and checkpoint_path.exists():
         saved = json.loads(checkpoint_path.read_text(encoding="utf-8"))
@@ -392,10 +404,12 @@ class PaperDraftOrchestrator:
         sections_path.write_text(json.dumps({
             "section_drafts": result["section_drafts"], "sections": result["sections"],
             "related_work": "", "title": PAPER_TITLE,
+            "outline": SECTION_SUBSECTIONS,
         }, ensure_ascii=False, indent=2), encoding="utf-8")
         review_path.write_text(json.dumps({
             "review": result["review"], "review_history": result["review_history"],
             "evidence_source": evidence.get("source"),
+            "outline": SECTION_SUBSECTIONS,
             "model": MODEL_NAME,
             "draft_fingerprint": extraction_fingerprint({"draft": result["draft_markdown"].strip()}),
             "evidence_fingerprint": extraction_fingerprint(evidence),

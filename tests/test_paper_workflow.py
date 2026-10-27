@@ -10,6 +10,9 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import paper_draft_agent as paper
+from paper_prompts import (
+    SECTION_SUBSECTIONS, CONCLUSION_MAX_CHARACTERS, CONCLUSION_RECOMMENDED_PERFORMANCE_VALUES,
+)
 from paper_quality import extraction_fingerprint, known_quality_issues, prepare_research_evidence
 
 
@@ -29,6 +32,15 @@ def review_report():
 
 def conclusion(prefix):
     return "\n\n".join(f"{prefix} paragraph {index}" for index in range(4))
+
+
+def chapter_body(section, prefix):
+    if section == "6":
+        return conclusion(prefix)
+    if section == "1":
+        return prefix + " introduction paragraphs"
+    return "\n\n".join(f"### {section}.{index} {title}\n\n{prefix} body {index}"
+                        for index, title in enumerate(SECTION_SUBSECTIONS[section], 1))
 
 
 class PaperWorkflowTests(unittest.TestCase):
@@ -61,17 +73,15 @@ class PaperWorkflowTests(unittest.TestCase):
                 section = paper.GENERATION_ORDER[index]
                 for earlier in paper.GENERATION_ORDER[:index]:
                     self.assertIn(f"WORKER_BODY_{earlier}", user_prompt)
-                if section == "6":
-                    return conclusion("WORKER_BODY_6")
-                return f"### {section}.1 소절\n\nWORKER_BODY_{section}"
+                return chapter_body(section, f"WORKER_BODY_{section}")
             for section in paper.GENERATION_ORDER:
                 prefix = "WORKER_BODY" if index <= 6 else "EDITED_BODY"
                 self.assertIn(f"{prefix}_{section}", user_prompt)
             if "심사자" in system_prompt:
                 # 종합 후 검토는 편집된 본문을 받는다.
                 return json.dumps(review_report())
-            return json.dumps({"sections": {section: conclusion("EDITED_BODY_6") if section == "6"
-                                            else f"EDITED_BODY_{section}" for section in paper.GENERATION_ORDER}})
+            return json.dumps({"sections": {section: chapter_body(section, f"EDITED_BODY_{section}")
+                                            for section in paper.GENERATION_ORDER}})
 
         progress = []
         with patch.object(paper, "call_solar", side_effect=fake_solar):
@@ -167,16 +177,60 @@ class PaperWorkflowTests(unittest.TestCase):
         issues = known_quality_issues({"6": "### 6.1 요약\n13.939ms로 CPU 대비 5.3배 빨라졌다.\n커널 호출 40% 감소."})
         self.assertGreaterEqual(len(issues), 4)
 
-    def test_conclusion_cannot_repeat_all_intermediate_measurements(self):
-        text = conclusion("10ms, 20ms, 30ms, 40ms, 50ms, 60ms")
+    def test_conclusion_number_count_is_advisory_and_does_not_block_saving(self):
+        sections = {section: chapter_body(section, "body") for section in paper.GENERATION_ORDER}
+        sections["6"] = conclusion(", ".join(f"{index}ms" for index in range(1, 14)))
+        with patch.object(paper.SectionWriter, "write", side_effect=lambda section, *_: sections[section]), \
+                patch.object(paper.PaperSynthesizer, "synthesize", return_value=sections), \
+                patch.object(paper, "call_solar", return_value=json.dumps(review_report())):
+            result = self.orchestrator.run_pipeline(results_json_path=self.input_json,
+                                                    structure_json_path=self.style_json)
+        self.assertTrue(result["review"]["approved"])
+        issue, = result["review"]["issues"]
+        self.assertEqual(issue["severity"], "warning")
+        self.assertIn("13개 / 권장 10개", issue["reason"])
+        saved = json.loads((self.base_dir / "paper_draft_review.json").read_text(encoding="utf-8"))
+        self.assertEqual(saved["review"], result["review"])
+        self.assertEqual((self.base_dir / "paper_draft_full.md").read_text(encoding="utf-8"),
+                         result["draft_markdown"])
+
+    def test_number_count_warning_does_not_allow_unsupported_claims(self):
+        sections = {section: chapter_body(section, "body") for section in paper.GENERATION_ORDER}
+        sections["6"] = conclusion(", ".join(f"{index}ms" for index in range(1, 14)))
+        sections["6"] += " 커널 호출 40% 감소."
+        with patch.object(paper, "call_solar", return_value=json.dumps(review_report())):
+            report = paper.PaperReviewer("key").review(sections, RESEARCH)
+        self.assertFalse(report["approved"])
+        self.assertTrue(any(issue["severity"] == "warning" for issue in report["issues"]))
+        self.assertTrue(any(issue["severity"] == "error" and "근거 없는 커널" in issue["reason"]
+                            for issue in report["issues"]))
+
+    def test_relaxed_conclusion_limits_accept_current_size_and_boundaries(self):
+        # 실제 실패 사례(약 2,300자·수치 8개)와 새 상한을 모두 허용한다.
+        for size, count in ((2302, 8), (CONCLUSION_MAX_CHARACTERS, CONCLUSION_RECOMMENDED_PERFORMANCE_VALUES)):
+            with self.subTest(size=size, count=count):
+                text = conclusion(", ".join(f"{index}ms" for index in range(1, count + 1)))
+                text += "가" * (size - len(text))
+                self.assertFalse(known_quality_issues({"6": text}))
+                sections = {section: chapter_body(section, "body") for section in paper.GENERATION_ORDER}
+                sections["6"] = text
+                with patch.object(paper, "call_solar", return_value=json.dumps(review_report())):
+                    self.assertTrue(paper.PaperReviewer("key").review(sections, RESEARCH)["approved"])
+
+    def test_conclusion_length_message_reports_measured_limit(self):
+        text = conclusion("result")
+        text += "가" * (CONCLUSION_MAX_CHARACTERS + 1 - len(text))
         issues = known_quality_issues({"6": text})
-        self.assertTrue(any("수치를 과도하게" in issue["reason"] for issue in issues))
+        self.assertEqual(len(issues), 1)
+        self.assertIn(f"{CONCLUSION_MAX_CHARACTERS + 1:,}자", issues[0]["reason"])
+        self.assertIn(f"최대 {CONCLUSION_MAX_CHARACTERS:,}자", issues[0]["reason"])
+        self.assertNotIn("반복", issues[0]["reason"])
 
     def test_separate_observations_do_not_trigger_mixed_ratio_check(self):
         body = "13.939ms가 관측되었다. 별도 sparse.py 비교에서는 5.3배였다."
-        self.assertFalse(known_quality_issues({"5": body}))
+        self.assertFalse(known_quality_issues({"5": chapter_body("5", body)}))
         disclaimer = "13.939ms 관측을 CPU 대비 25.3배 가속으로 단정하지 않는다."
-        self.assertFalse(known_quality_issues({"5": disclaimer}))
+        self.assertFalse(known_quality_issues({"5": chapter_body("5", disclaimer)}))
 
     def test_evidence_profile_is_bound_to_extraction_and_original_pdf(self):
         import hashlib
@@ -207,6 +261,21 @@ class PaperWorkflowTests(unittest.TestCase):
         with patch.object(paper, "call_solar", return_value=json.dumps(review_report())):
             report = paper.PaperReviewer("key").review(sections, RESEARCH)
         self.assertFalse(report["approved"])
+
+    def test_simplified_outline_rejects_extra_sections_and_intro_headings(self):
+        sections = {section: chapter_body(section, "body") for section in paper.GENERATION_ORDER}
+        self.assertFalse(known_quality_issues(sections))
+        cases = {
+            "1": "### 1.1 연구 배경\n\nbody",
+            "3": sections["3"] + "\n\n#### 3.3.1 추가 소절\n\nbody",
+            "4": sections["4"] + "\n\n### 4.4 런타임 최적화\n\nbody",
+            "5": sections["5"] + "\n\n### 5.6 결과 요약\n\nbody",
+        }
+        for section, body in cases.items():
+            with self.subTest(section=section):
+                issues = known_quality_issues({**sections, section: body})
+                self.assertTrue(any(issue["section"] == section and "소절 구성" in issue["reason"]
+                                    for issue in issues))
 
     def test_failed_quality_gate_keeps_last_saved_draft_and_saves_candidate(self):
         output = self.base_dir / "paper_draft_full.md"
