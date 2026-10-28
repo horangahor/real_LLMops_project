@@ -98,13 +98,16 @@ class StructureProfileTests(unittest.TestCase):
             self.assertEqual(path.read_text(encoding='utf-8'), 'previous file')
 
     def test_migration_preserves_provenance_without_claiming_pdf_review(self):
-        content = copy.deepcopy(PROFILE_EXAMPLE)
-        content['observed_outline'][0]['source_pages'] = [99]
-        with patch.object(analysis, 'run_chat', return_value=json.dumps(content)) as call:
-            migrated = analysis.migrate_profiles([{'file': 'old.pdf', 'paper_structure_profile': 'old analysis'}])
+        legacy = {'file': 'old.pdf', 'paper_structure_profile':
+                  '#### 4. 섹션 계층 및 순서\n1. **방법론**\n  - 1.1 실험 설정\n2. **결론**\n'}
+        with patch.object(analysis, 'run_chat') as call, patch.object(analysis, 'parse_pdf') as parse:
+            migrated = analysis.migrate_profiles([legacy])
+        call.assert_not_called()
+        parse.assert_not_called()
         self.assertEqual(migrated[0]['provenance'], 'legacy_analysis')
         self.assertIsNone(migrated[0]['observed_outline'][0]['source_pages'])
-        self.assertIn('PDF 원문이 아니라', call.call_args.args[1])
+        self.assertEqual(migrated[0]['observed_outline'][0]['children'][0]['title'], '1.1 실험 설정')
+        self.assertEqual([guide['role'] for guide in migrated[0]['section_guidelines']], ['methods', 'conclusion'])
 
     def test_batch_failure_does_not_overwrite_existing_output(self):
         with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as folder:

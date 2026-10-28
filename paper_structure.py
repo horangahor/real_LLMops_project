@@ -10,7 +10,7 @@ import requests
 
 from config import UPSTAGE_API_KEY, SOLAR_MODEL
 from structure_profiles import (
-    PROFILE_EXAMPLE, ROLE_LABELS, load_profiles, parse_profile_response, save_profiles,
+    PROFILE_EXAMPLE, ROLE_LABELS, convert_legacy_profile, load_profiles, parse_profile_response, save_profiles,
 )
 
 PARSE_URL = "https://api.upstage.ai/v1/document-ai/document-parse"
@@ -90,18 +90,7 @@ def analyze_paper(pdf_path: str | Path) -> dict:
 
 
 def migrate_profiles(profiles: list[dict]) -> list[dict]:
-    converted = []
-    for profile in profiles:
-        if "schema_version" in profile:
-            converted.append(profile)
-            continue
-        source = ("[이전 분석 변환]\n이 입력은 PDF 원문이 아니라 기존 분석·체크리스트다. "
-                  "기존 분석에서 확인할 수 없는 목차·페이지를 새로 만들지 않는다. "
-                  "모든 source_pages는 null로 작성한다. 출처 검증이 필요하다는 점을 analysis_notes에 남긴다.\n"
-                  + json.dumps(profile, ensure_ascii=False, indent=2))
-        response = run_chat(STRUCTURE_PROMPT, source)
-        converted.append(parse_profile_response(response, profile.get("file", "기존 골든 샘플"), "legacy_analysis"))
-    return converted
+    return [convert_legacy_profile(profile) for profile in profiles]
 
 
 def main(argv=None) -> int:

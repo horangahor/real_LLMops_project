@@ -185,6 +185,93 @@ def profile_markdown(profile: dict[str, Any]) -> str:
     return "\n\n".join(blocks).strip() + "\n"
 
 
+def convert_legacy_profile(legacy: dict[str, Any]) -> dict[str, Any]:
+    """기존 Markdown의 명시된 목차를 로컬에서 분리한다. 외부 호출은 하지 않는다."""
+    if "schema_version" in legacy:
+        return validate_profile(legacy)
+    raw = legacy.get("paper_structure_profile", "")
+    block = re.search(r"(?ms)^####\s+\d+\.[^\n]*(?:섹션 계층|섹션 구성)[^\n]*\n(.*?)(?=^####\s|\Z)", raw)
+    if not block:
+        raise ValueError("기존 분석에서 명시된 목차를 찾지 못했습니다. 원본 파일은 유지합니다.")
+
+    def role(title):
+        text = title.lower()
+        for key, words in (
+            ("related_work", ("관련 연구", "related work")),
+            ("limitations", ("한계", "limitations")), ("conclusion", ("결론", "conclusion")),
+            ("introduction", ("서론", "introduction")), ("background", ("배경", "background")),
+            ("methods", ("방법", "method", "benchmark design")),
+            ("evaluation", ("결과", "실험", "평가", "evaluation", "results")),
+        ):
+            if any(word in text for word in words):
+                return key
+        return "other"
+
+    nodes, by_number = [], {}
+    for line in block[1].splitlines():
+        top = re.match(r"^\s*(\d+)\.\s+\*\*(.+?)\*\*\s*$", line)
+        child = re.match(r"^\s*-\s+(\d+(?:\.\d+)+)\s+(.+?)\s*$", line)
+        match = top or child
+        if not match:
+            continue
+        number, title = match.groups()
+        node = {"title": f"{number} {title}", "role": role(title), "source_pages": None, "children": []}
+        if top:
+            nodes.append(node)
+        else:
+            parent = by_number.get(number.rsplit(".", 1)[0])
+            if parent is None:
+                raise ValueError("기존 목차의 하위 절에 연결할 상위 절이 없습니다.")
+            if node["role"] == "other":
+                node["role"] = parent["role"]
+            parent["children"].append(node)
+        by_number[number] = node
+    if not nodes:
+        raise ValueError("기존 분석의 목차 항목을 분리하지 못했습니다.")
+    title_block = re.search(r"(?ms)^####\s+\d+\.[^\n]*제목[^\n]*\n(.*?)(?=^####\s|\Z)", raw)
+    title_match = re.search(r'^\s*-\s+(?:\*\*형식\*\*:\s*)?"([^"\n]+)"', title_block[1], re.M) if title_block else None
+    source_file = legacy.get("file") or "기존 골든 샘플"
+    templates = {
+        "introduction": ("연구의 필요성과 목표·기여를 설명한다.", ["연구 배경", "해결할 문제", "목표와 기여"],
+                         ["배경", "문제", "접근 방법", "기여"], []),
+        "related_work": ("선행 연구를 문제와 접근 방식별로 비교한다.", ["선행 접근", "차이와 미해결 문제"],
+                         ["연구 흐름", "비교", "연구 공백"], []),
+        "background": ("연구를 이해하는 데 필요한 개념과 기존 계산을 설명한다.", ["핵심 개념", "기존 계산 흐름", "문제 정의"],
+                       ["개념", "기존 흐름", "문제"], ["기존 흐름의 관계를 도식으로 설명한다."]),
+        "methods": ("구성 요소의 동작과 설계 이유를 설명한다.", ["전체 구조", "구성 요소의 역할", "설계·구현 방법"],
+                    ["설계 동기", "전체 구성", "세부 동작", "선택 이유"], ["전체 구조와 실험 구성을 도식·표로 정리한다."]),
+        "evaluation": ("실험 조건과 지표를 바탕으로 결과를 비교·해석한다.", ["실험 환경과 비교 대상", "평가 지표", "결과와 해석"],
+                       ["평가 질문과 조건", "비교 결과", "해석"], ["조건이 같은 결과를 비교표로 정리하고 본문에서 해석한다."]),
+        "limitations": ("결과의 적용 범위와 미확인 항목을 설명한다.", ["평가 범위", "해석 한계", "추가 검증"],
+                       ["한계", "해석에 미치는 영향", "후속 검증"], []),
+        "conclusion": ("핵심 발견과 의미를 정리하고 후속 연구로 연결한다.", ["핵심 발견", "대표 성과", "한계와 후속 연구"],
+                       ["발견", "대표 근거", "의미와 한계", "후속 연구"], []),
+    }
+    guidelines = []
+    for key in dict.fromkeys(node["role"] for node in nodes):
+        if key not in templates:
+            continue
+        purpose, required, flow, figures = templates[key]
+        guidelines.append({"role": key, "purpose": purpose, "required_content": required,
+                           "paragraph_flow": flow, "figures_tables": figures})
+    notes = ["기존 분석의 목차를 로컬에서 분리했으며 PDF 원문을 다시 대조하지 않았습니다.",
+             "작성 가이드는 관찰된 절의 역할에 맞춘 공통 권고이며 원문의 문장을 그대로 인용한 것이 아닙니다."]
+    checklist = legacy.get("paper_style_checklist", "")
+    if "저자-연도" in checklist and re.search(r"\[\d+\]", checklist):
+        notes.append("기존 인용 지침에 저자-연도와 숫자 인용 예시가 섞여 있어 원문 확인이 필요합니다.")
+    return validate_profile({
+        "schema_version": SCHEMA_VERSION, "file": source_file, "provenance": "legacy_analysis",
+        "title": title_match[1] if title_match else Path(source_file).stem,
+        "observed_outline": nodes,
+        "style_rules": ["문단은 주제 문장과 근거·해석을 연결하여 구성한다.",
+                        "객관적인 학술 문체를 사용하고 본문에서 표·그림의 의미를 설명한다."],
+        "section_guidelines": guidelines,
+        "not_to_transfer": ["원 논문의 장비·데이터셋·모델·성능 수치를 우리 연구의 사실로 옮기지 않는다.",
+                            "원 논문의 인용 문헌·절 번호·분야별 사례를 그대로 적용하지 않는다."],
+        "analysis_notes": notes,
+    })
+
+
 def writing_guide(reference: StructureGuide, chapter: str | None = None) -> str:
     """원문 목차·샘플 수치 대신 재사용 지침만 작성 프롬프트로 전달한다."""
     if isinstance(reference, str):

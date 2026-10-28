@@ -82,7 +82,7 @@ Solar를 직접 호출한다. Studio에서 프롬프트나 Agent를 수정할 �
 이전 Markdown 형식도 읽을 수 있지만, 새 형식으로 변환하면 역할별 전달이 적용된다.
 
 ```powershell
-# 저장된 분석을 구조화: Solar 호출, PDF 재파싱 없음
+# 저장된 분석을 로컬에서 구조화: 외부 API 호출 없음
 .\.venv\Scripts\python.exe paper_structure.py --migrate-legacy
 # PDF에서 새로 분석: Document Parse + Solar 호출
 .\.venv\Scripts\python.exe paper_structure.py "참고논문.pdf"
@@ -90,6 +90,11 @@ Solar를 직접 호출한다. Studio에서 프롬프트나 Agent를 수정할 �
 
 전체 목록의 분석과 형식 검증이 성공한 뒤 기존 결과를 교체한다.
 기존 파일은 `draft_history/`에 보관한다. 기존 분석 변환은 PDF 원문을 재검증한 결과가 아니다.
+로컬 변환은 기존 Markdown에서 명시된 목차를 분리하고, 관찰된 절의 역할에 맞춘 공통
+작성 가이드를 연결한다. 기존 자유 형식 분석의 모든 세부 문장을 의미 분석해 옮기는 방식은 아니다.
+Streamlit의 **골든 샘플 구조·작성 가이드**에서 논문별 탭으로 목차·작성 가이드·문체·JSON을
+확인할 수 있다. JSON과 읽기용 Markdown을 각각 다운로드할 수 있으며,
+프로파일 형식에 문제가 있으면 오류를 표시하고 초안 생성을 시작하지 않는다.
 
 ## 원문 근거 및 품질 검토
 

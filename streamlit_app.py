@@ -12,8 +12,9 @@ import tempfile
 from pathlib import Path
 
 import streamlit as st
-from paper_draft_agent import PaperDraftOrchestrator
+from paper_draft_agent import PaperDraftOrchestrator, load_paper_structure
 from paper_quality import extraction_fingerprint
+from structure_profile_view import render_reference_profiles
 
 ##################################################
 # Page Configuration
@@ -112,10 +113,15 @@ st.markdown("""
 
 BASE_DIR = Path(__file__).resolve().parent
 RESULTS_JSON = BASE_DIR / "Results & Discussion.json"
-STRUCTURE_JSON = BASE_DIR / "paper_structure_analysis.json"
 DRAFT_MD = BASE_DIR / "paper_draft_full.md"
 LEGACY_DRAFT_MD = BASE_DIR / "paper_draft_section4_5.md"
 REVIEW_JSON = BASE_DIR / "paper_draft_review.json"
+
+structure_reference, structure_error = None, None
+try:
+    structure_reference = load_paper_structure()
+except (OSError, ValueError) as error:
+    structure_error = str(error)
 
 if "full_paper_draft" not in st.session_state:
     # 기존에 작성된 파일이 있으면 초기 로드
@@ -162,8 +168,11 @@ with st.sidebar:
             st.warning("⚠️ `Results & Discussion.json`이 없습니다. method_result.py를 먼저 실행하세요.")
 
     st.markdown("#### 2. 레퍼런스 스타일 프로파일")
-    if STRUCTURE_JSON.exists():
-        st.info("✅ `paper_structure_analysis.json` 적용 중 (인용 제외, IMRAD 규칙 준수)")
+    if structure_error:
+        st.error(f"골든 샘플 분석을 읽을 수 없습니다: {structure_error}")
+    elif structure_reference:
+        st.info(f"✅ 골든 샘플 {len(structure_reference['profiles'])}개 준비 완료")
+        st.caption("아래 '골든 샘플 구조·작성 가이드'에서 논문별 목차와 작성 지침을 확인할 수 있습니다.")
     else:
         st.caption("기본 학술지 가이드라인 적용")
 
@@ -171,7 +180,12 @@ with st.sidebar:
     st.caption("장별 작성 후 근거 검토 → 종합 편집 → 재검토를 진행합니다. 주요 오류가 남으면 후보 초안으로 분리합니다.")
 
     st.divider()
-    generate_btn = st.button("🚀 논문 초안 작성 시작", type="primary", use_container_width=True)
+    generate_btn = st.button("🚀 논문 초안 작성 시작", type="primary", use_container_width=True,
+                             disabled=bool(structure_error))
+
+if structure_reference:
+    with st.expander("골든 샘플 구조·작성 가이드", expanded=False):
+        render_reference_profiles(structure_reference["profiles"])
 
 ##################################################
 # Generation Logic
