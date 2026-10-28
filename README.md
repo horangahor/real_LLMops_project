@@ -66,6 +66,31 @@ CUDA 연구 PDF를 업로드하면 기존 연구 JSON의 존재 여부와 관계
 다시 추출한다. 현재 추출기는 결과를 `Results & Discussion.json`에 저장한다.
 연구 데이터와 별개로 참고 논문은 문체와 구조만 제공한다.
 
+## 골든 샘플 분석
+
+골든 샘플 분석은 Studio Agent가 아니라 로컬 `paper_structure.py`에서 Document Parse와
+Solar를 직접 호출한다. Studio에서 프롬프트나 Agent를 수정할 필요는 없다.
+새 프로파일은 `schema_version: 2`로 저장하며, 다음 항목을 구분한다.
+
+- `observed_outline`: 실제 관찰된 목차와 하위 절. 확인되지 않은 페이지는 `null`.
+- `style_rules`, `section_guidelines`: 재사용할 문체와 역할별 필수 내용·문단 흐름·표/그림 지침.
+- `not_to_transfer`: 원 논문에서 우리 연구로 옮기면 안 되는 내용.
+- `provenance`, `analysis_notes`: PDF 분석인지 기존 분석 변환인지와 확인 한계.
+
+장별 작성자는 자신의 역할에 맞는 지침만 받는다. 원 논문의 목차·수치·적용 금지 예시를
+프롬프트 전체에 붙여 넣지 않는다. 종합 편집에는 현재 작성 범위의 지침을 함께 전달한다.
+이전 Markdown 형식도 읽을 수 있지만, 새 형식으로 변환하면 역할별 전달이 적용된다.
+
+```powershell
+# 저장된 분석을 구조화: Solar 호출, PDF 재파싱 없음
+.\.venv\Scripts\python.exe paper_structure.py --migrate-legacy
+# PDF에서 새로 분석: Document Parse + Solar 호출
+.\.venv\Scripts\python.exe paper_structure.py "참고논문.pdf"
+```
+
+전체 목록의 분석과 형식 검증이 성공한 뒤 기존 결과를 교체한다.
+기존 파일은 `draft_history/`에 보관한다. 기존 분석 변환은 PDF 원문을 재검증한 결과가 아니다.
+
 ## 원문 근거 및 품질 검토
 
 `research_evidence.json`은 현재 CUDA 연구 PDF의 본문과 일부 로그·표를 대조한

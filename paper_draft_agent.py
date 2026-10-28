@@ -17,6 +17,7 @@ from paper_prompts import (
 )
 from paper_quality import known_quality_issues, prepare_research_evidence
 from paper_quality import extraction_fingerprint
+from structure_profiles import StructureGuide, load_profiles, writing_guide
 
 SOLAR_API_URL = "https://api.upstage.ai/v1/chat/completions"
 MODEL_NAME = SOLAR_MODEL
@@ -40,7 +41,7 @@ def load_extracted_results(json_path: Optional[str | Path] = None) -> Dict[str, 
     return data
 
 
-def load_paper_structure(structure_path: Optional[str | Path] = None) -> str:
+def load_paper_structure(structure_path: Optional[str | Path] = None) -> StructureGuide:
     base_dir = Path(__file__).resolve().parent
     if structure_path is not None:
         target = Path(structure_path)
@@ -49,14 +50,7 @@ def load_paper_structure(structure_path: Optional[str | Path] = None) -> str:
                                         base_dir / "paper_structure_analysis.json"] if path.exists()), None)
     if target is None:
         return ""
-    with target.open(encoding="utf-8") as source:
-        data = json.load(source)
-    profiles = data if isinstance(data, list) else [data]
-    return "\n\n".join(
-        f"[참고 스타일 {index}]\n{profile.get('paper_style_checklist', '')}\n"
-        f"{profile.get('paper_structure_profile', '')}"
-        for index, profile in enumerate(profiles, 1)
-    )
+    return {"profiles": load_profiles(target)}
 
 
 def call_solar(system_prompt: str, user_prompt: str, api_key: Optional[str] = None,
@@ -108,7 +102,7 @@ class SectionWriter:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key
 
-    def write(self, section: str, extracted_data: Dict[str, Any], structure_guide: str,
+    def write(self, section: str, extracted_data: Dict[str, Any], structure_guide: StructureGuide,
               context_sections: Dict[str, str]) -> str:
         system_prompt = (
             f"당신은 제{section}장 {SECTION_TITLES[section]} 작성 담당자입니다.\n"
@@ -120,7 +114,7 @@ class SectionWriter:
             "[이 장에서 전달할 핵심 주장과 근거 선택]\n"
             + json.dumps(extracted_data.get("section_briefs", {}).get(section, {}), ensure_ascii=False, indent=2)
             + "\n\n[연구 사실 JSON]\n" + json.dumps(extracted_data, ensure_ascii=False, indent=2)
-            + "\n\n[참고 구조·문체: 연구 사실의 출처가 아님]\n" + structure_guide
+            + "\n\n[참고 구조·문체: 연구 사실의 출처가 아님]\n" + writing_guide(structure_guide, section)
             + "\n\n[앞서 작성한 장: 문맥 참고용]\n"
             + json.dumps(context_sections, ensure_ascii=False, indent=2)
         )
@@ -242,7 +236,7 @@ class PaperSynthesizer:
         self.api_key = api_key
 
     def synthesize(self, sections: Dict[str, str], extracted_data: Dict[str, Any],
-                   structure_guide: str, review_report: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
+                   structure_guide: StructureGuide, review_report: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
         system_prompt = f"""당신은 전체 논문 초안의 종합 편집 담당자입니다.
 {GROUNDING_RULES}
 독자 관점의 편집 기준:
@@ -270,7 +264,7 @@ JSON 객체 하나만 출력한다. 코드 블록이나 앞뒤 설명을 쓰지 
 """
         user_prompt = (
             "[연구 사실 JSON]\n" + json.dumps(extracted_data, ensure_ascii=False, indent=2)
-            + "\n\n[참고 구조·문체]\n" + structure_guide
+            + "\n\n[참고 구조·문체]\n" + writing_guide(structure_guide)
             + "\n\n[종합할 다섯 장의 초안]\n" + json.dumps(sections, ensure_ascii=False, indent=2)
             + "\n\n[반영해야 하는 검토 지적]\n" + json.dumps(review_report or {}, ensure_ascii=False, indent=2)
         )
@@ -299,7 +293,7 @@ def assemble_paper(sections: Dict[str, str]) -> str:
     return "\n\n".join(blocks) + "\n"
 
 
-def write_paper(extracted_data: Dict[str, Any], structure_guide: str = "",
+def write_paper(extracted_data: Dict[str, Any], structure_guide: StructureGuide = "",
                 api_key: Optional[str] = None,
                 progress_callback: Optional[ProgressCallback] = None,
                 checkpoint_path: Optional[Path] = None) -> Dict[str, Any]:
