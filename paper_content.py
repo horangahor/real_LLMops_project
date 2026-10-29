@@ -3,7 +3,7 @@
 import re
 from typing import Any
 
-CONTENT_POLICY_VERSION = "chapter-packets-and-source-tables-v1"
+CONTENT_POLICY_VERSION = "chapter-packets-and-source-tables-v2"
 TABLE_START = "<!-- verified-results:start -->"
 TABLE_END = "<!-- verified-results:end -->"
 TABLE_SLOT = "<<RESULT_TABLES>>"
@@ -32,13 +32,13 @@ def writing_packet(evidence: dict[str, Any], section: str) -> dict[str, Any]:
 
 def chapter_context(context: dict[str, str], evidence: dict[str, Any], section: str) -> dict:
     selected = evidence.get("section_briefs", {}).get(section, {}).get("selected_facts")
-    if evidence.get("evidence_status") != "source_reviewed" or not selected or section not in ("1", "6"):
+    if evidence.get("evidence_status") != "source_reviewed" or not selected or section not in ("1", "5", "6"):
         return context
     # 앞 장의 실험 이력 대신 그 장의 목적·구성만 연결한다.
     briefs = evidence.get("section_briefs", {})
     return {key: {"main_claim": briefs.get(key, {}).get("main_claim", ""),
                   "subsections": re.findall(r"(?m)^###\s+(.+)$", body)}
-            for key, body in context.items() if key in ("3", "4", "5")}
+            for key, body in context.items() if key in ("3", "4", "5") and key != section}
 
 
 def has_narrative_packets(evidence: dict[str, Any]) -> bool:
@@ -87,6 +87,13 @@ def strip_result_tables(body: str) -> str:
                   body, flags=re.S)
 
 
+def table_context(evidence: dict[str, Any]) -> str:
+    """해석 작성자에게는 표의 역할·조건만 주고 셀 값은 코드에서 채운다."""
+    result_tables(evidence)
+    return "\n".join(f"표 5-{index}. {table['caption']} — {table['scope']}"
+                     for index, table in enumerate(evidence.get("result_tables", []), 1))
+
+
 def attach_result_tables(body: str, evidence: dict[str, Any]) -> str:
     rendered = result_tables(evidence)
     if not rendered:
@@ -108,6 +115,6 @@ def output_observations(sections: dict[str, str]) -> dict[str, Any]:
     """생성 결과의 비교용이다. 짧다는 이유만으로 품질이나 합격을 판정하지 않는다."""
     performance = r"(?<![\w.])\d+(?:\.\d+)?(?=\s*(?:ms|밀리초|초|분|배|%))"
     return {key: {"characters": len(body),
-                  "performance_values": len(set(re.findall(performance, body))),
+                  "performance_values": len(set(re.findall(performance, re.sub(r"(?m)^#{1,6}\s.*$", "", body)))),
                   "table_rows": len(re.findall(r"(?m)^\|.*\|$", body))}
             for key, body in sections.items()}

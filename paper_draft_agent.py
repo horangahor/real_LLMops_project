@@ -20,7 +20,7 @@ from paper_quality import extraction_fingerprint
 from structure_profiles import StructureGuide, load_profiles, writing_guide
 from paper_content import (
     CONTENT_POLICY_VERSION, TABLE_SLOT, attach_result_tables, chapter_context,
-    has_narrative_packets, output_observations, result_tables, strip_result_tables, writing_packet,
+    has_narrative_packets, output_observations, strip_result_tables, table_context, writing_packet,
 )
 
 SOLAR_API_URL = "https://api.upstage.ai/v1/chat/completions"
@@ -125,9 +125,11 @@ class SectionWriter:
             + json.dumps(context, ensure_ascii=False, indent=2)
         )
         if section == "5" and extracted_data.get("result_tables"):
-            user_prompt += (f"\n\n[코드에서 삽입할 검토된 결과표]\n{result_tables(extracted_data)}\n"
+            user_prompt += (f"\n\n[코드에서 삽입할 검토된 결과표의 구성·조건]\n{table_context(extracted_data)}\n"
                             f"5.2에 {TABLE_SLOT}를 한 번 쓰세요. 표를 직접 재작성하거나 새로운 가속비를 계산하지 말고, "
-                            "표를 통해 알 수 있는 점을 설명하세요. 표의 모든 셀을 본문에서 반복하지 마세요.")
+                            "표를 통해 알 수 있는 점을 설명하세요. 셀 값은 코드에서 넣으므로 수치를 추측하지 마세요. "
+                            "5.1은 환경·비교 대상·지표를 간결히 설명하고, 5.2는 표별 해석을 한두 문장씩 연결하세요. "
+                            "공통 한계는 5.3에 모으고 여러 절에서 반복하지 마세요.")
         return _section_body(call_solar(system_prompt, user_prompt, self.api_key))
 
 
@@ -347,10 +349,13 @@ def write_paper(extracted_data: Dict[str, Any], structure_guide: StructureGuide 
             final_sections, extracted_data, structure_guide, reviews[-1])
         final_sections["5"] = attach_result_tables(final_sections["5"], extracted_data)
         if has_narrative_packets(extracted_data):
-            for index, section in enumerate(("1", "6")):
+            targets = ("5", "1", "6") if extracted_data.get("section_briefs", {}).get("5", {}).get("selected_facts") else ("1", "6")
+            for index, section in enumerate(targets):
                 if progress_callback:
-                    progress_callback(80 + attempt * 12 + index * 2, f"제{section}장 선택 근거로 독립 정리 중...")
+                    progress_callback(80 + attempt * 12 + index, f"제{section}장 선택 근거로 독립 정리 중...")
                 final_sections[section] = writer.write(section, extracted_data, structure_guide, final_sections)
+                if section == "5":
+                    final_sections[section] = attach_result_tables(final_sections[section], extracted_data)
         if progress_callback:
             progress_callback(84 + attempt * 12, "수정된 초안의 근거와 결론을 재검토 중...")
         reviews.append(reviewer.review(final_sections, extracted_data))

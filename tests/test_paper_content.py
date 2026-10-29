@@ -10,7 +10,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import paper_draft_agent as paper
 from paper_content import (
-    TABLE_SLOT, TABLE_START, attach_result_tables, chapter_context, result_tables, writing_packet,
+    TABLE_SLOT, TABLE_START, attach_result_tables, chapter_context, output_observations, result_tables, writing_packet,
 )
 from paper_prompts import GENERATION_ORDER, SECTION_SUBSECTIONS
 
@@ -58,6 +58,20 @@ class PaperContentTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '선택 근거'):
             writing_packet(evidence, '1')
 
+    def test_result_writer_receives_qualitative_scope_instead_of_table_values(self):
+        evidence = evidence_fixture()
+        evidence['section_briefs']['5'] = {'selected_facts': [{'id': 'E01', 'finding': '초기 GPU 실행이 더 오래 걸렸다.'}]}
+        with patch.object(paper, 'call_solar', return_value=chapter('5')) as call:
+            paper.SectionWriter('key').write('5', evidence, '', {})
+        prompt = call.call_args.args[1]
+        self.assertIn('초기 GPU 실행이 더 오래 걸렸다', prompt)
+        self.assertIn('표 5-1. 초기 실행', prompt)
+        self.assertNotIn('9999ms', prompt)
+        self.assertNotIn('| GPU | 20 |', prompt)
+
+    def test_observations_do_not_count_background_heading_as_a_speedup(self):
+        self.assertEqual(output_observations({'3': '### 3.1 배경 개념\n\n설명'})['3']['performance_values'], 0)
+
     def test_tables_are_restored_after_model_omission_or_changed_values(self):
         evidence = evidence_fixture()
         body = chapter('5').replace('### 5.2 결과 및 분석\n\nbody',
@@ -81,6 +95,7 @@ class PaperContentTests(unittest.TestCase):
 
     def test_full_workflow_refinishes_narratives_after_macro_edit_and_keeps_tables(self):
         evidence = evidence_fixture()
+        evidence['section_briefs']['5'] = {'selected_facts': [{'id': 'E01', 'finding': '초기 GPU 실행이 더 오래 걸렸다.'}]}
         macro = {section: chapter(section, '9999ms macro history') for section in GENERATION_ORDER}
         worker_calls = []
 
@@ -88,7 +103,7 @@ class PaperContentTests(unittest.TestCase):
             for section in GENERATION_ORDER:
                 if system_prompt.startswith(f'당신은 제{section}장'):
                     worker_calls.append(section)
-                    if section in ('1', '6'):
+                    if section in ('1', '5', '6'):
                         self.assertNotIn('9999ms', user_prompt)
                     return chapter(section, 'fresh narrative' if section in ('1', '6') else 'worker body')
             raise AssertionError('Unexpected API call')
@@ -98,7 +113,7 @@ class PaperContentTests(unittest.TestCase):
                 patch.object(paper.PaperReviewer, 'review', return_value=review), \
                 patch.object(paper.PaperSynthesizer, 'synthesize', return_value=copy.deepcopy(macro)):
             result = paper.write_paper(evidence, '', 'key')
-        self.assertEqual(worker_calls, ['3', '4', '5', '1', '6', '1', '6'])
+        self.assertEqual(worker_calls, ['3', '4', '5', '1', '6', '5', '1', '6'])
         self.assertNotIn('macro history', result['sections']['1'])
         self.assertNotIn('macro history', result['sections']['6'])
         self.assertIn('| GPU | 20 |', result['sections']['5'])
