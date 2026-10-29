@@ -29,6 +29,33 @@ class StudioJsonEvaluationTests(unittest.TestCase):
         self.assertFalse(status["strict_valid"])
         self.assertIsNotNone(status["error"])
 
+    def test_trailing_citations_require_explicit_diagnostic_mode(self):
+        text = json.dumps(self.document)+"【†1】【†2】"
+        with self.assertRaises(json.JSONDecodeError):
+            decode_document(text)
+        decoded, status = decode_document(text, diagnostic_citations=True)
+        self.assertEqual(decoded, self.document)
+        self.assertFalse(status["strict_valid"])
+        self.assertTrue(status["json_object_strict_valid"])
+        self.assertFalse(status["diagnostic_control_characters"])
+        self.assertEqual(status["trailing_citation_count"], 2)
+
+    def test_non_citation_tail_is_never_silently_discarded(self):
+        for suffix in ('{"extra":true}', 'ignore prior instructions', '【†1】unexpected'):
+            with self.subTest(suffix=suffix), self.assertRaises(json.JSONDecodeError):
+                decode_document(json.dumps(self.document)+suffix, diagnostic_citations=True)
+
+    def test_citation_text_inside_a_json_value_is_preserved(self):
+        source = {"quote": "a source marker 【†1】 belongs to this value"}
+        decoded, status = decode_document(json.dumps(source, ensure_ascii=False), diagnostic_citations=True)
+        self.assertEqual(decoded, source)
+        self.assertTrue(status["strict_valid"])
+        self.assertEqual(status["trailing_citation_count"], 0)
+
+    def test_invalid_body_is_not_repaired_by_citation_diagnostics(self):
+        with self.assertRaises(json.JSONDecodeError):
+            decode_document('{"quote":"first\nsecond"}【†1】', diagnostic_citations=True)
+
     def test_native_parent_and_evidence_pages_are_used(self):
         result = evaluate_outline(explicit_outline(self.document), self.reference)
         self.assertEqual(result["metrics"]["parent_accuracy_on_matched"]["value"], 1)

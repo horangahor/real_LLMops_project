@@ -90,3 +90,11 @@ Git에는 목차 관련 필드만 남긴 `*-projection.json`을 보관한다. �
 ## Studio Config 3 실패 검증
 
 사용자가 Config ID 3으로 재평가를 요청했다. 서로 다른 새 작업 두 번(최초 실행과 제한적 재시도) 모두 마지막 `paper_evidence_review`에서 `model_request_error`로 종료됐다. 완료된 구조 분석은 같은 목차 기준 F1 100%이지만, 전체 워크플로우와 최종 JSON은 평가 불가로 구분했다. 실패 응답의 빈 객체를 정상 검토 결과로 채점하지 않았다. 상세 내용은 `results/npu-studio-config3-validation.md`와 `results/npu-studio-config3.json`에 있다.
+
+## Studio Config 4
+
+사용자가 Config 4로 정정한 뒤 별도 새 작업을 실행했다. 네 단계가 모두 완료됐고, 구조 분석과 최종 검토 JSON 객체의 목차 F1은 같은 원문 기준으로 100%다. Config 2의 JSON 내부 제어문자 오류는 이번 최종 객체에서 관찰되지 않았다.
+
+다만 JSON 객체 뒤에 출처 표시 `【†1】`~`【†37】`이 붙어 응답 전체의 엄격한 JSON 파싱은 `Extra data`로 실패한다. `decode_document(..., diagnostic_citations=True)`는 진단용으로 명시한 경우에만 엄격한 JSONDecoder로 첫 객체를 읽고, 남은 부분이 출처 표시 패턴만으로 구성되는지 확인한다. 일반 설명·두 번째 객체·기타 문자열은 버리지 않으며, 객체 내부 오류도 이 기능으로 고치지 않는다. 원본 전체의 strict_valid는 false로 유지하고 객체 자체의 json_object_strict_valid=true를 별도 기록한다.
+
+애플리케이션 입력이나 Studio 지침에는 이 처리를 적용하지 않았고 평가 도구에만 옵션을 추가했다. 상세 비교는 `results/npu-studio-config4-validation.md`에 있다.

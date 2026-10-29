@@ -1,25 +1,42 @@
 """Studio의 명시적 sections/headings JSON을 참조표 보완 없이 평가용 트리로 변환한다."""
 
 import json
+import re
 
 
-def decode_document(text, *, diagnostic_controls=False):
+def decode_document(text, *, diagnostic_controls=False, diagnostic_citations=False):
     error = None
+    used_controls = False
+    citation_count = 0
     value = text
     for _ in range(3):
         if isinstance(value, dict):
             return value, {"strict_valid": error is None, "error": error,
-                           "diagnostic_control_characters": error is not None}
+                           "diagnostic_control_characters": used_controls,
+                           "diagnostic_trailing_citations": citation_count > 0,
+                           "trailing_citation_count": citation_count,
+                           "json_object_strict_valid": not used_controls}
         if not isinstance(value, str):
             break
         try:
             value = json.loads(value)
         except json.JSONDecodeError as exc:
+            if diagnostic_citations and exc.msg == "Extra data":
+                original = value.lstrip()
+                body, end = json.JSONDecoder().raw_decode(original)
+                trailing = original[end:].strip()
+                if isinstance(body, dict) and re.fullmatch(r"(?:【†[1-9]\d*】\s*)+", trailing):
+                    error = {"message": exc.msg, "line": exc.lineno, "column": exc.colno, "position": exc.pos}
+                    citation_count = len(re.findall(r"【†[1-9]\d*】", trailing))
+                    value = body
+                    continue
+                raise
             if not diagnostic_controls:
                 raise
             error = {"message": exc.msg, "line": exc.lineno, "column": exc.colno, "position": exc.pos}
             # Inspection only. Never rewrite or mark the raw response valid.
             value = json.loads(value, strict=False)
+            used_controls = True
     raise ValueError("Studio 응답에서 JSON 객체를 읽을 수 없습니다.")
 
 
