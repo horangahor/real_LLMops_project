@@ -18,6 +18,10 @@ from paper_prompts import (
 from paper_quality import known_quality_issues, prepare_research_evidence
 from paper_quality import extraction_fingerprint
 from structure_profiles import StructureGuide, load_profiles, writing_guide
+from paper_content import (
+    CONTENT_POLICY_VERSION, TABLE_SLOT, attach_result_tables, chapter_context,
+    has_narrative_packets, output_observations, result_tables, strip_result_tables, writing_packet,
+)
 
 SOLAR_API_URL = "https://api.upstage.ai/v1/chat/completions"
 MODEL_NAME = SOLAR_MODEL
@@ -104,6 +108,8 @@ class SectionWriter:
 
     def write(self, section: str, extracted_data: Dict[str, Any], structure_guide: StructureGuide,
               context_sections: Dict[str, str]) -> str:
+        packet = writing_packet(extracted_data, section)
+        context = chapter_context(context_sections, extracted_data, section)
         system_prompt = (
             f"당신은 제{section}장 {SECTION_TITLES[section]} 작성 담당자입니다.\n"
             f"{GROUNDING_RULES}\n{PAPER_EDITORIAL_RULES}\n{SECTION_INSTRUCTIONS[section]}\n"
@@ -112,12 +118,16 @@ class SectionWriter:
         )
         user_prompt = (
             "[이 장에서 전달할 핵심 주장과 근거 선택]\n"
-            + json.dumps(extracted_data.get("section_briefs", {}).get(section, {}), ensure_ascii=False, indent=2)
-            + "\n\n[연구 사실 JSON]\n" + json.dumps(extracted_data, ensure_ascii=False, indent=2)
+            + json.dumps(packet.get("section_briefs", {}).get(section, {}), ensure_ascii=False, indent=2)
+            + "\n\n[이 장에 제공된 연구 사실 JSON]\n" + json.dumps(packet, ensure_ascii=False, indent=2)
             + "\n\n[참고 구조·문체: 연구 사실의 출처가 아님]\n" + writing_guide(structure_guide, section)
             + "\n\n[앞서 작성한 장: 문맥 참고용]\n"
-            + json.dumps(context_sections, ensure_ascii=False, indent=2)
+            + json.dumps(context, ensure_ascii=False, indent=2)
         )
+        if section == "5" and extracted_data.get("result_tables"):
+            user_prompt += (f"\n\n[코드에서 삽입할 검토된 결과표]\n{result_tables(extracted_data)}\n"
+                            f"5.2에 {TABLE_SLOT}를 한 번 쓰세요. 표를 직접 재작성하거나 새로운 가속비를 계산하지 말고, "
+                            "표를 통해 알 수 있는 점을 설명하세요. 표의 모든 셀을 본문에서 반복하지 마세요.")
         return _section_body(call_solar(system_prompt, user_prompt, self.api_key))
 
 
@@ -265,7 +275,8 @@ JSON 객체 하나만 출력한다. 코드 블록이나 앞뒤 설명을 쓰지 
         user_prompt = (
             "[연구 사실 JSON]\n" + json.dumps(extracted_data, ensure_ascii=False, indent=2)
             + "\n\n[참고 구조·문체]\n" + writing_guide(structure_guide)
-            + "\n\n[종합할 다섯 장의 초안]\n" + json.dumps(sections, ensure_ascii=False, indent=2)
+            + "\n\n[종합할 다섯 장의 초안]\n" + json.dumps(
+                {key: strip_result_tables(body) for key, body in sections.items()}, ensure_ascii=False, indent=2)
             + "\n\n[반영해야 하는 검토 지적]\n" + json.dumps(review_report or {}, ensure_ascii=False, indent=2)
         )
         text = call_solar(system_prompt, user_prompt, self.api_key)
@@ -304,6 +315,7 @@ def write_paper(extracted_data: Dict[str, Any], structure_guide: StructureGuide 
         "grounding": GROUNDING_RULES, "instructions": SECTION_INSTRUCTIONS,
         "outline": PAPER_OUTLINE_RULES,
         "editorial": PAPER_EDITORIAL_RULES,
+        "content_policy": CONTENT_POLICY_VERSION,
     })
     if checkpoint_path and checkpoint_path.exists():
         saved = json.loads(checkpoint_path.read_text(encoding="utf-8"))
@@ -317,6 +329,8 @@ def write_paper(extracted_data: Dict[str, Any], structure_guide: StructureGuide 
             progress_callback(20 + index * 10, f"제{section}장 {SECTION_TITLES[section]} {action}...")
         if section not in drafts:
             drafts[section] = writer.write(section, extracted_data, structure_guide, dict(drafts))
+            if section == "5":
+                drafts[section] = attach_result_tables(drafts[section], extracted_data)
             if checkpoint_path:
                 checkpoint_path.write_text(json.dumps({"key": checkpoint_key, "section_drafts": drafts},
                                                        ensure_ascii=False, indent=2), encoding="utf-8")
@@ -331,6 +345,12 @@ def write_paper(extracted_data: Dict[str, Any], structure_guide: StructureGuide 
             progress_callback(76 + attempt * 14, "검토 지적을 반영해 전체 초안을 종합 편집 중...")
         final_sections = PaperSynthesizer(api_key).synthesize(
             final_sections, extracted_data, structure_guide, reviews[-1])
+        final_sections["5"] = attach_result_tables(final_sections["5"], extracted_data)
+        if has_narrative_packets(extracted_data):
+            for index, section in enumerate(("1", "6")):
+                if progress_callback:
+                    progress_callback(80 + attempt * 12 + index * 2, f"제{section}장 선택 근거로 독립 정리 중...")
+                final_sections[section] = writer.write(section, extracted_data, structure_guide, final_sections)
         if progress_callback:
             progress_callback(84 + attempt * 12, "수정된 초안의 근거와 결론을 재검토 중...")
         reviews.append(reviewer.review(final_sections, extracted_data))
@@ -340,7 +360,8 @@ def write_paper(extracted_data: Dict[str, Any], structure_guide: StructureGuide 
         raise DraftQualityError(reviews[-1], final_sections)
     return {"draft_markdown": assemble_paper(final_sections),
             "section_drafts": drafts, "sections": final_sections,
-            "review": reviews[-1], "review_history": reviews}
+            "review": reviews[-1], "review_history": reviews,
+            "content_policy": CONTENT_POLICY_VERSION, "output_observations": output_observations(final_sections)}
 
 
 # 기존 CLI/호출 코드에서 사용하던 함수 인터페이스를 유지한다.
@@ -405,6 +426,7 @@ class PaperDraftOrchestrator:
             "section_drafts": result["section_drafts"], "sections": result["sections"],
             "related_work": "", "title": PAPER_TITLE,
             "outline": SECTION_SUBSECTIONS,
+            "content_policy": result.get("content_policy"),
         }, ensure_ascii=False, indent=2), encoding="utf-8")
         review_path.write_text(json.dumps({
             "review": result["review"], "review_history": result["review_history"],
@@ -413,6 +435,8 @@ class PaperDraftOrchestrator:
             "model": MODEL_NAME,
             "draft_fingerprint": extraction_fingerprint({"draft": result["draft_markdown"].strip()}),
             "evidence_fingerprint": extraction_fingerprint(evidence),
+            "content_policy": result.get("content_policy"),
+            "output_observations": result.get("output_observations", {}),
         }, ensure_ascii=False, indent=2), encoding="utf-8")
         (self.base_dir / ".paper_draft_working.json").unlink(missing_ok=True)
         methods = extracted_data.get("optimization_methods") or extracted_data.get("methods_and_results") or []

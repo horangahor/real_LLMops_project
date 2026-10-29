@@ -40,6 +40,7 @@ def prepare_research_evidence(data: dict[str, Any], base_dir: Path) -> dict[str,
         "verified_facts": profile["verified_facts"],
         "research_findings": profile["research_findings"],
         "section_briefs": profile.get("section_briefs", {}),
+        "result_tables": profile.get("result_tables", []),
         "open_questions": profile["open_questions"],
         "original_extracted_method_count": len(methods),
     }
