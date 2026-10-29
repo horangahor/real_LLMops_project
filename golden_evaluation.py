@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 BASE = Path(__file__).resolve().parent
-EVALUATION_VERSION = "golden-outline-v2"
+EVALUATION_VERSION = "golden-outline-v3"
 ROLES = {"introduction", "related_work", "background", "methods", "evaluation",
          "limitations", "conclusion", "other"}
 
@@ -20,7 +20,7 @@ def normalize_title(value):
 
 
 def title_parts(title):
-    title = unicodedata.normalize("NFKC", title).strip()
+    title = " ".join(unicodedata.normalize("NFKC", title).split())
     match = re.match(r"^(\d+(?:\.\d+)*)(?:[.)]?\s+)(.+)$", title)
     number, body = (match.group(1), match.group(2)) if match else (None, title)
     alternatives = [body, re.sub(r"\([^()]*\)", "", body)]

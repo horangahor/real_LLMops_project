@@ -32,6 +32,11 @@ class GoldenEvaluationTests(unittest.TestCase):
         self.assertEqual(result["metrics"]["fully_correct_item_recall"]["value"], 1)
         self.assertEqual(result["metrics"]["page_accuracy_on_matched"]["value"], 1)
 
+    def test_line_wrapping_does_not_change_heading_identity_or_number(self):
+        self.profile["observed_outline"][1]["children"][0]["title"] = "2.1 System\nDesign"
+        result = evaluate_outline(self.profile, self.reference)
+        self.assertEqual(result["metrics"]["heading_number_and_identity"]["f1"], 1)
+
     def test_missing_subsection_cannot_hide_behind_perfect_conditional_scores(self):
         self.profile["observed_outline"][1]["children"] = []
         metrics = evaluate_outline(self.profile, self.reference)["metrics"]
