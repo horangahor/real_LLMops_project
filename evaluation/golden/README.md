@@ -86,3 +86,7 @@ v3는 제목이 줄바꿈된 경우에도 절 번호를 분리하기 전에 공�
 구조 분석 JSON과 스타일 JSON은 엄격한 JSON 문법 검사를 통과했지만, 마지막 검토 응답은 문자열 안의 실제 줄바꿈 때문에 실패했다. `diagnostic_controls=True`는 내용 확인을 위한 제한적 진단 파싱이며 원본을 수정하거나 문법이 유효하다고 인정하지 않는다. 원본 오류 위치와 문법 실패 상태를 보고서에 그대로 남긴다.
 
 Git에는 목차 관련 필드만 남긴 `*-projection.json`을 보관한다. 마지막 검토의 전체 원본과 인용문은 ignored 실행 폴더에만 유지한다. 특히 검토 투영본은 로컬에서 직렬화한 평가 자료이므로, 그 파일이 JSON으로 열린다고 해서 원본 검토 응답도 유효했던 것은 아니다.
+
+## Studio Config 3 실패 검증
+
+사용자가 Config ID 3으로 재평가를 요청했다. 서로 다른 새 작업 두 번(최초 실행과 제한적 재시도) 모두 마지막 `paper_evidence_review`에서 `model_request_error`로 종료됐다. 완료된 구조 분석은 같은 목차 기준 F1 100%이지만, 전체 워크플로우와 최종 JSON은 평가 불가로 구분했다. 실패 응답의 빈 객체를 정상 검토 결과로 채점하지 않았다. 상세 내용은 `results/npu-studio-config3-validation.md`와 `results/npu-studio-config3.json`에 있다.
