@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 BASE = Path(__file__).resolve().parent
+EVALUATION_VERSION = "golden-outline-v2"
 ROLES = {"introduction", "related_work", "background", "methods", "evaluation",
          "limitations", "conclusion", "other"}
 
@@ -49,6 +50,11 @@ def validate_reference(reference):
                 raise ValueError("서로 다른 절의 제목·별칭이 충돌합니다.")
             aliases[normalized] = identifier
         ids.add(identifier)
+    excluded = reference.get("excluded_titles", [])
+    if not isinstance(excluded, list) or any(not isinstance(name, str) or not normalize_title(name) for name in excluded):
+        raise ValueError("제외 제목은 문자열 배열이어야 합니다.")
+    if any(normalize_title(name) in aliases for name in excluded):
+        raise ValueError("평가 대상과 제외 제목이 충돌합니다.")
     return aliases
 
 
@@ -87,7 +93,11 @@ def extraction_metrics(correct, predicted, expected):
 def evaluate_outline(profile, reference):
     aliases = validate_reference(reference)
     expected = {item["id"]: item for item in reference["items"]}
-    predicted = flatten_outline(profile.get("observed_outline"))
+    raw_predictions = flatten_outline(profile.get("observed_outline"))
+    excluded_names = {normalize_title(name) for name in reference.get("excluded_titles", [])}
+    ignored = [item for item in raw_predictions if item["number"] is None and item["names"] & excluded_names]
+    ignored_keys = {item["key"] for item in ignored}
+    predicted = [item for item in raw_predictions if item["key"] not in ignored_keys]
     assigned, matches, unmatched = set(), [], []
     for item in predicted:
         candidates = {aliases[name] for name in item["names"] if name in aliases}
@@ -131,7 +141,9 @@ def evaluate_outline(profile, reference):
         "fully_correct_item_recall": fraction(sum(row["fully_correct"] for row in details), total),
         "page_accuracy_on_matched": fraction(sum(row["page_correct"] for row in details), found),
     }
-    return {"reference_count": total, "prediction_count": len(predicted), "matched_count": found,
+    return {"reference_count": total, "raw_prediction_count": len(raw_predictions),
+            "prediction_count": len(predicted), "matched_count": found,
+            "ignored_predictions": [{"title": item["title"], "reason": "declared_out_of_scope"} for item in ignored],
             "metrics": metrics, "matches": details,
             "missing": [item for identifier,item in expected.items() if identifier not in assigned],
             "unmatched_predictions": unmatched}
@@ -164,12 +176,17 @@ def ratio(metric):
 def report_markdown(report):
     metrics = report["metrics"]
     heading, exact = metrics["heading_identity"], metrics["heading_number_and_identity"]
+    if report["prediction_provenance"] == "pdf_analysis":
+        evaluation_scope = "Document Parse와 Solar 분석을 통해 생성된 pdf_analysis 결과를 원문 기준표와 비교했다. 이 채점 명령 자체는 저장된 결과를 읽어 평가하며 추가 API 호출을 하지 않는다. 목차 구조를 평가한 것이며 전체 OCR 성능을 측정한 것은 아니다."
+    else:
+        evaluation_scope = "기존 legacy_analysis 저장본을 원문 대조 기준표와 비교한 오프라인 평가다. 이전 분석의 변환본이므로 현재 분석 모델이나 파서의 성능으로 해석하면 안 된다."
     lines = ["# 골든 샘플 구조 추출 평가", "",
              f"- 원본: `{report['source_file']}` (PDF {report['pdf_page_count']}쪽)",
              f"- 예측 출처: `{report['prediction_provenance']}` / `{report['prediction_path']}`",
-             f"- 평가 항목: 원문 {report['reference_count']}개, 예측 {report['prediction_count']}개, 제목 대응 {report['matched_count']}개", "",
+             f"- 평가 항목: 원문 {report['reference_count']}개, 원시 예측 {report['raw_prediction_count']}개, 범위 내 예측 {report['prediction_count']}개, 제목 대응 {report['matched_count']}개",
+             f"- 채점 범위 제외: {len(report['ignored_predictions'])}개 (원문에서 확인된 사전 제외 범주의 제목)", "",
              "## 측정 범위와 한계", "",
-             "저장된 분석 파일을 원문 대조 기준표와 비교한 오프라인 평가다. 이 평가 명령은 Document Parse/Solar를 호출하지 않으며 OCR 성능을 측정하지 않는다. 특히 legacy_analysis는 이전 분석의 변환본이므로 현재 분석 모델의 성능으로 해석하면 안 된다.",
+             evaluation_scope,
              "원문 대조 기준은 Codex가 페이지 이미지와 텍스트를 확인하여 작성했다. 사용자·전문가의 독립 검수 전이며 역할 분류에는 판단이 포함된다.",
              "한 편의 구조 추출 결과이며 초안 반영률·논문 품질·다른 PDF로의 일반화 성능을 뜻하지 않는다.", "",
              "## 결과", "", "| 지표 | 결과 |", "|---|---:|",
@@ -186,7 +203,7 @@ def report_markdown(report):
              f"| 제목·번호·계층·역할을 모두 맞춘 항목 재현율 | {ratio(metrics['fully_correct_item_recall'])} |",
              f"| 시작 페이지 일치율 (대응된 항목 한정) | {ratio(metrics['page_accuracy_on_matched'])} |", "",
              "조건부 계층·역할 정확도는 찾아낸 제목만 대상으로 한다. 누락은 재현율과 함께 판단해야 하며 이 점수만으로 전체 구조가 정확하다고 해석하면 안 된다.",
-             "페이지 일치율은 시작 페이지가 source_pages에 포함되는지 측정한다. legacy 변환 시 null로 남긴 항목의 0점은 페이지 미제공이며 잘못된 페이지를 추측했다는 뜻은 아니다.", "",
+             "페이지 일치율은 시작 페이지가 source_pages에 포함되는지 측정한다. null 항목의 0점은 페이지 미제공이며 잘못된 페이지를 추측했다는 뜻은 아니다.", "",
              "## 항목별 비교", "", "| 원문 번호·제목 | PDF 쪽 | 예측 | 번호 | 부모 | 역할 |",
              "|---|---:|---|---|---|---|"]
     rows = {row["reference_id"]: row for row in report["matches"]}
@@ -197,8 +214,11 @@ def report_markdown(report):
             lines.append(f"| {item['id']} {item['title']} | {item['page']} | {row['prediction_title']} | {' | '.join(flags)} |")
         else:
             lines.append(f"| {item['id']} {item['title']} | {item['page']} | 누락 | — | — | — |")
+    lines.extend(["", "## 대응하지 않은 예측", ""])
+    lines.extend(f"- 오탐: {row['title']} ({row['reason']})" for row in report["unmatched_predictions"])
+    lines.extend(f"- 범위 제외: {row['title']}" for row in report["ignored_predictions"])
     lines.extend(["", "## 재현 방법", "", "```powershell",
-                  ".\\.venv\\Scripts\\python.exe -X utf8 -B golden_evaluation.py --profiles evaluation/golden/predictions/npu-legacy.json --output evaluation/golden/results/npu-legacy-baseline.json", "```", "",
+                  f".\\.venv\\Scripts\\python.exe -X utf8 -B golden_evaluation.py --profiles {report['prediction_path']} --output evaluation/golden/results/recheck.json", "```", "",
                   "현재 프로파일 평가: --profiles paper_structure_analysis.json 및 별도 --output 경로를 사용한다. 기존 초안·입력 프로파일은 수정하지 않는다.", "",
                   "## 다음 평가", "",
                   "1. 기준표를 원문과 함께 사용자 검수한다.",
@@ -221,7 +241,7 @@ def main(argv=None):
     profile = select_profile(json.loads(prediction_bytes), reference["source_file"])
     digest = verify_source(reference, args.source or BASE.parent/reference["source_file"])
     report = evaluate_outline(profile, reference)
-    report.update({"evaluation_version": "golden-outline-v1", "source_file": reference["source_file"],
+    report.update({"evaluation_version": EVALUATION_VERSION, "source_file": reference["source_file"],
                    "source_sha256": digest, "pdf_page_count": reference["pdf_page_count"],
                    "reference_sha256": hashlib.sha256(args.reference.read_bytes()).hexdigest(),
                    "prediction_sha256": hashlib.sha256(prediction_bytes).hexdigest(),

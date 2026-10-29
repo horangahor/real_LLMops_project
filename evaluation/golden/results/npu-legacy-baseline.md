@@ -2,11 +2,12 @@
 
 - 원본: `AIComps2026_NPU_Benchmarking_1.1v.pdf` (PDF 14쪽)
 - 예측 출처: `legacy_analysis` / `evaluation/golden/predictions/npu-legacy.json`
-- 평가 항목: 원문 14개, 예측 6개, 제목 대응 6개
+- 평가 항목: 원문 14개, 원시 예측 6개, 범위 내 예측 6개, 제목 대응 6개
+- 채점 범위 제외: 0개 (원문에서 확인된 사전 제외 범주의 제목)
 
 ## 측정 범위와 한계
 
-저장된 분석 파일을 원문 대조 기준표와 비교한 오프라인 평가다. 이 평가 명령은 Document Parse/Solar를 호출하지 않으며 OCR 성능을 측정하지 않는다. 특히 legacy_analysis는 이전 분석의 변환본이므로 현재 분석 모델의 성능으로 해석하면 안 된다.
+기존 legacy_analysis 저장본을 원문 대조 기준표와 비교한 오프라인 평가다. 이전 분석의 변환본이므로 현재 분석 모델이나 파서의 성능으로 해석하면 안 된다.
 원문 대조 기준은 Codex가 페이지 이미지와 텍스트를 확인하여 작성했다. 사용자·전문가의 독립 검수 전이며 역할 분류에는 판단이 포함된다.
 한 편의 구조 추출 결과이며 초안 반영률·논문 품질·다른 PDF로의 일반화 성능을 뜻하지 않는다.
 
@@ -28,7 +29,7 @@
 | 시작 페이지 일치율 (대응된 항목 한정) | 0/6 (0.0%) |
 
 조건부 계층·역할 정확도는 찾아낸 제목만 대상으로 한다. 누락은 재현율과 함께 판단해야 하며 이 점수만으로 전체 구조가 정확하다고 해석하면 안 된다.
-페이지 일치율은 시작 페이지가 source_pages에 포함되는지 측정한다. legacy 변환 시 null로 남긴 항목의 0점은 페이지 미제공이며 잘못된 페이지를 추측했다는 뜻은 아니다.
+페이지 일치율은 시작 페이지가 source_pages에 포함되는지 측정한다. null 항목의 0점은 페이지 미제공이며 잘못된 페이지를 추측했다는 뜻은 아니다.
 
 ## 항목별 비교
 
@@ -49,10 +50,13 @@
 | 4.4 Limitations | 12 | 5 한계점 (Limitations) | 불일치 | 불일치 | 일치 |
 | 5 Conclusion and Future Work | 12 | 6 결론 (Conclusion and Future Work) | 불일치 | 일치 | 일치 |
 
+## 대응하지 않은 예측
+
+
 ## 재현 방법
 
 ```powershell
-.\.venv\Scripts\python.exe -X utf8 -B golden_evaluation.py --profiles evaluation/golden/predictions/npu-legacy.json --output evaluation/golden/results/npu-legacy-baseline.json
+.\.venv\Scripts\python.exe -X utf8 -B golden_evaluation.py --profiles evaluation/golden/predictions/npu-legacy.json --output evaluation/golden/results/recheck.json
 ```
 
 현재 프로파일 평가: --profiles paper_structure_analysis.json 및 별도 --output 경로를 사용한다. 기존 초안·입력 프로파일은 수정하지 않는다.

@@ -120,6 +120,34 @@ class GoldenEvaluationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "SHA-256"):
                 verify_source(reference, path)
 
+    def test_declared_real_out_of_scope_title_is_not_a_false_positive(self):
+        self.reference["excluded_titles"] = ["References"]
+        self.profile["observed_outline"].append(node("References", "other"))
+        result = evaluate_outline(self.profile, self.reference)
+        self.assertEqual(result["raw_prediction_count"], 4)
+        self.assertEqual(result["prediction_count"], 3)
+        self.assertEqual(len(result["ignored_predictions"]), 1)
+        self.assertEqual(result["metrics"]["heading_identity"]["f1"], 1)
+
+    def test_unknown_unnumbered_summaries_are_still_false_positives(self):
+        self.reference["excluded_titles"] = ["References"]
+        self.profile["observed_outline"].append(node("Imaginary paragraph summary", "introduction"))
+        result = evaluate_outline(self.profile, self.reference)
+        self.assertEqual(result["prediction_count"], 4)
+        self.assertEqual(result["metrics"]["heading_identity"]["false_positive"], 1)
+
+    def test_invented_number_on_excluded_title_is_not_ignored(self):
+        self.reference["excluded_titles"] = ["References"]
+        self.profile["observed_outline"].append(node("7 References", "other"))
+        result = evaluate_outline(self.profile, self.reference)
+        self.assertEqual(result["ignored_predictions"], [])
+        self.assertEqual(result["metrics"]["heading_identity"]["false_positive"], 1)
+
+    def test_reference_cannot_exclude_a_scored_heading(self):
+        self.reference["excluded_titles"] = ["Introduction"]
+        with self.assertRaisesRegex(ValueError, "충돌"):
+            evaluate_outline(self.profile, self.reference)
+
 
 if __name__ == "__main__":
     unittest.main()
