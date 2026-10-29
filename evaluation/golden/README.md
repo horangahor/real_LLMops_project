@@ -9,6 +9,8 @@
 
 이후 사용자가 NPU PDF와 추출 본문의 Upstage 외부 전송을 명시적으로 허용하여 실제 API도 한 번 실행했다. `predictions/npu-live.json`이 변경하지 않은 `paper_structure.analyze_paper()`의 새 결과이며, `results/npu-live.json`과 `results/npu-live-validation.md`에 평가와 비교를 기록했다. 전체 파서/LLM 응답과 실행 스크립트는 로컬의 ignored `draft_history/20261029-npu-live-validation/`에 보관하고 Git에는 넣지 않았다. 기존 서비스 입력 프로파일은 교체하지 않았다.
 
+사용자가 Studio 워크플로우를 수정한 뒤 별도의 Studio Agent 실행도 수행했다. `STRUCTURE_AGENT_ID`의 Agent를 Files/Jobs API로 직접 호출하고 `config_id`를 생략해 서버의 최신 저장 설정을 사용했다. 로컬에 고정된 설정 버전 1은 이 검증에 사용하지 않았다. 결과는 `results/npu-studio-validation.md`에 있다. 이 경로는 앞의 직접 Document Parse/Solar 호출 경로와 구분한다.
+
 ## 원문 기준표
 
 `npu-reference.json`에 번호가 있는 본문 장·절 14개(상위 5개, 하위 9개)를 기록했다.
@@ -60,3 +62,15 @@ v2는 v1에서 선언만 하고 실제 채점에 반영하지 않았던 제외 �
 - 초안의 과학적 정확성·새로움·자연스러움 및 다른 논문으로의 일반화.
 
 기준선 측정 후에는 기준표 사용자 검수, 새 분석 결과와의 비교, 원문 관찰에 연결된 작성 가이드 평가, 초안 반영 평가 순으로 진행한다. 자동 평가 도구를 만들었다는 것만으로 평가 기준 자체가 독립 검증되었다고 보지 않는다.
+
+## Studio 서술형 출력의 재평가
+
+현재 Studio 구조 분석 단계는 구조화된 목차 객체 대신 Markdown 문자열을 반환한다. 마지막 단계는 작성 체크리스트이므로 `include=["all"]`로 구조 분석 단계를 별도로 확보했다. 원본 응답 전체는 로컬의 ignored `draft_history/20261030-studio-npu-validation/`에 보존했다.
+
+`studio_outline_evaluation.py`는 구조 분석의 ‘섹션 계층 및 순서’ 구간에서 굵게 표시된 명시적 번호·제목만 화살표와 쉼표로 분리한다. 원문 기준표에서 빠진 항목을 채우거나 LLM을 다시 호출하지 않는다. 부모 관계는 출력된 번호에서만 복원한다. 역할·페이지는 제공되지 않아 추론하지 않고 N/A로 기록한다. 평가용 중간 트리의 `other` 역할은 기술적 자리표시자이며 Studio가 분류한 역할이 아니다. 이 트리는 서비스용 schema_version 2 프로파일이 아니다.
+
+```powershell
+.\.venv\Scripts\python.exe -X utf8 -B studio_outline_evaluation.py --structure evaluation/golden/predictions/npu-studio-structure.md --output evaluation/golden/results/npu-studio.json
+```
+
+이 점수는 Studio 응답에 명시된 상세 목차의 정확성과 완전성이다. 전체 서술의 의미적 분석 품질, 이전 Studio 설정 대비 개선 효과, 직접 API와 같은 조건의 모델 성능 비교는 아니다.
