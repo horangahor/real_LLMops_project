@@ -20,6 +20,8 @@ def render_reference_profiles(profiles):
                 st.markdown(f"#### {profile['title']}")
                 if profile["provenance"] == "legacy_analysis":
                     st.caption("기존 분석을 로컬에서 정리한 자료입니다. PDF 원문을 다시 대조한 결과는 아닙니다.")
+                elif profile.get("pipeline_version") == "parse-numbered-outline-v1":
+                    st.caption("번호가 있는 본문 장·절을 분석한 결과입니다. 무번호 절은 포함하지 않으며, 문체·작성 가이드는 자동 분석 자료입니다.")
                 outline_tab, guide_tab, style_tab, json_tab = st.tabs(
                     ["관찰된 목차", "장별 작성 가이드", "문체·적용 주의", "JSON"])
                 with outline_tab:

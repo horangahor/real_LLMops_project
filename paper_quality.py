@@ -24,11 +24,12 @@ def prepare_research_evidence(data: dict[str, Any], base_dir: Path) -> dict[str,
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
     if extraction_fingerprint(data) != profile["extraction_sha256"]:
         return {**data, "evidence_status": "unreviewed_extraction"}
-    source_path = base_dir.parent / profile["source_file"]
-    if not source_path.is_file():
+    candidates = [base_dir / "input" / profile["source_file"], base_dir.parent / profile["source_file"]]
+    sources = [path for path in candidates if path.is_file()]
+    if not sources:
         raise FileNotFoundError("근거 프로파일에 연결된 연구 원본 PDF를 찾을 수 없습니다.")
-    if hashlib.sha256(source_path.read_bytes()).hexdigest() != profile["source_sha256"]:
-        raise ValueError("연구 원본 PDF가 변경되었습니다. 기존 근거 프로파일을 다시 검토해주세요.")
+    if not any(hashlib.sha256(path.read_bytes()).hexdigest() == profile["source_sha256"] for path in sources):
+        raise ValueError("연구 원본 PDF가 변경되었습니다. 기존 근거 프로파일을 다시 검토하거나 일반 연구 PDF 입력으로 새로 분석해주세요.")
     methods = data.get("optimization_methods") or data.get("methods_and_results") or []
     # 검토 전 추출값은 작성 프롬프트에서 제외한다. 정정 지시와 함께 보내도 모델이
     # 잘못된 수치를 다시 사용하는 문제가 있으므로 검토된 사실만 전달한다.

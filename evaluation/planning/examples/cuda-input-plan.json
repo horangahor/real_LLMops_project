@@ -1,0 +1,509 @@
+{
+  "title": "CROWN 검증 CUDA 가속 최적화 과정 및 성능 분석",
+  "rationale": "연구 자료의 제목과 핵심 사실(F01~F34)을 그대로 반영하여, CUDA 포팅부터 커널 퓨전·메모리 복사 최소화·단계별 타이밍 분해까지의 최적화 과정과 성능 변화를 다루는 논문으로 구성한다.",
+  "sections": [
+    {
+      "id": "S_intro",
+      "title": "서론",
+      "role": "introduction",
+      "purpose": "CROWN 검증의 GPU 가속 필요성과 본 연구의 최적화 목표, 주요 기여를 요약한다.",
+      "status": "write",
+      "subsections": [],
+      "evidence_ids": [
+        "F01",
+        "F02",
+        "F03",
+        "F04",
+        "F09",
+        "F13",
+        "F14",
+        "F16",
+        "F17",
+        "F19",
+        "F21",
+        "F24",
+        "F25",
+        "F31",
+        "F32"
+      ],
+      "reference_ids": [
+        "ref1_introduction",
+        "ref2_introduction"
+      ],
+      "table_ids": [],
+      "depends_on": [],
+      "reference_adaptation": "ref1_introduction의 문제 제기→기존 방법 한계→제안 목표 요약 흐름을 따르되, 본 연구는 CROWN 검증의 CUDA 포팅과 커널·메모리 최적화 과정 자체를 주제로 삼는다. ref2_introduction의 측정 범위·비교 조건 명확화 관점도 반영해, CPU only 대비 초기 GPU 버전의 지연 시간 역전 현상과 이후 최적화 단계를 문제 맥락으로 제시한다.",
+      "required_items": [
+        {
+          "id": "I_intro_background",
+          "description": "CROWN 검증의 실용적 중요성과 GPU 가속을 시도한 배경",
+          "evidence_ids": [
+            "F03",
+            "F04"
+          ]
+        },
+        {
+          "id": "I_intro_goal",
+          "description": "CUDA 포팅 및 최적화 목표와 1차 목표(테스트 데이터 1개, eps=1e-6, 출력 16개)",
+          "evidence_ids": [
+            "F01",
+            "F02",
+            "F03"
+          ]
+        },
+        {
+          "id": "I_intro_contribution",
+          "description": "초기 GPU 버전이 CPU보다 느렸던 문제에서 시작해 커널 퓨전·메모리 복사 최소화·단계별 타이밍 분해로 성능을 개선한 기여 요약",
+          "evidence_ids": [
+            "F04",
+            "F09",
+            "F13",
+            "F14",
+            "F16",
+            "F17",
+            "F19",
+            "F21",
+            "F24",
+            "F25",
+            "F31",
+            "F32"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S_methods",
+      "title": "실험 구성 및 CUDA 포팅 방법",
+      "role": "methods",
+      "purpose": "CUDA 컴파일 환경, 신경망 구조, CROWN 검증 설정, 포팅 방식, 최적화 적용 범위를 재현 가능하게 서술한다.",
+      "status": "write",
+      "subsections": [
+        "CUDA 환경 및 포팅 방식",
+        "신경망 구조와 CROWN 검증 조건",
+        "최적화 적용 범위"
+      ],
+      "evidence_ids": [
+        "F01",
+        "F02",
+        "F03",
+        "F13",
+        "F17",
+        "F19",
+        "F21",
+        "F31",
+        "F14",
+        "F16"
+      ],
+      "reference_ids": [
+        "ref1_methods",
+        "ref2_methods"
+      ],
+      "table_ids": [],
+      "depends_on": [
+        "S_intro"
+      ],
+      "reference_adaptation": "ref1_methods의 실험 환경·데이터·모델 구조·설정 서술 순서를 참고하되, 본 연구는 학습이 아니라 CROWN 검증 실행과 CUDA 포팅·최적화가 중심이므로 모델 로드 방식, 검증 조건, 커널·메모리 최적화 적용 범위로 재구성한다. ref2_methods의 구성/조건 정의와 측정 구간 설명 방식도 일부 반영해, CPU only·GPU only·최적화 버전 간 비교 조건을 명확히 한다.",
+      "required_items": [
+        {
+          "id": "I_methods_cuda_env",
+          "description": "nvcc release 13.3, V13.3.73 기반 CUDA 컴파일 환경과 CUDA 동작 필요 코드만 교체하는 포팅 전제",
+          "evidence_ids": [
+            "F01"
+          ]
+        },
+        {
+          "id": "I_methods_porting",
+          "description": "lirpa_forward_backward_fc_array.cpp 기본 틀 유지, 병렬 연산 부분만 커널 함수로 교체하고 컴파일·실행 검증에서 동일 동작 확인",
+          "evidence_ids": [
+            "F02"
+          ]
+        },
+        {
+          "id": "I_methods_network",
+          "description": "Fully Connected 구조, 입력 256(16×16), 은닉층 2개(N^(1)=491, N^(2)=491), 출력 16",
+          "evidence_ids": [
+            "F03"
+          ]
+        },
+        {
+          "id": "I_methods_crown_setting",
+          "description": "테스트 데이터 1개, eps=1e-6, 출력 16개를 뽑는 1차 목표와 실제 신경망 로드 방향",
+          "evidence_ids": [
+            "F03"
+          ]
+        },
+        {
+          "id": "I_methods_opt_scope",
+          "description": "backward_bound_gpu 중심 affine 중복 제거, 포인터 스와핑, backward_matmul_pair_gpu, build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu, 커널 퓨전, set_shape 내장, forward/backward 복사 플래그 분리, affine_min/max GPU 내 처리, 입력 버퍼 재사용, default 초기 상태 GPU 생성 등 적용 범위",
+          "evidence_ids": [
+            "F13",
+            "F14",
+            "F16",
+            "F17",
+            "F19",
+            "F21",
+            "F31"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S_eval_timeline",
+      "title": "최적화 단계별 성능 변화",
+      "role": "evaluation",
+      "purpose": "CPU only 대비 초기 GPU 버전의 역전 현상부터 DTOH memcpy 제거, 커널 퓨전, 복사 플래그, affine_min/max GPU 처리, 입력 버퍼 재사용까지의 단계별 elapsed time 변화를 정리한다.",
+      "status": "write",
+      "subsections": [
+        "초기 GPU 포팅과 CPU 대비 성능 역전",
+        "DTOH memcpy 제거와 CPU 수준 근접",
+        "커널 퓨전 및 set_shape 내장과 최저 elapsed time",
+        "복사 플래그 도입과 memcpy 감소",
+        "affine_min/max GPU 내 처리 및 입력 버퍼 재사용",
+        "단계별 성능 변화의 해석"
+      ],
+      "evidence_ids": [
+        "F04",
+        "F09",
+        "F13",
+        "F14",
+        "F16",
+        "F17",
+        "F19"
+      ],
+      "reference_ids": [
+        "ref1_evaluation",
+        "ref2_evaluation"
+      ],
+      "table_ids": [],
+      "depends_on": [
+        "S_methods"
+      ],
+      "reference_adaptation": "ref1_evaluation의 정량 성능 비교와 구성 요소 기여도 분리 서술 방식을 참고하되, 본 연구는 단일 모델·단일 검증 조건에서의 최적화 이력 자체가 핵심이므로 단계별 elapsed time 변화를 시계열처럼 제시한다. ref2_evaluation의 여러 지표 병행 제시 관점을 일부 반영해, elapsed time뿐 아니라 memcpy 횟수 변화(F16)와 같은 보조 지표도 함께 언급하되, 정량 인과가 불확실한 부분은 한계로 남긴다.",
+      "required_items": [
+        {
+          "id": "I_eval_cpu_gpu_initial",
+          "description": "CPU only 101.237800ms 대비 GPU only 353.057200ms로 초기 GPU가 더 느렸던 결과",
+          "evidence_ids": [
+            "F04"
+          ]
+        },
+        {
+          "id": "I_eval_dtoh",
+          "description": "forward의 DTOH memcpy 극단 제거 후 약 103ms에서 약 64ms로 감소",
+          "evidence_ids": [
+            "F09"
+          ]
+        },
+        {
+          "id": "I_eval_kernel_fusion",
+          "description": "커널 퓨전 및 set_shape 함수 내장으로 최저 약 21.3753ms까지 감소, 23~26ms 수준 변동 가능성",
+          "evidence_ids": [
+            "F13",
+            "F14"
+          ]
+        },
+        {
+          "id": "I_eval_flag_memcpy",
+          "description": "backward 호출 시 forward 중간 결과 CPU 복사 여부 플래그 도입으로 약 17.2236ms, memcpy 66→56회 감소",
+          "evidence_ids": [
+            "F16"
+          ]
+        },
+        {
+          "id": "I_eval_affine_gpu",
+          "description": "affine_min/max를 backward_bound_gpu에서 실행하도록 개선해 GPU→CPU→GPU→CPU 불필요 복사 최소화",
+          "evidence_ids": [
+            "F17"
+          ]
+        },
+        {
+          "id": "I_eval_buffer_reuse",
+          "description": "Forward 입력 버퍼(x0 ± eps) Backward 재사용으로 H2D 복사 제거, default 초기 상태 GPU 직접 생성으로 PCIe 오버헤드 최소화, elapsed 13.939ms 예시",
+          "evidence_ids": [
+            "F19"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S_eval_timing_breakdown",
+      "title": "단계별 타이밍 분해와 배치·표본 측정 결과",
+      "role": "evaluation",
+      "purpose": "추론·bound 계산·검증 시간을 분리 측정한 방식과, Real-Time Single-Sample(B=1) Latency Analysis 및 전체 elapsed 시간 감소 결과를 제시한다.",
+      "status": "write",
+      "subsections": [
+        "단계별 타임스탬프 측정 설계",
+        "warmup과 스파이크·분산 관찰",
+        "Real-Time Single-Sample(B=1) Latency Analysis",
+        "전체 elapsed 시간 감소와 phase breakdown"
+      ],
+      "evidence_ids": [
+        "F24",
+        "F25",
+        "F32"
+      ],
+      "reference_ids": [
+        "ref1_evaluation",
+        "ref2_evaluation"
+      ],
+      "table_ids": [],
+      "depends_on": [
+        "S_eval_timeline"
+      ],
+      "reference_adaptation": "ref1_evaluation의 계산 비용·실패 양상·비교 해석 구조를 참고하되, 본 연구는 단계별 시간 분해와 표본 측정 결과가 핵심이므로 측정 코드 구조(F24)와 latency 통계(F25), 전체 elapsed 감소(F32)를 중심으로 서술한다. ref2_evaluation의 여러 지표 병행 제시 관점을 반영해, 평균·중앙·P95·P99·최대·처리량·phase 비율을 함께 제시한다.",
+      "required_items": [
+        {
+          "id": "I_timing_design",
+          "description": "추론·bound 계산·검증 각 단계 끝마다 타임스탬프를 기록해 누적하고 forward/backward 각각 20회 측정",
+          "evidence_ids": [
+            "F24"
+          ]
+        },
+        {
+          "id": "I_timing_warmup_issue",
+          "description": "warmup 적용 시 평균 시간이 더 늘어나거나 스파이크가 발생하는 현상과 원인 미해결 상태",
+          "evidence_ids": [
+            "F24"
+          ]
+        },
+        {
+          "id": "I_latency_stats",
+          "description": "Real-Time Single-Sample(B=1) Latency Analysis: 평균 1145.24us, P99 1311.90us, 최대 7830.90us, 처리량 873.18 samples/sec, 전체 elapsed 1055.28s 중 bound 87.3%, infer 12.5%, certify 0.2%",
+          "evidence_ids": [
+            "F25"
+          ]
+        },
+        {
+          "id": "I_total_elapsed_reduction",
+          "description": "전체 elapsed 787s에서 630s로 약 157초 감소, phase breakdown 변화",
+          "evidence_ids": [
+            "F32"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S_eval_kernel_memcpy",
+      "title": "커널 횟수 감소와 메모리 복사 동작 분석",
+      "role": "evaluation",
+      "purpose": "커널 퓨전·복사 커널 제거에 따른 커널 횟수 변화와, pinned memory 및 memcpy 관련 관찰 결과를 정리한다.",
+      "status": "write",
+      "subsections": [
+        "CROWN 방법별 커널 퓨전 및 복사 커널 제거",
+        "방법별 커널 횟수 감소 폭과 시간 감소 폭의 불일치",
+        "pinned memory 미적용 버전의 복사 속도 관찰",
+        "memcpy 크기 축소와 CPU 계산 오버헤드 관찰"
+      ],
+      "evidence_ids": [
+        "F31",
+        "F34",
+        "F27"
+      ],
+      "reference_ids": [
+        "ref1_evaluation",
+        "ref2_evaluation"
+      ],
+      "table_ids": [],
+      "depends_on": [
+        "S_eval_timing_breakdown"
+      ],
+      "reference_adaptation": "ref1_evaluation의 구성 요소 기여도 분리와 계산 부담 변화 보고 방식을 참고하되, 본 연구는 커널 횟수 감소와 elapsed 시간 감소가 방법별로 비례하지 않는 점을 주요 해석 대상으로 삼는다. ref2_evaluation의 지표 간 상충·예외 서술 방식을 반영해, 커널 횟수 감소가 가장 큰 forward와 시간 감소가 반드시 일치하지 않는 점을 명시한다.",
+      "required_items": [
+        {
+          "id": "I_kernel_fusion_removal",
+          "description": "CROWN 3가지 방법에서 사용하는 커널 퓨전 및 backward_only에서 메모리 복사 커널 제거",
+          "evidence_ids": [
+            "F31"
+          ]
+        },
+        {
+          "id": "I_kernel_count_mismatch",
+          "description": "forward 무거운 커널 연산 9회 감소로 가장 많이 줄었으나 backward_only는 45→33회(26.7%)로 가장 적게 줄었고, 단순 가중치·bias 복사 커널 6개, 부호 분리 커널 6개 감소 등 커널별 비용이 달라 시간 감소와 비례하지 않음",
+          "evidence_ids": [
+            "F34"
+          ]
+        },
+        {
+          "id": "I_pinned_obs",
+          "description": "여러 번 측정 결과 pinned memory 미적용 버전이 복사 속도 약 3배 빠르며, 작은 전송에서는 CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할 가능성이 있으나 내부 구현 미확인으로 확정 불가",
+          "evidence_ids": [
+            "F27"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S_limitations",
+      "title": "한계 및 미해결 문제",
+      "role": "limitations",
+      "purpose": "측정 환경 미확인, 동시 변경 효과 분리 어려움, warmup 스파이크, pinned memory 인과 불확실, 미해결 open questions를 정리한다.",
+      "status": "write",
+      "subsections": [],
+      "evidence_ids": [
+        "F01",
+        "F04",
+        "F24",
+        "F27",
+        "F34"
+      ],
+      "reference_ids": [
+        "ref1_limitations",
+        "ref2_limitations"
+      ],
+      "table_ids": [],
+      "depends_on": [
+        "S_eval_kernel_memcpy"
+      ],
+      "reference_adaptation": "ref1_limitations의 데이터 범위·일반화·배포 효율성 정리 방식과 ref2_limitations의 실험 범위·통제 조건·동시 변경 제약·측정 환경 차이 명시 방식을 함께 참고한다. 본 연구는 특히 머신 사양·GPU 모델 미확인(F01), CPU only 96ms와 101.237800ms의 동일 구간 여부(F04), warmup 스파이크 원인 미해결(F24), pinned memory 3배 차이의 인과 불확실(F27), 커널 횟수 감소와 시간 감소의 정량 인과 제한(F34)을 한계로 명시한다.",
+      "required_items": [
+        {
+          "id": "I_limit_env",
+          "description": "CUDA 툴킷/드라이버 설치 환경, GPU 모델, 측정 머신 사양이 명시되지 않았고 버전 표기는 nvcc 출력 텍스트 기준",
+          "evidence_ids": [
+            "F01"
+          ]
+        },
+        {
+          "id": "I_limit_cpu_time_conflict",
+          "description": "CPU only 101.237800ms와 별도 정리값 96ms의 동일 구간 여부 확인 필요",
+          "evidence_ids": [
+            "F04"
+          ]
+        },
+        {
+          "id": "I_limit_warmup_spike",
+          "description": "warmup 후 평균 시간 증가·스파이크 원인 미해결, 클록 고정/GPU 사용량 측정 등은 향후 확인 항목",
+          "evidence_ids": [
+            "F24"
+          ]
+        },
+        {
+          "id": "I_limit_pinned_causal",
+          "description": "pinned memory 미적용 버전의 복사 속도 약 3배 빠름은 작은 전송 기준이며 CUDA 내부 구현 미확인으로 인과 확정 불가",
+          "evidence_ids": [
+            "F27"
+          ]
+        },
+        {
+          "id": "I_limit_kernel_time_causal",
+          "description": "커널 횟수 감소 폭과 시간 감소 폭이 방법별로 비례하지 않으며, 커널별 비용 차이로 설명되나 정량적 인과 확인은 제한적",
+          "evidence_ids": [
+            "F34"
+          ]
+        },
+        {
+          "id": "I_limit_open_questions",
+          "description": "타일링/스트리밍/커널 퓨전의 대규모 모델 대응, float 전환 및 cuSPARSE 대체 영향, 출력 16개 선택 기준, CROWN 범위 규정 재검토, cuBlas/cuSparse 오버헤드 원인, CUDA core 점유율, forward/backward 3배 차이 소멸 원인, switch문·실행 인자 영향, cudaMemcpy 크기 축소 시 CPU 오버헤드 증가 원인, cudaGraph 캡처 방식 차이, backward_only가 forward보다 빠른 근본 원인, 방법 B/C 성능 차이 및 텐서 코어 활용도, 클록 고정 영향, 단일 스트림 cuBLAS vs 멀티스트림 C++ 비교 등 미해결 항목",
+          "evidence_ids": []
+        }
+      ]
+    },
+    {
+      "id": "S_conclusion",
+      "title": "결론",
+      "role": "conclusion",
+      "purpose": "CROWN 검증 CUDA 가속 최적화의 핵심 과정, 성능 개선 결과, 실용적 의미와 향후 방향을 간결히 종합한다.",
+      "status": "write",
+      "subsections": [],
+      "evidence_ids": [
+        "F02",
+        "F14",
+        "F19",
+        "F25",
+        "F32"
+      ],
+      "reference_ids": [
+        "ref1_conclusion",
+        "ref2_conclusion"
+      ],
+      "table_ids": [],
+      "depends_on": [
+        "S_limitations"
+      ],
+      "reference_adaptation": "ref1_conclusion의 문제·방법·핵심 결과·실용적 의미 요약 구조와 ref2_conclusion의 수준별 발견 재정리·trade-off·향후 확장 방향 제시 방식을 참고한다. 본 연구는 정확도 개선이 아니라 검증 실행 시간의 GPU 가속 최적화가 중심이므로, 초기 CPU 대비 역전 문제에서 시작해 elapsed time 감소와 단계별 타이밍 분해까지의 과정을 핵심 결과로 정리한다.",
+      "required_items": [
+        {
+          "id": "I_conc_summary",
+          "description": "CUDA 포팅 후 동일 동작 확인(F02)에서 출발해 커널 퓨전·메모리 복사 최소화·입력 버퍼 재사용 등으로 elapsed time을 크게 줄인 과정 요약",
+          "evidence_ids": [
+            "F02",
+            "F14",
+            "F19"
+          ]
+        },
+        {
+          "id": "I_conc_results",
+          "description": "최저 약 21.3753ms(F14), 입력 버퍼 재사용 예시 13.939ms(F19), Real-Time Single-Sample 평균 1145.24us·처리량 873.18 samples/sec(F25), 전체 elapsed 787s→630s 약 157초 감소(F32)",
+          "evidence_ids": [
+            "F14",
+            "F19",
+            "F25",
+            "F32"
+          ]
+        },
+        {
+          "id": "I_conc_future",
+          "description": "측정 환경 명확화, warmup 스파이크 원인 규명, pinned memory·커널 비용 차이의 정량 인과 확인, 대규모 모델 대응 및 방법 B/C 비교 등 향후 방향",
+          "evidence_ids": []
+        }
+      ]
+    }
+  ],
+  "generation_order": [
+    "S_intro",
+    "S_methods",
+    "S_eval_timeline",
+    "S_eval_timing_breakdown",
+    "S_eval_kernel_memcpy",
+    "S_limitations",
+    "S_conclusion"
+  ],
+  "unresolved": [
+    "CPU only 101.237800ms와 별도 정리값 96ms(p8:e73)의 동일 구간 여부",
+    "warmup 적용 시 평균 시간 증가·스파이크 원인",
+    "pinned memory 미적용 버전의 복사 속도 약 3배 빠름의 CUDA 내부 staging 경로 우위 여부 확정 불가",
+    "cudaMemcpy 크기 필요분 복사 시 CPU 계산 오버헤드 증가 원인",
+    "backward_only가 forward보다 빠른 근본 원인(final_affine 복사 횟수, memcpy 횟수 등) 정확한 규명",
+    "커널 횟수 감소 폭과 elapsed 시간 감소 폭이 방법별로 비례하지 않는 정량적 인과",
+    "단일 데이터 테스트의 forward/backward 3배 차이가 다중 데이터(92만 회) 테스트에서 사라지는 원인",
+    "출력 16개 선택 기준(정렬 방식)에 대한 교수 제공 답지 내용",
+    "CROWN 범위 규정(partial/total order) 재검토 필요",
+    "float 전환 및 cuSPARSE 대체의 정량적 영향",
+    "타일링/스트리밍/커널 퓨전 등 대규모 모델 대응 방안의 실제 적용 여부와 효과",
+    "방법 B(자체 3D 배칭 커널)와 방법 C(cuBLAS Batched GEMM)의 실제 구현 시 성능 차이 및 텐서 코어 활용도 정량 비교",
+    "GPU 클록 고정(2475/2800 MHz)이 각 메모리 방식의 지터 및 최대 지연에 미치는 영향",
+    "단일 스트림 cuBLAS GEMM 기반 auto_lirpa와 멀티스트림 C++ 구현 간 커널 런치 오버헤드 및 SM 포화도의 정량적 비교",
+    "cudaGraph 캡처 시 추론과 bound를 분리/통합하는 방식에 따른 커널 런치 오버헤드 차이",
+    "switch문 및 실행 인자 추가가 성능에 실제로 영향을 주었는지",
+    "cudaMemcpyAsync 호출 시간에서 pinned 적용/미적용 버전이 측정마다 빠르거나 느리게 나온 원인",
+    "CUDA core 점유율 50% 이상 달성 가능성",
+    "cuBlas/cuSparse의 소규모 신경망에서의 오버헤드 원인 및 Nsight Compute 기반 함수 선택"
+  ],
+  "evidence_binding": [
+    {
+      "section_id": "S_intro",
+      "added_from_explicit_requirements": [
+        "F09",
+        "F13",
+        "F14",
+        "F16",
+        "F17",
+        "F19",
+        "F21",
+        "F24",
+        "F25",
+        "F31",
+        "F32"
+      ]
+    },
+    {
+      "section_id": "S_methods",
+      "added_from_explicit_requirements": [
+        "F14",
+        "F16"
+      ]
+    }
+  ],
+  "label_normalizations": [],
+  "omitted_empty_related_work": []
+}

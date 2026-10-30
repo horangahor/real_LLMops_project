@@ -1,5 +1,25 @@
 # 골든 샘플 구조 추출 평가 v3
 
+## 현재 사용 경로: 직접 Parse API + Python
+
+참고 논문의 구조 분석은 Studio 대신 `paper_structure.py` → `document_parse.py` → `paper_outline.py` 경로로 전환했다.
+`--outline-only`는 Parse API와 Python만 사용한다. 전체 프로파일은 코드가 정한 목차에 Solar의 역할·재사용 가이드를 연결한다.
+목차 숫자·제목·페이지·부모를 Solar가 다시 생성하거나 수정하지 않는다. JSON Schema·원문 ID·형식 검증을 적용한다.
+
+기존 원문 기준표를 변경하지 않고 직접 API 원본을 평가한 결과는 NPU 14/14, RGBD 23/23으로 제목+번호 F1과 부모·시작 페이지 일치율이 100%다.
+기존 RGBD Studio의 동일 Parse 원본을 새 코드로 재생해도 F1 100%다. Studio 구조 분석의 F1 86.8%와 구분해 기록했다.
+NPU에서 처음 발생한 줄바꿈·paragraph 절 누락·반복 머리말 오류를 수정했으므로 두 편은 개발 샘플이며 별도 보류 평가셋이 아니다.
+지원 범위는 참고문헌 이전의 아라비아 숫자 본문 목차다. 무번호·로마 숫자 절과 다른 문서의 일반화는 추가 평가가 필요하다.
+
+```powershell
+python -X utf8 -B paper_structure.py --outline-only --run-dir draft_history/parse-api-v1 --output evaluation/golden/predictions/parse-api-v1-outlines.json
+python -X utf8 -B evaluation/golden/evaluate_parse_pipeline.py --profiles evaluation/golden/predictions/parse-api-v1-outlines.json
+```
+
+원본 응답·설정·캐시 해시·선택/제외 후보는 ignored `draft_history/parse-api-v1/`에 보관한다.
+결과는 `results/parse-api-v1-validation.md`, `results/npu-parse-api-v1.json`, `results/rgbd-parse-api-v1.json`이다.
+이하 Studio·legacy 평가는 과거 비교 기준이다. 서비스의 새 프로파일과 당시 입력을 혼동하지 않는다.
+
 ## 목적과 평가 대상
 
 골든 PDF에서 관찰한 목차가 저장된 구조 분석에 얼마나 정확하게 반영되었는지 측정한다.
@@ -98,3 +118,19 @@ Git에는 목차 관련 필드만 남긴 `*-projection.json`을 보관한다. �
 다만 JSON 객체 뒤에 출처 표시 `【†1】`~`【†37】`이 붙어 응답 전체의 엄격한 JSON 파싱은 `Extra data`로 실패한다. `decode_document(..., diagnostic_citations=True)`는 진단용으로 명시한 경우에만 엄격한 JSONDecoder로 첫 객체를 읽고, 남은 부분이 출처 표시 패턴만으로 구성되는지 확인한다. 일반 설명·두 번째 객체·기타 문자열은 버리지 않으며, 객체 내부 오류도 이 기능으로 고치지 않는다. 원본 전체의 strict_valid는 false로 유지하고 객체 자체의 json_object_strict_valid=true를 별도 기록한다.
 
 애플리케이션 입력이나 Studio 지침에는 이 처리를 적용하지 않았고 평가 도구에만 옵션을 추가했다. 상세 비교는 `results/npu-studio-config4-validation.md`에 있다.
+
+## 두 번째 논문: RGBD Config 4
+
+2026-10-30 `research_revies.pdf`(16쪽)를 같은 Agent의 Config 4로 실행했다. 실행 전 작성한 `rgbd-reference.json`의 번호 목차 23개와 제외 제목 목록은 변경하지 않았다. 원본 PDF만 전송했고 기준표는 입력하지 않았다. 네 단계가 약 421초의 폴링 후 완료됐다.
+
+| 대상 | 제목+번호 정밀도 | 재현율 | F1 | 불필요한 항목 |
+|---|---:|---:|---:|---:|
+| 기존 legacy 저장 분석 | 41.7% | 21.7% | 28.6% | 7 |
+| Config 4 구조 분석 | 76.7% | 100% | 86.8% | 7 |
+| Config 4 최종 검토의 독립 목차 배열 (진단) | 79.3% | 100% | 88.5% | 6 |
+
+Config 4의 실제 본문 목차는 구조·최종 검토 모두 23/23이고 번호·부모·level·시작 페이지가 일치한다. Parse 모델은 실제 절 2개를 paragraph로 분류했지만 구조 분석이 복원했다. 반대로 문장·수식·표 제목·문장 조각 등을 heading1로 분류한 결과가 후속 목차에 남아 정밀도를 낮췄다. 고정 평가기는 제외 제목과 문자열이 다른 데이터 제공 안내 문장도 불필요한 항목에 포함한다. 결과를 보고 별칭을 추가하지 않았다.
+
+최종 검토에는 JSON 객체 뒤의 인용 표시뿐 아니라 document_title 문자열이 닫힌 뒤에도 인용 토큰이 삽입됐다. 2행 166열에서 문법 오류가 나므로 NPU에서 사용한 첫 객체/접미부 분리 옵션으로 처리할 수 없다. 원본 sections 배열 39개와 evidence 배열 51개만 독립적으로 strict JSONDecoder.raw_decode로 읽어 진단했다. 응답을 보정하지 않았고 전체 JSON의 strict_valid 및 json_object_strict_valid는 false다. 최종 검토 점수는 해당 배열에 한정한다.
+
+세부 비교·오탐 목록·원인·개선 후보는 `results/rgbd-studio-config4-validation.md`에 있다. 목차 투영과 결과 JSON은 `predictions/rgbd-studio-config4-*-projection.json`, `results/rgbd-studio-config4-*.json`이다. 전체 API 응답과 오프라인 평가 스크립트는 ignored `draft_history/rgbd-config4/`에 보관했다. 앱의 기존 분석 프로파일과 Studio 지침은 변경하지 않았다.

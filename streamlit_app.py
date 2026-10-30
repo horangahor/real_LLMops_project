@@ -9,12 +9,15 @@ AI 학술 논문 초안 작성기 (Paper Drafting AI)
 import os
 import json
 import tempfile
+import hashlib
+import html
 from pathlib import Path
 
 import streamlit as st
 from paper_draft_agent import PaperDraftOrchestrator, load_paper_structure
 from paper_quality import extraction_fingerprint
 from structure_profile_view import render_reference_profiles
+from planned_paper import fingerprint as plan_fingerprint
 
 ##################################################
 # Page Configuration
@@ -114,8 +117,15 @@ st.markdown("""
 BASE_DIR = Path(__file__).resolve().parent
 RESULTS_JSON = BASE_DIR / "Results & Discussion.json"
 DRAFT_MD = BASE_DIR / "paper_draft_full.md"
-LEGACY_DRAFT_MD = BASE_DIR / "paper_draft_section4_5.md"
+LEGACY_DRAFT_MD = BASE_DIR / "archive/legacy-drafts/paper_draft_section4_5.md"
 REVIEW_JSON = BASE_DIR / "paper_draft_review.json"
+INPUT_DIR = BASE_DIR / "input"
+local_inputs = sorted(
+    (path for path in INPUT_DIR.glob("*")
+     if path.is_file() and path.suffix.lower() == ".pdf"
+     and path.resolve().is_relative_to(INPUT_DIR.resolve())),
+    key=lambda path: path.name.casefold(),
+)
 
 structure_reference, structure_error = None, None
 try:
@@ -132,6 +142,18 @@ if "full_paper_draft" not in st.session_state:
     else:
         st.session_state["full_paper_draft"] = ""
     st.session_state["is_legacy_draft"] = not DRAFT_MD.exists() and LEGACY_DRAFT_MD.exists()
+    from planned_paper import load_latest
+    try:
+        latest = load_latest(BASE_DIR)
+        if latest:
+            st.session_state["full_paper_draft"] = latest["draft_markdown"]
+            st.session_state["paper_plan"] = latest["plan"]
+            st.session_state["planned_review"] = latest["review"]
+            st.session_state["draft_mode"] = "adaptive"
+            st.session_state["draft_plan_fingerprint"] = plan_fingerprint(latest["plan"])
+            st.session_state["is_legacy_draft"] = False
+    except (OSError, ValueError, KeyError) as error:
+        st.warning(f"저장된 연구별 초안을 불러오지 못했습니다: {error}")
 
 ##################################################
 # Sidebar: 간결한 입력 및 제어 패널
@@ -140,21 +162,38 @@ if "full_paper_draft" not in st.session_state:
 with st.sidebar:
     st.markdown("### 📄 논문 초안 작성 설정")
     st.caption("비정형 연구 실측 데이터와 레퍼런스 스타일을 결합하여 학술 논문 초안을 작성합니다.")
-    st.caption("작성 범위: 1장 서론 · 3장 배경 및 문제 정의 · 4장 방법론 · 5장 결과 · 6장 결론. 2장 관련 연구는 비워둡니다.")
-    st.caption("서론·결론은 소절 없이 작성하고, 3·4·5장은 각각 세 소절로 구성합니다.")
+    writing_mode = st.radio("작성 방식", ["연구 자료에 맞춰 계획", "기존 CUDA 고정 구성 (비교용)"])
+    adaptive = writing_mode == "연구 자료에 맞춰 계획"
+    st.caption("장·절과 작성 순서는 연구 근거와 참고 가이드로 계획합니다. 계획만 먼저 확인할 수도 있습니다." if adaptive
+               else "기존 1·3·4·5·6장 작성 경로입니다. 2장 관련 연구는 비워둡니다.")
     st.divider()
 
     st.markdown("#### 1. 연구 원천 데이터")
     data_source_mode = st.radio(
         "데이터 선택",
-        ["내장된 CUDA 연구 데이터 사용", "CUDA 연구 PDF 업로드·재추출"],
+        (["input 폴더의 연구 자료"] if local_inputs else []) +
+        ["연구 PDF 업로드", "CUDA 원본 PDF 자동 분석"] if adaptive
+        else ["내장된 CUDA 연구 데이터 사용", "CUDA 연구 PDF 업로드·재추출"],
         label_visibility="collapsed"
     )
 
     uploaded_pdf = None
-    if data_source_mode == "CUDA 연구 PDF 업로드·재추출":
+    local_input = None
+    if data_source_mode == "input 폴더의 연구 자료":
+        local_input = st.selectbox("연구 자료 파일", local_inputs, format_func=lambda path: path.name)
+        st.caption("원본 PDF에서 연구 근거를 자동 추출합니다. 인용문·페이지를 원문에 연결하고 파일별로 계획과 초안을 저장합니다.")
+    elif data_source_mode in ("연구 PDF 업로드", "CUDA 연구 PDF 업로드·재추출"):
         uploaded_pdf = st.file_uploader("연구 PDF 파일", type=["pdf"])
-        st.caption("현재 대상은 CUDA 연구 PDF입니다. 업로드 시 Studio Agent로 데이터를 다시 추출합니다.")
+        st.caption("Document Parse API로 읽고 원문 요소에 연결된 연구 근거를 추출합니다. 기계 추출 내용은 저자 검수가 필요합니다." if adaptive
+                   else "현재 대상은 CUDA 연구 PDF입니다. 업로드 시 Studio Agent로 데이터를 다시 추출합니다.")
+    elif data_source_mode == "CUDA 원본 PDF 자동 분석":
+        from paper_plan import project_profile
+        cuda_source = BASE_DIR / project_profile("cuda")["research_pdf"]
+        if cuda_source.is_file():
+            st.success("CUDA 원본 PDF 준비 완료")
+            st.caption("원본에서 근거를 자동 추출합니다. 이전 수작업 근거는 사용하지 않습니다.")
+        else:
+            st.warning("CUDA 연구 원본을 input 폴더에 넣어주세요.")
     else:
         if RESULTS_JSON.exists():
             try:
@@ -182,6 +221,9 @@ with st.sidebar:
     st.divider()
     generate_btn = st.button("🚀 논문 초안 작성 시작", type="primary", use_container_width=True,
                              disabled=bool(structure_error))
+    plan_btn = st.button("작성 계획만 만들기", use_container_width=True,
+                         disabled=not adaptive or bool(structure_error))
+    extract_btn = st.button("연구 근거만 추출하기", use_container_width=True, disabled=not adaptive)
 
 if structure_reference:
     with st.expander("골든 샘플 구조·작성 가이드", expanded=False):
@@ -191,10 +233,25 @@ if structure_reference:
 # Generation Logic
 ##################################################
 
-if generate_btn:
+if generate_btn or plan_btn or extract_btn:
     temp_pdf_path = None
     try:
-        if data_source_mode == "CUDA 연구 PDF 업로드·재추출":
+        if adaptive and data_source_mode == "input 폴더의 연구 자료":
+            if local_input is None or not local_input.is_file():
+                st.error("input 폴더에서 연구 자료를 찾을 수 없습니다.")
+                st.stop()
+            temp_pdf_path = str(local_input)
+        elif adaptive and data_source_mode == "연구 PDF 업로드":
+            if uploaded_pdf is None:
+                st.error("연구 자료를 업로드해주세요.")
+                st.stop()
+            contents = uploaded_pdf.getvalue()
+            upload_path = BASE_DIR / "draft_history/uploads" / (hashlib.sha256(contents).hexdigest() + ".pdf")
+            upload_path.parent.mkdir(parents=True, exist_ok=True)
+            if not upload_path.exists():
+                upload_path.write_bytes(contents)
+            temp_pdf_path = str(upload_path)
+        elif data_source_mode == "CUDA 연구 PDF 업로드·재추출":
             if not uploaded_pdf:
                 st.error("업로드할 연구 PDF 파일을 선택해주세요.")
                 st.stop()
@@ -204,24 +261,38 @@ if generate_btn:
 
         orchestrator = PaperDraftOrchestrator()
 
-        progress_bar = st.progress(0, text="논문 초안 작성 준비 중...")
+        progress_bar = st.progress(0, text="연구 근거 수집 준비 중..." if extract_btn else "논문 초안 작성 준비 중...")
         def progress_cb(pct, msg):
             progress_bar.progress(pct, text=msg)
 
-        with st.spinner("장별 초안을 작성하고 전체 논문의 흐름을 종합 편집 중입니다..."):
+        with st.spinner("연구 근거를 수집하고 원문별 누락을 검사 중입니다..." if extract_btn else "장별 초안을 작성하고 전체 논문의 흐름을 종합 편집 중입니다..."):
             pipeline_result = orchestrator.run_pipeline(
                 research_pdf_path=temp_pdf_path,
-                progress_callback=progress_cb
+                progress_callback=progress_cb,
+                planning_mode="adaptive" if adaptive else "legacy_cuda",
+                project_id="cuda" if data_source_mode in ("CUDA 원본 PDF 자동 분석", "내장된 CUDA 연구 데이터 사용") else "generic",
+                plan_only=plan_btn,
+                extract_only=extract_btn,
             )
-            st.session_state["full_paper_draft"] = pipeline_result["draft_markdown"]
-            st.session_state["is_legacy_draft"] = False
+            if pipeline_result.get("evidence_extraction"):
+                st.session_state["research_evidence_extraction"] = pipeline_result["evidence_extraction"]
+                st.session_state["evidence_preview_only"] = extract_btn
+            if adaptive and "plan" in pipeline_result:
+                st.session_state["paper_plan"] = pipeline_result["plan"]
+            if pipeline_result["draft_markdown"]:
+                st.session_state["full_paper_draft"] = pipeline_result["draft_markdown"]
+                st.session_state["is_legacy_draft"] = False
+                st.session_state["draft_mode"] = "adaptive" if adaptive else "legacy_cuda"
+                st.session_state["planned_review"] = pipeline_result.get("review") if adaptive else None
+                st.session_state["draft_plan_fingerprint"] = plan_fingerprint(pipeline_result["plan"]) if adaptive else None
             
-            st.toast("✅ 논문 초안 작성이 완료되었습니다!")
+            st.toast("✅ 연구 근거를 자동 추출했습니다." if extract_btn else
+                     "✅ 작성 계획을 저장했습니다." if plan_btn else "✅ 논문 초안 작성이 완료되었습니다!")
 
     except Exception as e:
         st.error(f"초안 작성 중 오류가 발생했습니다: {e}")
     finally:
-        if temp_pdf_path and os.path.exists(temp_pdf_path):
+        if not adaptive and temp_pdf_path and os.path.exists(temp_pdf_path):
             os.remove(temp_pdf_path)
 
 ##################################################
@@ -230,14 +301,49 @@ if generate_btn:
 
 draft_content = st.session_state.get("full_paper_draft", "").strip()
 
+if st.session_state.get("research_evidence_extraction"):
+    from research_evidence_view import render_research_evidence
+    render_research_evidence(st.session_state["research_evidence_extraction"])
+    if draft_content and st.session_state.get("evidence_preview_only"):
+        st.info("연구 근거 추출 결과만 갱신했습니다. 아래에는 이전 초안이 표시되며, 새 근거를 반영하려면 초안을 다시 생성해주세요.")
+
+if st.session_state.get("paper_plan"):
+    with st.expander("이번 연구의 작성 계획", expanded=True):
+        plan = st.session_state["paper_plan"]
+        st.markdown(f"#### {plan['title']}")
+        st.write(plan["rationale"])
+        for number, section in enumerate(plan["sections"], 1):
+            st.markdown(f"**{number}. {section['title']}**")
+            st.write(section["purpose"])
+            if section["status"] == "placeholder":
+                st.caption("본문을 비워두는 장입니다.")
+            if section["subsections"]:
+                st.caption("소절: " + " · ".join(section["subsections"]))
+            if section["reference_adaptation"]:
+                st.caption("참고 구성 적용: " + section["reference_adaptation"])
+            if section["required_items"]:
+                st.markdown("\n".join("- " + item["description"] for item in section["required_items"]))
+        if plan["unresolved"]:
+            st.warning("확인이 필요한 내용: " + " / ".join(plan["unresolved"]))
+        st.download_button("작성 계획 JSON 저장", json.dumps(st.session_state["paper_plan"], ensure_ascii=False, indent=2),
+                           file_name="paper_plan.json", mime="application/json")
+        if draft_content and st.session_state.get("draft_plan_fingerprint") != plan_fingerprint(plan):
+            st.info("새 작성 계획의 미리보기입니다. 아래에는 이전 초안이 표시됩니다.")
+
 if not draft_content:
     st.info("👈 좌측 사이드바에서 **[🚀 논문 초안 작성 시작]** 버튼을 클릭하면 완성된 학술 논문 초안이 이곳에 표시됩니다.")
 else:
+    if adaptive and st.session_state.get("draft_mode") != "adaptive":
+        st.caption("현재 표시된 것은 기존 CUDA 초안입니다. 새 연구 자료로 계획과 초안을 생성할 수 있습니다.")
     if st.session_state.get("is_legacy_draft"):
         st.info("현재 표시된 내용은 기존 4·5장 초안입니다. [논문 초안 작성 시작]을 누르면 1·3·4·5·6장과 종합 초안을 새로 생성합니다.")
     else:
-        st.caption("2장 관련 연구는 저자가 작성할 수 있도록 본문을 비워두었습니다. [확인 필요] 표시는 원자료 확인이 필요한 내용입니다.")
-        if REVIEW_JSON.exists():
+        st.caption("[확인 필요] 표시는 원자료 확인이 필요한 내용입니다.")
+        if st.session_state.get("draft_mode") == "adaptive":
+            st.caption("연구별 작성 계획을 적용한 초안입니다. 자동 검토는 독립적인 사실 검증이 아니므로 저자의 확인이 필요합니다.")
+            with st.expander("계획·근거 검토 결과"):
+                st.json(st.session_state.get("planned_review", {}))
+        elif REVIEW_JSON.exists():
             try:
                 saved_review = json.loads(REVIEW_JSON.read_text(encoding="utf-8"))
                 review = saved_review["review"]
@@ -281,9 +387,9 @@ else:
         # 정통 논문 용지 레이아웃으로 렌더링
         with st.container():
             st.markdown(
-                """
+                f"""
                 <div class="paper-canvas">
-                    <div class="paper-title">CROWN 신경망 검증을 위한 GPU 가속 및 메모리 계층 최적화 기법 연구</div>
+                    <div class="paper-title">{html.escape(draft_content.splitlines()[0].lstrip('# ').strip())}</div>
                     <div class="paper-meta">연구 자료를 기반으로 작성한 학술 논문 초안</div>
                     <div class="paper-divider"></div>
                 </div>

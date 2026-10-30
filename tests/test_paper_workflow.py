@@ -85,7 +85,7 @@ class PaperWorkflowTests(unittest.TestCase):
 
         progress = []
         with patch.object(paper, "call_solar", side_effect=fake_solar):
-            result = self.orchestrator.run_pipeline(
+            result = self.orchestrator.run_pipeline(planning_mode="legacy_cuda",
                 results_json_path=self.input_json, structure_json_path=self.style_json,
                 progress_callback=lambda pct, message: progress.append(pct),
             )
@@ -108,6 +108,7 @@ class PaperWorkflowTests(unittest.TestCase):
         pdf = self.base_dir / "research.pdf"
         pdf.write_bytes(b"test PDF placeholder")
         (self.base_dir / "Results & Discussion.json").write_text("{}", encoding="utf-8")
+        (self.base_dir / "research_evidence.json").write_text("MANUAL PROFILE MUST NOT BE READ", encoding="utf-8")
         extractor = Mock(return_value=RESEARCH)
         module = types.ModuleType("method_result")
         module.run_cuda_optimization_agent = extractor
@@ -116,7 +117,7 @@ class PaperWorkflowTests(unittest.TestCase):
         with patch.dict(sys.modules, {"method_result": module}), \
                 patch.object(paper, "write_paper", return_value=mocked_result), \
                 patch.object(paper, "load_extracted_results") as load_cache:
-            self.orchestrator.run_pipeline(research_pdf_path=pdf, structure_json_path=self.style_json)
+            self.orchestrator.run_pipeline(planning_mode="legacy_cuda", research_pdf_path=pdf, structure_json_path=self.style_json)
         extractor.assert_called_once_with(pdf)
         load_cache.assert_not_called()
 
@@ -127,7 +128,7 @@ class PaperWorkflowTests(unittest.TestCase):
                 patch.object(paper.PaperReviewer, "review", return_value=review_report()), \
                 patch.object(paper, "call_solar", return_value='{"sections": {"1": "incomplete"}}'):
             with self.assertRaisesRegex(ValueError, "모두 포함"):
-                self.orchestrator.run_pipeline(results_json_path=self.input_json,
+                self.orchestrator.run_pipeline(planning_mode="legacy_cuda", results_json_path=self.input_json,
                                                structure_json_path=self.style_json)
         for name in ("paper_draft_full.md", "paper_draft_full.txt"):
             self.assertEqual((self.base_dir / name).read_text(encoding="utf-8"), "previous user draft")
@@ -142,13 +143,13 @@ class PaperWorkflowTests(unittest.TestCase):
 
     def test_missing_explicit_pdf_or_json_does_not_fall_back_to_cached_data(self):
         with self.assertRaises(FileNotFoundError):
-            self.orchestrator.run_pipeline(research_pdf_path=self.base_dir / "missing.pdf")
+            self.orchestrator.run_pipeline(planning_mode="legacy_cuda", research_pdf_path=self.base_dir / "missing.pdf")
         with self.assertRaises(FileNotFoundError):
-            self.orchestrator.run_pipeline(results_json_path=self.base_dir / "missing.json")
+            self.orchestrator.run_pipeline(planning_mode="legacy_cuda", results_json_path=self.base_dir / "missing.json")
 
     def test_conflicting_input_sources_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "하나만"):
-            self.orchestrator.run_pipeline(research_pdf_path="a.pdf", results_json_path=self.input_json)
+            self.orchestrator.run_pipeline(planning_mode="legacy_cuda", research_pdf_path="a.pdf", results_json_path=self.input_json)
 
     def test_truncated_response_is_not_accepted_as_a_finished_chapter(self):
         response = Mock(status_code=200)
@@ -194,7 +195,7 @@ class PaperWorkflowTests(unittest.TestCase):
         with patch.object(paper.SectionWriter, "write", side_effect=lambda section, *_: sections[section]), \
                 patch.object(paper.PaperSynthesizer, "synthesize", return_value=sections), \
                 patch.object(paper, "call_solar", return_value=json.dumps(review_report())):
-            result = self.orchestrator.run_pipeline(results_json_path=self.input_json,
+            result = self.orchestrator.run_pipeline(planning_mode="legacy_cuda", results_json_path=self.input_json,
                                                     structure_json_path=self.style_json)
         self.assertTrue(result["review"]["approved"])
         issue, = result["review"]["issues"]
@@ -264,6 +265,18 @@ class PaperWorkflowTests(unittest.TestCase):
         pdf.write_bytes(b"source revision 2")
         with self.assertRaisesRegex(ValueError, "변경"):
             prepare_research_evidence(RESEARCH, service_dir)
+        input_dir = service_dir / "input"
+        input_dir.mkdir()
+        local_pdf = input_dir / pdf.name
+        local_pdf.write_bytes(b"source revision 1")
+        self.assertEqual(prepare_research_evidence(RESEARCH, service_dir)["evidence_status"], "source_reviewed")
+        # A new local revision must not shadow an unchanged legacy source.
+        local_pdf.write_bytes(b"source revision 2")
+        pdf.write_bytes(b"source revision 1")
+        self.assertEqual(prepare_research_evidence(RESEARCH, service_dir)["evidence_status"], "source_reviewed")
+        pdf.unlink()
+        with self.assertRaisesRegex(ValueError, "변경"):
+            prepare_research_evidence(RESEARCH, service_dir)
 
     def test_reviewer_cannot_approve_known_regression(self):
         sections = {section: "body" for section in paper.GENERATION_ORDER}
@@ -298,7 +311,7 @@ class PaperWorkflowTests(unittest.TestCase):
                 patch.object(paper.PaperReviewer, "review", return_value=report), \
                 patch.object(paper.PaperSynthesizer, "synthesize", return_value=sections) as edit:
             with self.assertRaises(paper.DraftQualityError):
-                self.orchestrator.run_pipeline(results_json_path=self.input_json,
+                self.orchestrator.run_pipeline(planning_mode="legacy_cuda", results_json_path=self.input_json,
                                                structure_json_path=self.style_json)
         self.assertEqual(edit.call_count, 2)
         self.assertEqual(output.read_text(encoding="utf-8"), "last saved draft")

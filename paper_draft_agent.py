@@ -1,8 +1,7 @@
-"""연구 데이터와 참고 스타일로 1·3·4·5·6장을 작성하고 전체 초안을 종합한다."""
+"""원본 연구 PDF에서 자동 근거·작성 계획을 만들고, 기존 고정 장 worker를 비교용으로 보존한다."""
 
 import json
 import re
-import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
@@ -15,7 +14,7 @@ from paper_prompts import (
     PAPER_OUTLINE_RULES, SECTION_SUBSECTIONS, section_outline_instruction, CONCLUSION_LIMITS,
     PAPER_EDITORIAL_RULES,
 )
-from paper_quality import known_quality_issues, prepare_research_evidence
+from paper_quality import known_quality_issues
 from paper_quality import extraction_fingerprint
 from structure_profiles import StructureGuide, load_profiles, writing_guide
 from paper_content import (
@@ -394,7 +393,30 @@ class PaperDraftOrchestrator:
     def run_pipeline(self, research_pdf_path: Optional[str | Path] = None,
                      results_json_path: Optional[str | Path] = None,
                      structure_json_path: Optional[str | Path] = None,
-                     progress_callback: Optional[ProgressCallback] = None) -> Dict[str, Any]:
+                     progress_callback: Optional[ProgressCallback] = None,
+                     planning_mode: str = "adaptive", project_id: str = "generic",
+                     plan_only: bool = False, output_dir: Optional[str | Path] = None,
+                     extract_only: bool = False) -> Dict[str, Any]:
+        # The default path extracts from the supplied source; fixed chapters require explicit comparison mode.
+        if planning_mode == "adaptive":
+            from planned_paper import PlannedPaper
+            from paper_plan import project_profile
+            engine = PlannedPaper(self.base_dir, api_key=self.api_key)
+            if extract_only:
+                engine.evidence_progress = progress_callback
+                extraction = engine.load_evidence(project_profile(project_id), results_json_path, research_pdf_path)
+                if progress_callback:
+                    progress_callback(100, "연구 근거 추출·수집 대장 검사 종료")
+                return {"evidence_extraction": extraction, "draft_markdown": "", "run_dir": extraction["run_dir"]}
+            research = engine.load_research(project_profile(project_id), results_json_path, research_pdf_path)
+            reference = load_paper_structure(structure_json_path)
+            result = engine.run(research, reference, project_id, output_dir, plan_only, progress_callback)
+            result["evidence_extraction"] = getattr(engine, "last_extraction", None)
+            return result
+        if planning_mode != "legacy_cuda":
+            raise ValueError("알 수 없는 작성 방식입니다.")
+        if plan_only or extract_only:
+            raise ValueError("추출·계획 미리보기는 adaptive 방식에서 사용할 수 있습니다.")
         if research_pdf_path is not None and results_json_path is not None:
             raise ValueError("PDF와 추출 JSON 중 하나만 선택해주세요.")
         if progress_callback:
@@ -410,7 +432,9 @@ class PaperDraftOrchestrator:
         if progress_callback:
             progress_callback(15, "참고 논문의 구조·문체 분석 결과 로드 중...")
         structure_guide = load_paper_structure(structure_json_path)
-        evidence = prepare_research_evidence(extracted_data, self.base_dir)
+        # Historical fixed-chapter comparisons use their extraction as supplied.
+        # Never silently replace it with a manually curated CUDA evidence profile.
+        evidence = extracted_data
         try:
             result = write_paper(evidence, structure_guide, self.api_key, progress_callback,
                                  checkpoint_path=self.base_dir / ".paper_draft_working.json")
@@ -459,13 +483,11 @@ class PaperDraftOrchestrator:
 def run_paper_drafting_demo(input_json_path=None, structure_path=None) -> str:
     return PaperDraftOrchestrator().run_pipeline(
         results_json_path=input_json_path, structure_json_path=structure_path,
+        planning_mode="legacy_cuda",
         progress_callback=lambda _pct, message: print(message),
     )["draft_markdown"]
 
 
 if __name__ == "__main__":
-    draft = run_paper_drafting_demo(
-        sys.argv[1] if len(sys.argv) > 1 else None,
-        sys.argv[2] if len(sys.argv) > 2 else None,
-    )
-    print(draft[:1200])
+    from planned_paper import main
+    main()
