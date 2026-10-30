@@ -4,6 +4,10 @@ CUDA 연구 자료와 참고 논문의 구조·문체 분석을 바탕으로 **1
 종합 편집을 거쳐 전체 논문 초안을 저장하는 Streamlit 서비스다.
 **2장 관련 연구는 제목만 표시하고 본문은 비워둔다.**
 
+다른 컴퓨터에서 설정하고 이어갈 작업은 [HANDOFF.md](HANDOFF.md)를 먼저 확인한다.
+검증한 의존성은 `requirements.txt`, 비밀 값이 없는 설정 예시는 `.env.example`에 있다.
+아키텍처와 실제 실행 흐름의 PNG/SVG는 `docs/diagrams/`에 있다.
+
 ## 논문 구성
 
 서론과 결론은 소절 없이 연결된 문단으로 작성한다. 본문은 장마다 세 소절만 사용한다.
@@ -86,8 +90,11 @@ CUDA 연구 PDF를 업로드하면 기존 연구 JSON의 존재 여부와 관계
 
 ## 골든 샘플 분석
 
-골든 샘플 분석은 Studio Agent가 아니라 로컬 `paper_structure.py`에서 Document Parse와
-Solar를 직접 호출한다. Studio에서 프롬프트나 Agent를 수정할 필요는 없다.
+일반 골든 샘플 분석 경로는 로컬 `paper_structure.py`에서 Document Parse와 Solar를 직접 호출한다.
+별도로 사용자가 수정한 Studio Agent의 Config 2·3·4를 실제 검증했으며,
+그 결과와 정량 지표는 `evaluation/golden/`에 있다. Studio 수정이 일반 앱에 자동 연결되지는 않는다.
+Studio Agent를 직접 검증하려면 `evaluation/golden/run_studio_validation.py`를 사용한다.
+현재 Config 4의 NPU 샘플 평가까지 완료됐고, 두 번째 RGBD PDF의 원문 기준표 23개는 준비했으나 실행은 아직 전이다.
 새 프로파일은 `schema_version: 2`로 저장하며, 다음 항목을 구분한다.
 
 - `observed_outline`: 실제 관찰된 목차와 하위 절. 확인되지 않은 페이지는 `null`.
@@ -118,6 +125,7 @@ Streamlit의 **골든 샘플 구조·작성 가이드**에서 논문별 탭으�
 
 `research_evidence.json`은 현재 CUDA 연구 PDF의 본문과 일부 로그·표를 대조한
 초안 작성용 근거 12개를 담는다. 각 근거에는 페이지, 관측 내용, 해석 한계가 있다.
+이 자료는 Codex가 원문 대조로 정리했으며 저자·전문가의 독립 검증을 받은 정답이라는 뜻은 아니다.
 추출 JSON과 원본 PDF의 SHA-256이 모두 일치할 때만 이 프로파일을 사용한다.
 결론에는 핵심 주장, 문단별 역할, 선택할 대표 근거를 `section_briefs`로 지정한다.
 결론이 모든 중간 실험 수치를 되풀이하지 않도록 대표 성과만 선택하게 하고,
