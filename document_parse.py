@@ -15,8 +15,21 @@ PARSE_URL = "https://api.upstage.ai/v1/document-digitization"
 DEFAULT_MODEL = "document-parse-260930"
 
 
-def write_json(path, value):
+def filesystem_path(path):
+    """Use Win32 extended paths without requiring the machine-wide long-path setting."""
     path = Path(path)
+    if os.name != "nt":
+        return path
+    absolute = os.path.abspath(path)
+    if absolute.startswith("\\\\?\\"):
+        return Path(absolute)
+    if absolute.startswith("\\\\"):
+        return Path("\\\\?\\UNC\\" + absolute[2:])
+    return Path("\\\\?\\" + absolute)
+
+
+def write_json(path, value):
+    path = filesystem_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
                                      suffix=".tmp", delete=False) as stream:

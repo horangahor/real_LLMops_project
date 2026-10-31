@@ -1,6 +1,67 @@
 # 다른 컴퓨터에서 이어가기 · 2026-10-31
 
-## 진행 중: v3의 원문 누락 보완과 파일 정리
+## 최신 인수인계: v3 복구·속도 개선과 NPU 작성 기준표
+
+아래 과거 기록보다 이 절을 우선한다. 사용자는 **NPU 논문 한 편을 골든 샘플로 삼아 초안을 작성**하기로 했다. 다음 작업의 중심은 연구일지 전체를 반복 감사하는 것이 아니라, 골든 기준과 코드/에이전트 검증을 연결하고 장·절 단위로 문맥을 줄이는 것이다.
+
+### 이번에 완료한 작업
+
+- v3 누락 감사의 잘못된 인덱스를 별도 요청으로 한 번 보정한다. 계속 실패하면 원래 응답을 보존하고 해당 페이지 후보를 격리·보류한다.
+- 빈/불완전 JSON 응답은 완료 캐시로 인정하지 않는다. 수치 보정 묶음은 분할하고, 단일 후보도 실패하면 수치 검증 보류로 보존한다. 최종 검사·누락 복구의 실패가 전체 결과 저장을 막지 않게 했다. 복구 후보의 잘못된 출처 ID도 원형과 오류를 격리한다.
+- Windows 긴 경로를 파일 저장·캐시 읽기에서 처리한다. PC의 LongPathsEnabled 레지스트리는 변경하지 않았다.
+- 자동 누락 복구는 `RESEARCH_MAX_RECOVERY_ROUNDS=1`이 기본이다. 0~5를 허용하며 5는 이전 정밀 감사 수준이다. 1회 제한으로 미해결 항목이 늘 수 있으며 이를 통과 처리하지 않는다.
+- 재검사는 미해결 원문 요소만 요청하고, 완료된 최종 페이지 결과는 입력·지침·설정 해시가 일치할 때 재사용한다. 옛 결과는 완료 대장 파일만 믿지 않고 정확한 요청 캐시를 네트워크 없이 재생해 연결한다.
+- 초안 생성 경로에도 근거 추출 진행 콜백을 연결했다. 앱의 오류 문구를 작업 종류에 맞게 나누고 **저장된 연구 근거 불러오기**를 추가했다.
+- 골든 JSON의 required_content를 코드로 식별하고 계획 required_items의 `guideline_ids`에 연결한다. 작성/검토 입력과 review.json까지 연결을 유지하며 잘못된 가이드 연결은 코드로 차단한다. 추가 모델 호출 단계는 없다.
+- `docs/NPU_WRITING_RUBRIC.md`와 `evaluation/writing/npu-rubric.v1.json`: NPU 원문 14개 장·절에 대응하는 기준 25개 + 공통 검증 8개 = 33개. 출처·조건부 적용·통과 조건·검사 담당·최소 문맥·미달 처리를 기록했다.
+- 전체 자동 코드 테스트 **201개 통과**. 논문 품질 평가 201개가 아니며 이번 실제 초안의 품질을 입증하지 않는다.
+
+### 실제 v3 결과와 남은 품질 문제
+
+- 최종 실행: `draft_history/parse-api-v1/GPU 프로그래밍의 핵심_ CUDA로 배우는 병렬 처리 기술-22e2a29d284f-bb82aeee/research-evidence-v3/df0f048d3ef4282d/`.
+- 외부 API를 차단하고 기존 캐시만 재생해 84쪽의 결과 저장까지 마쳤다. 후보 1,990개, 작성 입력 선택 1,619개, 미해결 원문 항목 40개이며 `ready_for_drafting=false`다. 중복 OCR·표제가 있어 40개가 독립적인 누락 사실 40개를 뜻하지 않는다.
+- 최종 근거의 이식용 스냅샷: `evaluation/extraction/v3/current/evidence.json`. SHA256은 `fe37748bd7639f298a1af5cb3aa291b64df578d0ac87b3868bca00524227ce3b`. 이 파일은 공식 42항목 전수 평가가 완료된 예측이 아니다.
+- 검토 메모: `evaluation/extraction/v3/review-20261031.md`. 일부 값은 후보에만 있고 작성 입력에는 없다. 또한 P0083F0001에서 소수 쉼표 131.248s/1.613s를 131248s/1613s로 처리한 수치가 승인되어 있다. 검토 설명이 이를 지적해도 플래그가 승인인 문제가 남는다. P0084F0002에도 유사한 사례가 있다.
+- 수작업 E01~E12, 표본 42개 참조의 전수 매칭은 아직 하지 않았다. “모든 내용 커버”, “v3 정확도 100%”라고 보고하지 않는다. 수작업 파일에 기록된 PDF 해시와 현재 연구 원본 PDF 해시도 다르다.
+- 사용자 확인 없이 `ready_for_drafting` 게이트를 풀거나 수치를 추측해서 수정하지 않는다.
+
+### 다른 PC에서 실행
+
+Python 3.11 이상을 사용한다. 이번 PC의 테스트 환경은 Python 3.13.9다. `.venv`는 PC별로 새로 만들고 기존 압축 가상환경을 재사용하지 않는다.
+
+```powershell
+git pull --ff-only origin master
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+# .env가 없을 때만 예제를 복사하고 UPSTAGE_API_KEY를 별도로 입력한다.
+Copy-Item .env.example .env
+.\.venv\Scripts\python.exe -B -m unittest discover -s tests
+.\.venv\Scripts\python.exe -B -m streamlit run streamlit_app.py
+```
+
+이 명령의 `.env` 복사는 파일이 이미 있으면 생략한다. 키를 Git에 넣지 않는다. 기본 Parse·Solar 경로에는 Studio Agent ID가 필요하지 않다. requirements의 `PyMuPDF==2.0`도 설치되어야 한다.
+
+재추출 없이 현재 결과를 앱에서 확인하려면 프로젝트 폴더에서 다음을 실행한다.
+
+```powershell
+$evidenceDir = 'draft_history/parse-api-v1/GPU 프로그래밍의 핵심_ CUDA로 배우는 병렬 처리 기술-22e2a29d284f-bb82aeee/research-evidence-v3/df0f048d3ef4282d'
+New-Item -ItemType Directory -Path $evidenceDir -Force | Out-Null
+Copy-Item evaluation/extraction/v3/current/evidence.json -Destination (Join-Path $evidenceDir 'evidence.json')
+```
+
+앱에서 input의 CUDA PDF를 선택하고 **저장된 연구 근거 불러오기**를 누른다. 결과 보기에는 API 호출이 없다. 스냅샷 안의 run_dir/source_archive_path/source_index_path는 원래 PC의 실행 출처 기록이며 새 PC에서 존재하는 경로라는 뜻이 아니다. 스냅샷만으로 원본 API 캐시 재생이나 source-archive 열기를 할 수는 없다.
+
+API 응답을 재사용해 이어서 추출하려면 ignored `draft_history/` 전체를 별도로 개인 복사해야 한다. 이 커밋에는 `.env`, `.venv`, API 원본 응답, 실행 캐시 전체를 포함하지 않는다. 캐시 없이 추출 버튼을 누르면 원문을 외부 Upstage 서비스에 보내 새 호출·비용이 발생할 수 있다. 같은 추출을 동시에 두 번 실행하지 않는다.
+
+### 다음에 할 일
+
+1. 우선 `docs/NPU_WRITING_RUBRIC.md`를 사용자와 검토한다. NPU 단독 선택 의사를 유지한다. 현재 앱 로더에는 두 프로파일이 남아 있으므로 다음 구현에서 원본 해시로 NPU만 선택해야 한다. RGBD 지침을 새 기준표에 섞지 않는다.
+2. 기준표 JSON은 `authored_not_runtime_integrated` 상태다. 기존 guideline_ids 연결과 새 33개 평가 기준 ID의 어댑터, 판정 기록·중요도별 통과 조건을 연결해야 한다. 문서를 썼다고 이미 실행 중이라고 설명하지 않는다.
+3. 수치 정규화·합계/비율의 일관성 검사 및 검토 설명/승인 플래그 충돌을 코드로 보완한다. 측정 범위가 같다는 확인 없이 단순 합계나 비율만으로 값을 바꾸지 않는다.
+4. 현재 초안 작성은 장별이지만 계획은 전체 근거를 받고 검토/편집은 전체 초안·근거를 반복 전달한다. 장별 코드 검사 → 장별 의미 검토 → 문제 문단만 최대 2회 수정하는 흐름으로 개선한다. 최종 연결 검토에는 목차·장 요약·핵심 주장 목록을 우선 전달한다.
+5. 근거가 확인된 한 장으로 실제 작성·평가를 먼저 확인한다. 현재 미해결 결과를 정상 검증 완료로 간주해 전체 초안을 생성하지 않는다. 새 모델 호출은 자동 코드 테스트와 구분해 사용자 의도에 맞게 실행한다.
+
+## 이전 인수인계: v3의 원문 누락 보완과 파일 정리
 
 현재 기본 추출기는 `research_extract_v3.py`다. 아래의 v2 완료 기록은 비교 기준으로 보존한 과거 결과다. v3의 42개 참조 점수는 최종 예측을 고정하고 원문 대조하기 전에는 확정하지 않는다.
 

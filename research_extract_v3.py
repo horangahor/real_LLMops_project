@@ -3,13 +3,15 @@
 import copy
 import hashlib
 import json
+import os
 import re
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from document_parse import write_json
+from document_parse import filesystem_path, write_json
+from config import SOLAR_MODEL
 from paper_plan import normalize_research, object_schema
 from research_extract import render_evidence
 from research_extract_v2 import EXTRACT, ORIGINS, STATUSES, SUPPORT, extraction_schema, ground_fact, source_packet, extract_evidence as collect_initial_evidence
@@ -158,21 +160,40 @@ def repair_numbers(engine, folder, elements, facts, name):
     if not bad:
         return grounded
     item_schema = extraction_schema(elements, []) ["properties"]["facts"]["items"]
-    schema = object_schema({"repairs": object_schema({key: {"type": "array", "items": item_schema} for key in bad})})
-    value = call(engine, folder, name, VERSION + "\n" + COLLECT +
-        "\n수치 검사 실패 후보만 바로잡는다. 핵심 내용은 보존하고 출처 없는 부수 날짜·번호·계산값은 제거한다. 필요한 원문 요소를 추가 연결한다. 복구 불가면 빈 배열이다.",
-        {"elements": source_packet(elements), "bad_facts": bad}, schema, inference_settings={"reasoning_effort": "medium"})
-    if set(value["repairs"]) != set(bad):
-        raise ValueError("수치 복구에서 후보가 누락됐습니다.")
+    pending = {}
+    def request_repairs(batch, request_name):
+        schema = object_schema({"repairs": object_schema({key: {"type": "array", "items": item_schema} for key in batch})})
+        try:
+            value = call(engine, folder, request_name, VERSION + "\n" + COLLECT +
+                "\n수치 검사 실패 후보만 바로잡는다. 핵심 내용은 보존하고 출처 없는 부수 날짜·번호·계산값은 제거한다. 필요한 원문 요소를 추가 연결한다. 복구 불가면 빈 배열이다.",
+                {"elements": source_packet(elements), "bad_facts": batch}, schema,
+                inference_settings={"reasoning_effort": "medium"})
+        except RuntimeError as error:
+            if "완결된 JSON" not in str(error):
+                raise
+            keys = list(batch)
+            if len(keys) > 1:
+                middle = len(keys) // 2
+                return {**request_repairs({k: batch[k] for k in keys[:middle]}, request_name + "-split-a"),
+                        **request_repairs({k: batch[k] for k in keys[middle:]}, request_name + "-split-b")}
+            pending[keys[0]] = str(error)
+            return {keys[0]: []}
+        if set(value["repairs"]) != set(batch):
+            raise ValueError("수치 복구에서 후보가 누락됐습니다.")
+        return value["repairs"]
+
+    repairs = request_repairs(bad, name)
     result = []
     for i, fact in enumerate(grounded):
-        replacements = value["repairs"].get(str(i))
+        replacements = repairs.get(str(i))
         if replacements is None:
             result.append(fact)
         elif replacements:
             result.extend(ground(raw, elements) for raw in replacements)
         else:
             fact["repair_unresolved"] = True
+            if str(i) in pending:
+                fact["numeric_repair_error"] = pending[str(i)]
             result.append(fact)
     return result
 
@@ -205,10 +226,10 @@ def extract_page(engine, folder, elements, page, seeds):
         raw_seeds.append(raw)
     initial = repair_numbers(engine, folder, context, raw_seeds, f"page-{page:04}-initial-numbers")
     audit_name = f"page-{page:04}-audit"
-    def deferred_audit():
-        return {"additions": [], "invalid_fact_indices": [], "deferred_after_timeout": True,
+    def deferred_audit(reason="timeout"):
+        return {"additions": [], "invalid_fact_indices": [], "deferred_after_" + reason: True,
                 "ledger": {key: {"state": "unresolved", "fact_refs": [], "addition_refs": [],
-                                  "note": "이전 누락 검사 시간 초과. 원문 대조 후 최종 요소별 검사·복구에서 재확인한다."} for key in target}}
+                                  "note": "누락 검사 미완료 (" + reason + "). 원문 대조 후 최종 요소별 검사·복구에서 재확인한다."} for key in target}}
     if audit_timed_out(folder, audit_name):
         audit = deferred_audit()
     else:
@@ -220,10 +241,14 @@ def extract_page(engine, folder, elements, page, seeds):
                     "invalid_fact_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}},
                     "ledger": ledger_schema(target, audit=True)}), timeout_seconds=90, retry_temporary=False,
                          inference_settings={"reasoning_effort": "medium"} if sum(len(f["measurements"]) for f in initial) > 32 else None)
-        except RuntimeError:
-            if not audit_timed_out(folder, audit_name):
+        except RuntimeError as error:
+            if "완결된 JSON" in str(error):
+                audit = deferred_audit("empty_json")
+                audit["request_error"] = str(error)
+            elif audit_timed_out(folder, audit_name):
+                audit = deferred_audit()
+            else:
                 raise
-            audit = deferred_audit()
     try:
         checked_ledger(audit["ledger"], target, initial, audit["additions"])
     except ValueError as error:
@@ -231,11 +256,49 @@ def extract_page(engine, folder, elements, page, seeds):
         audit["ledger_validation_error"] = str(error)
         audit["ledger"] = {key: {"state": "unresolved", "fact_refs": [], "addition_refs": [],
                                   "note": "누락 감사의 출처 연결 검사 실패: " + str(error)} for key in target}
+    def valid_indices(value):
+        indices = value.get("invalid_fact_indices")
+        return isinstance(indices, list) and all(type(i) is int and 0 <= i < len(initial) for i in indices)
+
+    rejected_audits = []
+    if not valid_indices(audit):
+        rejected_audits.append(copy.deepcopy(audit))
+        # Use a separate request identity so a cached invalid answer is never retried unchanged.
+        index_schema = {"type": "array", "items": {"type": "integer", "minimum": 0}}
+        if initial:
+            index_schema["items"]["maximum"] = len(initial) - 1
+        else:
+            index_schema["maxItems"] = 0
+        try:
+            audit = call(engine, folder, audit_name + "-index-repair",
+                VERSION + "\n" + AUDIT + "\nfacts는 0부터 시작한다. invalid_fact_indices에는 제공된 facts의 인덱스만 쓴다. additions의 번호와 혼동하지 않는다.",
+                {**packet, "facts": [{k: v for k, v in f.items() if k != "sources"} |
+                                     {"element_ids": [s["element_id"] for s in f["sources"]]} for f in initial],
+                 "valid_fact_indices": list(range(len(initial))), "rejected_audit": rejected_audits[0]},
+                object_schema({"additions": {"type": "array", "items": item_schema},
+                               "invalid_fact_indices": index_schema, "ledger": ledger_schema(target, audit=True)}),
+                timeout_seconds=90, retry_temporary=False, inference_settings={"reasoning_effort": "medium"})
+        except RuntimeError as error:
+            audit = {"invalid_fact_indices": None, "request_error": str(error)}
+        if valid_indices(audit):
+            try:
+                checked_ledger(audit["ledger"], target, initial, audit["additions"])
+            except ValueError as error:
+                audit["ledger_validation_error"] = str(error)
+                audit["ledger"] = {key: {"state": "unresolved", "fact_refs": [], "addition_refs": [],
+                                         "note": "누락 감사의 출처 연결 검사 실패: " + str(error)} for key in target}
+        else:
+            rejected_audits.append(copy.deepcopy(audit))
+            # Keep rejected output for inspection, but expose none of its disputed facts to writing.
+            audit = {"additions": [], "invalid_fact_indices": [], "deferred_after_invalid_indices": True,
+                     "ledger": {key: {"state": "unresolved", "fact_refs": [], "addition_refs": [],
+                                      "note": "누락 감사의 무효 사실 인덱스 재검사 실패. 최종 원문 검사에서 재수집해야 한다."} for key in target}}
+        audit["rejected_audits"] = rejected_audits
     invalid = set(audit["invalid_fact_indices"])
-    if any(type(i) is not int or not 0 <= i < len(initial) for i in invalid):
-        raise ValueError("누락 감사의 무효 사실 인덱스가 잘못됐습니다.")
     additions = repair_numbers(engine, folder, context, audit["additions"], f"page-{page:04}-numbers")
     facts = [f for i, f in enumerate(initial) if i not in invalid] + additions
+    if audit.get("deferred_after_invalid_indices"):
+        facts = []
     facts = [f for f in facts if any(s["page"] == page for s in f["sources"])]
     for i, fact in enumerate(facts):
         fact["id"] = f"P{page:04}F{i + 1:04}"
@@ -416,27 +479,97 @@ previously_rejected의 수치/출처 검사 실패 사유를 확인하되, 그 �
 화면의 잘린 창 제목·UI 문구와 연구의 대상/조건/수치를 구별한다. 원시 예측 행렬은 전체 원형 보관과 raw_data로 남길 수 있지만 요약 성능 지표는 반드시 추출한다."""
 
 
+def recovery_rounds():
+    value = int(os.getenv("RESEARCH_MAX_RECOVERY_ROUNDS", "1"))
+    if not 0 <= value <= MAX_RECOVERY_ROUNDS:
+        raise ValueError("RESEARCH_MAX_RECOVERY_ROUNDS는 0~5여야 합니다.")
+    return value
+
+
+def load_saved_evidence(pdf, base_dir):
+    """Read a completed extraction for this exact PDF without invoking any model."""
+    digest = hashlib.sha256(Path(pdf).read_bytes()).hexdigest()
+    root = filesystem_path(Path(base_dir) / "draft_history/parse-api-v1")
+    candidates = sorted(root.glob("*/research-evidence-v3/*/evidence.json"),
+                        key=lambda path: path.stat().st_mtime, reverse=True)
+    for candidate in candidates:
+        value = json.loads(candidate.read_text(encoding="utf-8"))
+        if value.get("source", {}).get("sha256") == digest:
+            return value
+    return None
+
+
 def reconcile_page(engine, folder, elements, page, facts):
+    """Reuse final page results only for identical inputs, prompts and recovery policy."""
+    rounds = recovery_rounds()
+    relevant = [f for f in facts if any(s["page"] == page for s in f["sources"])]
+    inputs = {"version": VERSION, "checkpoint_version": 1, "model": SOLAR_MODEL,
+              "page": page, "elements": elements, "facts": relevant, "recovery_rounds": rounds,
+              "targeted_rechecks": True,
+              "prompts": [RECONCILE, COLLECT, VERIFY, ACQUISITION, RECOVERY_GUIDANCE]}
+    identity = hashlib.sha256(json.dumps(inputs, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+    checkpoint = filesystem_path(Path(folder) / "coverage" / f"page-{page:04}.checkpoint.json")
+    if checkpoint.is_file():
+        stored = json.loads(checkpoint.read_text(encoding="utf-8"))
+        if stored.get("input_fingerprint") == identity:
+            value = stored["value"]
+            digest = hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+            if stored.get("value_sha256") != digest:
+                raise ValueError("최종 페이지 검사 캐시의 해시가 다릅니다.")
+            return value
+
+    # Older runs have no input manifest. Replay their exact request fingerprints
+    # offline before accepting a saved page; never trust an old ledger by filename.
+    value = None
+    legacy = filesystem_path(Path(folder) / "coverage" / f"page-{page:04}.json")
+    if legacy.is_file():
+        class CachedEngine:
+            def call(self, *args, **kwargs):
+                kwargs["cache_only"] = True
+                return engine.call(*args, **kwargs)
+        try:
+            value = _reconcile_page(CachedEngine(), folder, elements, page, facts, MAX_RECOVERY_ROUNDS, targeted=False)
+        except FileNotFoundError:
+            pass
+    if value is None:
+        value = _reconcile_page(engine, folder, elements, page, facts, rounds)
+    digest = hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+    write_json(checkpoint, {"input_fingerprint": identity, "value_sha256": digest, "value": value})
+    return value
+
+
+def _reconcile_page(engine, folder, elements, page, facts, max_rounds, targeted=True):
     target = {k: e for k, e in elements.items() if e["page"] == page}
     context = {k: e for k, e in elements.items() if page - 1 <= e["page"] <= page + 1}
     existing = [f for f in facts if any(s["page"] == page for s in f["sources"])]
     rescue_history = []
-    for attempt in range(MAX_RECOVERY_ROUNDS + 1):
+    ledger = {}
+    for attempt in range(max_rounds + 1):
         approved = [f for f in existing if writing_eligible(f)]
         ids = [f["id"] for f in approved]
         choices = {"type": "array", "items": {"type": "string", "enum": ids}} if ids else {"type": "array", "maxItems": 0, "items": {"type": "string"}}
+        review_target = {k: e for k, e in target.items()
+                         if not targeted or not attempt or ledger[k]["state"] in ("unresolved", "unreadable")}
         schema = object_schema({"ledger": object_schema({key: object_schema({
-            "state": {"type": "string", "enum": list(STATES)}, "fact_ids": choices, "note": {"type": "string"}}) for key in target})})
+            "state": {"type": "string", "enum": list(STATES)}, "fact_ids": choices, "note": {"type": "string"}}) for key in review_target})})
         clarification = "\n" + ACQUISITION if any(e["origin"] == "enhanced_numeric_ocr_review" for e in target.values()) or mentions_acquisition(approved) else ""
         if attempt >= 2:
             clarification += "\n" + RECOVERY_GUIDANCE
-        value = coverage_call(engine, folder, f"page-{page:04}-reconcile-{attempt}", VERSION + "\n" + RECONCILE + clarification,
-            {"target_element_ids": list(target), "elements": source_packet(context),
-             "approved_facts": [{k: v for k, v in f.items() if k not in ("sources", "support", "support_note", "numeric_issues", "verification_conflicts", "verification_missing_support", "attribution_marker_ids")} |
-                                {"source_ids": [s["element_id"] for s in f["sources"]]} for f in approved]}, schema, attempt=attempt)
-        ledger = value["ledger"]
-        if set(ledger) != set(target):
+        try:
+            value = coverage_call(engine, folder, f"page-{page:04}-reconcile-{attempt}", VERSION + "\n" + RECONCILE + clarification,
+                {"target_element_ids": list(review_target), "elements": source_packet(context),
+                 "approved_facts": [{k: v for k, v in f.items() if k not in ("sources", "support", "support_note", "numeric_issues", "verification_conflicts", "verification_missing_support", "attribution_marker_ids")} |
+                                    {"source_ids": [s["element_id"] for s in f["sources"]]} for f in approved]}, schema, attempt=attempt)
+        except RuntimeError as error:
+            if "완결된 JSON" not in str(error):
+                raise
+            ledger.update({key: {"state": "unresolved", "fact_ids": [],
+                                "note": "최종 원문 검사 응답 미완료: " + str(error)} for key in review_target})
+            rescue_history.append({"stage": "reconcile", "request_error": str(error), "facts": []})
+            break
+        if set(value["ledger"]) != set(review_target):
             raise ValueError("최종 수집 대장에서 원문 요소가 빠졌습니다.")
+        ledger.update(value["ledger"])
         for key, row in ledger.items():
             if row["state"] not in STATES or not set(row["fact_ids"]) <= set(ids) or not row["note"].strip():
                 raise ValueError("최종 수집 대장의 상태·사실 ID·사유가 잘못됐습니다.")
@@ -446,10 +579,10 @@ def reconcile_page(engine, folder, elements, page, facts):
             if issues := conservation_issues(target[key], linked, row["state"]):
                 row.update(state="unresolved", note="; ".join(issues) + ". " + row["note"])
         missing = {k: r["note"] for k, r in ledger.items() if r["state"] in ("unresolved", "unreadable")}
-        if not missing or attempt == MAX_RECOVERY_ROUNDS:
+        if not missing or attempt == max_rounds:
             break
         item_schema = extraction_schema(context, [page])["properties"]["facts"]["items"]
-        recovery_packet = {"target_element_ids": list(target), "elements": source_packet(context), "missing": missing,
+        recovery_packet = {"target_element_ids": list(missing) if targeted else list(target), "elements": source_packet(context), "missing": missing,
                            "already_preserved": [{k: v for k, v in f.items() if k != "sources"} for f in approved]}
         recovery_guidance = ""
         if attempt >= 2:
@@ -457,11 +590,28 @@ def reconcile_page(engine, folder, elements, page, facts):
             recovery_packet["previously_rejected"] = [
                 {k: f.get(k) for k in ("id", "statement", "numeric_issues", "support_note")}
                 for f in existing if not writing_eligible(f)]
-        recovered = call(engine, folder, f"page-{page:04}-rescue-{attempt}", VERSION + "\n" + COLLECT + "\n" + ACQUISITION + recovery_guidance +
-            "\n최종 원문 감사에서 남은 누락만 복구한다. missing의 지적을 정답으로 믿지 말고 원문에 실제 있는 내용만 추출한다. 기존 필드에 이미 있는 내용은 추가하지 않는다.",
-            recovery_packet,
-            object_schema({"facts": {"type": "array", "items": item_schema}}), inference_settings={"reasoning_effort": "medium"})
-        additions = repair_numbers(engine, folder, context, recovered["facts"], f"page-{page:04}-rescue-{attempt}-numbers")
+        try:
+            recovered = call(engine, folder, f"page-{page:04}-rescue-{attempt}", VERSION + "\n" + COLLECT + "\n" + ACQUISITION + recovery_guidance +
+                "\n최종 원문 감사에서 남은 누락만 복구한다. missing의 지적을 정답으로 믿지 말고 원문에 실제 있는 내용만 추출한다. 기존 필드에 이미 있는 내용은 추가하지 않는다.",
+                recovery_packet,
+                object_schema({"facts": {"type": "array", "items": item_schema}}), inference_settings={"reasoning_effort": "medium"})
+        except RuntimeError as error:
+            if "완결된 JSON" not in str(error):
+                raise
+            for key in missing:
+                ledger[key]["note"] += " · 누락 복구 응답 미완료: " + str(error)
+            rescue_history.append({"stage": "rescue", "missing": missing, "request_error": str(error), "facts": []})
+            break
+        try:
+            additions = repair_numbers(engine, folder, context, recovered["facts"], f"page-{page:04}-rescue-{attempt}-numbers")
+        except ValueError as error:
+            # Invalid model references are not usable evidence. Preserve the
+            # rejected batch and the open source rows instead of losing the run.
+            for key in missing:
+                ledger[key]["note"] += " · 복구 후보 검증 실패: " + str(error)
+            rescue_history.append({"stage": "rescue-validation", "missing": missing,
+                                   "validation_error": str(error), "rejected_facts": recovered["facts"], "facts": []})
+            break
         for i, f in enumerate(additions):
             f["id"] = f"P{page:04}R{attempt}F{i + 1:04}"
         checked = verify_page(engine, folder / "rescue-review", elements, {"page": page, "facts": additions}, stage=f"round-{attempt}")
@@ -542,6 +692,7 @@ def extract_evidence(pdf, engine):
         "elements_reviewed": len(ledger), "source_elements": len(elements), "unreviewed_elements": [],
         "unresolved_source_items": unresolved, "quarantined_fact_ids": excluded,
         "ready_for_drafting": not unresolved,
+        "automatic_recovery_rounds": recovery_rounds(),
         "assessment": "Every source element is accounted for by model-assisted review; semantic completeness is not independently proven."}
     title = initial_package["title"]
     research = normalize_research({"title": title, "facts": usable, "source": source_index["source"],

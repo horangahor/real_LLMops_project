@@ -61,6 +61,52 @@ class FakeClient:
 
 
 class PlannedPaperTests(unittest.TestCase):
+    def criterion_reference(self):
+        return {"profiles": [{"section_guidelines": [{"role": "methods", "purpose": "실험 조건을 정의한다.",
+                "required_content": ["실험 조건과 비교 범위를 설명한다."], "paragraph_flow": [], "figures_tables": []}],
+                "style_rules": [], "observed_outline": []}]}
+
+    def test_golden_required_content_gets_deterministic_ids_without_changing_profile(self):
+        reference = self.criterion_reference()
+        original = copy.deepcopy(reference)
+        catalog = reference_catalog(reference)
+        self.assertEqual(reference, original)
+        self.assertEqual(catalog["ref1_methods"]["criteria"], [
+            {"id": "ref1_methods_required_1", "description": "실험 조건과 비교 범위를 설명한다."}])
+        schema = plan_schema(research(), catalog)["properties"]["sections"]["items"]["properties"]["required_items"]["items"]
+        self.assertEqual(schema["properties"]["guideline_ids"]["items"]["enum"], ["ref1_methods_required_1"])
+
+    def test_requirement_cannot_use_criteria_from_an_unselected_golden_guide(self):
+        reference = self.criterion_reference()
+        reference["profiles"].append(copy.deepcopy(reference["profiles"][0]))
+        catalog = reference_catalog(reference)
+        value = plan()
+        section = value["sections"][1]
+        section.update(reference_ids=["ref1_methods"], reference_adaptation="동일 입력에서 비교한 조건을 제시한다.")
+        for ids in (["ref2_methods_required_1"], ["unknown"], ["ref1_methods_required_1"] * 2):
+            section["required_items"][0]["guideline_ids"] = ids
+            with self.subTest(ids=ids), self.assertRaisesRegex(ValueError, "작성 기준"):
+                validate_plan(value, research(), catalog, project_profile("generic"))
+        section["required_items"][0]["guideline_ids"] = ["ref1_methods_required_1"]
+        validate_plan(value, research(), catalog, project_profile("generic"))
+
+    def test_criterion_links_reach_writer_reviewer_and_saved_report_without_extra_calls(self):
+        value = plan()
+        section = value["sections"][1]
+        section.update(reference_ids=["ref1_methods"], reference_adaptation="동일 입력에서 비교한 조건을 제시한다.")
+        section["required_items"][0].update(guideline_ids=["ref1_methods_required_1"],
+                                            description="동일 입력의 두 처리 조건을 비교했음을 설명한다.")
+        with tempfile.TemporaryDirectory() as temporary:
+            fake = FakeClient(value)
+            result = PlannedPaper(temporary, fake).run(research(), self.criterion_reference())
+            saved = json.loads((Path(result["run_dir"]) / "review.json").read_text(encoding="utf-8"))
+        writer = next(packet for _, packet in fake.calls if packet.get("section_plan", {}).get("id") == "s1")
+        reviewer = next(packet for _, packet in fake.calls if "draft_paragraphs" in packet)
+        self.assertEqual(writer["section_plan"]["required_items"][0]["guideline_ids"], ["ref1_methods_required_1"])
+        self.assertEqual(reviewer["plan"]["sections"][1]["required_items"][0]["guideline_ids"], ["ref1_methods_required_1"])
+        self.assertEqual(next(c for c in saved["checks"] if c["item_id"] == "item1")["guideline_ids"], ["ref1_methods_required_1"])
+        self.assertEqual(len(fake.calls), 5)  # plan + three writers + the existing review
+
     def test_cuda_profile_extracts_its_pdf_and_ignores_handwritten_artifacts(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

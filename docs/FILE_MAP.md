@@ -12,6 +12,7 @@
 | `research_values.py` | 문장·조건·설정의 수치 검사와 표기 정규화 |
 | `research_coverage.py` | 실제 구조화 필드에 원문 식별자·시간 지표가 남았는지 추가 검사 |
 | `planned_paper.py`, `paper_plan.py` | 원문 입력, 작성 계획·근거 연결, 본문 작성과 검토 |
+| `docs/NPU_WRITING_RUBRIC.md`, `evaluation/writing/npu-rubric.v1.json` | NPU 논문 단독의 작성·평가 기준표와 기계 판독용 명세. 실행기 연결 전 설계안 |
 | `paper_draft_agent.py`, `paper_content.py`, `paper_prompts.py`, `paper_quality.py` | 앱 진입점과 기존 비교 모드·작성 품질 검사 |
 | `paper_structure*`, `structure_*`, `paper_outline.py` | 참고 논문의 구조·작성 가이드 추출과 표시 |
 | `*evaluation.py`, `evaluation/`, `tests/` | 평가·회귀 검사. 고정 예측·정답·코드 스냅샷은 재현에 필요하다. |

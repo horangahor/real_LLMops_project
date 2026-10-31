@@ -402,8 +402,8 @@ class PaperDraftOrchestrator:
             from planned_paper import PlannedPaper
             from paper_plan import project_profile
             engine = PlannedPaper(self.base_dir, api_key=self.api_key)
+            engine.evidence_progress = progress_callback
             if extract_only:
-                engine.evidence_progress = progress_callback
                 extraction = engine.load_evidence(project_profile(project_id), results_json_path, research_pdf_path)
                 if progress_callback:
                     progress_callback(100, "연구 근거 추출·수집 대장 검사 종료")

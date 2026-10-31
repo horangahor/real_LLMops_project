@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 from paper_plan import normalize_research
 from planned_paper import PlannedPaper, request_json
-from research_extract_v3 import apply_source_review, attribution_scopes, audit_timed_out, call, caption_conflicts, checked_ledger, ground, reconcile_page, verification_packet, verify_page, writing_eligible
+from research_extract_v3 import apply_source_review, attribution_scopes, audit_timed_out, call, caption_conflicts, checked_ledger, extract_page, ground, reconcile_page, repair_numbers, verification_packet, verify_page, writing_eligible
 from research_sources_v3 import covered_fraction, suspicious_number_spacing
 from research_coverage import conservation_issues
 
@@ -23,6 +23,268 @@ def raw_fact():
 
 
 class ResearchV3Tests(unittest.TestCase):
+    def test_rescue_with_nonexistent_source_ids_is_quarantined_and_preserved(self):
+        import json
+        invalid = raw_fact()
+        invalid["element_ids"] = ["p7:nonexistent"]
+        engine = Mock()
+        engine.call.side_effect = [
+            {"ledger": {"p7:e1": {"state": "unresolved", "fact_ids": [], "note": "원문 미보존"}}},
+            {"facts": [invalid]}]
+        with TemporaryDirectory() as temporary:
+            result = reconcile_page(engine, Path(temporary), element(), 7, [])
+            saved = json.loads((Path(temporary) / "coverage/page-0007.json").read_text(encoding="utf-8"))
+        self.assertEqual(result["additions"], [])
+        self.assertEqual(result["ledger"]["p7:e1"]["state"], "unresolved")
+        self.assertEqual(saved["rescue_history"][0]["rejected_facts"], [invalid])
+
+    def test_final_audit_json_failure_is_saved_as_unresolved_instead_of_aborting(self):
+        import json
+        engine = Mock()
+        engine.call.side_effect = RuntimeError("모델이 완결된 JSON을 반환하지 못했습니다.")
+        with TemporaryDirectory() as temporary:
+            result = reconcile_page(engine, Path(temporary), element(), 7, [])
+            saved = json.loads((Path(temporary) / "coverage/page-0007.json").read_text(encoding="utf-8"))
+        self.assertEqual(result["ledger"]["p7:e1"]["state"], "unresolved")
+        self.assertEqual(saved["rescue_history"][0]["stage"], "reconcile")
+        self.assertEqual(engine.call.call_count, 1)
+
+    def test_rescue_json_failure_preserves_the_missing_source_and_does_not_loop(self):
+        engine = Mock()
+        engine.call.side_effect = [
+            {"ledger": {"p7:e1": {"state": "unresolved", "fact_ids": [], "note": "원문 미보존"}}},
+            RuntimeError("모델이 완결된 JSON을 반환하지 못했습니다.")]
+        with TemporaryDirectory() as temporary:
+            result = reconcile_page(engine, Path(temporary), element(), 7, [])
+        self.assertEqual(result["ledger"]["p7:e1"]["state"], "unresolved")
+        self.assertIn("복구 응답 미완료", result["ledger"]["p7:e1"]["note"])
+        self.assertEqual(engine.call.call_count, 2)
+
+    def test_final_recheck_failure_keeps_already_resolved_source_rows(self):
+        sources = element()
+        sources["p7:e2"] = {**sources["p7:e1"], "element_id": "p7:e2", "text": "연구 내용"}
+        engine = Mock()
+        engine.call.side_effect = [
+            {"ledger": {"p7:e1": {"state": "no_research", "fact_ids": [], "note": "표제"},
+                        "p7:e2": {"state": "unresolved", "fact_ids": [], "note": "누락"}}},
+            {"facts": []}, RuntimeError("모델이 완결된 JSON을 반환하지 못했습니다.")]
+        with TemporaryDirectory() as temporary:
+            result = reconcile_page(engine, Path(temporary), sources, 7, [])
+        self.assertEqual(result["ledger"]["p7:e1"]["state"], "no_research")
+        self.assertEqual(result["ledger"]["p7:e2"]["state"], "unresolved")
+
+    def test_malformed_json_response_pairs_are_not_requested_again_on_resume(self):
+        response = Mock(status_code=200, json=lambda: {"choices": [{"finish_reason": "stop", "message": {"content": '{"incomplete":'}}]})
+        with TemporaryDirectory() as temporary, patch("planned_paper.requests.post", return_value=response) as post:
+            engine = PlannedPaper(base_dir=temporary, api_key="test-key")
+            for _ in range(2):
+                with self.assertRaisesRegex(RuntimeError, "완결된 JSON"):
+                    engine.call(Path(temporary), "review", "system", {}, {}, inference_settings={"reasoning_effort": "medium"})
+            self.assertEqual(post.call_count, 4)
+
+    def test_standard_recovery_stops_after_one_round_and_keeps_missing_sources_open(self):
+        engine = Mock()
+        def respond(folder, name, system, packet, schema, **kwargs):
+            if "rescue" in name:
+                return {"facts": []}
+            return {"ledger": {"p7:e1": {"state": "unresolved", "fact_ids": [], "note": "원문 내용 미보존"}}}
+        engine.call.side_effect = respond
+        with TemporaryDirectory() as temporary, patch.dict("os.environ", {"RESEARCH_MAX_RECOVERY_ROUNDS": "1"}):
+            result = reconcile_page(engine, Path(temporary), element(), 7, [])
+        self.assertEqual(engine.call.call_count, 3)
+        self.assertEqual(result["ledger"]["p7:e1"]["state"], "unresolved")
+
+    def test_final_checkpoint_reuses_identical_inputs_but_not_changed_source(self):
+        engine = Mock()
+        engine.call.return_value = {"ledger": {"p7:e1": {"state": "no_research", "fact_ids": [], "note": "표제"}}}
+        with TemporaryDirectory() as temporary, patch.dict("os.environ", {"RESEARCH_MAX_RECOVERY_ROUNDS": "0"}):
+            result = reconcile_page(engine, Path(temporary), element(), 7, [])
+            engine.call.reset_mock()
+            self.assertEqual(reconcile_page(engine, Path(temporary), element(), 7, []), result)
+            engine.call.assert_not_called()
+            changed = copy.deepcopy(element())
+            changed["p7:e1"]["text"] = "새 실험 내용"
+            reconcile_page(engine, Path(temporary), changed, 7, [])
+            self.assertTrue(engine.call.called)
+
+    def test_recheck_targets_only_unresolved_elements_and_preserves_resolved_rows(self):
+        sources = element()
+        sources["p7:e2"] = {**sources["p7:e1"], "element_id": "p7:e2", "text": "새 연구 관찰"}
+        engine = Mock()
+        packets = []
+        def respond(folder, name, system, packet, schema, **kwargs):
+            packets.append((name, packet))
+            if "rescue" in name:
+                return {"facts": []}
+            return {"ledger": {key: {"state": "no_research" if key == "p7:e1" else "unresolved",
+                                      "fact_ids": [], "note": "원문 검사"} for key in packet["target_element_ids"]}}
+        engine.call.side_effect = respond
+        with TemporaryDirectory() as temporary, patch.dict("os.environ", {"RESEARCH_MAX_RECOVERY_ROUNDS": "1"}):
+            result = reconcile_page(engine, Path(temporary), sources, 7, [])
+        self.assertEqual(packets[0][1]["target_element_ids"], ["p7:e1", "p7:e2"])
+        self.assertEqual(packets[1][1]["target_element_ids"], ["p7:e2"])
+        self.assertEqual(packets[2][1]["target_element_ids"], ["p7:e2"])
+        self.assertEqual(set(result["ledger"]), set(sources))
+
+    def test_legacy_final_page_is_replayed_offline_before_checkpointing(self):
+        from research_extract_v3 import _reconcile_page
+        with TemporaryDirectory() as temporary, patch("planned_paper.request_json") as request:
+            request.return_value = {"ledger": {"p7:e1": {"state": "no_research", "fact_ids": [], "note": "표제"}}}
+            engine = PlannedPaper(base_dir=temporary, api_key="test-key")
+            folder = Path(temporary)
+            expected = _reconcile_page(engine, folder, element(), 7, [], 5, targeted=False)
+            request.reset_mock()
+            self.assertEqual(reconcile_page(engine, folder, element(), 7, []), expected)
+            request.assert_not_called()
+
+    def bad_number_fact(self):
+        fact = raw_fact()
+        fact["statement"] = "실행 시간은 999.5ms다."
+        return fact
+
+    def test_numeric_empty_json_splits_candidates_without_renumbering_them(self):
+        engine = Mock()
+        engine.call.side_effect = [RuntimeError("모델이 완결된 JSON을 반환하지 못했습니다."),
+                                   {"repairs": {"0": [raw_fact()]}}, {"repairs": {"1": [raw_fact()]}}]
+        result = repair_numbers(engine, Path("unused"), element(), [self.bad_number_fact()] * 2, "numbers")
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(not f["numeric_issues"] for f in result))
+        self.assertEqual([c.args[1] for c in engine.call.call_args_list], ["numbers", "numbers-split-a", "numbers-split-b"])
+        self.assertEqual(set(engine.call.call_args.args[3]["bad_facts"]), {"1"})
+
+    def test_single_candidate_empty_json_keeps_original_as_unresolved(self):
+        engine = Mock()
+        engine.call.side_effect = RuntimeError("모델이 완결된 JSON을 반환하지 못했습니다.")
+        result = repair_numbers(engine, Path("unused"), element(), [self.bad_number_fact()], "numbers")
+        self.assertEqual(result[0]["statement"], self.bad_number_fact()["statement"])
+        self.assertTrue(result[0]["numeric_issues"])
+        self.assertTrue(result[0]["repair_unresolved"])
+        self.assertIn("완결된 JSON", result[0]["numeric_repair_error"])
+        result[0].update(support="supported", attribution_preserved=True, writing_role="research_fact")
+        self.assertFalse(writing_eligible(result[0]))
+        self.assertEqual(engine.call.call_count, 1)
+
+    def test_numeric_empty_json_recursively_splits_but_does_not_drop_candidates(self):
+        engine = Mock()
+        engine.call.side_effect = RuntimeError("모델이 완결된 JSON을 반환하지 못했습니다.")
+        result = repair_numbers(engine, Path("unused"), element(), [self.bad_number_fact()] * 4, "numbers")
+        self.assertEqual(len(result), 4)
+        self.assertTrue(all(f["repair_unresolved"] and f["numeric_issues"] for f in result))
+        self.assertEqual(engine.call.call_count, 7)
+
+    def test_numeric_api_failure_is_not_mistaken_for_empty_json(self):
+        engine = Mock()
+        engine.call.side_effect = RuntimeError("Solar 요청 실패 (HTTP 401)")
+        with self.assertRaisesRegex(RuntimeError, "401"):
+            repair_numbers(engine, Path("unused"), element(), [self.bad_number_fact()], "numbers")
+        self.assertEqual(engine.call.call_count, 1)
+
+    def test_cached_medium_and_low_empty_numeric_responses_can_resume_without_repeating_requests(self):
+        response = Mock(status_code=200, json=lambda: {"choices": [{"finish_reason": "stop", "message": {"content": None}}]})
+        with TemporaryDirectory() as temporary, patch("planned_paper.requests.post", return_value=response) as post:
+            engine = PlannedPaper(base_dir=temporary, api_key="test-key")
+            for _ in range(2):
+                result = repair_numbers(engine, Path(temporary), element(), [self.bad_number_fact()], "numbers")
+                self.assertTrue(result[0]["numeric_issues"])
+                self.assertTrue(result[0]["repair_unresolved"])
+            self.assertEqual(post.call_count, 4)
+
+    def test_long_native_retry_paths_are_saved_and_reused_without_more_requests(self):
+        from document_parse import filesystem_path
+        response = Mock(status_code=200, json=lambda: {"choices": [{"finish_reason": "stop", "message": {"content": None}}]})
+        with TemporaryDirectory() as temporary, patch("planned_paper.requests.post", return_value=response) as post:
+            folder = Path(temporary) / ("source-context-" * 7) / "global-review"
+            while len(str(folder.absolute())) < 190:
+                folder = folder / "review"
+            engine = PlannedPaper(base_dir=temporary, api_key="test-key")
+            for _ in range(2):
+                with self.assertRaisesRegex(RuntimeError, "완결된 JSON"):
+                    engine.call(folder, "page-0091-global-verify", "system", {}, {},
+                                inference_settings={"reasoning_effort": "medium"})
+            self.assertEqual(post.call_count, 4)
+            for cached in filesystem_path(folder / "responses").iterdir():
+                cached.unlink()
+
+    def test_empty_audit_json_is_explicitly_unresolved_for_final_review(self):
+        import json
+        engine = Mock()
+        engine.call.side_effect = RuntimeError("모델이 완결된 JSON을 반환하지 못했습니다.")
+        with TemporaryDirectory() as temporary:
+            result = extract_page(engine, Path(temporary), element(), 7, [ground(raw_fact(), element())])
+            saved = json.loads((Path(temporary) / "pages/page-0007.json").read_text(encoding="utf-8"))
+        self.assertTrue(result["unresolved"])
+        self.assertEqual(result["ledger"]["p7:e1"]["state"], "unresolved")
+        self.assertTrue(saved["audit"]["deferred_after_empty_json"])
+        self.assertEqual(len(saved["initial"]), 1)
+
+    def audit_response(self, indices):
+        return {"additions": [], "invalid_fact_indices": indices,
+                "ledger": {"p7:e1": {"state": "represented", "fact_refs": [0], "addition_refs": [], "note": "원문 대조"}}}
+
+    def test_invalid_audit_indices_retry_only_the_audit_and_preserve_rejected_response(self):
+        engine = Mock()
+        engine.call.side_effect = [self.audit_response([1]), self.audit_response([])]
+        with TemporaryDirectory() as temporary:
+            result = extract_page(engine, Path(temporary), element(), 7, [ground(raw_fact(), element())])
+        self.assertEqual(len(result["facts"]), 1)
+        self.assertEqual(engine.call.call_count, 2)
+        retry = engine.call.call_args
+        self.assertEqual(retry.args[1], "page-0007-audit-index-repair")
+        self.assertEqual(retry.args[3]["valid_fact_indices"], [0])
+        self.assertEqual(retry.args[4]["properties"]["invalid_fact_indices"]["items"]["maximum"], 0)
+
+    def test_repeated_invalid_indices_quarantine_facts_and_keep_unresolved_evidence(self):
+        import json
+        for bad in ([1], [-1], [True], ["0"], [[0]]):
+            with self.subTest(indices=bad), TemporaryDirectory() as temporary:
+                engine = Mock()
+                engine.call.side_effect = [self.audit_response(bad), self.audit_response(bad)]
+                result = extract_page(engine, Path(temporary), element(), 7, [ground(raw_fact(), element())])
+                saved = json.loads((Path(temporary) / "pages/page-0007.json").read_text(encoding="utf-8"))
+                self.assertEqual(result["facts"], [])
+                self.assertEqual(result["ledger"]["p7:e1"]["state"], "unresolved")
+                self.assertTrue(result["unresolved"])
+                self.assertEqual(len(saved["initial"]), 1)
+                self.assertEqual(len(saved["audit"]["rejected_audits"]), 2)
+                self.assertEqual(engine.call.call_count, 2)
+
+    def test_index_repair_request_failure_defers_instead_of_aborting_extraction(self):
+        engine = Mock()
+        engine.call.side_effect = [self.audit_response([9]), RuntimeError("Solar HTTP 429")]
+        with TemporaryDirectory() as temporary:
+            result = extract_page(engine, Path(temporary), element(), 7, [ground(raw_fact(), element())])
+        self.assertEqual(result["facts"], [])
+        self.assertTrue(result["unresolved"])
+        self.assertEqual(engine.call.call_count, 2)
+
+    def test_cached_invalid_audit_reuses_the_separate_successful_repair(self):
+        with TemporaryDirectory() as temporary, patch("planned_paper.request_json") as request:
+            request.side_effect = [self.audit_response([4]), self.audit_response([])]
+            engine = PlannedPaper(base_dir=temporary)
+            folder = Path(temporary)
+            for _ in range(2):
+                result = extract_page(engine, folder, element(), 7, [ground(raw_fact(), element())])
+                self.assertEqual(len(result["facts"]), 1)
+            self.assertEqual(request.call_count, 2)
+            self.assertEqual(len(list((folder / "responses").glob("*.json"))), 2)
+
+    def test_valid_invalidation_still_removes_the_fact_without_retry(self):
+        engine = Mock()
+        engine.call.return_value = self.audit_response([0])
+        with TemporaryDirectory() as temporary:
+            result = extract_page(engine, Path(temporary), element(), 7, [ground(raw_fact(), element())])
+        self.assertEqual(result["facts"], [])
+        self.assertEqual(engine.call.call_count, 1)
+
+    def test_empty_initial_facts_cannot_be_invalidated(self):
+        engine = Mock()
+        engine.call.side_effect = [self.audit_response([0]), self.audit_response([0])]
+        with TemporaryDirectory() as temporary:
+            result = extract_page(engine, Path(temporary), element(), 7, [])
+        self.assertEqual(result["facts"], [])
+        self.assertTrue(result["unresolved"])
+        self.assertEqual(engine.call.call_args.args[4]["properties"]["invalid_fact_indices"]["maxItems"], 0)
+
     def test_version_prefix_spacing_is_equivalent_but_quotes_are_untouched(self):
         result = ground(raw_fact(), element())
         self.assertEqual(result["numeric_issues"], [])

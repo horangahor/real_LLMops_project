@@ -69,6 +69,9 @@ def reference_catalog(reference):
             identifier = f"ref{index}_{guide['role']}"
             catalog[identifier] = {"id": identifier, **copy.deepcopy(guide),
                                    "style_rules": copy.deepcopy(profile.get("style_rules", []))}
+            catalog[identifier]["criteria"] = [
+                {"id": f"{identifier}_required_{number}", "description": text}
+                for number, text in enumerate(guide.get("required_content", []), 1)]
     return catalog
 
 
@@ -85,7 +88,9 @@ def plan_schema(research=None, catalog=None):
     evidence = choices([f["id"] for f in research["facts"]]) if research else STRINGS
     references = choices(list(catalog)) if catalog is not None else STRINGS
     tables = choices([t["id"] for t in research["tables"]]) if research else STRINGS
-    item = object_schema({"id": {"type": "string"}, "description": {"type": "string"}, "evidence_ids": evidence})
+    guidelines = choices([criterion["id"] for guide in catalog.values() for criterion in guide.get("criteria", [])]) if catalog is not None else STRINGS
+    item = object_schema({"id": {"type": "string"}, "description": {"type": "string"},
+                          "evidence_ids": evidence, "guideline_ids": guidelines})
     section = object_schema({"id": {"type": "string"}, "title": {"type": "string"},
         "role": {"type": "string", "enum": list(ROLE_LABELS)}, "purpose": {"type": "string"},
         "status": {"type": "string", "enum": ["write", "placeholder"]},
@@ -112,6 +117,9 @@ def bind_plan_evidence(plan, research, profile=None):
     bindings = []
     labels = []
     for section in result["sections"]:
+        for item in section["required_items"]:
+            if item.get("guideline_ids") is None:
+                item["guideline_ids"] = []
         for field in ("table_ids", "reference_ids"):
             if section.get(field) is None:
                 section[field] = []
@@ -193,6 +201,12 @@ def validate_plan(plan, research, catalog, profile):
                     any(not isinstance(v, str) for v in item["evidence_ids"]) or
                     not set(item["evidence_ids"]) <= set(section["evidence_ids"])):
                 raise ValueError("필수 내용의 근거가 해당 장에 없습니다.")
+            guideline_ids = item.get("guideline_ids", [])
+            allowed_guidelines = {criterion["id"] for reference_id in section["reference_ids"]
+                                  for criterion in catalog[reference_id].get("criteria", [])}
+            if (not isinstance(guideline_ids, list) or any(not isinstance(v, str) for v in guideline_ids)
+                    or len(guideline_ids) != len(set(guideline_ids)) or not set(guideline_ids) <= allowed_guidelines):
+                raise ValueError("필수 내용의 작성 기준이 해당 장의 골든 가이드에 없습니다.")
             item_ids.add(key)
     policy = profile["constraints"]["related_work"]
     if not {"introduction", "conclusion"} <= {s["role"] for s in sections if s["status"] == "write"}:

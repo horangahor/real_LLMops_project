@@ -34,6 +34,20 @@ def document():
 
 
 class ParsePipelineTests(unittest.TestCase):
+    def test_atomic_json_write_can_replace_a_destination_beyond_260_characters(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary) / ("연구근거-" * 8) / ("source-review-" * 4)
+            destination = folder / ("page-global-verify-low-fallback-" + "a" * 20 + ".native-json-retry-1.json")
+            while len(str(destination.absolute())) <= 270:
+                destination = destination.parent / "review-context" / destination.name
+            client.write_json(destination, {"state": "original"})
+            client.write_json(destination, {"state": "updated", "한글": True})
+            safe = client.filesystem_path(destination)
+            self.assertEqual(json.loads(safe.read_text(encoding="utf-8")), {"state": "updated", "한글": True})
+            self.assertEqual(list(safe.parent.glob("*.tmp")), [])
+            self.assertEqual(client.filesystem_path(safe), safe)
+            safe.unlink()
+
     def test_same_parse_recovers_paragraph_headings_without_promoting_prose_or_equations(self):
         outline = extract_numbered_outline(document())
         self.assertEqual([x["number"] for x in outline["selected_headings"]], ["1", "2", "2.1", "2.1.1"])

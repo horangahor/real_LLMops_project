@@ -224,6 +224,14 @@ with st.sidebar:
     plan_btn = st.button("작성 계획만 만들기", use_container_width=True,
                          disabled=not adaptive or bool(structure_error))
     extract_btn = st.button("연구 근거만 추출하기", use_container_width=True, disabled=not adaptive)
+    if adaptive and local_input and st.button("저장된 연구 근거 불러오기", use_container_width=True):
+        from research_extract_v3 import load_saved_evidence
+        saved_evidence = load_saved_evidence(local_input, BASE_DIR)
+        if saved_evidence:
+            st.session_state["research_evidence_extraction"] = saved_evidence
+            st.session_state["evidence_preview_only"] = True
+        else:
+            st.info("이 자료의 완료 결과가 아직 없습니다. 추출이 끝난 뒤 다시 불러와 주세요.")
 
 if structure_reference:
     with st.expander("골든 샘플 구조·작성 가이드", expanded=False):
@@ -290,7 +298,8 @@ if generate_btn or plan_btn or extract_btn:
                      "✅ 작성 계획을 저장했습니다." if plan_btn else "✅ 논문 초안 작성이 완료되었습니다!")
 
     except Exception as e:
-        st.error(f"초안 작성 중 오류가 발생했습니다: {e}")
+        task_label = "연구 근거 추출" if extract_btn else "작성 계획 생성" if plan_btn else "초안 작성"
+        st.error(f"{task_label} 중 오류가 발생했습니다: {e}")
     finally:
         if not adaptive and temp_pdf_path and os.path.exists(temp_pdf_path):
             os.remove(temp_pdf_path)

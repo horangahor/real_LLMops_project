@@ -9,7 +9,7 @@ from pathlib import Path
 import requests
 
 from config import SOLAR_MODEL, UPSTAGE_API_KEY
-from document_parse import artifact_directory, parse_document, write_json
+from document_parse import artifact_directory, filesystem_path, parse_document, write_json
 from paper_outline import element_key, element_text
 from paper_plan import (BASE, STRINGS, VERSION, normalize_research, object_schema, plan_schema,
                         bind_plan_evidence, project_profile, reference_catalog, validate_plan)
@@ -27,11 +27,15 @@ introduction과 conclusion 역할을 포함한다. 그 외 역할과 소절 수�
 related_work 정책이 placeholder이면 관련 연구는 빈 장 하나만 둔다. omit_without_evidence이면 근거 없는 관련 연구는 생략한다.
 placeholder 장의 근거·필수 내용·표·의존 장·소절은 빈 배열이다. 다른 장은 하나 이상의 근거와 필수 내용을 갖는다.
 필수 내용의 evidence_ids는 그 장의 근거 부분집합이다. 없는 근거는 만들지 말고 unresolved에 기록한다.
+required_items의 guideline_ids에는 해당 장에 선택한 reference_guides.criteria의 ID만 연결한다.
+description은 연결한 골든 기준을 이번 연구의 근거로 확인할 수 있는 구체적인 작성 항목으로 표현한다.
+연구 내용 자체의 요구사항이면 guideline_ids는 비워도 된다. 골든 논문에만 있는 실험·수치·조건을 요구하거나 만들어내지 않는다.
 generation_order에는 write 장 ID를 각각 한 번 넣는다. depends_on에는 그 순서에서 이미 작성된 장 ID만 쓴다.
 표는 입력에 실제 있는 ID만 쓰고 여러 장에 중복 배치하지 않는다. 장·필수 내용 ID는 영문자로 시작하는 짧은 고유 식별자다.
 출력 title은 연구를 반영한 논문 제목이고, reference_adaptation은 연구 사실이 아닌 구성 방식의 적용 설명이다."""
 WRITER = """작성 계획에 지정된 장 하나를 쓴다. 절 목적·필수 내용·지정한 연구 근거·참고 가이드·선행 장 문맥을 따른다.
 모든 사실 주장에 [근거:ID]를 붙인다. 지정한 evidence_ids 밖의 근거는 쓰지 않는다. 이 표시는 최종 본문에서 코드가 분리한다.
+required_items의 guideline_ids가 연결한 criteria를 해당 항목의 작성 기준으로 삼는다. 실제 연구 근거가 없는 내용을 지침 때문에 추가하지 않는다.
 계획의 reference_adaptation을 문단 전개·설명 순서에 반영하되 작성 지침 자체를 본문에 노출하지 않는다.
 parts의 p0, p1 등 각 칸에 해당 소절의 본문만 쓴다. subsection_headings의 순서와 parts 칸의 순서가 같다.
 소절이 없으면 p0에 장 본문을 쓴다. 모든 # 제목·번호·소절 제목은 코드가 조립하므로 본문 값에는 넣지 않는다.
@@ -39,6 +43,7 @@ parts의 p0, p1 등 각 칸에 해당 소절의 본문만 쓴다. subsection_hea
 확인할 정보는 짧게 표시하고 동일 내용을 반복하지 않는다. 각 장은 핵심 내용 중심의 완결된 문단으로 작성한다."""
 REVIEWER = """연구 자료와 작성 계획을 기준으로 초안을 검토한다. 작성자를 신뢰해 승인하지 말고 원문 근거와 대조한다.
 모든 required_items를 checks에서 정확히 한 번씩 평가한다. verdict는 met/missing/incorrect/needs_check다.
+각 항목의 guideline_ids가 연결한 reference_guides.criteria를 확인하고, description에 명시한 이번 연구의 적용 내용이 실제 본문에서 충족되는지 평가한다.
 met은 해당 장의 실제 draft_paragraphs에서 선택한 paragraph_ids와 필수 내용의 모든 evidence_ids가 있어야 한다.
 원문 quote를 초안 인용으로 사용하지 않는다. 초안 인용문은 코드가 paragraph_ids로 연결하므로 인용문을 다시 작성하지 않는다.
 근거 없는 수치·비교·해석·참고 논문 사실 혼입은 issues의 error로 표시한다. 실제 문단 ID를 선택하고, 없는 내용의 지적은 paragraph_id=none이다.
@@ -110,7 +115,7 @@ class PlannedPaper:
         if inference_settings:
             inputs["inference_settings"] = inference_settings
         identity = fingerprint(inputs)
-        path = Path(folder) / "responses" / f"{name}-{identity[:20]}.json"
+        path = filesystem_path(Path(folder) / "responses" / f"{name}-{identity[:20]}.json")
         reuse = getattr(self, "evidence_cache_root", None)
         if not path.is_file() and reuse is not None:
             try:
@@ -120,6 +125,7 @@ class PlannedPaper:
             if tail is not None:
                 pattern = "/".join(("*", *tail, "responses", path.name))
                 for candidate in Path(reuse).glob(pattern):
+                    candidate = filesystem_path(candidate)
                     stored = json.loads(candidate.read_text(encoding="utf-8"))
                     if stored.get("request_fingerprint") != identity:
                         raise ValueError("재사용할 응답의 입력 식별자가 다릅니다.")
@@ -149,19 +155,25 @@ class PlannedPaper:
             return fallback_to_low()
         native = path.with_suffix(".native.json")
         retry = native.with_name(native.stem + "-json-retry-1.json")
-        if can_fallback and native.is_file() and retry.is_file():
-            def empty_final(p):
+        if native.is_file() and retry.is_file():
+            def invalid_final(p):
                 body = json.loads(p.read_text(encoding="utf-8"))
-                return bool(body.get("choices")) and body["choices"][0].get("message", {}).get("content") is None
-            if empty_final(native) and empty_final(retry):
-                return fallback_to_low()
+                if not body.get("choices") or body["choices"][0].get("finish_reason") != "stop":
+                    return False
+                content = body["choices"][0].get("message", {}).get("content")
+                if not isinstance(content, str) or not content.strip():
+                    return True
+                try:
+                    json.loads(content)
+                    return False
+                except json.JSONDecodeError:
+                    return True
+            if invalid_final(native) and invalid_final(retry):
+                if can_fallback:
+                    return fallback_to_low()
+                raise RuntimeError("모델이 완결된 JSON을 반환하지 못했습니다. 실패 응답은 보존했으며 해당 항목을 검토 보류해야 합니다.")
         if cache_only:
             raise FileNotFoundError("해당 입력의 완료 캐시가 없습니다.")
-        if inference_settings == {"reasoning_effort": "low"} and native.is_file() and retry.is_file():
-            first = json.loads(native.read_text(encoding="utf-8"))
-            second = json.loads(retry.read_text(encoding="utf-8"))
-            if all(body.get("choices") and body["choices"][0].get("message", {}).get("content") is None for body in (first, second)):
-                raise RuntimeError("모델이 완결된 JSON을 반환하지 못했습니다. 해당 요청의 빈 응답은 보존했으며 작은 묶음으로 검토해야 합니다.")
         if inference_settings or timeout_seconds is not None:
             if self._custom_client:
                 raise ValueError("사용자 지정 client에서는 명시적 모델 추론 설정을 처리해야 합니다.")
@@ -568,6 +580,8 @@ def validate_review(report, plan, sections):
             raise ValueError("필수 내용 검토 ID가 없거나 중복됩니다.")
         seen.add(key)
         section, item = expected[key]
+        # Keep criterion provenance bound to the plan, not to model-supplied IDs.
+        check["guideline_ids"] = list(item.get("guideline_ids", []))
         if not set(check["evidence_ids"]) <= set(section["evidence_ids"]):
             raise ValueError("검토가 해당 장에 없는 근거를 사용했습니다.")
         if check["verdict"] == "met" and not item["evidence_ids"]:
