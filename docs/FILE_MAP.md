@@ -12,7 +12,10 @@
 | `research_values.py` | 문장·조건·설정의 수치 검사와 표기 정규화 |
 | `research_coverage.py` | 실제 구조화 필드에 원문 식별자·시간 지표가 남았는지 추가 검사 |
 | `planned_paper.py`, `paper_plan.py` | 원문 입력, 작성 계획·근거 연결, 본문 작성과 검토 |
+| `paper_context.py`, `docs/WRITING_INPUT_CONTEXT.md` | 3번 작업: 명시적인 계획 배정으로 장·소절별 근거·지침 입력 생성과 배정 기록 |
+| `evaluation/writing/run_chapter_pilot.py`, `docs/CHAPTER_PILOT_REVIEW.md`, `evaluation/writing/pilots/20261031-results/` | CUDA 근거 4개로 결과 장 1개를 생성·진단 검토한 실패 사례와 추가 검사 우선순위. 서비스 초안과 분리 |
 | `docs/NPU_WRITING_RUBRIC.md`, `evaluation/writing/npu-rubric.v1.json` | NPU 논문 단독의 작성·평가 기준표와 기계 판독용 명세. 실행기 연결 전 설계안 |
+| `docs/WRITING_REVIEW_RESPONSIBILITIES.md`, `evaluation/writing/npu-review-responsibilities.v1.json` | 2번 작업: 기존 33개 기준의 코드·에이전트 검사 책임과 판정 경계. 입력 문맥 구성·생성 흐름은 미변경 |
 | `paper_draft_agent.py`, `paper_content.py`, `paper_prompts.py`, `paper_quality.py` | 앱 진입점과 기존 비교 모드·작성 품질 검사 |
 | `paper_structure*`, `structure_*`, `paper_outline.py` | 참고 논문의 구조·작성 가이드 추출과 표시 |
 | `*evaluation.py`, `evaluation/`, `tests/` | 평가·회귀 검사. 고정 예측·정답·코드 스냅샷은 재현에 필요하다. |

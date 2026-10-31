@@ -61,6 +61,31 @@ class FakeClient:
 
 
 class PlannedPaperTests(unittest.TestCase):
+    def test_plan_preview_persists_part_inputs_without_adding_model_calls(self):
+        value = plan()
+        section = value["sections"][1]
+        section["required_items"][0]["subsection_index"] = 0
+        section["required_items"].append({"id": "item_scope", "description": "조건 B의 한계를 설명한다.",
+                                          "evidence_ids": ["F2"], "guideline_ids": [], "subsection_index": 1})
+        with tempfile.TemporaryDirectory() as temporary:
+            fake = FakeClient(value)
+            result = PlannedPaper(temporary, fake).run(research(), plan_only=True)
+            folder = Path(result["run_dir"])
+            first = json.loads((folder / "contexts/subsections/s1-p0.json").read_text(encoding="utf-8"))
+            second = json.loads((folder / "contexts/subsections/s1-p1.json").read_text(encoding="utf-8"))
+            self.assertTrue((folder / "context-allocation.json").is_file())
+            self.assertEqual([f["id"] for f in first["facts"]], ["F1"])
+            self.assertEqual([f["id"] for f in second["facts"]], ["F2"])
+            self.assertEqual(first["allocation"], "explicit")
+            self.assertFalse((folder / "draft.md").exists())
+        self.assertEqual(len(fake.calls), 1)
+
+    def test_plan_rejects_partial_subsection_binding_before_context_construction(self):
+        value = plan()
+        value["sections"][1]["required_items"][0]["subsection_index"] = 0
+        with self.assertRaisesRegex(ValueError, "소절 배정"):
+            validate_plan(value, research(), {}, project_profile("generic"))
+
     def criterion_reference(self):
         return {"profiles": [{"section_guidelines": [{"role": "methods", "purpose": "실험 조건을 정의한다.",
                 "required_content": ["실험 조건과 비교 범위를 설명한다."], "paragraph_flow": [], "figures_tables": []}],

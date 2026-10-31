@@ -1,0 +1,544 @@
+{
+  "paper_title": "CUDA 연구 결과 장 시험본",
+  "section_plan": {
+    "id": "results_pilot",
+    "title": "계산 구간별 성능 비교와 해석",
+    "role": "evaluation",
+    "status": "write",
+    "purpose": "58쪽의 sparse.py/CUDA 비교를 사용해 측정 범위별 결과와 해석 한계를 서술한다.",
+    "subsections": [
+      "bound 계산 시간의 비교",
+      "측정 범위에 따른 가속비",
+      "결과 해석의 범위와 한계"
+    ],
+    "evidence_ids": [
+      "P0058F0006",
+      "P0058F0007",
+      "P0058F0008",
+      "P0058F0009"
+    ],
+    "reference_ids": [
+      "ref1_evaluation"
+    ],
+    "table_ids": [],
+    "depends_on": [],
+    "reference_adaptation": "골든 논문의 질문별 답 제시, 측정 범위 구분, 비교와 한계 서술 방식만 적용한다. NPU 장치·벤더·정확도 표·실험 개수를 이전하지 않는다.",
+    "required_items": [
+      {
+        "id": "bound_times",
+        "subsection_index": 0,
+        "description": "n=5와 평균 1회 조건에서 forward/backward의 sparse.py와 CUDA 시간 및 bound 가속비를 구분한다.",
+        "evidence_ids": [
+          "P0058F0006",
+          "P0058F0007",
+          "P0058F0008"
+        ],
+        "guideline_ids": [
+          "ref1_evaluation_required_1"
+        ]
+      },
+      {
+        "id": "combined_scope",
+        "subsection_index": 1,
+        "description": "추론+bound+검증 범위의 forward/backward 가속비와 단축률을 해당 범위로 한정해 제시한다.",
+        "evidence_ids": [
+          "P0058F0009"
+        ],
+        "guideline_ids": [
+          "ref1_evaluation_required_6"
+        ]
+      },
+      {
+        "id": "scope_comparison",
+        "subsection_index": 1,
+        "description": "bound만의 가속비와 추론+bound+검증 가속비를 혼동하지 않고 비교한다.",
+        "evidence_ids": [
+          "P0058F0008",
+          "P0058F0009"
+        ],
+        "guideline_ids": [
+          "ref1_evaluation_required_6"
+        ]
+      },
+      {
+        "id": "interpretation_limits",
+        "subsection_index": 2,
+        "description": "기록된 비교 범위의 결과만 해석하고 미확인 환경·정확성·실시간성·단일 최적화 인과를 성과로 추가하지 않는다.",
+        "evidence_ids": [
+          "P0058F0006",
+          "P0058F0007",
+          "P0058F0008",
+          "P0058F0009"
+        ],
+        "guideline_ids": [
+          "ref1_evaluation_required_7"
+        ]
+      }
+    ]
+  },
+  "subsection_headings": [
+    "### 1.1 bound 계산 시간의 비교",
+    "### 1.2 측정 범위에 따른 가속비",
+    "### 1.3 결과 해석의 범위와 한계"
+  ],
+  "facts": [
+    {
+      "id": "P0058F0006",
+      "statement": "sparse.py와 CUDA의 CROWN bound 계산 평균 1회 결과(n=5)에서 forward 기준 sparse.py 6.951ms, CUDA 1.307ms이다.",
+      "limits": "sparse.py와 CUDA의 CROWN bound 계산 평균 1회 결과 표(p58:img0:e1) 기반. 열 헤더는 'sparse.py (ms)', 'CUDA (ms)'로 명시됨.",
+      "sources": [
+        {
+          "element_id": "p58:img0:e0",
+          "page": 58,
+          "quote": "sparse.py, CUDA 평균 bound 계산 시간 (n = 5)",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p58:img0:e1",
+          "page": 58,
+          "quote": "| CROWN method | sparse.py (ms) | CUDA (ms) | bound 계산 성능 | 추론 + bound + 검증 |\n| --- | --- | --- | --- | --- |\n| forward | 6.951 | 1.307 | 5.32x <br>(81.2% 단축) | 4.86x <br>(79.4% 단축) |\n| backward | 8.044 | 1.519 | 5.30x <br>(81.1% 단축) | 4.89x <br>(79.6% 단축) |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p58:img0:e2",
+          "page": 58,
+          "quote": "sparse.py 와 CUDA의 CROWN bound 계산 평균 1회 결과 표",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "표 p58:img0:e1의 forward 행에서 sparse.py 6.951ms, CUDA 1.307ms가 진술과 정확히 일치한다. 표 헤더(p58:img0:e0) 'sparse.py (ms)', 'CUDA (ms)' 및 바닥글(p58:img0:e2) 'sparse.py 와 CUDA의 CROWN bound 계산 평균 1회 결과 표'가 조건(n=5, 평균 1회, forward)을 뒷받침한다.",
+      "conditions": [
+        "CROWN bound 계산 평균 1회",
+        "n=5",
+        "sparse.py와 CUDA 비교",
+        "forward"
+      ],
+      "measurements": [
+        {
+          "metric": "forward sparse.py bound 계산 시간",
+          "value": "6.951",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "CROWN bound 계산 평균 1회, n=5",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "6.951",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "forward CUDA bound 계산 시간",
+          "value": "1.307",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "CROWN bound 계산 평균 1회, n=5",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "1.307",
+          "normalization_status": "normalized"
+        }
+      ],
+      "parameters": [],
+      "observations": [
+        "forward sparse.py 6.951ms",
+        "forward CUDA 1.307ms"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true
+    },
+    {
+      "id": "P0058F0007",
+      "statement": "sparse.py와 CUDA의 CROWN bound 계산 평균 1회 결과(n=5)에서 backward 기준 sparse.py 8.044ms, CUDA 1.519ms이다.",
+      "limits": "sparse.py와 CUDA의 CROWN bound 계산 평균 1회 결과 표(p58:img0:e1) 기반.",
+      "sources": [
+        {
+          "element_id": "p58:img0:e0",
+          "page": 58,
+          "quote": "sparse.py, CUDA 평균 bound 계산 시간 (n = 5)",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p58:img0:e1",
+          "page": 58,
+          "quote": "| CROWN method | sparse.py (ms) | CUDA (ms) | bound 계산 성능 | 추론 + bound + 검증 |\n| --- | --- | --- | --- | --- |\n| forward | 6.951 | 1.307 | 5.32x <br>(81.2% 단축) | 4.86x <br>(79.4% 단축) |\n| backward | 8.044 | 1.519 | 5.30x <br>(81.1% 단축) | 4.89x <br>(79.6% 단축) |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p58:img0:e2",
+          "page": 58,
+          "quote": "sparse.py 와 CUDA의 CROWN bound 계산 평균 1회 결과 표",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "표 p58:img0:e1의 backward 행에서 sparse.py 8.044ms, CUDA 1.519ms가 진술과 정확히 일치한다. 표 구조와 바닥글이 조건(n=5, 평균 1회, backward)을 뒷받침한다.",
+      "conditions": [
+        "CROWN bound 계산 평균 1회",
+        "n=5",
+        "sparse.py와 CUDA 비교",
+        "backward"
+      ],
+      "measurements": [
+        {
+          "metric": "backward sparse.py bound 계산 시간",
+          "value": "8.044",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "CROWN bound 계산 평균 1회, n=5",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "8.044",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "backward CUDA bound 계산 시간",
+          "value": "1.519",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "CROWN bound 계산 평균 1회, n=5",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "1.519",
+          "normalization_status": "normalized"
+        }
+      ],
+      "parameters": [],
+      "observations": [
+        "backward sparse.py 8.044ms",
+        "backward CUDA 1.519ms"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true
+    },
+    {
+      "id": "P0058F0008",
+      "statement": "sparse.py 대비 CUDA의 CROWN bound 계산 성능은 forward 기준 5.32배(81.2% 단축), backward 기준 5.30배(81.1% 단축)이다.",
+      "limits": "sparse.py와 CUDA의 CROWN bound 계산 평균 1회 결과 표(p58:img0:e1)의 'bound 계산 성능' 열 기반. 단축률은 원문에 명시된 값.",
+      "sources": [
+        {
+          "element_id": "p58:img0:e0",
+          "page": 58,
+          "quote": "sparse.py, CUDA 평균 bound 계산 시간 (n = 5)",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p58:img0:e1",
+          "page": 58,
+          "quote": "| CROWN method | sparse.py (ms) | CUDA (ms) | bound 계산 성능 | 추론 + bound + 검증 |\n| --- | --- | --- | --- | --- |\n| forward | 6.951 | 1.307 | 5.32x <br>(81.2% 단축) | 4.86x <br>(79.4% 단축) |\n| backward | 8.044 | 1.519 | 5.30x <br>(81.1% 단축) | 4.89x <br>(79.6% 단축) |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p58:img0:e2",
+          "page": 58,
+          "quote": "sparse.py 와 CUDA의 CROWN bound 계산 평균 1회 결과 표",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "표 p58:img0:e1의 'bound 계산 성능' 열에서 forward 5.32x(81.2% 단축), backward 5.30x(81.1% 단축)가 진술과 정확히 일치한다. backward 배율 5.30은 측정값 5.3(raw_value 5.30)으로 정규화되었으나 수치적으로 동등하다. 단축률 값도 원문 명시값과 일치한다.",
+      "conditions": [
+        "CROWN bound 계산 평균 1회",
+        "n=5",
+        "sparse.py 대비 CUDA",
+        "bound 계산 성능 열"
+      ],
+      "measurements": [
+        {
+          "metric": "forward bound 계산 성능 배율",
+          "value": "5.32",
+          "value_kind": "scalar",
+          "unit": "배",
+          "condition": "sparse.py 대비 CUDA, CROWN bound 계산 평균 1회",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "5.32",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "forward bound 계산 단축률",
+          "value": "81.2",
+          "value_kind": "scalar",
+          "unit": "%",
+          "condition": "sparse.py 대비 CUDA, CROWN bound 계산 평균 1회",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "81.2",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "backward bound 계산 성능 배율",
+          "value": "5.3",
+          "value_kind": "scalar",
+          "unit": "배",
+          "condition": "sparse.py 대비 CUDA, CROWN bound 계산 평균 1회",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "5.30",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "backward bound 계산 단축률",
+          "value": "81.1",
+          "value_kind": "scalar",
+          "unit": "%",
+          "condition": "sparse.py 대비 CUDA, CROWN bound 계산 평균 1회",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "81.1",
+          "normalization_status": "normalized"
+        }
+      ],
+      "parameters": [],
+      "observations": [
+        "forward 5.32배(81.2% 단축)",
+        "backward 5.30배(81.1% 단축)"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true
+    },
+    {
+      "id": "P0058F0009",
+      "statement": "sparse.py 대비 CUDA의 추론+bound+검증 전체 기준 성능은 forward 4.86배(79.4% 단축), backward 4.89배(79.6% 단축)이다.",
+      "limits": "sparse.py와 CUDA의 CROWN bound 계산 평균 1회 결과 표(p58:img0:e1)의 '추론 + bound + 검증' 열 기반. 단축률은 원문에 명시된 값.",
+      "sources": [
+        {
+          "element_id": "p58:img0:e0",
+          "page": 58,
+          "quote": "sparse.py, CUDA 평균 bound 계산 시간 (n = 5)",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p58:img0:e1",
+          "page": 58,
+          "quote": "| CROWN method | sparse.py (ms) | CUDA (ms) | bound 계산 성능 | 추론 + bound + 검증 |\n| --- | --- | --- | --- | --- |\n| forward | 6.951 | 1.307 | 5.32x <br>(81.2% 단축) | 4.86x <br>(79.4% 단축) |\n| backward | 8.044 | 1.519 | 5.30x <br>(81.1% 단축) | 4.89x <br>(79.6% 단축) |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p58:img0:e2",
+          "page": 58,
+          "quote": "sparse.py 와 CUDA의 CROWN bound 계산 평균 1회 결과 표",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "표 p58:img0:e1의 '추론 + bound + 검증' 열에서 forward 4.86x(79.4% 단축), backward 4.89x(79.6% 단축)가 진술과 정확히 일치한다. 모든 배율 및 단축률 값이 원문 표 기재값과 일치한다.",
+      "conditions": [
+        "CROWN bound 계산 평균 1회",
+        "n=5",
+        "sparse.py 대비 CUDA",
+        "추론+bound+검증 전체 기준"
+      ],
+      "measurements": [
+        {
+          "metric": "추론+bound+검증 forward 배율",
+          "value": "4.86",
+          "value_kind": "scalar",
+          "unit": "배",
+          "condition": "sparse.py 대비 CUDA, CROWN bound 계산 평균 1회",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "4.86",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "추론+bound+검증 forward 단축률",
+          "value": "79.4",
+          "value_kind": "scalar",
+          "unit": "%",
+          "condition": "sparse.py 대비 CUDA, CROWN bound 계산 평균 1회",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "79.4",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "추론+bound+검증 backward 배율",
+          "value": "4.89",
+          "value_kind": "scalar",
+          "unit": "배",
+          "condition": "sparse.py 대비 CUDA, CROWN bound 계산 평균 1회",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "4.89",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "추론+bound+검증 backward 단축률",
+          "value": "79.6",
+          "value_kind": "scalar",
+          "unit": "%",
+          "condition": "sparse.py 대비 CUDA, CROWN bound 계산 평균 1회",
+          "element_ids": [
+            "p58:img0:e1"
+          ],
+          "raw_value": "79.6",
+          "normalization_status": "normalized"
+        }
+      ],
+      "parameters": [],
+      "observations": [
+        "추론+bound+검증 forward 4.86배(79.4% 단축)",
+        "추론+bound+검증 backward 4.89배(79.6% 단축)"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true
+    }
+  ],
+  "tables": [],
+  "reference_guides": [
+    {
+      "id": "ref1_evaluation",
+      "role": "evaluation",
+      "purpose": "연구 질문별로 정확도·지연 시간 결과를 제시하고, 구성 간 차이와 순위 변화, 추가 이득의 크기를 해석한다.",
+      "required_content": [
+        "각 연구 질문의 질문과 답 요약",
+        "정확도 결과 표",
+        "시스템 수준 지연 시간 결과 표",
+        "런타임 호출 지연 시간 결과 표",
+        "구성 간 개선 조합 수와 예외 사례",
+        "구성 요소 단위와 전체 처리 성능의 순위 비교",
+        "추가 이득의 범위와 동시 변경의 해석상 제약"
+      ],
+      "paragraph_flow": [
+        "평가 대상과 결과 표 구성을 먼저 안내한다.",
+        "첫 번째 질문: 기준선과 전용 가속기 수준 구성 간 정확도·지연 시간 변화를 조합 단위로 서술한다.",
+        "전체 처리 과정의 비교에서의 변화와 정확도·지연 시간 간 상충을 함께 짚는다.",
+        "두 번째 질문: 동일 호스트 대상 순위 비교를 통해 전용 가속기 수준 성능이 종단 간 성능을 항상 예측하지는 않음을 보인다.",
+        "워크로드에 따라 순위 관계가 달라질 수 있음을 함께 제시한다.",
+        "세 번째 질문: 전용 가속기 수준 대비 종단 간 구성의 추가 지연 시간 감소 폭을 정리하고, 여러 요소가 동시에 바뀐 점을 명시한다."
+      ],
+      "figures_tables": [
+        "정확도, 시스템 수준 지연 시간, 런타임 호출 지연 시간을 각각 표로 제시한다.",
+        "표에서는 구성별 값을 나란히 보여 비교 가능하게 한다.",
+        "본문에서는 표 전체를 반복하기보다 개선 조합 수, 예외, 순위 변화, 감소 폭을 중심으로 서술한다."
+      ],
+      "style_rules": [
+        "연구 문제를 실용적 중요성과 기존 방법의 한계로 시작하여, 비교의 어려움과 측정 범위의 모호함을 함께 제시한다.",
+        "실험 조건이나 구성을 정의하기 전에, 왜 해당 구분이 필요한지 먼저 서술하여 독자의 기대를 정렬한다.",
+        "연구 질문(RQ)을 명시적으로 제시하고, 각 질문의 답을 요약한 뒤 세부 결과로 이어지는 구조를 사용한다.",
+        "여러 구성이나 조건을 비교할 때는 표로 기준선을 먼저 보여주고, 본문에서는 차이점과 예외만 서술한다.",
+        "성능 결과는 단일 지표가 아니라 정확도·지연 시간 등 여러 지표를 함께 제시하고, 지표 간 상충 가능성을 함께 논의한다.",
+        "한계 절에서는 실험 범위, 통제 조건, 동시 변경의 제약, 측정 환경의 차이를 구체적으로 밝히고, 결과의 해석 범위를 제한한다.",
+        "결론에서는 핵심 발견을 수준별로 다시 정리하고, 향후 확장 방향을 범위 확대·요인 분리·제약 조건 반영으로 제시한다."
+      ],
+      "not_to_transfer": [
+        "Edge NPU, NPU-only, End-to-End, VG-NPU, VG-E2E, Baseline 등 특정 실험 구성 명칭",
+        "ResNet50, YOLOv5m, YOLOv8s-pose, ImageNet-1K, COCO 등 특정 모델·데이터셋·작업 유형 이름",
+        "Hailo-8, Hailo-10H, DeepX DX-M1, Mobilint Regulus 등 특정 하드웨어·소프트웨어 제품명과 스택 버전",
+        "INT8 TOPS, DFC, HailoRT, DX-COM, qbruntime 등 특정 벤더 도구와 사양 수치",
+        "10.4–70.7% 등 이 논문에서 관측된 구체적 성능 수치와 조합별 결과값",
+        "Table 1~6, Fig. 1 등 이 논문의 표·그림 번호",
+        "저자명, 소속, 이메일, ORCID, 참고문헌 목록과 인용 표기"
+      ],
+      "criteria": [
+        {
+          "id": "ref1_evaluation_required_1",
+          "description": "각 연구 질문의 질문과 답 요약"
+        },
+        {
+          "id": "ref1_evaluation_required_2",
+          "description": "정확도 결과 표"
+        },
+        {
+          "id": "ref1_evaluation_required_3",
+          "description": "시스템 수준 지연 시간 결과 표"
+        },
+        {
+          "id": "ref1_evaluation_required_4",
+          "description": "런타임 호출 지연 시간 결과 표"
+        },
+        {
+          "id": "ref1_evaluation_required_5",
+          "description": "구성 간 개선 조합 수와 예외 사례"
+        },
+        {
+          "id": "ref1_evaluation_required_6",
+          "description": "구성 요소 단위와 전체 처리 성능의 순위 비교"
+        },
+        {
+          "id": "ref1_evaluation_required_7",
+          "description": "추가 이득의 범위와 동시 변경의 해석상 제약"
+        }
+      ]
+    }
+  ],
+  "subsection_assignments": {
+    "p0": {
+      "heading": "### 1.1 bound 계산 시간의 비교",
+      "required_item_ids": [
+        "bound_times"
+      ],
+      "evidence_ids": [
+        "P0058F0006",
+        "P0058F0007",
+        "P0058F0008"
+      ],
+      "guideline_ids": [
+        "ref1_evaluation_required_1"
+      ],
+      "shared_evidence_ids": [],
+      "allocation": "explicit"
+    },
+    "p1": {
+      "heading": "### 1.2 측정 범위에 따른 가속비",
+      "required_item_ids": [
+        "combined_scope",
+        "scope_comparison"
+      ],
+      "evidence_ids": [
+        "P0058F0008",
+        "P0058F0009"
+      ],
+      "guideline_ids": [
+        "ref1_evaluation_required_6"
+      ],
+      "shared_evidence_ids": [],
+      "allocation": "explicit"
+    },
+    "p2": {
+      "heading": "### 1.3 결과 해석의 범위와 한계",
+      "required_item_ids": [
+        "interpretation_limits"
+      ],
+      "evidence_ids": [
+        "P0058F0006",
+        "P0058F0007",
+        "P0058F0008",
+        "P0058F0009"
+      ],
+      "guideline_ids": [
+        "ref1_evaluation_required_7"
+      ],
+      "shared_evidence_ids": [],
+      "allocation": "explicit"
+    }
+  },
+  "context": {}
+}

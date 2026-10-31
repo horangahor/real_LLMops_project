@@ -14,6 +14,7 @@ from paper_outline import element_key, element_text
 from paper_plan import (BASE, STRINGS, VERSION, normalize_research, object_schema, plan_schema,
                         bind_plan_evidence, project_profile, reference_catalog, validate_plan)
 from structure_profiles import load_profiles
+from paper_context import VERSION as CONTEXT_VERSION, build_contexts, part_context
 
 GROUNDING = """연구 자료의 facts만 연구 주장의 근거다. 각 사실의 limits와 측정 조건을 함께 지킨다.
 참고 가이드는 글의 구성 방식이며 다른 논문의 사실을 가져오지 않는다. 원문에 없는 수치·성과·장비·인과·신규성을 만들지 않는다.
@@ -30,12 +31,15 @@ placeholder 장의 근거·필수 내용·표·의존 장·소절은 빈 배열�
 required_items의 guideline_ids에는 해당 장에 선택한 reference_guides.criteria의 ID만 연결한다.
 description은 연결한 골든 기준을 이번 연구의 근거로 확인할 수 있는 구체적인 작성 항목으로 표현한다.
 연구 내용 자체의 요구사항이면 guideline_ids는 비워도 된다. 골든 논문에만 있는 실험·수치·조건을 요구하거나 만들어내지 않는다.
+각 required_item의 subsection_index에 그 항목을 다룰 소절의 0부터 시작하는 인덱스를 지정한다. 소절이 없으면 0이다.
+모든 소절에 하나 이상의 필수 항목을 배정한다. 비교 항목에는 양쪽 근거 ID를 모두 연결하고 조건·한계를 함께 보존한다.
 generation_order에는 write 장 ID를 각각 한 번 넣는다. depends_on에는 그 순서에서 이미 작성된 장 ID만 쓴다.
 표는 입력에 실제 있는 ID만 쓰고 여러 장에 중복 배치하지 않는다. 장·필수 내용 ID는 영문자로 시작하는 짧은 고유 식별자다.
 출력 title은 연구를 반영한 논문 제목이고, reference_adaptation은 연구 사실이 아닌 구성 방식의 적용 설명이다."""
 WRITER = """작성 계획에 지정된 장 하나를 쓴다. 절 목적·필수 내용·지정한 연구 근거·참고 가이드·선행 장 문맥을 따른다.
 모든 사실 주장에 [근거:ID]를 붙인다. 지정한 evidence_ids 밖의 근거는 쓰지 않는다. 이 표시는 최종 본문에서 코드가 분리한다.
 required_items의 guideline_ids가 연결한 criteria를 해당 항목의 작성 기준으로 삼는다. 실제 연구 근거가 없는 내용을 지침 때문에 추가하지 않는다.
+subsection_assignments가 있으면 각 p번호 본문은 해당 칸의 required_item_ids와 evidence_ids 배정을 따른다.
 계획의 reference_adaptation을 문단 전개·설명 순서에 반영하되 작성 지침 자체를 본문에 노출하지 않는다.
 parts의 p0, p1 등 각 칸에 해당 소절의 본문만 쓴다. subsection_headings의 순서와 parts 칸의 순서가 같다.
 소절이 없으면 p0에 장 본문을 쓴다. 모든 # 제목·번호·소절 제목은 코드가 조립하므로 본문 값에는 넣지 않는다.
@@ -302,12 +306,13 @@ class PlannedPaper:
         if set(parts) != set(expected):
             raise ValueError("부분 수정할 본문 칸 구성이 계획과 다릅니다.")
         for index, key in enumerate(expected):
+            scoped = part_context(packet, key) if "subsection_assignments" in packet else packet
             body = clean_part(parts[key], packet, index)
             parts[key] = body
             try:
                 if not isinstance(body, str) or not body.strip() or re.search(r"(?m)^#{1,6}\s", body):
                     raise ValueError("비어 있거나 제목이 들어간 본문 칸")
-                validate_body(body, {**packet, "subsection_headings": []})
+                validate_body(body, {**scoped, "subsection_headings": []})
             except ValueError as error:
                 corrected = self.call(folder, f"{name}-{key}-repair", GROUNDING + "\n지정된 소절의 본문 하나만 완결된 산문으로 쓴다. "
                     "JSON의 text에 본문만 넣는다. # 제목, 표 캡션, | 구분자, 표·표 행은 작성하지 않는다. "
@@ -315,11 +320,11 @@ class PlannedPaper:
                     {"paper_title": packet["paper_title"], "target_part": key,
                      "target_heading": packet["subsection_headings"][index] if packet["subsection_headings"] else packet["section_plan"]["title"],
                      "purpose": packet["section_plan"].get("purpose", ""),
-                     "required_items": packet["section_plan"].get("required_items", []),
-                     "facts": [{field: fact[field] for field in ("id", "statement", "limits") if field in fact} for fact in packet["facts"]],
-                     "allowed_evidence_ids": packet["section_plan"]["evidence_ids"], "validation_error": str(error)},
+                     "required_items": scoped["section_plan"].get("required_items", []),
+                     "facts": scoped["facts"], "reference_guides": scoped.get("reference_guides", []),
+                     "allowed_evidence_ids": scoped["section_plan"]["evidence_ids"], "validation_error": str(error)},
                     object_schema({"text": {"type": "string"}}))
-                parts[key] = corrected["text"]
+                parts[key] = validate_body(corrected["text"], {**scoped, "subsection_headings": []})
         return compose_parts({"parts": parts}, packet)
 
     def run(self, research, reference=None, project="generic", output_dir=None, plan_only=False, progress=None):
@@ -338,6 +343,7 @@ class PlannedPaper:
                 fact["sources"] = [{key: source[key] for key in ("element_id", "page") if key in source} for source in fact["sources"]]
         inputs = {"research": planning_research, "project": profile, "reference_guides": catalog, "reference_shapes": shapes}
         identity = fingerprint({"inputs": inputs, "version": VERSION, "model": SOLAR_MODEL,
+                                "context_version": CONTEXT_VERSION,
                                 "prompts": [GROUNDING, PLANNER, WRITER, REVIEWER, EDITOR]})
         folder = Path(output_dir) if output_dir else self.base_dir / "draft_history/planned" / project / identity[:20]
         manifest_path = folder / "manifest.json"
@@ -359,23 +365,23 @@ class PlannedPaper:
             plan = bind_plan_evidence(plan, research, profile)
             validate_plan(plan, research, catalog, profile)
         write_json(folder / "plan.json", plan)
+        contexts = build_contexts(plan, research, catalog)
+        write_json(folder / "context-allocation.json", {"version": CONTEXT_VERSION,
+                                                       "sections": contexts["allocation_report"]})
+        for identifier, packet in contexts["sections"].items():
+            write_json(folder / "contexts/sections" / f"{identifier}.json", packet)
+            for key, scoped in contexts["subsections"][identifier].items():
+                write_json(folder / "contexts/subsections" / f"{identifier}-{key}.json", scoped)
         if plan_only:
             if progress:
                 progress(100, "작성 계획 검증·저장 완료")
-            return {"plan": plan, "run_dir": str(folder), "research_evidence": research, "draft_markdown": ""}
+            return {"plan": plan, "run_dir": str(folder), "research_evidence": research, "draft_markdown": "",
+                    "context_allocation": contexts["allocation_report"]}
         by_id = {s["id"]: s for s in plan["sections"]}
-        facts = {f["id"]: f for f in research["facts"]}
         packets, sections = {}, {}
         for index, identifier in enumerate(plan["generation_order"]):
             section = by_id[identifier]
-            position = next(i for i, s in enumerate(plan["sections"], 1) if s["id"] == identifier)
-            headings = [f"### {position}.{i} {name}" for i, name in enumerate(section["subsections"], 1)]
-            packet = {"paper_title": plan["title"], "section_plan": section, "subsection_headings": headings,
-                "facts": [facts[key] for key in section["evidence_ids"]],
-                "reference_guides": [catalog[key] for key in section["reference_ids"]],
-                "context": {key: {"title": by_id[key]["title"], "purpose": by_id[key]["purpose"],
-                                   "role": by_id[key]["role"], "subsections": by_id[key]["subsections"]}
-                            for key in section["depends_on"]}}
+            packet = contexts["sections"][identifier]
             packets[identifier] = packet
             if progress:
                 progress(20 + int(45 * index / len(plan["generation_order"])), f"{section['title']} 작성 중...")

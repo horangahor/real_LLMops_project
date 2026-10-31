@@ -68,7 +68,8 @@ def reference_catalog(reference):
         for guide in profile.get("section_guidelines", []):
             identifier = f"ref{index}_{guide['role']}"
             catalog[identifier] = {"id": identifier, **copy.deepcopy(guide),
-                                   "style_rules": copy.deepcopy(profile.get("style_rules", []))}
+                                   "style_rules": copy.deepcopy(profile.get("style_rules", [])),
+                                   "not_to_transfer": copy.deepcopy(profile.get("not_to_transfer", []))}
             catalog[identifier]["criteria"] = [
                 {"id": f"{identifier}_required_{number}", "description": text}
                 for number, text in enumerate(guide.get("required_content", []), 1)]
@@ -90,7 +91,8 @@ def plan_schema(research=None, catalog=None):
     tables = choices([t["id"] for t in research["tables"]]) if research else STRINGS
     guidelines = choices([criterion["id"] for guide in catalog.values() for criterion in guide.get("criteria", [])]) if catalog is not None else STRINGS
     item = object_schema({"id": {"type": "string"}, "description": {"type": "string"},
-                          "evidence_ids": evidence, "guideline_ids": guidelines})
+                          "evidence_ids": evidence, "guideline_ids": guidelines,
+                          "subsection_index": {"type": "integer", "minimum": 0}})
     section = object_schema({"id": {"type": "string"}, "title": {"type": "string"},
         "role": {"type": "string", "enum": list(ROLE_LABELS)}, "purpose": {"type": "string"},
         "status": {"type": "string", "enum": ["write", "placeholder"]},
@@ -208,6 +210,12 @@ def validate_plan(plan, research, catalog, profile):
                     or len(guideline_ids) != len(set(guideline_ids)) or not set(guideline_ids) <= allowed_guidelines):
                 raise ValueError("필수 내용의 작성 기준이 해당 장의 골든 가이드에 없습니다.")
             item_ids.add(key)
+        indices = [item.get("subsection_index") for item in section.get("required_items", [])]
+        if any(index is not None for index in indices):
+            part_count = max(1, len(section["subsections"]))
+            if (any(type(index) is not int or not 0 <= index < part_count for index in indices)
+                    or set(indices) != set(range(part_count))):
+                raise ValueError("필수 항목의 소절 배정이 잘못됐거나 누락됐습니다.")
     policy = profile["constraints"]["related_work"]
     if not {"introduction", "conclusion"} <= {s["role"] for s in sections if s["status"] == "write"}:
         raise ValueError("작성 계획에는 서론과 결론의 역할이 필요합니다.")

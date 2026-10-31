@@ -4,6 +4,8 @@
 
 이번 기준표의 골든 샘플은 **NPU 논문 한 편**이다. RGBD 논문의 기준은 혼합하지 않았다. 이 문서는 작성·평가 설계안이며 아직 실제 초안을 채점하거나 앱의 기본 골든 선택을 NPU 한 편으로 변경한 것은 아니다.
 
+**2번 작업인 검사 책임 분리:** [기준별 코드·에이전트 책임표](WRITING_REVIEW_RESPONSIBILITIES.md)에 33개 항목의 판정 경계와 기존/미구현 검사를 정리했다. 입력 문맥 구성과 생성 흐름은 변경하지 않았다. 연구 주제는 CUDA이며 NPU 논문은 구조·서술 방식의 참고 자료다.
+
 ## 1. 출처와 기준의 성격
 
 - 원문: [Benchmarking Vendor-Guided Optimizations on Edge NPUs: From NPU Only to End-to-End Performance](../golden%20sample/AIComps2026_NPU_Benchmarking_1.1v.pdf)
