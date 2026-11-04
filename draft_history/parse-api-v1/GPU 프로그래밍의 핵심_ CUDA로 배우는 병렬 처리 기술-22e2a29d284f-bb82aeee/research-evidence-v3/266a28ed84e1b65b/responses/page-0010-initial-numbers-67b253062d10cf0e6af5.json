@@ -1,0 +1,273 @@
+{
+  "request_fingerprint": "67b253062d10cf0e6af512370246d63bc7623940516894f28bd33d7a144edf1d",
+  "value": {
+    "repairs": {
+      "8": [
+        {
+          "statement": "only_GPU에서 GPU로 처리하던 함수들 중 hybrid에서는 CPU로 되돌린 함수들이 있으며, make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max가 이에 해당한다.",
+          "limits": "matmul은 cuBLAS + 메모리풀로 only_GPU와 hybrid에서 동일하게 유지된다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p9:e78"
+          ]
+        },
+        {
+          "statement": "GPU 풀 구조체는 only_GPU에서 d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당)였고, hybrid에서는 d_A, d_B, d_C 딱 3개만 matmul 전용으로 축소되었다.",
+          "limits": "하이브리드에서 GPU 풀은 matmul 전용으로 제한된다.",
+          "kind": "setup",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p9:e78"
+          ]
+        },
+        {
+          "statement": "hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스이다.",
+          "limits": "속도 향상은 삭제/회귀에 따른 결과로 서술되었으며 별도 측정값은 이 문장만으로 확인되지 않는다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p9:e81"
+          ]
+        },
+        {
+          "statement": "v4에서 cuBLAS 미리 예열을 위해 계산(시간측정) 전에 더미 matmul을 한 번 호출하는 방법이 제시되었다.",
+          "limits": "예열 방법은 matmul 안에 cuBLAS가 들어있기 때문에 더미 matmul 호출로 cuBLAS를 초기화하는 방식이다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p10:e83",
+            "p10:enh:e1",
+            "p10:review:e1"
+          ]
+        },
+        {
+          "statement": "cuBLAS는 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다.",
+          "limits": "정의성 서술이며 특정 실험 측정값은 아니다.",
+          "kind": "setup",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p10:e84",
+            "p10:enh:e2",
+            "p10:review:e2"
+          ]
+        },
+        {
+          "statement": "가중치(W)는 고정이므로 네트워크 로드할 때 GPU에 미리 업로드해두고, matmul에서 호출마다 복사하는 과정(memcpy)을 삭제하는 방향이 제시되었다.",
+          "limits": "실제 사전 업로드 적용 결과는 별도 버전(v1-1-2 등)에서 다룬다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p10:e85",
+            "p10:enh:e3",
+            "p10:review:e3"
+          ]
+        },
+        {
+          "statement": "16 x 491 행렬 같은 부분도 있으므로, 현재 기준 512 x 512, 2MB 행렬을 memcpy하는 것보다 필요한 부분만 복사하는 방향이 제시되었다.",
+          "limits": "현재 기준 행렬 크기는 512 x 512, 2MB로 서술되었다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p10:e86",
+            "p10:enh:e4",
+            "p10:review:e4"
+          ]
+        },
+        {
+          "statement": "v1-1에서 벡터연산 중 3가지(vec_add, sub, mat)를 CPU로 돌려놓았을 때 300ms가 측정되었다.",
+          "limits": "v1-1은 메모리 풀과 cuBLAS 등이 아직 적용되지 않은 상태로, 작성자는 이 비교가 정확하지 않을 수 있다고 보았다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [],
+          "observations": [
+            "v1-1은 메모리 풀도 안 해놨고 cuBLAS 같은 것도 안 해놔서 CPU로 함수를 돌려놓다 보면 결국 v0의 결과와 같아질 수 있다고 작성자가 언급했다."
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "벡터연산 3가지 CPU 처리 시간",
+              "value": "300",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "v1-1, vec_add/sub/mat CPU 처리",
+              "element_ids": [
+                "p10:e90",
+                "p10:enh:e7",
+                "p10:review:e7"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p10:e90",
+            "p10:enh:e7",
+            "p10:review:e7"
+          ]
+        },
+        {
+          "statement": "v1-1-1에서 메모리풀만 도입한 프로그램의 결과가 205~250ms로 측정되었다.",
+          "limits": "메모리풀만 도입한 버전이며 cuBLAS 예열 등 다른 최적화는 포함되지 않은 것으로 보인다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "메모리풀만 도입한 프로그램 처리 시간",
+              "value": "205~250",
+              "value_kind": "range",
+              "unit": "ms",
+              "condition": "v1-1-1, my_lirpa_mempool.cu",
+              "element_ids": [
+                "p10:e92",
+                "p10:enh:e9",
+                "p10:review:e9"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p10:e92",
+            "p10:enh:e9",
+            "p10:review:e9"
+          ]
+        },
+        {
+          "statement": "메모리 풀 크기 산정 근거로 Matrix 3개(mat_add, matmul 등에서 최대 3개 A, B, C 동시 사용)와 Vector 6개(relu_relax에서 lower, upper, alpha_l, beta_l, alpha_u, beta_u 동시 사용)가 제시되었다.",
+          "limits": "산정 근거는 풀 크기 설계 방향의 설명이며 실제 풀 크기 수치 자체는 이 문장들에 직접 제시되지 않았다.",
+          "kind": "setup",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p10:enh:e12",
+            "p10:enh:e13",
+            "p10:review:e12",
+            "p10:review:e13"
+          ]
+        },
+        {
+          "statement": "v1-1-2에서 가중치만 미리 업로드할 수 있게 변경했을 때 149~155ms가 측정되었다.",
+          "limits": "측정값은 my_lirpa_mempool_preload_on_gpu.cu 기준이다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "가중치 사전 업로드 버전 처리 시간",
+              "value": "149~155",
+              "value_kind": "range",
+              "unit": "ms",
+              "condition": "v1-1-2, my_lirpa_mempool_preload_on_gpu.cu",
+              "element_ids": [
+                "p11:e96"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p11:e96"
+          ]
+        },
+        {
+          "statement": "Starting CROWN Verification(eps = 1e-06) 실행 결과 Elapsed time이 228,585200 ms로 기록되었다.",
+          "limits": "OCR/표기상 소수점 표기(228,585200 ms)의 정확한 해석은 원문 표기 그대로 보존한다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps = 1e-06"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "CROWN Verification 경과 시간",
+              "value": "228,585200",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "Starting CROWN Verification, eps = 1e-06",
+              "element_ids": [
+                "p11:e95"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p11:e95"
+          ]
+        },
+        {
+          "statement": "GPU의 메모리 주소를 저장할 수 있는 포인터 배열을 신경망에 미리 만들어두고, 포인터 배열 크기는 MAX_LAYERS를 기준으로 하므로 공간보다 신경망이 작으면 낭비될 수 있다.",
+          "limits": "포인터 배열 크기 기준은 MAX_LAYERS이며, 신경망이 작으면 공간 낭비가 발생할 수 있다는 우려가 함께 서술되었다.",
+          "kind": "setup",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p11:e97",
+            "p11:e98"
+          ]
+        },
+        {
+          "statement": "double보다 float가 접근 속도가 더 빠르다는 언급이 있으나, 행렬·벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰려면 전체적으로 갈아엎을 필요가 있다.",
+          "limits": "float 전환 필요성은 접근 속도 관련 언급에 기반한 설계상 제약으로 서술되었으며, 실제 float 전환 결과는 제시되지 않았다.",
+          "kind": "limitation",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p11:e99"
+          ]
+        }
+      ]
+    }
+  }
+}

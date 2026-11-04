@@ -1,0 +1,80 @@
+{
+  "request_fingerprint": "39971746c907a1b9a5988746253bdb706e368788d617f72f4efc4724474710b8",
+  "value": {
+    "decisions": {
+      "P0054F0005": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "measurements 배열에서 실제 측정값이 아닌 누적 변수명(time_infer_total, time_bound_total, time_certify_total)을 제거하고, rejected_measurements도 함께 정리함.",
+            "limits": "제거된 measurements는 연구 방법의 측정 구조를 설명하는 변수명이며, 실제 수치 결과(예: 1.6966 ms 등)는 p55:e405 등 별도 요소에 존재함. 변수명 자체는 parameters/observations/conditions에 이미 적절히 반영되어 있어 연구 내용 손실은 없음.",
+            "kind": "method",
+            "claim_status": "documented_method",
+            "source_origin": "research_note",
+            "conditions": [
+              "추론(네트워크 정방향 통과) 후 bound 계산, bound 계산 후 검증(Top-k 인증 판정) 순서로 진행",
+              "case 0은 ForwardBoundResult, case 1은 BackwardBoundResult 사용",
+              "각 case 안에서 직접 초기화하여 NRVO 적용, 4MB+ 구조체 복사 0회"
+            ],
+            "observations": [
+              "추론 시간 누적 변수: time_infer_total",
+              "bound 시간 누적 변수: time_bound_total",
+              "검증 시간 누적 변수: time_certify_total",
+              "Top-k 인증 판정 결과에 따라 t_count 또는 f_count 증가"
+            ],
+            "parameters": [
+              {
+                "name": "추론 시간 측정 구간",
+                "value": "t0 ~ t1",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p54:e392"
+                ]
+              },
+              {
+                "name": "bound 시간 측정 구간",
+                "value": "t1 ~ t2",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p54:e392"
+                ]
+              },
+              {
+                "name": "검증 시간 측정 구간",
+                "value": "t2 ~ t3",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p54:e392"
+                ]
+              },
+              {
+                "name": "bound 계산 방법(case)",
+                "value": "0: ForwardBoundResult (lirpa_forward_bound_imp1), 1: BackwardBoundResult (lirpa_backward_bound)",
+                "value_kind": "text",
+                "element_ids": [
+                  "p54:e392"
+                ]
+              },
+              {
+                "name": "Top-k 인증 판정 함수",
+                "value": "certify_topk(y0, final_lower, final_upper, k)",
+                "value_kind": "text",
+                "element_ids": [
+                  "p54:e392"
+                ]
+              }
+            ],
+            "measurements": [],
+            "element_ids": [
+              "p54:e392",
+              "p54:e393",
+              "p54:e394"
+            ]
+          }
+        ],
+        "reason": "P0054F0005의 measurements는 실제 측정 수치(예: 1.6966 ms)가 아닌 누적 변수명(time_infer_total 등)을 value로 기재하고 있어 scalar 측정값으로 오인될 수 있음. support_note에서 '실제 측정 오류는 아님'으로 명시된 rejected_measurements의 validation_error(수치 분리 포맷에 대한 메타 지침)와 동일한 이슈. 승인 후보 P0054F0001은 measurements/parameters/observations/conditions가 모두 비어있으나 출처 p54:e392 코드 및 p54:e393 문장에 의해 지원됨. 대상 P0054F0005의 추가 상세(조건, 관찰, 파라미터)는 모두 출처 코드에서 확인되므로 보존하고, 변수명 measurements와 rejected_measurements만 제거하여 미확인 수치·측정값 이슈를 정리함. 이후 승인 후보 P0054F0001과의 중복 여부 재평가 가능."
+      }
+    }
+  }
+}

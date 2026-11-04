@@ -1,0 +1,775 @@
+{
+  "initial": [
+    {
+      "statement": "Starting CROWN Verification (eps = 1e-06) ** MODE: HYBRID (matmul=GPU, rest=CPU) ** calc success Elapsed time: 201.670100 ms Output Dimension: 16",
+      "limits": "측정 환경·반복 횟수·입력 모델은 원문에 없음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "eps = 1e-06",
+        "MODE: HYBRID (matmul=GPU, rest=CPU)",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "calc success"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "201.6701",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "MODE: HYBRID (matmul=GPU, rest=CPU)",
+          "element_ids": [
+            "p6:e48"
+          ],
+          "raw_value": "201.6701",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e48",
+          "page": 6,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) ** MODE: HYBRID (matmul=GPU, rest=CPU) ** calc success Elapsed time: 201.670100 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) [ 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 0.081772 | 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1,310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 | 0.273823 0.102482 0.114541 2,670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2.049689 -1.025760 1.082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p6:e49",
+          "page": 6,
+          "quote": "2 01.670ms , 조금 줄었다. , 여전히 cpu보다 느림",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0001"
+    },
+    {
+      "statement": "v2에서 적용 방안: 1. cuBLAS 미리 예열: 계산(시간측정) 전에 미리 cuBLAS 호출해서 초기화(즉 예열) ← 방법 더미 matmul을 한번 호출(matmul 안에 cuBLAS가 들어있으니까)",
+      "limits": "예열용 더미 matmul 호출의 실제 실행 여부·효과는 이 문장만으로 확인되지 않음",
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e51",
+          "page": 6,
+          "quote": "1. cuBLAS 미리 예열 : 계산 (시간측정) 전에 미리 cuBLAS 호출해서 초기화 (즉 예열) ⇐\n방법 더미 matmul을 한번 호출 (matmul 안에 cuBLAS가 들어있으니까)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0002"
+    },
+    {
+      "statement": "cuBLAS: 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리",
+      "limits": "라이브러리 설명은 일반 지식 서술",
+      "kind": "setup",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e52",
+          "page": 6,
+          "quote": "a. cuBLAS : 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수\n연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0003"
+    },
+    {
+      "statement": "가중치(W) GPU에 사전 업로드: 가중치는 고정이므로 네트워크 로드할때 미리 업로드 해놓기(그리고 matmul에서 호출마다 복사하는 과정 삭제)(memcpy)",
+      "limits": "사전 업로드·memcpy 제거의 실제 적용 여부는 후속 측정으로만 간접 확인됨",
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e53",
+          "page": 6,
+          "quote": "2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리\n업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)\n3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 ,\n2MB행렬을 Memcpy 하는중)보다 필요한 부분만 복사하기",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0004"
+    },
+    {
+      "statement": "16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512, 2MB행렬을 Memcpy 하는중)보다 필요한 부분만 복사하기",
+      "limits": "현재 memcpy 중인 행렬 크기(512x512, 2MB)는 서술된 값이며 실제 측정 전 상태",
+      "kind": "setup",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e53",
+          "page": 6,
+          "quote": "2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리\n업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)\n3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 ,\n2MB행렬을 Memcpy 하는중)보다 필요한 부분만 복사하기",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0005"
+    },
+    {
+      "statement": "v3는 CPU·GPU 하이브리드로 풀 구조체를 축소했고 200ms였다.",
+      "limits": "CPU 기준(v0 96ms)과의 직접 비교는 이 문장만으로 확인되지 않음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "MODE: HYBRID (matmul=GPU, rest=CPU)"
+      ],
+      "observations": [
+        "calc success",
+        "Output Dimension: 16"
+      ],
+      "parameters": [
+        {
+          "name": "eps",
+          "value": "1e-06",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p6:e48"
+          ]
+        }
+      ],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "201.6701",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "MODE: HYBRID (matmul=GPU, rest=CPU)",
+          "element_ids": [
+            "p6:e48"
+          ],
+          "raw_value": "201.6701",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e48",
+          "page": 6,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) ** MODE: HYBRID (matmul=GPU, rest=CPU) ** calc success Elapsed time: 201.670100 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) [ 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 0.081772 | 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1,310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 | 0.273823 0.102482 0.114541 2,670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2.049689 -1.025760 1.082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p6:e49",
+          "page": 6,
+          "quote": "2 01.670ms , 조금 줄었다. , 여전히 cpu보다 느림",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p8:e77",
+          "page": 8,
+          "quote": "v 3 : CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, 200ms //\ncrown_test_op_hybrid.cu",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "limits의 원문 미확인 수치: 96"
+      ],
+      "repair_unresolved": true,
+      "id": "P0006F0006"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "v2 적용 방안 중 cuBLAS 예열(더미 matmul 호출)은 계산 시간 측정 전에 cuBLAS를 미리 호출해 초기화하는 방법이다.",
+        "limits": "예열용 더미 matmul 호출의 실제 실행 여부·효과는 이 문장만으로 확인되지 않음",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p6:e51"
+        ]
+      },
+      {
+        "statement": "v2 적용 방안 중 가중치(W) GPU 사전 업로드는 가중치가 고정이므로 네트워크 로드 시 미리 업로드하고, matmul 호출마다 복사(memcpy)하는 과정을 삭제하는 방법이다.",
+        "limits": "사전 업로드·memcpy 제거의 실제 적용 여부는 후속 측정으로만 간접 확인됨",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p6:e53"
+        ]
+      },
+      {
+        "statement": "v2 적용 방안 중 16 x 491 행렬 같은 부분도 전부 복사하는 대신, 현재 기준 512 x 512, 2MB 행렬을 Memcpy하는 중이므로 필요한 부분만 복사하는 방법이 제시되었다.",
+        "limits": "현재 memcpy 중인 행렬 크기(512x512, 2MB)는 서술된 값이며 실제 측정 전 상태",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p6:e53"
+        ]
+      },
+      {
+        "statement": "v2 적용 후 측정 결과: Starting CROWN Verification (eps = 1e-06), MODE: HYBRID (matmul=GPU, rest=CPU), calc success, Elapsed time: 201.670100 ms, Output Dimension: 16",
+        "limits": "측정 환경·반복 횟수·입력 모델은 원문에 없음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "MODE: HYBRID (matmul=GPU, rest=CPU)",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "calc success"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "201.6701",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "MODE: HYBRID (matmul=GPU, rest=CPU)",
+            "element_ids": [
+              "p6:e48"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p6:e48",
+          "p6:e49"
+        ]
+      },
+      {
+        "statement": "v2 적용 후 201.670ms로 조금 줄었지만 여전히 CPU보다 느리다는 평가가 기록되었다.",
+        "limits": "CPU 기준 시간 값은 이 문장만으로 확인되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p6:e49"
+        ]
+      },
+      {
+        "statement": "v2 적용 방안에는 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하기가 포함된다.",
+        "limits": "각 방안의 실제 적용 여부는 후속 측정으로만 간접 확인됨",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p6:e51",
+          "p6:e53"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p6:e48": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p6:e49": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p6:e50": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p6:e51": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p6:e52": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p6:e53": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p6:review:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p6:review:e1": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p6:review:e2": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p6:review:e3": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      }
+    },
+    "ledger_validation_error": "대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+  },
+  "facts": [
+    {
+      "statement": "Starting CROWN Verification (eps = 1e-06) ** MODE: HYBRID (matmul=GPU, rest=CPU) ** calc success Elapsed time: 201.670100 ms Output Dimension: 16",
+      "limits": "측정 환경·반복 횟수·입력 모델은 원문에 없음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "eps = 1e-06",
+        "MODE: HYBRID (matmul=GPU, rest=CPU)",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "calc success"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "201.6701",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "MODE: HYBRID (matmul=GPU, rest=CPU)",
+          "element_ids": [
+            "p6:e48"
+          ],
+          "raw_value": "201.6701",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e48",
+          "page": 6,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) ** MODE: HYBRID (matmul=GPU, rest=CPU) ** calc success Elapsed time: 201.670100 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) [ 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 0.081772 | 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1,310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 | 0.273823 0.102482 0.114541 2,670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2.049689 -1.025760 1.082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p6:e49",
+          "page": 6,
+          "quote": "2 01.670ms , 조금 줄었다. , 여전히 cpu보다 느림",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0001"
+    },
+    {
+      "statement": "v2에서 적용 방안: 1. cuBLAS 미리 예열: 계산(시간측정) 전에 미리 cuBLAS 호출해서 초기화(즉 예열) ← 방법 더미 matmul을 한번 호출(matmul 안에 cuBLAS가 들어있으니까)",
+      "limits": "예열용 더미 matmul 호출의 실제 실행 여부·효과는 이 문장만으로 확인되지 않음",
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e51",
+          "page": 6,
+          "quote": "1. cuBLAS 미리 예열 : 계산 (시간측정) 전에 미리 cuBLAS 호출해서 초기화 (즉 예열) ⇐\n방법 더미 matmul을 한번 호출 (matmul 안에 cuBLAS가 들어있으니까)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0002"
+    },
+    {
+      "statement": "cuBLAS: 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리",
+      "limits": "라이브러리 설명은 일반 지식 서술",
+      "kind": "setup",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e52",
+          "page": 6,
+          "quote": "a. cuBLAS : 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수\n연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0003"
+    },
+    {
+      "statement": "가중치(W) GPU에 사전 업로드: 가중치는 고정이므로 네트워크 로드할때 미리 업로드 해놓기(그리고 matmul에서 호출마다 복사하는 과정 삭제)(memcpy)",
+      "limits": "사전 업로드·memcpy 제거의 실제 적용 여부는 후속 측정으로만 간접 확인됨",
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e53",
+          "page": 6,
+          "quote": "2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리\n업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)\n3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 ,\n2MB행렬을 Memcpy 하는중)보다 필요한 부분만 복사하기",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0004"
+    },
+    {
+      "statement": "16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512, 2MB행렬을 Memcpy 하는중)보다 필요한 부분만 복사하기",
+      "limits": "현재 memcpy 중인 행렬 크기(512x512, 2MB)는 서술된 값이며 실제 측정 전 상태",
+      "kind": "setup",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e53",
+          "page": 6,
+          "quote": "2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리\n업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)\n3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 ,\n2MB행렬을 Memcpy 하는중)보다 필요한 부분만 복사하기",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0005"
+    },
+    {
+      "statement": "v3는 CPU·GPU 하이브리드로 풀 구조체를 축소했고 200ms였다.",
+      "limits": "CPU 기준(v0 96ms)과의 직접 비교는 이 문장만으로 확인되지 않음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "MODE: HYBRID (matmul=GPU, rest=CPU)"
+      ],
+      "observations": [
+        "calc success",
+        "Output Dimension: 16"
+      ],
+      "parameters": [
+        {
+          "name": "eps",
+          "value": "1e-06",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p6:e48"
+          ]
+        }
+      ],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "201.6701",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "MODE: HYBRID (matmul=GPU, rest=CPU)",
+          "element_ids": [
+            "p6:e48"
+          ],
+          "raw_value": "201.6701",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e48",
+          "page": 6,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) ** MODE: HYBRID (matmul=GPU, rest=CPU) ** calc success Elapsed time: 201.670100 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) [ 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 0.081772 | 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1,310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 | 0.273823 0.102482 0.114541 2,670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2.049689 -1.025760 1.082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p6:e49",
+          "page": 6,
+          "quote": "2 01.670ms , 조금 줄었다. , 여전히 cpu보다 느림",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p8:e77",
+          "page": 8,
+          "quote": "v 3 : CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, 200ms //\ncrown_test_op_hybrid.cu",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "limits의 원문 미확인 수치: 96"
+      ],
+      "repair_unresolved": true,
+      "id": "P0006F0006"
+    },
+    {
+      "statement": "v2 적용 방안 중 cuBLAS 예열(더미 matmul 호출)은 계산 시간 측정 전에 cuBLAS를 미리 호출해 초기화하는 방법이다.",
+      "limits": "예열용 더미 matmul 호출의 실제 실행 여부·효과는 이 문장만으로 확인되지 않음",
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e51",
+          "page": 6,
+          "quote": "1. cuBLAS 미리 예열 : 계산 (시간측정) 전에 미리 cuBLAS 호출해서 초기화 (즉 예열) ⇐\n방법 더미 matmul을 한번 호출 (matmul 안에 cuBLAS가 들어있으니까)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0007"
+    },
+    {
+      "statement": "v2 적용 방안 중 가중치(W) GPU 사전 업로드는 가중치가 고정이므로 네트워크 로드 시 미리 업로드하고, matmul 호출마다 복사(memcpy)하는 과정을 삭제하는 방법이다.",
+      "limits": "사전 업로드·memcpy 제거의 실제 적용 여부는 후속 측정으로만 간접 확인됨",
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e53",
+          "page": 6,
+          "quote": "2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리\n업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)\n3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 ,\n2MB행렬을 Memcpy 하는중)보다 필요한 부분만 복사하기",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0008"
+    },
+    {
+      "statement": "v2 적용 방안 중 16 x 491 행렬 같은 부분도 전부 복사하는 대신, 현재 기준 512 x 512, 2MB 행렬을 Memcpy하는 중이므로 필요한 부분만 복사하는 방법이 제시되었다.",
+      "limits": "현재 memcpy 중인 행렬 크기(512x512, 2MB)는 서술된 값이며 실제 측정 전 상태",
+      "kind": "setup",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e53",
+          "page": 6,
+          "quote": "2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리\n업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)\n3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 ,\n2MB행렬을 Memcpy 하는중)보다 필요한 부분만 복사하기",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0009"
+    },
+    {
+      "statement": "v2 적용 후 측정 결과: Starting CROWN Verification (eps = 1e-06), MODE: HYBRID (matmul=GPU, rest=CPU), calc success, Elapsed time: 201.670100 ms, Output Dimension: 16",
+      "limits": "측정 환경·반복 횟수·입력 모델은 원문에 없음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "eps = 1e-06",
+        "MODE: HYBRID (matmul=GPU, rest=CPU)",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "calc success"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "201.6701",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "MODE: HYBRID (matmul=GPU, rest=CPU)",
+          "element_ids": [
+            "p6:e48"
+          ],
+          "raw_value": "201.6701",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e48",
+          "page": 6,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) ** MODE: HYBRID (matmul=GPU, rest=CPU) ** calc success Elapsed time: 201.670100 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) [ 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 0.081772 | 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1,310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 | 0.273823 0.102482 0.114541 2,670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2.049689 -1.025760 1.082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p6:e49",
+          "page": 6,
+          "quote": "2 01.670ms , 조금 줄었다. , 여전히 cpu보다 느림",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0010"
+    },
+    {
+      "statement": "v2(HYBRID) 적용 후 201.670ms로 조금 줄었지만 여전히 CPU보다 느리다고 기록되었고, 이후 v2 최종 결과에서 85ms로 개선되어 드디어 CPU보다 빨라졌다고 기록되었다.",
+      "limits": "CPU 기준 시간 값은 이 요소들만으로 확인되지 않음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "p6:e49는 HYBRID 모드에서 201.670ms로 조금 줄었으나 여전히 CPU보다 느리다고 기록",
+        "p7:e55는 HYBRID V2에서 85ms로 개선되어 드디어 CPU보다 빨라졌다고 기록"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [
+        {
+          "metric": "elapsed time",
+          "value": "201.670100",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "MODE: HYBRID (matmul=GPU, rest=CPU), eps = 1e-06",
+          "element_ids": [
+            "p6:e48"
+          ],
+          "validation_error": "source_id_outside_fact"
+        },
+        {
+          "metric": "elapsed time",
+          "value": "85.785300",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "MODE: HYBRID V2, eps = 1e-06",
+          "element_ids": [
+            "p7:e54"
+          ],
+          "validation_error": "source_id_outside_fact"
+        }
+      ],
+      "sources": [
+        {
+          "element_id": "p6:e49",
+          "page": 6,
+          "quote": "2 01.670ms , 조금 줄었다. , 여전히 cpu보다 느림",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p7:e55",
+          "page": 7,
+          "quote": "85ms 드디어 cpu보다 빨라짐",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 201.670",
+        "조건·관찰의 원문 미확인 수치: 201.670",
+        "측정값의 출처가 사실의 출처 범위 밖입니다.",
+        "측정값의 출처가 사실의 출처 범위 밖입니다."
+      ],
+      "id": "P0006F0011"
+    },
+    {
+      "statement": "v2 적용 방안에는 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하기가 포함된다.",
+      "limits": "각 방안의 실제 적용 여부는 후속 측정으로만 간접 확인됨",
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p6:e51",
+          "page": 6,
+          "quote": "1. cuBLAS 미리 예열 : 계산 (시간측정) 전에 미리 cuBLAS 호출해서 초기화 (즉 예열) ⇐\n방법 더미 matmul을 한번 호출 (matmul 안에 cuBLAS가 들어있으니까)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p6:e53",
+          "page": 6,
+          "quote": "2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리\n업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)\n3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 ,\n2MB행렬을 Memcpy 하는중)보다 필요한 부분만 복사하기",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0006F0012"
+    }
+  ]
+}

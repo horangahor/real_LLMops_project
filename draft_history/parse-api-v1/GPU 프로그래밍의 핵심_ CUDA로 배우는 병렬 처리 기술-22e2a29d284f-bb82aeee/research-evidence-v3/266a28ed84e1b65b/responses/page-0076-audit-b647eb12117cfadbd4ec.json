@@ -1,0 +1,340 @@
+{
+  "request_fingerprint": "b647eb12117cfadbd4ecb858890195aeda640eca2e81d5333cdc1382fadb2c94",
+  "value": {
+    "additions": [
+      {
+        "statement": "클록 고정 실험에서 Host Alloc(cudaHostAlloc) 결과와 nopin(Pageable Memory / NO PINNING) 결과를 비교했으며, nopin이 더 빠른 결과에 대해 작성자가 의문을 제기하고 gemini 답변을 참고했다.",
+        "limits": "측정 조건: 클록 고정 적용, B=1, Evaluated Samples 100000. nopin이 더 빠른 원인은 gemini 답변에서 '초소형 데이터(1 KB)의 역설'로 설명됨.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "클록 고정 적용",
+          "B=1",
+          "Evaluated Samples 100000",
+          "cudaHostAlloc vs Pageable Memory / NO PINNING 비교"
+        ],
+        "observations": [
+          "Host Alloc 결과: total elapsed 806.54s, infer 132.586s(16.4%), bound 670.122s(83.1%), certify 2.077s(0.3%)",
+          "nopin 결과: total elapsed 790.64s, infer 119.466s(15.1%), bound 667.611s(84.4%), certify 2.004s(0.3%)",
+          "Real-Time Single-Sample (B=1) Latency Analysis [cudaHostAlloc]: Evaluated Samples 100000, Min Latency 832.80 us, Mean Latency 869.34 us (0.87 ms), Median (P50) 859.80 us, P95 Tail Latency 899.60 us, P99 Tail Latency 1095.90 us, Max Latency 13996.40 us, Jitter (StdDev) 73.27 us, Throughput 1150.30 samples/sec, Pure GPU Execution 705.89 us (last sample)",
+          "Real-Time Single-Sample (B=1) Latency Analysis [Pageable Memory / NO PINNING]: Evaluated Samples 100000, Min Latency 822.10 us, Mean Latency 859.20 us (0.86 ms), Median (P50) 847.90 us, P95 Tail Latency 899.40 us, P99 Tail Latency 1089.30 us, Max Latency 14400.40 us, Jitter (StdDev) 105.84 us, Throughput 1163.87 samples/sec, Pure GPU Execution 695.42 us (last sample)",
+          "작성자 반응: '클록고정까지 했는데, 이런 결과면 받아들여야겠네 왜 nopin이 더 빠른가? ⇒ gemini 대답'",
+          "gemini 답변: '측정이 잘못된 것이 아니라, CUDA와 컴퓨터 구조에서 매우 유명한 초소형 데이터(1 KB)의 역설이 정직하게 나타난 것'",
+          "숨겨진 전제 조건: 'Pinned Memory가 무조건 빠르다'는 교과서/강의의 주장에는 '데이터가 충분히 클 때'라는 조건이 있음",
+          "1,028 Byte(1 KB)에서 No-Pin이 더 빠른 이유: CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝남",
+          "Pinned Memory의 DMA 오버헤드: PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1~2 마이크로초(0.0015 ms)가 걸림",
+          "92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 μs)가 누적되어 infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것"
+        ],
+        "parameters": [
+          {
+            "name": "클록 고정값",
+            "value": "1410",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p75:e587"
+            ]
+          },
+          {
+            "name": "데이터 크기",
+            "value": "1028 Byte (1 KB)",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p77:e597",
+              "p77:e600"
+            ]
+          },
+          {
+            "name": "루프 횟수",
+            "value": "92만 번",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p77:e603"
+            ]
+          },
+          {
+            "name": "CPU L1 캐시 복사 시간",
+            "value": "20~30 나노초 (0.00003 ms)",
+            "value_kind": "range",
+            "element_ids": [
+              "p77:e600"
+            ]
+          },
+          {
+            "name": "DMA 셋업 오버헤드",
+            "value": "1~2 마이크로초 (0.0015 ms)",
+            "value_kind": "range",
+            "element_ids": [
+              "p77:e602"
+            ]
+          },
+          {
+            "name": "infer 단계 차이",
+            "value": "13초 (132초 vs 119초)",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p77:e603"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "total elapsed (cudaHostAlloc)",
+            "value": "806.54",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaHostAlloc, 클록 고정",
+            "element_ids": [
+              "p76:e591"
+            ]
+          },
+          {
+            "metric": "infer (cudaHostAlloc)",
+            "value": "132.586",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaHostAlloc, 클록 고정, 전체의 16.4%",
+            "element_ids": [
+              "p76:e591"
+            ]
+          },
+          {
+            "metric": "bound (cudaHostAlloc)",
+            "value": "670.122",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaHostAlloc, 클록 고정, 전체의 83.1%",
+            "element_ids": [
+              "p76:e591"
+            ]
+          },
+          {
+            "metric": "certify (cudaHostAlloc)",
+            "value": "2.077",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaHostAlloc, 클록 고정, 전체의 0.3%",
+            "element_ids": [
+              "p76:e591"
+            ]
+          },
+          {
+            "metric": "total elapsed (nopin)",
+            "value": "790.64",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "Pageable Memory / NO PINNING, 클록 고정",
+            "element_ids": [
+              "p76:e593"
+            ]
+          },
+          {
+            "metric": "infer (nopin)",
+            "value": "119.466",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "Pageable Memory / NO PINNING, 클록 고정, 전체의 15.1%",
+            "element_ids": [
+              "p76:e593"
+            ]
+          },
+          {
+            "metric": "bound (nopin)",
+            "value": "667.611",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "Pageable Memory / NO PINNING, 클록 고정, 전체의 84.4%",
+            "element_ids": [
+              "p76:e593"
+            ]
+          },
+          {
+            "metric": "certify (nopin)",
+            "value": "2.004",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "Pageable Memory / NO PINNING, 클록 고정, 전체의 0.3%",
+            "element_ids": [
+              "p76:e593"
+            ]
+          },
+          {
+            "metric": "Mean Latency (cudaHostAlloc)",
+            "value": "869.34",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaHostAlloc, B=1, 클록 고정",
+            "element_ids": [
+              "p76:e591"
+            ]
+          },
+          {
+            "metric": "Mean Latency (nopin)",
+            "value": "859.20",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pageable Memory / NO PINNING, B=1, 클록 고정",
+            "element_ids": [
+              "p76:e593"
+            ]
+          },
+          {
+            "metric": "Max Latency (cudaHostAlloc)",
+            "value": "13996.40",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaHostAlloc, B=1, 클록 고정",
+            "element_ids": [
+              "p76:e591"
+            ]
+          },
+          {
+            "metric": "Max Latency (nopin)",
+            "value": "14400.40",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pageable Memory / NO PINNING, B=1, 클록 고정",
+            "element_ids": [
+              "p76:e593"
+            ]
+          },
+          {
+            "metric": "Jitter (StdDev) (cudaHostAlloc)",
+            "value": "73.27",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaHostAlloc, B=1, 클록 고정",
+            "element_ids": [
+              "p76:e591"
+            ]
+          },
+          {
+            "metric": "Jitter (StdDev) (nopin)",
+            "value": "105.84",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pageable Memory / NO PINNING, B=1, 클록 고정",
+            "element_ids": [
+              "p76:e593"
+            ]
+          },
+          {
+            "metric": "Throughput (cudaHostAlloc)",
+            "value": "1150.30",
+            "value_kind": "scalar",
+            "unit": "samples/sec",
+            "condition": "cudaHostAlloc, B=1, 클록 고정",
+            "element_ids": [
+              "p76:e591"
+            ]
+          },
+          {
+            "metric": "Throughput (nopin)",
+            "value": "1163.87",
+            "value_kind": "scalar",
+            "unit": "samples/sec",
+            "condition": "Pageable Memory / NO PINNING, B=1, 클록 고정",
+            "element_ids": [
+              "p76:e593"
+            ]
+          },
+          {
+            "metric": "Pure GPU Execution (cudaHostAlloc)",
+            "value": "705.89",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaHostAlloc, B=1, 마지막 샘플, 클록 고정",
+            "element_ids": [
+              "p76:e591"
+            ]
+          },
+          {
+            "metric": "Pure GPU Execution (nopin)",
+            "value": "695.42",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pageable Memory / NO PINNING, B=1, 마지막 샘플, 클록 고정",
+            "element_ids": [
+              "p76:e593"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p75:e586",
+          "p75:e587",
+          "p75:e588",
+          "p75:e589",
+          "p76:e590",
+          "p76:e591",
+          "p76:e592",
+          "p76:e593",
+          "p76:e594",
+          "p77:e595",
+          "p77:e596",
+          "p77:e597",
+          "p77:e598",
+          "p77:e599",
+          "p77:e600",
+          "p77:e601",
+          "p77:e602",
+          "p77:e603"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p76:e590": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "Host Alloc 결과 heading. 실제 데이터는 p76:e591에 있음.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p76:e591": {
+        "state": "represented",
+        "fact_refs": [
+          0,
+          1
+        ],
+        "note": "cudaHostAlloc 결과 수치 전체 포함. 기존 facts와 additions 모두 반영됨.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p76:e592": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "nopin 결과 heading. 실제 데이터는 p76:e593에 있음.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p76:e593": {
+        "state": "represented",
+        "fact_refs": [
+          2,
+          3
+        ],
+        "note": "Pageable Memory / NO PINNING 결과 수치 전체 포함. 기존 facts와 additions 모두 반영됨.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p76:e594": {
+        "state": "represented",
+        "fact_refs": [
+          4
+        ],
+        "note": "작성자 반응 및 gemini 대답 참고 기록. additions에서 gemini 답변 내용까지 확장 반영.",
+        "addition_refs": [
+          0
+        ]
+      }
+    }
+  }
+}

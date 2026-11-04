@@ -1,0 +1,603 @@
+{
+  "request_fingerprint": "e571334b10e424b9333ea8c7e0f4a1f9327cf110e6eba98748ffa70d76a5f3ef",
+  "value": {
+    "title": "GPU/CUDA 실험의 비교 어려움과 공정 비교를 위한 구분·조건",
+    "facts": [
+      {
+        "statement": "cuSPARSE SpMV/SpMM 도입 후 elapsed time이 24ms baseline에서 27ms, 38.58ms로 증가하여 오히려 느려졌다.",
+        "limits": "모델이 작고 layer가 3개뿐이며 SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼. 매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 수행함. network_forward()가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "cuSPARSE SpMV/SpMM 적용",
+          "network_forward() 전체 타이머 포함",
+          "작은 모델(3-layer, 작은 행렬)",
+          "매 호출마다 descriptor/buffer 처리"
+        ],
+        "observations": [
+          "27.107400 ms (p28:enh:e1)",
+          "27ms 정도 (p29:enh:e0)",
+          "38.580600 ms (p30:enh:e0)",
+          "거의 40ms로 회귀 (p30:enh:e1)"
+        ],
+        "parameters": [
+          {
+            "name": "elapsed_time_ms",
+            "value": "27.107400",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p28:enh:e1"
+            ]
+          },
+          {
+            "name": "elapsed_time_ms",
+            "value": "38.580600",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p30:enh:e0"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "elapsed_time_ms",
+            "value": "27.107400",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuSPARSE SpMV 적용, network_forward 전체 타이머 포함",
+            "element_ids": [
+              "p28:enh:e1"
+            ]
+          },
+          {
+            "metric": "elapsed_time_ms",
+            "value": "38.580600",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "SpMM 적용 후, descriptor/buffer 오버헤드 포함",
+            "element_ids": [
+              "p30:enh:e0"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p28:enh:e1",
+          "p28:enh:e5",
+          "p28:enh:e6",
+          "p29:enh:e0",
+          "p29:enh:e3",
+          "p29:enh:e4",
+          "p29:enh:e5",
+          "p30:enh:e0",
+          "p30:enh:e1",
+          "p30:enh:e5"
+        ]
+      },
+      {
+        "statement": "cuSPARSE가 느려진 이유는 라이브러리 최적화 부족이 아니라 현재 workload가 cuSPARSE에 불리하기 때문이다.",
+        "limits": "행렬 크기가 작고 layer가 3개뿐임. SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼. 매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함. network_forward()가 여전히 layer마다 D2H→CPU vec_add→H2D를 수행함. cuSPARSE는 대규모 sparse throughput에 강하지만 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "작은 행렬 크기",
+          "layer 3개뿐",
+          "SpMV 호출 횟수 적음",
+          "매 호출마다 descriptor/buffer 처리",
+          "network_forward()에 D2H/CPU/H2D 포함"
+        ],
+        "observations": [
+          "cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문 (p29:enh:e3)",
+          "cuSPARSE는 대규모 sparse throughput에는 강하지만 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음 (p29:enh:e4)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e3",
+          "p29:enh:e4",
+          "p29:enh:e5"
+        ]
+      },
+      {
+        "statement": "cudaHostRegister(pinned memory)와 No Pinning(일반 메모리) 비교에서 1KB(1,028 Byte) 크기의 작은 데이터에서는 No-Pin이 더 빠르다.",
+        "limits": "Pinned Memory는 GPU DMA 엔진을 사용하나 PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작하는 하드웨어 오버헤드만 약 1~2마이크로초(0.0015ms)가 걸림. 1,028 Byte는 CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30나노초(0.00003ms)면 끝남. 92만 번의 루프 동안 매번 DMA 셋업 오버헤드가 누적되어 infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸림.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "데이터 크기 1,028 Byte(1KB)",
+          "cudaHostRegister(pinned) vs No Pinning(일반 메모리)",
+          "92만 번 루프 반복",
+          "GPU DMA 엔진(Copy Engine) 사용 여부"
+        ],
+        "observations": [
+          "1KB에서 No-Pin(일반 메모리)이 더 빠름 (p77:enh:e1, p77:enh:e3)",
+          "Pinned Memory는 DMA 엔진 셋업 오버헤드 1~2마이크로초 (p77:enh:e8)",
+          "92만 번 루프 동안 DMA 셋업 오버헤드 누적되어 infer 단계에서 13초 더 걸림 (132초 vs 119초) (p77:enh:e9)"
+        ],
+        "parameters": [
+          {
+            "name": "data_size_bytes",
+            "value": "1028",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p77:enh:e3"
+            ]
+          },
+          {
+            "name": "dma_setup_overhead_us",
+            "value": "1~2",
+            "value_kind": "range",
+            "element_ids": [
+              "p77:enh:e8"
+            ]
+          },
+          {
+            "name": "cpu_copy_time_ns",
+            "value": "20~30",
+            "value_kind": "range",
+            "element_ids": [
+              "p77:enh:e6"
+            ]
+          },
+          {
+            "name": "loop_count",
+            "value": "920000",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p77:enh:e9"
+            ]
+          },
+          {
+            "name": "infer_time_diff_seconds",
+            "value": "13",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p77:enh:e9"
+            ]
+          },
+          {
+            "name": "total_time_pinned_seconds",
+            "value": "132",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p77:enh:e9"
+            ]
+          },
+          {
+            "name": "total_time_nopin_seconds",
+            "value": "119",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p77:enh:e9"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "infer_time_seconds",
+            "value": "132",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "pinned memory (cudaHostRegister), 92만 번 루프, 1KB 데이터",
+            "element_ids": [
+              "p77:enh:e9"
+            ]
+          },
+          {
+            "metric": "infer_time_seconds",
+            "value": "119",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "No Pinning (일반 메모리), 92만 번 루프, 1KB 데이터",
+            "element_ids": [
+              "p77:enh:e9"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p77:enh:e1",
+          "p77:enh:e2",
+          "p77:enh:e3",
+          "p77:enh:e6",
+          "p77:enh:e7",
+          "p77:enh:e8",
+          "p77:enh:e9"
+        ]
+      },
+      {
+        "statement": "공정한 비교를 위해 실제 사이클 시간만 측정하고 가중치 로드 memcpy 등은 제외하며, warm up을 1회 수행하고 CV를 통해 스파이크·분산 정도를 규명하기로 했다.",
+        "limits": "warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 있음. warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않음. 스파이크가 안 뜰 때의 시간은 오히려 더 안정적임(변동 계수가 더 낮은 느낌).",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "실제 사이클 시간만 측정 (가중치 로드 memcpy 등 제외)",
+          "warm up 1회 수행",
+          "CV를 통한 스파이크·분산 정도 규명",
+          "추론·bound 계산·검증 3가지 값을 나눠서 측정"
+        ],
+        "observations": [
+          "Nvidia의 warm up 가이드라인을 세움 (p57:enh:e6)",
+          "실제 사이클 시간만 측정, 가중치 로드 memcpy 등은 포함 안 함 (p57:enh:e7)",
+          "warm up 한번 하기 (p57:enh:e8)",
+          "CV를 통해서 스파이크, 분산 정도를 규명할 것 (p57:enh:e9)",
+          "추론, bound 계산, 검증 3가지 값을 나눠서 측정하기로 함 (p57:enh:e10)",
+          "warm up 하니까 걸리는 시간 및 각 평균 시간이 더 늘어남 (p57:enh:e11)",
+          "warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제 (p57:enh:e14)",
+          "warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않음 (p57:enh:e17)",
+          "스파이크가 안 뜰 때의 시간은 오히려 더 안정적임 (변동 계수가 좀 더 낮은 느낌) (p57:enh:e18)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p57:enh:e5",
+          "p57:enh:e6",
+          "p57:enh:e7",
+          "p57:enh:e8",
+          "p57:enh:e9",
+          "p57:enh:e10",
+          "p57:enh:e11",
+          "p57:enh:e14",
+          "p57:enh:e17",
+          "p57:enh:e18"
+        ]
+      },
+      {
+        "statement": "초기화만 하면 forward, backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이난다.",
+        "limits": "초기화 후 bound 계산 시간 비교. 약 0.2ms 차이.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "초기화 후",
+          "forward와 backward의 bound 계산 시간 비교"
+        ],
+        "observations": [
+          "초기화만 하면 forward, backward의 bound 계산 시간은 비슷하다는 것 (p57:enh:e2)",
+          "한 0.2ms 정도 차이남 (p57:enh:e3)"
+        ],
+        "parameters": [
+          {
+            "name": "bound_time_diff_ms",
+            "value": "0.2",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p57:enh:e3"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "bound_time_difference_ms",
+            "value": "0.2",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "초기화 후 forward vs backward bound 계산 시간",
+            "element_ids": [
+              "p57:enh:e3"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p57:enh:e2",
+          "p57:enh:e3"
+        ]
+      },
+      {
+        "statement": "cudaHostRegister를 사용하여 데이터셋 호스트 메모리를 pinned memory로 승격시켜 GPU가 CPU 메모리에 직접 접근하도록 함.",
+        "limits": "cudaHostRegister(dataset.data(), (size_t)N * sizeof(Vector), cudaHostRegisterDefault) 호출. N>0일 때만 수행. 실패 시 cudaHostRegister skipped 메시지 출력.",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "N > 0",
+          "cudaHostRegisterDefault 플래그 사용",
+          "dataset.data() 포인터와 N * sizeof(Vector) 크기 등록"
+        ],
+        "observations": [
+          "cudaHostRegister로 일반 메모리를 복사 없이 pinned Memory로 승격 (p60:enh:e0)",
+          "실제 상황 최대한 재현을 위한 것 (5, 6G 환경에서의 실시간 입력 속도를 최대한 재현하기 위함) (p60:enh:e0)"
+        ],
+        "parameters": [
+          {
+            "name": "register_flag",
+            "value": "cudaHostRegisterDefault",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e0"
+        ]
+      },
+      {
+        "statement": "커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나 CPU 계산 오버헤드가 더 큰 것 같아 시간이 늘었다.",
+        "limits": "out_bytes = sizeof(int) + (size_t)out_dim * sizeof(float)로 계산하여 필요한 만큼만 복사. cudaMemcpyAsync 사용. 변경 후 시간이 늘었음.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "기존: MAXDIM으로 무조건 512개 float 복사",
+          "변경: 필요한 만큼의 데이터 크기만 복사 (out_bytes 계산)",
+          "cudaMemcpyAsync + cudaStreamSynchronize 사용"
+        ],
+        "observations": [
+          "필요한 만큼의 데이터 크기만 복사해서 주도록 변경 (p60:enh:e3)",
+          "CPU 계산 오버헤드가 더 큰 것 같기도 하고, 시간이 늘었음 (p60:enh:e3)"
+        ],
+        "parameters": [
+          {
+            "name": "out_bytes",
+            "value": "sizeof(int) + (size_t)out_dim * sizeof(float)",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e4"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e2",
+          "p60:enh:e3",
+          "p60:enh:e4"
+        ]
+      },
+      {
+        "statement": "bias도 메모리 풀에서 관리하도록 하고 forward의 중간 결과를 CPU(메모리)에 복사(memcpy)하는 여부의 플래그를 도입하여 memcpy 횟수를 줄임.",
+        "limits": "backward 호출시 forward를 호출하는데 forward의 중간 결과를 CPU에 복사하는 여부의 플래그 도입. false로 할 경우 memcpy가 현저히 줄어듦. cudaMemcpy 94회→54회, D2H 44회→20회, CUDA API 복사 시간 약 7.61ms→3.51ms, 실행 시간 1회 측정 약 20.22ms.",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "bias 메모리 풀 관리",
+          "forward 중간 결과 CPU 복사 여부 플래그 도입",
+          "false 설정 시 memcpy 현저히 감소"
+        ],
+        "observations": [
+          "bias도 메모리 풀에서 관리 (p36:enh:e0)",
+          "forward의 중간 결과를 CPU(메모리)에 복사(memcpy)하는 여부의 플래그 도입 (p36:enh:e4)",
+          "false로 할 경우 memcpy가 현저히 줄어듦 (p36:enh:e5)",
+          "cudaMemcpy: 94회→54회, D2H: 44회→20회, CUDA API 복사 시간: 약 7.61ms→3.51ms, 실행 시간 1회 측정: 약 20.22ms (p36:enh:e9)"
+        ],
+        "parameters": [
+          {
+            "name": "cudaMemcpy_count_before",
+            "value": "94",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "name": "cudaMemcpy_count_after",
+            "value": "54",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "name": "d2h_count_before",
+            "value": "44",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "name": "d2h_count_after",
+            "value": "20",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "name": "cuda_api_copy_time_ms_before",
+            "value": "7.61",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "name": "cuda_api_copy_time_ms_after",
+            "value": "3.51",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "name": "execution_time_1shot_ms",
+            "value": "20.22",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "cudaMemcpy_count",
+            "value": "94",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "플래그 도입 전",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "metric": "cudaMemcpy_count",
+            "value": "54",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "플래그 도입 후 (false)",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "metric": "d2h_count",
+            "value": "44",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "플래그 도입 전",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "metric": "d2h_count",
+            "value": "20",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "플래그 도입 후 (false)",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "metric": "cuda_api_copy_time_ms",
+            "value": "7.61",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "플래그 도입 전",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "metric": "cuda_api_copy_time_ms",
+            "value": "3.51",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "플래그 도입 후 (false)",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          },
+          {
+            "metric": "execution_time_1shot_ms",
+            "value": "20.22",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "플래그 도입 후 1회 측정",
+            "element_ids": [
+              "p36:enh:e9"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p36:enh:e0",
+          "p36:enh:e4",
+          "p36:enh:e5",
+          "p36:enh:e9"
+        ]
+      },
+      {
+        "statement": "CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거하여 커널 발사 횟수를 줄임.",
+        "limits": "H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하고 CUDA kernel launch만 센 값. graph mode=1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외",
+          "CUDA kernel launch만 측정",
+          "3-layer 네트워크 기준",
+          "graph mode=1"
+        ],
+        "observations": [
+          "Forward method=0 bound: 27회→18회 (9회 감소) (p82:enh:e3)",
+          "Backward method=1 bound 전체: 46회→31회 (15회 감소) (p82:enh:e3)",
+          "Backward-only method=2 bound 전체: 45회→33회 (12회 감소) (p82:enh:e3)",
+          "Forward 전체: 33회→24회 (9회 감소) (p82:enh:e5)",
+          "Backward 전체: 52회→37회 (15회 감소) (p82:enh:e5)",
+          "Backward-only 전체: 51회→39회 (12회 감소) (p82:enh:e5)",
+          "graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회 (p82:enh:e8)"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "kernel_launch_count_forward_bound",
+            "value": "27",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "기존, method=0, 3-layer, kernel launch만",
+            "element_ids": [
+              "p82:enh:e3"
+            ]
+          },
+          {
+            "metric": "kernel_launch_count_forward_bound",
+            "value": "18",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "현재, method=0, 3-layer, kernel launch만",
+            "element_ids": [
+              "p82:enh:e3"
+            ]
+          },
+          {
+            "metric": "kernel_launch_count_backward_bound",
+            "value": "46",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "기존, method=1, 3-layer, kernel launch만",
+            "element_ids": [
+              "p82:enh:e3"
+            ]
+          },
+          {
+            "metric": "kernel_launch_count_backward_bound",
+            "value": "31",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "현재, method=1, 3-layer, kernel launch만",
+            "element_ids": [
+              "p82:enh:e3"
+            ]
+          },
+          {
+            "metric": "kernel_launch_count_backward_only_bound",
+            "value": "45",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "기존, method=2, 3-layer, kernel launch만",
+            "element_ids": [
+              "p82:enh:e3"
+            ]
+          },
+          {
+            "metric": "kernel_launch_count_backward_only_bound",
+            "value": "33",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "현재, method=2, 3-layer, kernel launch만",
+            "element_ids": [
+              "p82:enh:e3"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p82:enh:e0",
+          "p82:enh:e1",
+          "p82:enh:e2",
+          "p82:enh:e3",
+          "p82:enh:e4",
+          "p82:enh:e5",
+          "p82:enh:e6",
+          "p82:enh:e7",
+          "p82:enh:e8"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

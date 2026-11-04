@@ -1,0 +1,411 @@
+{
+  "initial": [
+    {
+      "statement": "추론, bound 계산, 검증 끝마다 시간을 기록해 각각 측정하도록 코드를 구성함",
+      "limits": "",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e392",
+          "page": 54,
+          "quote": "![image](/image/placeholder)\nfor (int i = 0; i < N; ++i) { // - [1] 추론 // 신경망 정방향 통과 auto t0 = std::chrono::high_resolution_clock::now(); Vector ye = network_forward(*net, dataset[i]); auto t1 = std::chrono::high_resolution_clock::now(); // 추론 끝 시간 time_infer_total += std::chrono::duration<double>(t1 - t0).count(); // 추론 시간 누적 // - [2] Bound 계산 + [3] 검증 // CROWN backward bound or forward bound 계산 // (각 case 안에서 직접 초기화 → NRVO 적용, 4MB+ 구조체 복사 0회) switch(method){ case 0: { ForwardBoundResult fwd = lirpa_forward_bound_imp1(*net, dataset[i], eps_f, false, false, true); auto t2 = std::chrono::high_resolution_clock::now(); // bound 계산 끝 시간 time_bound_total += std::chrono::duration<double>(t2 - t1).count(); // bound 시간 누적 // Top-k 인증 판정 if (certify_topk(y0, fwd.final_lower, fwd.final_upper, k)) ++t_count; else ++f_count; auto t3 = std::chrono::high_resolution_clock::now(); // 검증 끝 시간 time_certify_total += std::chrono::duration<double>(t3 - t2).count(); // 검증 시간 누적 break; } case 1: { BackwardBoundResult bwd - lirpa_backward_bound(*net, dataset[i], eps_f, false, false); auto t2 = std::chrono::high_resolution_clock::now();/ bound 계산 끝 시간 time_bound_total += std::chrono::duration<double>(t2 - t1).count();// bound 시간 누적 // Top-k 인증 판정 if (certify_topk(y0, bwd.final_lower, bwd.final_upper, k)) +t_count; else ++f_count; auto t3 = std::chrono::high_resolution_clock::now(); // 검증 끝 시간 time_certify_total += - t2).count(); // 검증 시간 누적 break; } default: break; }",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p54:e393",
+          "page": 54,
+          "quote": "각 추론, bound 계산, 검증에 끝마다 시간을 기록해서(E2E) 각각 시간을 측정하도록\n하였다..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0001"
+    },
+    {
+      "statement": "Elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있어, 3개 누적 시간을 더한 값을 더 올바른 시간으로 보고 넣기로 함",
+      "limits": "",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e394",
+          "page": 54,
+          "quote": "끝 나고 보니 elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있는데, 이건 그냥 저 3개의\n누적 시간을 더한 게 더 올바른 시간 같아서 그걸 넣기로 함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0002"
+    },
+    {
+      "statement": "Forward, backward 각각 20번 측정을 완료했고, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정",
+      "limits": "",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e395",
+          "page": 54,
+          "quote": "그 리고 저렇게 해서 각 forward, backward 20번씩 측정 완료\n(튀는 값 있긴 있는데, 그건 각 20번 실행 시간 평균이랑 분산 구해서 슬라이드에 넣을 예정)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0003"
+    },
+    {
+      "statement": "단일 데이터 측정 검증 과정에서 warm up 코드를 먼저 넣음",
+      "limits": "",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e397",
+          "page": 54,
+          "quote": "b 과정 : 단일 데이터 측정 에 대해서 검증하기",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p54:e398",
+          "page": 54,
+          "quote": "먼 저 warm up 코드 넣었다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0004"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "추론·bound·검증 각 단계 종료 시점에 std::chrono::high_resolution_clock::now()로 타임스탬프를 찍고, 구간 차이를 duration<double>로 계산해 time_infer_total, time_bound_total, time_certify_total에 누적하는 방식으로 개별 시간을 측정함",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "case 0은 ForwardBoundResult를 쓰는 forward bound, case 1은 BackwardBoundResult를 쓰는 backward bound"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p54:e392"
+        ]
+      },
+      {
+        "statement": "elapsed 타임(92만 번 계산 시간)과 미세한 오차가 발생한 이유는 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단했기 때문이며, 그 누적 합산 값을 사용하기로 함",
+        "limits": "",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p54:e394"
+        ]
+      },
+      {
+        "statement": "forward와 backward 각각 20번 측정을 완료했고, 실행 중 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정임",
+        "limits": "",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p54:e395"
+        ]
+      },
+      {
+        "statement": "단일 데이터 측정 검증 과정에서 warm up 코드를 먼저 넣었음",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p54:e397",
+          "p54:e398"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p54:e392": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p54:e393": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p54:e394": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p54:e395": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p54:e396": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p54:e397": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p54:e398": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      }
+    },
+    "ledger_validation_error": "수집 대장의 사실 인덱스가 잘못됐습니다."
+  },
+  "facts": [
+    {
+      "statement": "추론, bound 계산, 검증 끝마다 시간을 기록해 각각 측정하도록 코드를 구성함",
+      "limits": "",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e392",
+          "page": 54,
+          "quote": "![image](/image/placeholder)\nfor (int i = 0; i < N; ++i) { // - [1] 추론 // 신경망 정방향 통과 auto t0 = std::chrono::high_resolution_clock::now(); Vector ye = network_forward(*net, dataset[i]); auto t1 = std::chrono::high_resolution_clock::now(); // 추론 끝 시간 time_infer_total += std::chrono::duration<double>(t1 - t0).count(); // 추론 시간 누적 // - [2] Bound 계산 + [3] 검증 // CROWN backward bound or forward bound 계산 // (각 case 안에서 직접 초기화 → NRVO 적용, 4MB+ 구조체 복사 0회) switch(method){ case 0: { ForwardBoundResult fwd = lirpa_forward_bound_imp1(*net, dataset[i], eps_f, false, false, true); auto t2 = std::chrono::high_resolution_clock::now(); // bound 계산 끝 시간 time_bound_total += std::chrono::duration<double>(t2 - t1).count(); // bound 시간 누적 // Top-k 인증 판정 if (certify_topk(y0, fwd.final_lower, fwd.final_upper, k)) ++t_count; else ++f_count; auto t3 = std::chrono::high_resolution_clock::now(); // 검증 끝 시간 time_certify_total += std::chrono::duration<double>(t3 - t2).count(); // 검증 시간 누적 break; } case 1: { BackwardBoundResult bwd - lirpa_backward_bound(*net, dataset[i], eps_f, false, false); auto t2 = std::chrono::high_resolution_clock::now();/ bound 계산 끝 시간 time_bound_total += std::chrono::duration<double>(t2 - t1).count();// bound 시간 누적 // Top-k 인증 판정 if (certify_topk(y0, bwd.final_lower, bwd.final_upper, k)) +t_count; else ++f_count; auto t3 = std::chrono::high_resolution_clock::now(); // 검증 끝 시간 time_certify_total += - t2).count(); // 검증 시간 누적 break; } default: break; }",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p54:e393",
+          "page": 54,
+          "quote": "각 추론, bound 계산, 검증에 끝마다 시간을 기록해서(E2E) 각각 시간을 측정하도록\n하였다..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0001"
+    },
+    {
+      "statement": "Elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있어, 3개 누적 시간을 더한 값을 더 올바른 시간으로 보고 넣기로 함",
+      "limits": "",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e394",
+          "page": 54,
+          "quote": "끝 나고 보니 elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있는데, 이건 그냥 저 3개의\n누적 시간을 더한 게 더 올바른 시간 같아서 그걸 넣기로 함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0002"
+    },
+    {
+      "statement": "Forward, backward 각각 20번 측정을 완료했고, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정",
+      "limits": "",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e395",
+          "page": 54,
+          "quote": "그 리고 저렇게 해서 각 forward, backward 20번씩 측정 완료\n(튀는 값 있긴 있는데, 그건 각 20번 실행 시간 평균이랑 분산 구해서 슬라이드에 넣을 예정)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0003"
+    },
+    {
+      "statement": "단일 데이터 측정 검증 과정에서 warm up 코드를 먼저 넣음",
+      "limits": "",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e397",
+          "page": 54,
+          "quote": "b 과정 : 단일 데이터 측정 에 대해서 검증하기",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p54:e398",
+          "page": 54,
+          "quote": "먼 저 warm up 코드 넣었다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0004"
+    },
+    {
+      "statement": "추론·bound·검증 각 단계 종료 시점에 std::chrono::high_resolution_clock::now()로 타임스탬프를 찍고, 구간 차이를 duration<double>로 계산해 time_infer_total, time_bound_total, time_certify_total에 누적하는 방식으로 개별 시간을 측정함",
+      "limits": "",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [
+        "case 0은 ForwardBoundResult를 쓰는 forward bound, case 1은 BackwardBoundResult를 쓰는 backward bound"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e392",
+          "page": 54,
+          "quote": "![image](/image/placeholder)\nfor (int i = 0; i < N; ++i) { // - [1] 추론 // 신경망 정방향 통과 auto t0 = std::chrono::high_resolution_clock::now(); Vector ye = network_forward(*net, dataset[i]); auto t1 = std::chrono::high_resolution_clock::now(); // 추론 끝 시간 time_infer_total += std::chrono::duration<double>(t1 - t0).count(); // 추론 시간 누적 // - [2] Bound 계산 + [3] 검증 // CROWN backward bound or forward bound 계산 // (각 case 안에서 직접 초기화 → NRVO 적용, 4MB+ 구조체 복사 0회) switch(method){ case 0: { ForwardBoundResult fwd = lirpa_forward_bound_imp1(*net, dataset[i], eps_f, false, false, true); auto t2 = std::chrono::high_resolution_clock::now(); // bound 계산 끝 시간 time_bound_total += std::chrono::duration<double>(t2 - t1).count(); // bound 시간 누적 // Top-k 인증 판정 if (certify_topk(y0, fwd.final_lower, fwd.final_upper, k)) ++t_count; else ++f_count; auto t3 = std::chrono::high_resolution_clock::now(); // 검증 끝 시간 time_certify_total += std::chrono::duration<double>(t3 - t2).count(); // 검증 시간 누적 break; } case 1: { BackwardBoundResult bwd - lirpa_backward_bound(*net, dataset[i], eps_f, false, false); auto t2 = std::chrono::high_resolution_clock::now();/ bound 계산 끝 시간 time_bound_total += std::chrono::duration<double>(t2 - t1).count();// bound 시간 누적 // Top-k 인증 판정 if (certify_topk(y0, bwd.final_lower, bwd.final_upper, k)) +t_count; else ++f_count; auto t3 = std::chrono::high_resolution_clock::now(); // 검증 끝 시간 time_certify_total += - t2).count(); // 검증 시간 누적 break; } default: break; }",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0005"
+    },
+    {
+      "statement": "elapsed 타임(92만 번 계산 시간)과 미세한 오차가 발생한 이유는 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단했기 때문이며, 그 누적 합산 값을 사용하기로 함",
+      "limits": "",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e394",
+          "page": 54,
+          "quote": "끝 나고 보니 elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있는데, 이건 그냥 저 3개의\n누적 시간을 더한 게 더 올바른 시간 같아서 그걸 넣기로 함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0006"
+    },
+    {
+      "statement": "forward와 backward 각각 20번 측정을 완료했고, 실행 중 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정임",
+      "limits": "",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e395",
+          "page": 54,
+          "quote": "그 리고 저렇게 해서 각 forward, backward 20번씩 측정 완료\n(튀는 값 있긴 있는데, 그건 각 20번 실행 시간 평균이랑 분산 구해서 슬라이드에 넣을 예정)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0007"
+    },
+    {
+      "statement": "단일 데이터 측정 검증 과정에서 warm up 코드를 먼저 넣었음",
+      "limits": "",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p54:e397",
+          "page": 54,
+          "quote": "b 과정 : 단일 데이터 측정 에 대해서 검증하기",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p54:e398",
+          "page": 54,
+          "quote": "먼 저 warm up 코드 넣었다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0054F0008"
+    }
+  ]
+}

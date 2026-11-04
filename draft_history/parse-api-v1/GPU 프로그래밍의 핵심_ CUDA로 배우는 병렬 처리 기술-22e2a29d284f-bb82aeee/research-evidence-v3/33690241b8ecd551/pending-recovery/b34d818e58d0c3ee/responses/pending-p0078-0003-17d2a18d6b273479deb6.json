@@ -1,0 +1,96 @@
+{
+  "request_fingerprint": "17d2a18d6b273479deb6e4f11f4fcb83d001eed20f07d2980c09430ed86eba13",
+  "value": {
+    "decisions": {
+      "P0078R0F0001": {
+        "action": "unresolved",
+        "representative_fact_id": "",
+        "corrections": [],
+        "reason": "approved_candidates가 비어 있어 중복 판정 불가. NVIDIA 공식 CUDA 프로그래밍 가이드 인용(p78:e606-p78:e607)으로 제시되었으나, 가이드 원문의 페이지·섹션·버전 등 검증 가능한 출처 정보가 원문에 존재하지 않음. 인용문 내용은 요소에 존재하나 실제 NVIDIA 가이드 귀속 여부는 확인 불가하므로 attribution_preserved=false 상태 해소 불가."
+      },
+      "P0078R0F0002": {
+        "action": "unresolved",
+        "representative_fact_id": "",
+        "corrections": [],
+        "reason": "approved_candidates가 비어 있어 중복 판정 불가. p78:e608에 기술된 No-Pin 메커니즘 설명(L1 캐시 복사 속도, GPU TLB 미스 없음 등)은 측정값이 아닌 연구 노트 성격의 해석적 서술임. claim_status=interpretation은 적절하나, 실제 측정 데이터로 뒷받침되지 않는 설명적 주장이라는 한계가 해소되지 않음."
+      },
+      "P0078R0F0003": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "DMA 대역폭 측정값 1224 GB/s는 p78:e611에 기재된 원문 표기 'DMA의 고속 대역폭(1224GB/s)'에 근거하며, 출처 요소를 p78:e611로 연결한다. 원문 표기를 보존하며, limits에 언급된 '12.24'는 소수 구분자가 소실된 OCR 판독 가능성이나 지침에 따라 소수 구분자 추측을 하지 않는다. Pinned Memory가 일반 메모리보다 23배 빠르다는 주장 역시 동일 요소(p78:e611)에 기재된 내용으로, 출처는 p78:e611이다.",
+            "limits": "1224 GB/s 및 23배 모두 p78:e611 원문 표기를 보존한다. 1224 GB/s는 PCIe DMA 대역폭으로 보기에는 비정상적으로 높은 값이나, 원문에 기재된 값을 유지하며 물리적 타당성 평가는 별도 검증 과제로 남긴다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "데이터가 수 MB~수백 MB일 때",
+              "Pinned Memory vs 일반 메모리 비교"
+            ],
+            "observations": [
+              "데이터가 커지면 CPU 복사 속도가 감당이 안 됨",
+              "DMA의 고속 대역폭이 압도적임",
+              "Pinned Memory가 일반 메모리보다 23배 빠름"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "DMA 대역폭",
+                "value": "1224",
+                "value_kind": "scalar",
+                "unit": "GB/s",
+                "condition": "데이터가 수 MB~수백 MB일 때",
+                "element_ids": [
+                  "p78:e611"
+                ]
+              },
+              {
+                "metric": "Pinned Memory 대비 일반 메모리 속도 비율",
+                "value": "23",
+                "value_kind": "scalar",
+                "unit": "배",
+                "condition": "데이터가 수 MB~수백 MB일 때",
+                "element_ids": [
+                  "p78:e611"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p78:e611"
+            ]
+          }
+        ],
+        "reason": "numeric_issues가 남아 있어 먼저 repair 수행. approved_candidates는 비어 있으나, 측정값의 출처 연결과 원문 표기 보존이 필요함. p78:e611에 기재된 '1224GB/s' 및 '23배'를 원문 표기로 보존하고 출처 요소를 명시함. limits의 '12.24'는 OCR 오류 가능성이나 소수 구분자 추측 금지 지침에 따라 교정하지 않고 원문 표기를 유지함."
+      },
+      "P0078R0F0004": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "1KB와 같은 초소형 데이터에서는 대역폭은 아무 의미가 없고 셋업 지연시간(Latency)이 지배한다는 해석은 p78:e612-p78:e613의 원문 맥락에 근거한다. '1 KB' 데이터 크기 조건은 p78:e612('우리 데이터처럼 1 KB일 때') 및 p78:e613에서 확인되며, '1224 GB/s' 대역폭 언급은 p78:e611의 동일 표기를 참조한다.",
+            "limits": "statement의 '1'은 p78:e612-p78:e613의 '1 KB' 조건으로 확인됨. limits의 '1224'는 p78:e611 원문 표기를 참조하며, P0078R0F0003과 동일한 OCR 표기 보존 원칙을 적용한다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "1KB 데이터 크기",
+              "초소형 실시간 데이터 환경"
+            ],
+            "observations": [
+              "1KB 조건에서는 대역폭이 무의미함",
+              "셋업 지연시간(Latency)이 성능을 지배함"
+            ],
+            "parameters": [],
+            "measurements": [],
+            "element_ids": [
+              "p78:e612",
+              "p78:e613"
+            ]
+          }
+        ],
+        "reason": "numeric_issues가 남아 있어 먼저 repair 수행. statement의 '1'은 p78:e612-p78:e613에서 '1 KB' 조건으로 원문 확인됨. limits의 '1224'는 p78:e611의 원문 표기를 참조하며, 소수 구분자 추측 없이 원문 표기를 보존함. 조건·관찰의 수치 역시 해당 요소에서 확인됨."
+      }
+    }
+  }
+}

@@ -1,0 +1,1285 @@
+{
+  "request_fingerprint": "b18a89c4eef3a58215beaae194e5367fa3b17a443251109fab6962086507d4cb",
+  "value": {
+    "facts": [
+      {
+        "statement": "backward_bound_gpu()에 커널 퓨전을 진행한 결과 CROWN Verification 실행 시간이 23.925200 ms로 기록되었으며, 컴퓨터 사정에 따라 26 ms까지 뛰는 경우도 있지만 23 ms 정도가 보인다는 점이 중요하다.",
+        "limits": "단일 실행 결과 기록이며, 반복 측정 통계나 다른 조건과의 분리 비교는 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_bound_gpu()에 커널 퓨전 진행",
+          "CROWN Verification 실행",
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "실행 시간이 23.925200 ms로 기록됨",
+          "컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 건 23ms 정도가 보인다는 것"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p31:e214",
+              "p31:e215"
+            ]
+          },
+          {
+            "name": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p31:e214"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "23.925200",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CROWN Verification, eps=1e-06, Output Dimension 16, backward_bound_gpu() 커널 퓨전 후",
+            "element_ids": [
+              "p31:e214"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p31:e208",
+          "p31:e209",
+          "p31:e210",
+          "p31:e212",
+          "p31:e213",
+          "p31:e214",
+          "p31:e215"
+        ],
+        "requirement_ids": [
+          "methods_Q8",
+          "evaluation_Q10"
+        ],
+        "supplemental_reason": "커널 퓨전 후 backward_bound_gpu()의 실행 시간 관측과 변동 범위를 기록함."
+      },
+      {
+        "statement": "lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전하여 성능을 개선했으며, 그 결과 CROWN Verification 실행 시간이 22.342900 ms로 기록되었고 22 ms 초반까지 나오며 늦으면 28까지 나오지만 보통은 24 중반 정도이다.",
+        "limits": "단일 실행 결과 기록이며, 반복 측정 통계나 다른 조건과의 분리 비교는 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "lirpa_forward_bound 사용 함수들 커널 퓨전",
+          "CROWN Verification 실행",
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "실행 시간이 22.342900 ms로 기록됨",
+          "22ms 초반까지 나옴",
+          "늦으면 28까지도 나오는데 보통은 24 중반정도"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p32:e217"
+            ]
+          },
+          {
+            "name": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p32:e217"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "22.342900",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CROWN Verification, eps=1e-06, Output Dimension 16, lirpa_forward_bound 함수들 커널 퓨전 후",
+            "element_ids": [
+              "p32:e217"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p32:e216",
+          "p32:e217",
+          "p32:e218",
+          "p32:e219"
+        ],
+        "requirement_ids": [
+          "methods_Q8",
+          "evaluation_Q10"
+        ],
+        "supplemental_reason": "lirpa_forward_bound 함수 커널 퓨전 후 실행 시간 관측과 변동 범위를 기록함."
+      },
+      {
+        "statement": "backward_bound_gpu에서 사용하는 affine 중복 계산을 삭제해 커널 2개 함수가 줄어들었고, new_(upper, lower)_p를 복사하지 않고 std::swap을 이용해 포인터 스와핑했으며, backward에서 사용하는 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu를 만들어 22ms 보이는 비율이 늘고 최저점(28ms)도 잘 안 보이게 되어 체감상 효과가 있는 것으로 기록되었다.",
+        "limits": "변경 내용과 정성적 효과 판단 기록이며, 각 변경의 개별 정량 효과 분리 측정은 제시되지 않았다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_bound_gpu 대상 최적화",
+          "affine 중복 계산 삭제",
+          "new_(upper, lower)_p 포인터 스와핑(std::swap)",
+          "backward 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu 생성"
+        ],
+        "observations": [
+          "커널 2개 함수 줄어듦",
+          "22ms 보이는 비율이 늘어남",
+          "최저점(28ms)도 잘 안 보이게 됨",
+          "체감상 효과가 있는듯"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e221",
+          "p32:e222"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "backward_bound_gpu 대상 세부 최적화 항목과 정성적 효과 관측을 기록함."
+      },
+      {
+        "statement": "build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu에 대해 커널 퓨전을 진행했다.",
+        "limits": "적용 대상 기록이며, 각 커널 퓨전의 개별 성능 영향은 제시되지 않았다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "build_coeff_pair_fused_gpu 커널 퓨전",
+          "backward_bias_pair_fused_gpu 커널 퓨전"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e221",
+          "p32:e222"
+        ],
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "supplemental_reason": "추가 커널 퓨전 적용 대상을 기록함."
+      },
+      {
+        "statement": "원인 분석 결과 신경망 크기가 매우 작고, cuBlas·cuSparse의 동작 방식에서 오버헤드가 생겼으며 이 또한 신경망이 작기 때문으로 기록되었다.",
+        "limits": "원인 분석 기록이며, 원인별 정량 분리 검증 결과는 제시되지 않았다.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "원인 분석",
+          "신경망 크기가 매우 작음",
+          "cuBlas·cuSparse 동작 방식 오버헤드 발생"
+        ],
+        "observations": [
+          "신경망의 크기가 매우 작다",
+          "cuBlas, cuSparse의 동작 방식에서 오버헤드가 생겼다",
+          "이 또한 신경망이 작기 때문에"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e208",
+          "p31:e209"
+        ],
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "supplemental_reason": "실행 시간 문제의 원인으로 분석된 항목을 기록함."
+      },
+      {
+        "statement": "현재까지 cuBlas·cuSparse의 기본적인 형태의 행렬곱 연산 함수를 사용했으며, 행렬곱에도 변형 함수들이 매우 많아 sm 내 분석과 함께 사용해야 하는 함수들이라 Nsight compute 분석 때 같이 진행하면 될 것으로 기록되었다.",
+        "limits": "향후 진행 방향에 대한 계획·의견 기록이며, 실제 변형 함수 적용 결과는 제시되지 않았다.",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuBlas·cuSparse 기본 형태 행렬곱 연산 함수 사용",
+          "행렬곱 변형 함수 다수 존재",
+          "sm 내 분석과 함께 사용해야 하는 함수"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e210"
+        ],
+        "requirement_ids": [
+          "methods_Q15",
+          "methods_Q16"
+        ],
+        "supplemental_reason": "cuBlas·cuSparse 변형 함수 활용 가능성과 후속 분석 계획을 기록함."
+      }
+    ],
+    "existing_links": [
+      {
+        "fact_id": "E00109",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e209"
+        ]
+      },
+      {
+        "fact_id": "E00112",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e209"
+        ]
+      },
+      {
+        "fact_id": "E00113",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00114",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00115",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00116",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00117",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00108",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00110",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00111",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00106",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00107",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00105",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00104",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00103",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00102",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00101",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00100",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00099",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00098",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00097",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00096",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00095",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00094",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00093",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00092",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00091",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00090",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00089",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00088",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00087",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00086",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00085",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00084",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00083",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00082",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00081",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00080",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00079",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00078",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00077",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00076",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00075",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00074",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00073",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00072",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00071",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00070",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00069",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00068",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00067",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00066",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00065",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00064",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00063",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00062",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00061",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00060",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00059",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00058",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00057",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00056",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00055",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00054",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00053",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00052",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00051",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00050",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00049",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00048",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00047",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00046",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00045",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00044",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00043",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00042",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00041",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00040",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00039",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00038",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00037",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00036",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00035",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00034",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00033",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00032",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00031",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00030",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00029",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00028",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00027",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00026",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00025",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00024",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00023",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00022",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00021",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00020",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00019",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00018",
+        "requirement_ids": [
+          "methods_Q8"
+        ],
+        "element_ids": [
+          "p31:e214"
+        ]
+      },
+      {
+        "fact_id": "E00017",
+        "requirement_ids": [
+          "methods_Q5"
+        ],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "fact_id": "E00016",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00015",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00014",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00013",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00012",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00011",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00010",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00009",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00008",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00007",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00006",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00005",
+        "requirement_ids": [
+          "methods_Q16"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00004",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00003",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00002",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "fact_id": "E00001",
+        "requirement_ids": [
+          "methods_Q15"
+        ],
+        "element_ids": [
+          "p31:e210"
+        ]
+      }
+    ]
+  }
+}

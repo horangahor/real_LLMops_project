@@ -1,0 +1,299 @@
+{
+  "api": "2.0",
+  "content": {
+    "html": "<h1 id='0'>추가로 CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거했다</h1>\n<p id='1' data-category='paragraph'>3-layer 네트워크 기준으로 계산하면 다음과 같아.</p>\n<p id='2' data-category='paragraph'>H2D/D2H memcpy, <mark>cudaStreamSynchronize</mark> , <mark>cudaGraphLaunch</mark> 는 제외하고 CUDA kernel launch만 센 값이야.</p>\n<table id='3'><tr><th>방식</th><th>기존</th><th>현재</th><th>감소</th></tr><tr><th>Forward method=0 bound</th><td>27회</td><td>18회</td><td>9회</td></tr><tr><th>Backward method=1 bound 전체</th><td>46회</td><td>31회</td><td>15회</td></tr><tr><th>Backward-only method=2 bound 전체</th><td>45회</td><td>33회</td><td>12회</td></tr></table>\n<p id='4' data-category='paragraph'>추론 커널은 그대로라서, <mark>graph mode=1</mark> 에서 샘플 1개 전체 기준으로는:</p>\n<table id='5'><tr><th>방식</th><th>기존 전체</th><th>현재 전체</th><th>감소</th></tr><tr><th>Forward</th><td>33회</td><td>24회</td><td>9회</td></tr><tr><th>Backward</th><td>52회</td><td>37회</td><td>15회</td></tr><tr><th>Backward-only</th><td>51회</td><td>39회</td><td>12회</td></tr></table>\n<p id='6' data-category='paragraph'>구체적으로는:</p>\n<ul id='7' data-category='list'><li><b>Forward:</b><ul><li>lower/upper matmul: 2 → 1</li><li>lower/upper bias matvec: 2 → 1</li><li>matrix scaling + vector affine: 2 → 1</li><li>method 0 기준 레이어당 8 → 5회</li></ul></li><li><b>Backward:</b><ul><li>split_pos_neg + bias accumulation: 2 → 1</li><li>레이어당 backward 단계 5 → 4회</li><li>method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소</li></ul></li><li><b>Backward-only:</b><ul><li>각 타깃 레이어의 weight/bias 초기 복사 2회 제거</li><li>backward 단계의 split/bias kernel 통합</li><li>총 12회 감소</li></ul></li></ul>\n<p id='8' data-category='paragraph'>그리고 graph mode 1은 여전히 샘플당 <mark>cudaGraphLaunch</mark> 가 infer 1회 + bound 1회, 총 2회야. 이번 작업은 graph launch 횟</p>\n<p id='9' data-category='paragraph'>구체적으로 하나의 bound 내에서 커널이 몇회 줄었는가?</p>",
+    "markdown": "# 추가로 CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거했다\n\n3-layer 네트워크 기준으로 계산하면 다음과 같아.\n\nH2D/D2H memcpy, <mark>cudaStreamSynchronize</mark> , <mark>cudaGraphLaunch</mark> 는 제외하고 CUDA kernel launch만 센 값이야.\n\n| 방식 | 기존 | 현재 | 감소 |\n| --- | --- | --- | --- |\n| Forward method=0 bound | 27회 | 18회 | 9회 |\n| Backward method=1 bound 전체 | 46회 | 31회 | 15회 |\n| Backward-only method=2 bound 전체 | 45회 | 33회 | 12회 |\n\n\n추론 커널은 그대로라서, <mark>graph mode=1</mark> 에서 샘플 1개 전체 기준으로는:\n\n| 방식 | 기존 전체 | 현재 전체 | 감소 |\n| --- | --- | --- | --- |\n| Forward | 33회 | 24회 | 9회 |\n| Backward | 52회 | 37회 | 15회 |\n| Backward-only | 51회 | 39회 | 12회 |\n\n\n구체적으로는:\n\n- **Forward:**\n  - lower/upper matmul: 2 → 1\n  - lower/upper bias matvec: 2 → 1\n  - matrix scaling + vector affine: 2 → 1\n  - method 0 기준 레이어당 8 → 5회\n- **Backward:**\n  - split_pos_neg + bias accumulation: 2 → 1\n  - 레이어당 backward 단계 5 → 4회\n  - method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소\n- **Backward-only:**\n  - 각 타깃 레이어의 weight/bias 초기 복사 2회 제거\n  - backward 단계의 split/bias kernel 통합\n  - 총 12회 감소\n\n\n그리고 graph mode 1은 여전히 샘플당 <mark>cudaGraphLaunch</mark> 가 infer 1회 + bound 1회, 총 2회야. 이번 작업은 graph launch 횟\n\n구체적으로 하나의 bound 내에서 커널이 몇회 줄었는가?",
+    "text": "추가로 CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거했다\n3-layer 네트워크 기준으로 계산하면 다음과 같아.\nH2D/D2H memcpy, cudaStreamSynchronize , cudaGraphLaunch 는 제외하고 CUDA kernel launch만 센 값이야.\n| 방식 | 기존 | 현재 | 감소 |\n| --- | --- | --- | --- |\n| Forward method=0 bound | 27회 | 18회 | 9회 |\n| Backward method=1 bound 전체 | 46회 | 31회 | 15회 |\n| Backward-only method=2 bound 전체 | 45회 | 33회 | 12회 |\n\n추론 커널은 그대로라서, graph mode=1 에서 샘플 1개 전체 기준으로는:\n| 방식 | 기존 전체 | 현재 전체 | 감소 |\n| --- | --- | --- | --- |\n| Forward | 33회 | 24회 | 9회 |\n| Backward | 52회 | 37회 | 15회 |\n| Backward-only | 51회 | 39회 | 12회 |\n\n구체적으로는:\nForward:\n  lower/upper matmul: 2 → 1\n  lower/upper bias matvec: 2 → 1\n  matrix scaling + vector affine: 2 → 1\n  method 0 기준 레이어당 8 → 5회\nBackward:\n  split_pos_neg + bias accumulation: 2 → 1\n  레이어당 backward 단계 5 → 4회\n  method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소\nBackward-only:\n  각 타깃 레이어의 weight/bias 초기 복사 2회 제거\n  backward 단계의 split/bias kernel 통합\n  총 12회 감소\n그리고 graph mode 1은 여전히 샘플당 cudaGraphLaunch 가 infer 1회 + bound 1회, 총 2회야. 이번 작업은 graph launch 횟\n구체적으로 하나의 bound 내에서 커널이 몇회 줄었는가?"
+  },
+  "elements": [
+    {
+      "id": 0,
+      "page": 1,
+      "category": "heading1",
+      "content": {
+        "html": "<h1 id='0'>추가로 CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거했다</h1>",
+        "markdown": "# 추가로 CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거했다",
+        "text": "추가로 CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거했다"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.171
+        },
+        {
+          "x": 0.867,
+          "y": 0.171
+        },
+        {
+          "x": 0.867,
+          "y": 0.204
+        },
+        {
+          "x": 0.116,
+          "y": 0.204
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='1' data-category='paragraph'>3-layer 네트워크 기준으로 계산하면 다음과 같아.</p>",
+        "markdown": "3-layer 네트워크 기준으로 계산하면 다음과 같아.",
+        "text": "3-layer 네트워크 기준으로 계산하면 다음과 같아."
+      },
+      "coordinates": [
+        {
+          "x": 0.132,
+          "y": 0.214
+        },
+        {
+          "x": 0.416,
+          "y": 0.214
+        },
+        {
+          "x": 0.416,
+          "y": 0.227
+        },
+        {
+          "x": 0.132,
+          "y": 0.227
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='2' data-category='paragraph'>H2D/D2H memcpy, <mark>cudaStreamSynchronize</mark> , <mark>cudaGraphLaunch</mark> 는 제외하고 CUDA kernel launch만 센 값이야.</p>",
+        "markdown": "H2D/D2H memcpy, <mark>cudaStreamSynchronize</mark> , <mark>cudaGraphLaunch</mark> 는 제외하고 CUDA kernel launch만 센 값이야.",
+        "text": "H2D/D2H memcpy, cudaStreamSynchronize , cudaGraphLaunch 는 제외하고 CUDA kernel launch만 센 값이야."
+      },
+      "coordinates": [
+        {
+          "x": 0.132,
+          "y": 0.23
+        },
+        {
+          "x": 0.805,
+          "y": 0.23
+        },
+        {
+          "x": 0.805,
+          "y": 0.243
+        },
+        {
+          "x": 0.132,
+          "y": 0.243
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "page": 1,
+      "category": "table",
+      "content": {
+        "html": "<table id='3'><tr><th>방식</th><th>기존</th><th>현재</th><th>감소</th></tr><tr><th>Forward method=0 bound</th><td>27회</td><td>18회</td><td>9회</td></tr><tr><th>Backward method=1 bound 전체</th><td>46회</td><td>31회</td><td>15회</td></tr><tr><th>Backward-only method=2 bound 전체</th><td>45회</td><td>33회</td><td>12회</td></tr></table>",
+        "markdown": "| 방식 | 기존 | 현재 | 감소 |\n| --- | --- | --- | --- |\n| Forward method=0 bound | 27회 | 18회 | 9회 |\n| Backward method=1 bound 전체 | 46회 | 31회 | 15회 |\n| Backward-only method=2 bound 전체 | 45회 | 33회 | 12회 |\n",
+        "text": "| 방식 | 기존 | 현재 | 감소 |\n| --- | --- | --- | --- |\n| Forward method=0 bound | 27회 | 18회 | 9회 |\n| Backward method=1 bound 전체 | 46회 | 31회 | 15회 |\n| Backward-only method=2 bound 전체 | 45회 | 33회 | 12회 |\n"
+      },
+      "coordinates": [
+        {
+          "x": 0.132,
+          "y": 0.258
+        },
+        {
+          "x": 0.861,
+          "y": 0.258
+        },
+        {
+          "x": 0.861,
+          "y": 0.358
+        },
+        {
+          "x": 0.132,
+          "y": 0.358
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='4' data-category='paragraph'>추론 커널은 그대로라서, <mark>graph mode=1</mark> 에서 샘플 1개 전체 기준으로는:</p>",
+        "markdown": "추론 커널은 그대로라서, <mark>graph mode=1</mark> 에서 샘플 1개 전체 기준으로는:",
+        "text": "추론 커널은 그대로라서, graph mode=1 에서 샘플 1개 전체 기준으로는:"
+      },
+      "coordinates": [
+        {
+          "x": 0.132,
+          "y": 0.378
+        },
+        {
+          "x": 0.551,
+          "y": 0.378
+        },
+        {
+          "x": 0.551,
+          "y": 0.392
+        },
+        {
+          "x": 0.132,
+          "y": 0.392
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "page": 1,
+      "category": "table",
+      "content": {
+        "html": "<table id='5'><tr><th>방식</th><th>기존 전체</th><th>현재 전체</th><th>감소</th></tr><tr><th>Forward</th><td>33회</td><td>24회</td><td>9회</td></tr><tr><th>Backward</th><td>52회</td><td>37회</td><td>15회</td></tr><tr><th>Backward-only</th><td>51회</td><td>39회</td><td>12회</td></tr></table>",
+        "markdown": "| 방식 | 기존 전체 | 현재 전체 | 감소 |\n| --- | --- | --- | --- |\n| Forward | 33회 | 24회 | 9회 |\n| Backward | 52회 | 37회 | 15회 |\n| Backward-only | 51회 | 39회 | 12회 |\n",
+        "text": "| 방식 | 기존 전체 | 현재 전체 | 감소 |\n| --- | --- | --- | --- |\n| Forward | 33회 | 24회 | 9회 |\n| Backward | 52회 | 37회 | 15회 |\n| Backward-only | 51회 | 39회 | 12회 |\n"
+      },
+      "coordinates": [
+        {
+          "x": 0.132,
+          "y": 0.407
+        },
+        {
+          "x": 0.861,
+          "y": 0.407
+        },
+        {
+          "x": 0.861,
+          "y": 0.503
+        },
+        {
+          "x": 0.132,
+          "y": 0.503
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='6' data-category='paragraph'>구체적으로는:</p>",
+        "markdown": "구체적으로는:",
+        "text": "구체적으로는:"
+      },
+      "coordinates": [
+        {
+          "x": 0.133,
+          "y": 0.524
+        },
+        {
+          "x": 0.216,
+          "y": 0.524
+        },
+        {
+          "x": 0.216,
+          "y": 0.536
+        },
+        {
+          "x": 0.133,
+          "y": 0.536
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "page": 1,
+      "category": "list",
+      "sub_category": "ul",
+      "content": {
+        "html": "<ul id='7' data-category='list'><li><b>Forward:</b><ul><li>lower/upper matmul: 2 → 1</li><li>lower/upper bias matvec: 2 → 1</li><li>matrix scaling + vector affine: 2 → 1</li><li>method 0 기준 레이어당 8 → 5회</li></ul></li><li><b>Backward:</b><ul><li>split_pos_neg + bias accumulation: 2 → 1</li><li>레이어당 backward 단계 5 → 4회</li><li>method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소</li></ul></li><li><b>Backward-only:</b><ul><li>각 타깃 레이어의 weight/bias 초기 복사 2회 제거</li><li>backward 단계의 split/bias kernel 통합</li><li>총 12회 감소</li></ul></li></ul>",
+        "markdown": "- **Forward:**\n  - lower/upper matmul: 2 → 1\n  - lower/upper bias matvec: 2 → 1\n  - matrix scaling + vector affine: 2 → 1\n  - method 0 기준 레이어당 8 → 5회\n- **Backward:**\n  - split_pos_neg + bias accumulation: 2 → 1\n  - 레이어당 backward 단계 5 → 4회\n  - method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소\n- **Backward-only:**\n  - 각 타깃 레이어의 weight/bias 초기 복사 2회 제거\n  - backward 단계의 split/bias kernel 통합\n  - 총 12회 감소\n",
+        "text": "Forward:\n  lower/upper matmul: 2 → 1\n  lower/upper bias matvec: 2 → 1\n  matrix scaling + vector affine: 2 → 1\n  method 0 기준 레이어당 8 → 5회\nBackward:\n  split_pos_neg + bias accumulation: 2 → 1\n  레이어당 backward 단계 5 → 4회\n  method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소\nBackward-only:\n  각 타깃 레이어의 weight/bias 초기 복사 2회 제거\n  backward 단계의 split/bias kernel 통합\n  총 12회 감소"
+      },
+      "coordinates": [
+        {
+          "x": 0.138,
+          "y": 0.543
+        },
+        {
+          "x": 0.644,
+          "y": 0.543
+        },
+        {
+          "x": 0.644,
+          "y": 0.748
+        },
+        {
+          "x": 0.138,
+          "y": 0.748
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='8' data-category='paragraph'>그리고 graph mode 1은 여전히 샘플당 <mark>cudaGraphLaunch</mark> 가 infer 1회 + bound 1회, 총 2회야. 이번 작업은 graph launch 횟</p>",
+        "markdown": "그리고 graph mode 1은 여전히 샘플당 <mark>cudaGraphLaunch</mark> 가 infer 1회 + bound 1회, 총 2회야. 이번 작업은 graph launch 횟",
+        "text": "그리고 graph mode 1은 여전히 샘플당 cudaGraphLaunch 가 infer 1회 + bound 1회, 총 2회야. 이번 작업은 graph launch 횟"
+      },
+      "coordinates": [
+        {
+          "x": 0.132,
+          "y": 0.756
+        },
+        {
+          "x": 0.858,
+          "y": 0.756
+        },
+        {
+          "x": 0.858,
+          "y": 0.77
+        },
+        {
+          "x": 0.132,
+          "y": 0.77
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='9' data-category='paragraph'>구체적으로 하나의 bound 내에서 커널이 몇회 줄었는가?</p>",
+        "markdown": "구체적으로 하나의 bound 내에서 커널이 몇회 줄었는가?",
+        "text": "구체적으로 하나의 bound 내에서 커널이 몇회 줄었는가?"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.776
+        },
+        {
+          "x": 0.592,
+          "y": 0.776
+        },
+        {
+          "x": 0.592,
+          "y": 0.791
+        },
+        {
+          "x": 0.117,
+          "y": 0.791
+        }
+      ]
+    }
+  ],
+  "model": "document-parse-260930",
+  "ocr": true,
+  "usage": {
+    "pages": 1,
+    "enhanced": [
+      1
+    ]
+  }
+}

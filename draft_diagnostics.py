@@ -15,6 +15,9 @@ def review_diagnostics(stage, plan, research, bodies, report):
     if report.get("review_kind") == "editorial":
         return {"stage": stage, "approved": report["approved"], "review_kind": "editorial", "items": [],
                 "paragraphs": paragraphs, "issues": copy.deepcopy(report["issues"]),
+                "editorial_status": report.get("editorial_status"),
+                "editorial_warnings": copy.deepcopy(report.get("editorial_warnings", [])),
+                "editorial_completion": copy.deepcopy(report.get("editorial_completion")),
                 "inherited_content_coverage": copy.deepcopy(report["required_content_coverage"])}
     rows = []
     for check in report.get("checks", []):
@@ -25,7 +28,7 @@ def review_diagnostics(stage, plan, research, bodies, report):
         missing_body = set(check.get("missing_body_evidence_ids", []))
         missing_review = set(check.get("missing_review_evidence_ids", []))
         evidence = []
-        for key in item["evidence_ids"]:
+        for key in dict.fromkeys(item["evidence_ids"] + check["evidence_ids"]):
             fact = facts[key]
             evidence.append({"id": key, "statement": fact["statement"], "limits": fact.get("limits", ""),
                 "support": fact.get("support"), "writing_role": fact.get("writing_role"),
@@ -36,11 +39,12 @@ def review_diagnostics(stage, plan, research, bodies, report):
                             for s in fact.get("sources", [])],
                 "cited_in_selected_paragraphs": key in selected, "cited_anywhere_in_section": key in all_cited,
                 "listed_by_reviewer": key in check["evidence_ids"],
-                "unused_candidate": key not in all_cited,
+                "unused_candidate": key in item["evidence_ids"] and key not in all_cited,
+                "outside_item_candidates": key not in item["evidence_ids"],
                 "missing_body": key in missing_body, "missing_review": key in missing_review})
         rows.append({"item_id": check["item_id"], "description": item["description"], "section_id": section["id"],
             "verdict": check["verdict"], "model_verdict": check.get("model_verdict", check["verdict"]),
-            "planned_evidence_count": len(evidence), "missing_body_count": len(missing_body),
+            "planned_evidence_count": len(item["evidence_ids"]), "reviewed_evidence_count": len(check["evidence_ids"]), "missing_body_count": len(missing_body),
             "missing_section_count": len(check.get("missing_section_evidence_ids", [])),
             "unused_candidate_count": sum(f["unused_candidate"] for f in evidence),
             "unselected_cited_count": sum(f["missing_body"] and f["cited_anywhere_in_section"] for f in evidence),
@@ -48,6 +52,8 @@ def review_diagnostics(stage, plan, research, bodies, report):
             "missing_review_count": len(missing_review), "paragraph_ids": check.get("paragraph_ids", []),
             "evidence": evidence})
     return {"stage": stage, "approved": report["approved"], "items": rows,
+            "content_status": report.get("content_status"), "content_approved": report.get("content_approved"),
+            "content_completion": copy.deepcopy(report.get("content_completion")),
             "paragraphs": paragraphs, "issues": copy.deepcopy(report.get("issues", []))}
 
 

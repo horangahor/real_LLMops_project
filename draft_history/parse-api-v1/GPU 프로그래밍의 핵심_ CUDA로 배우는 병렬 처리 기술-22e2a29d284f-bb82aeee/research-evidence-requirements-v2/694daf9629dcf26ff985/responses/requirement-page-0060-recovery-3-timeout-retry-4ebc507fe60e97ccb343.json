@@ -1,0 +1,240 @@
+{
+  "request_fingerprint": "4ebc507fe60e97ccb34327c18a10d25b026654586c5dafdba823f72996757373",
+  "value": {
+    "facts": [
+      {
+        "statement": "커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다.",
+        "limits": "이 내용은 memcpy 복사 크기 변경 사실과 시간 증가 관측만 포함하며, CPU 오버헤드의 정량적 분리 측정 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 memcpy 복사 크기 변경",
+          "기존: MAXDIM 512 float 고정 복사",
+          "변경 후: 필요한 데이터 크기만 복사",
+          "CPU 계산 오버헤드 증가로 시간 증가"
+        ],
+        "observations": [
+          "시간이 늘었음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p60:e462",
+          "p60:enh:e2",
+          "p60:enh:e3"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q7",
+          "limitations_Q5",
+          "limitations_Q6",
+          "conclusion_Q4",
+          "conclusion_Q8"
+        ],
+        "supplemental_reason": "memcpy 복사 크기 변경이라는 구체적 최적화 시도와 그 부작용(CPU 오버헤드 증가)을 보여주며, 변경 요인 분리 실험의 어려움과 해석 한계를 이해하는 데 필요한 근거다."
+      },
+      {
+        "statement": "데이터셋이 있는 부분을 pinned Memory로 지정하고 cudaHostRegister를 사용하여 메모리 복사 속도를 최대로 늘렸으며, 이는 5,6G 환경에서의 실시간 입력 속도를 최대한 재현하기 위한 목적이다.",
+        "limits": "이 내용은 pinned memory 적용 목적과 방식만 포함하며, pinned memory 적용 후 정량 성능 수치는 포함하지 않는다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "데이터셋이 있는 부분을 pinned Memory로 지정",
+          "cudaHostRegister 사용",
+          "메모리 복사 속도 최대화",
+          "5,6G 환경에서의 실시간 입력 속도 재현 목적"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "적용 조건",
+            "value": "N > 0일 때 cudaHostRegister 실행",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e0"
+        ],
+        "requirement_ids": [
+          "methods_Q2",
+          "methods_Q9",
+          "methods_Q11",
+          "limitations_Q1",
+          "limitations_Q7"
+        ],
+        "supplemental_reason": "데이터 전송 최적화를 위한 pinned memory 사용 방식과 그 환경적 목적(실시간 재현)을 명시하며, 실행 플랫폼 구성과 환경 간 차이 검토에 필요한 근거다."
+      },
+      {
+        "statement": "cudaGraph를 통해 추론과 bound를 따로 캡처한 경우와 추론+bound를 한번에 캡처한 경우를 구분하여 커널 런치 비용을 최소화하는 실험을 수행했으며, 추론과 bound를 따로 캡처했을 때 기준으로 약 400초 정도 시간이 줄어든 것으로 관측되었다.",
+        "limits": "이 내용은 cudaGraph 캡처 방식 구분 실험 수행 사실과 정성적 시간 감소 관측만 포함하며, 각 방식의 정량 성능 수치나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaGraph 사용",
+          "추론과 bound 따로 캡처",
+          "추론+bound 한번에 캡처",
+          "커널 런치 비용 최소화 목적",
+          "따로 캡처했을 때 기준 약 400초 감소 관측"
+        ],
+        "observations": [
+          "약 400초 정도 줄어든 듯함"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "실행 시간 감소",
+            "value": "4E+2",
+            "value_kind": "scalar",
+            "unit": "초",
+            "condition": "cudaGraph로 추론과 bound를 따로 캡처했을 때 기준",
+            "element_ids": [
+              "p59:e454",
+              "p59:e456"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p60:enh:e8"
+        ],
+        "requirement_ids": [
+          "methods_Q4",
+          "methods_Q5",
+          "evaluation_Q1",
+          "evaluation_Q12",
+          "evaluation_Q14",
+          "conclusion_Q1",
+          "conclusion_Q4",
+          "conclusion_Q5",
+          "conclusion_Q8"
+        ],
+        "supplemental_reason": "cudaGraph를 이용한 커널 캡처라는 핵심 최적화 기법의 적용 방식과 실험 결과를 보여주며, 여러 구성 간 비교와 개선 조합 분석에 필요한 근거다."
+      },
+      {
+        "statement": "성능 비교 표에 forward_cuda_graph, backward_cuda_graph, forward_cuda_graph_fused, backward_cuda_graph_fused 4가지 구성과 실시간 멀티스트림 forward_cuda_graph 구성이 포함되었으며, 각 구성별로 전체 시간, infer 시간, bound 시간, certify 시간, certify_topk, ratio 등의 지표가 제시되었다.",
+        "limits": "이 내용은 표에 포함된 구성 목록과 지표 항목만 포함하며, 각 구성의 상세 수치 해석이나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "성능 비교 표",
+          "4가지 cuda_graph 구성 + 실시간 멀티스트림 구성",
+          "전체 시간, infer, bound, certify, certify_topk, ratio 지표 포함"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e8"
+        ],
+        "requirement_ids": [
+          "evaluation_Q1",
+          "evaluation_Q9",
+          "evaluation_Q10",
+          "evaluation_Q11",
+          "evaluation_Q12",
+          "evaluation_Q13",
+          "evaluation_Q14"
+        ],
+        "supplemental_reason": "여러 구성 간 정량 성능 비교가 표로 제시된 사실을 확인하며, 구성 요소 단위 성능과 전체 처리 성능 비교, 추가 이득 범위 해석에 필요한 근거다."
+      },
+      {
+        "statement": "forward_cuda_graph의 전체 시간이 약 983초이고, CPU에서 필요한 만큼만 계산한 뒤 복사한 버전(1055)이 72초 더 느렸으며, 이는 더 늦어진 결과다.",
+        "limits": "이 내용은 두 버전 간 시간 비교 관측만 포함하며, 차이 발생 원인에 대한 정량적 분리 측정 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward_cuda_graph 전체 시간 약 983초",
+          "CPU에서 필요한 만큼만 계산 후 복사한 버전 1055초",
+          "72초 차이",
+          "더 늦어짐"
+        ],
+        "observations": [
+          "72초 차이 나는데 (더 늦어짐..)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p60:e467",
+          "p60:enh:e9",
+          "p60:enh:e10"
+        ],
+        "requirement_ids": [
+          "evaluation_Q1",
+          "evaluation_Q14",
+          "limitations_Q6",
+          "conclusion_Q4",
+          "conclusion_Q5",
+          "conclusion_Q6"
+        ],
+        "supplemental_reason": "cudaGraph 적용 버전과 CPU 계산 후 복사 버전 간 시간 비교 결과를 보여주며, 여러 변경이 동시에 적용된 상황에서 개별 효과 분리의 어려움과 해석상 제약을 이해하는 데 필요한 근거다."
+      },
+      {
+        "statement": "실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간은 1055.282초, infer는 131.7986초, bound는 920.8438초로 측정되었다.",
+        "limits": "이 수치는 표의 단일 행에 제시된 값이며, 반복 측정 통계나 다른 조건과의 비교 해석은 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "실시간 멀티스트림 구성",
+          "forward_cuda_graph",
+          "전체 시간 1055.282초, infer 131.7986초, bound 920.8438초"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "전체 시간",
+            "value": "1055.282",
+            "value_kind": "scalar",
+            "unit": "초",
+            "condition": "실시간 멀티스트림, forward_cuda_graph",
+            "element_ids": [
+              "p60:enh:e8"
+            ]
+          },
+          {
+            "metric": "infer 시간",
+            "value": "131.7986",
+            "value_kind": "scalar",
+            "unit": "초",
+            "condition": "실시간 멀티스트림, forward_cuda_graph",
+            "element_ids": [
+              "p60:enh:e8"
+            ]
+          },
+          {
+            "metric": "bound 시간",
+            "value": "920.8438",
+            "value_kind": "scalar",
+            "unit": "초",
+            "condition": "실시간 멀티스트림, forward_cuda_graph",
+            "element_ids": [
+              "p60:enh:e8"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p60:enh:e8"
+        ],
+        "requirement_ids": [
+          "evaluation_Q1",
+          "evaluation_Q10",
+          "evaluation_Q13",
+          "conclusion_Q2",
+          "conclusion_Q5"
+        ],
+        "supplemental_reason": "실시간 멀티스트림 구성의 구체적 시간 수치를 제공하며, 수준별(infer/bound) 주요 발견과 전체 처리 성능 비교에 필요한 근거다."
+      }
+    ],
+    "existing_links": []
+  }
+}

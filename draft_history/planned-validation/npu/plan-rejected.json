@@ -1,0 +1,399 @@
+{
+  "plan": {
+    "title": "벤더 가이드 최적화가 엣지 NPU 성능에 미치는 영향: 모델 변환과 배포 파이프라인 분리 평가",
+    "rationale": "연구 자료는 엣지 NPU의 성능이 하드웨어뿐 아니라 모델 변환과 배포 파이프라인에 의존한다는 문제의식에서 출발하며, Baseline·VG-NPU·VG-E2E 세 구성을 분리해 4개 NPU·3개 비전 워크로드에서 평가한 결과를 담고 있다. 따라서 논문 구성은 문제 제기와 방법론 정의, 세 연구 질문(RQ1~RQ3)에 대응하는 평가 결과, 그리고 해석의 한계와 결론 순으로 조직하는 것이 적합하다. 참고 가이드의 문단 전개 방식(문제 맥락→기존 접근 대비→제안 목표 요약, 실험 조건 통제→구성 정의→결과 해석→한계·결론)은 유지하되, 본 연구의 근거 구조에 맞게 절 역할을 재배치한다. 관련 연구는 자료에 근거가 없으므로 omit_without_evidence 정책에 따라 별도 절을 두지 않는다.",
+    "sections": [
+      {
+        "id": "S_intro",
+        "title": "서론",
+        "role": "introduction",
+        "purpose": "엣지 NPU 배포에서 성능 평가가 하드웨어만으로 충분하지 않다는 문제 맥락을 제시하고, 모델 변환과 배포 파이프라인을 분리해 비교하려는 연구 목표와 기여를 요약한다.",
+        "status": "write",
+        "subsections": [
+          "연구 배경 및 문제 제기",
+          "기존 평가 방식의 한계",
+          "연구 목표 및 기여 요약"
+        ],
+        "evidence_ids": [
+          "F01"
+        ],
+        "reference_ids": [
+          "ref1_introduction"
+        ],
+        "table_ids": [],
+        "depends_on": [],
+        "reference_adaptation": "ref1_introduction의 문단 전개(분야 중요성→기존 방법 대비→제안 목표 목록화)를 따르되, 본 연구에서는 ‘기존 방법 대비’를 별도 관련 연구 절이 아니라 엣지 NPU 성능 평가의 일반적 관행과 그 한계로 서술한다. figures_tables는 비어 있으므로 정량 표나 그림은 결과 절에서 실제 근거에 맞춰 도입한다.",
+        "required_items": [
+          {
+            "id": "I1",
+            "description": "엣지 NPU 성능이 하드웨어뿐 아니라 모델 변환과 배포 파이프라인에 의존한다는 문제 맥락",
+            "evidence_ids": [
+              "F01"
+            ]
+          },
+          {
+            "id": "I2",
+            "description": "성능 요인을 분리해 비교하기 위한 세 구성(Baseline, VG-NPU, VG-E2E)의 정의",
+            "evidence_ids": [
+              "F02",
+              "F03",
+              "F09",
+              "F10",
+              "F11",
+              "F12"
+            ]
+          },
+          {
+            "id": "I3",
+            "description": "4개 엣지 NPU와 3개 비전 워크로드에 방법론을 적용한 연구 범위",
+            "evidence_ids": [
+              "F04"
+            ]
+          },
+          {
+            "id": "I4",
+            "description": "주요 결과 요약: VG-NPU의 정확도·런타임 호출 지연 개선, VG-E2E의 시스템 지연 감소와 정확도 변화, NPU 순위와 E2E 순위의 불일치",
+            "evidence_ids": [
+              "F05",
+              "F06",
+              "F07",
+              "F08"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "S_method",
+        "title": "평가 방법론",
+        "role": "methods",
+        "purpose": "Baseline·VG-NPU·VG-E2E의 구성 차이와 실험 조건, 평가 대상(NPU·워크로드)을 재현 가능하게 정의한다.",
+        "status": "write",
+        "subsections": [
+          "실험 구성 정의",
+          "VG-NPU와 VG-E2E의 설계 차이",
+          "평가 대상 및 범위"
+        ],
+        "evidence_ids": [
+          "F02",
+          "F03",
+          "F09",
+          "F10",
+          "F11",
+          "F12",
+          "F04"
+        ],
+        "reference_ids": [
+          "ref1_methods"
+        ],
+        "table_ids": [],
+        "depends_on": [
+          "S_intro"
+        ],
+        "reference_adaptation": "ref1_methods의 ‘실험 조건과 구성 요소를 단계적으로 제시’ 원칙을 적용하되, 본 연구는 모델 구조 변형이 아니라 배포 구성 변형이 중심이므로 기준 구성(Baseline)에서 시작해 VG-NPU, VG-E2E 순으로 차이를 설명한다. figures_tables는 비어 있으므로 구성 비교는 텍스트와 필요한 경우 표로 정리한다.",
+        "required_items": [
+          {
+            "id": "M1",
+            "description": "Baseline 정의: NPU 실행에 필요한 변환만 허용하고 선택적 벤더 최적화는 제한",
+            "evidence_ids": [
+              "F10"
+            ]
+          },
+          {
+            "id": "M2",
+            "description": "VG-NPU 정의: 벤더 가이드 모델 변환 레시피를 적용하되 모델 입출력 및 호스트 측 처리는 Baseline과 동일",
+            "evidence_ids": [
+              "F11"
+            ]
+          },
+          {
+            "id": "M3",
+            "description": "VG-E2E 정의: 네이티브 입출력 형식, 전처리, 런타임 실행, 후처리 등 벤더 권장 배포 구성 전체를 적용",
+            "evidence_ids": [
+              "F12"
+            ]
+          },
+          {
+            "id": "M4",
+            "description": "평가 범위: 4개 엣지 NPU, 3개 비전 워크로드",
+            "evidence_ids": [
+              "F04"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "S_eval_rq1",
+        "title": "평가 결과 1: 모델 변환 수준에서의 정확도 및 지연 변화",
+        "role": "evaluation",
+        "purpose": "VG-NPU와 VG-E2E가 정확도 및 지연에 미치는 영향을 구성별로 비교하고, 모델 변환 수준과 최종 배포 수준의 차이를 해석한다.",
+        "status": "write",
+        "subsections": [
+          "VG-NPU에서의 정확도와 런타임 호출 지연",
+          "VG-E2E에서의 시스템 지연과 정확도 변화",
+          "결과 해석: 변환 수준과 배포 수준의 차이"
+        ],
+        "evidence_ids": [
+          "F13",
+          "F14",
+          "F15",
+          "F05",
+          "F06"
+        ],
+        "reference_ids": [
+          "ref1_evaluation"
+        ],
+        "table_ids": [],
+        "depends_on": [
+          "S_method"
+        ],
+        "reference_adaptation": "ref1_evaluation의 ‘비교 실험 설계와 주요 지표 제시→전략별 차이 해석’ 흐름을 따르되, 본 연구는 융합 전략이 아니라 구성별 성능 비교이므로 VG-NPU와 VG-E2E의 지표 변화를 분리해 서술한다. 정량 표는 실제 측정값이 자료에 없으므로 ‘10/12 조합’, ‘8개 조합에서 정확도 감소’ 등 자료에 있는 범위·개수 표현만 사용한다.",
+        "required_items": [
+          {
+            "id": "E1",
+            "description": "VG-NPU에서 지연과 정확도가 12개 NPU–워크로드 조합 중 10개에서 함께 개선됨",
+            "evidence_ids": [
+              "F13",
+              "F05"
+            ]
+          },
+          {
+            "id": "E2",
+            "description": "VG-E2E에서 시스템 지연은 모든 조합에서 감소하지만 정확도는 8개 조합에서 감소함",
+            "evidence_ids": [
+              "F14",
+              "F06"
+            ]
+          },
+          {
+            "id": "E3",
+            "description": "벤더 가이드 최적화는 모델 변환 수준에서 두 지표를 개선할 수 있으나, 최종 배포 지연 감소가 정확도 보존을 보장하지는 않음",
+            "evidence_ids": [
+              "F15"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "S_eval_rq2",
+        "title": "평가 결과 2: NPU 수준 성능과 End-to-End 성능의 순위 관계",
+        "role": "evaluation",
+        "purpose": "NPU-only 성능 순위가 End-to-End 순위와 일치하는지 workload별로 검토하고, NPU 성능만으로 배포 성능을 예측하기 어려운 점을 제시한다.",
+        "status": "write",
+        "subsections": [
+          "워크로드별 NPU 순위 변화",
+          "NPU 성능과 E2E 성능의 예측 관계 해석"
+        ],
+        "evidence_ids": [
+          "F16",
+          "F17",
+          "F07"
+        ],
+        "reference_ids": [
+          "ref1_evaluation"
+        ],
+        "table_ids": [],
+        "depends_on": [
+          "S_eval_rq1"
+        ],
+        "reference_adaptation": "ref1_evaluation의 ‘결과 해석’ 역할을 공유하므로 S_eval_rq1과 동일한 참고 가이드를 적용하되, 본 절은 순위 비교와 예측 가능성에 초점을 둔다. 자료에 특정 NPU 이름이나 호스트 사양이 명시되지 않으므로 ‘동일 호스트의 3개 NPU’ 범위까지만 서술한다.",
+        "required_items": [
+          {
+            "id": "E4",
+            "description": "YOLOv5m과 YOLOv8s-pose에서는 NPU 간 상대 성능 순위가 유지되나 ResNet50에서는 변화함",
+            "evidence_ids": [
+              "F16"
+            ]
+          },
+          {
+            "id": "E5",
+            "description": "NPU-only 성능은 일반적으로 End-to-End 성능을 안정적으로 예측하지 못하며, 관계는 워크로드에 의존함",
+            "evidence_ids": [
+              "F17",
+              "F07"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "S_eval_rq3",
+        "title": "평가 결과 3: VG-E2E의 추가 시스템 지연 감소 효과",
+        "role": "evaluation",
+        "purpose": "VG-E2E가 VG-NPU 대비 시스템 지연을 추가로 줄이는 정도와 그 해석의 주의점을 정리한다.",
+        "status": "write",
+        "subsections": [
+          "VG-NPU 대비 VG-E2E의 시스템 지연 감소 폭",
+          "배포 수준 처리의 추가 이득과 해석상 주의점"
+        ],
+        "evidence_ids": [
+          "F18",
+          "F08"
+        ],
+        "reference_ids": [
+          "ref1_evaluation"
+        ],
+        "table_ids": [],
+        "depends_on": [
+          "S_eval_rq2"
+        ],
+        "reference_adaptation": "ref1_evaluation의 ‘정량 비교와 해석 보완’ 원칙을 적용하되, 감소 폭은 자료에 제시된 범위(10.4–70.7%)로만 서술하고 단일 고정값으로 일반화하지 않는다. 또한 이득의 원인을 특정 구성 요소로 귀속하지 않는다는 제한을 명시한다.",
+        "required_items": [
+          {
+            "id": "E6",
+            "description": "VG-E2E는 모든 조합에서 VG-NPU보다 낮은 시스템 지연을 보임",
+            "evidence_ids": [
+              "F18"
+            ]
+          },
+          {
+            "id": "E7",
+            "description": "VG-E2E는 VG-NPU 대비 시스템 지연을 추가로 10.4–70.7% 줄이며, 이 이득은 특정 단일 최적화 요소로 귀속되지 않음",
+            "evidence_ids": [
+              "F08",
+              "F18"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "S_limit",
+        "title": "한계 및 해석상 주의점",
+        "role": "limitations",
+        "purpose": "측정 결과가 특정 구성·워크로드·NPU 조합에 기반한다는 점과 순위·지연 해석의 일반화 제약을 명확히 한다.",
+        "status": "write",
+        "subsections": [
+          "평가 범위와 일반화 제약",
+          "지표 해석의 주의점",
+          "향후 검토 방향"
+        ],
+        "evidence_ids": [
+          "F05",
+          "F06",
+          "F07",
+          "F08",
+          "F15",
+          "F17",
+          "F18"
+        ],
+        "reference_ids": [
+          "ref1_limitations"
+        ],
+        "table_ids": [],
+        "depends_on": [
+          "S_eval_rq3"
+        ],
+        "reference_adaptation": "ref1_limitations의 ‘유효 범위 인정→해석 제약 지적→향후 과제 정리’ 흐름을 따르되, 본 연구는 모델 구조나 학습 데이터보다 배포 구성과 평가 범위의 제약이 핵심이므로 이를 중심으로 서술한다. 자료에 없는 NPU명·호스트 사양·워크로드 세부 수치는 추가하지 않는다.",
+        "required_items": [
+          {
+            "id": "L1",
+            "description": "결과는 4개 엣지 NPU와 3개 비전 워크로드, 세 가지 구성 하에서 측정된 범위에 한정됨",
+            "evidence_ids": [
+              "F04",
+              "F05",
+              "F06"
+            ]
+          },
+          {
+            "id": "L2",
+            "description": "NPU 수준 성능 순위가 End-to-End 순위와 항상 일치하지는 않으며, 이 관계는 워크로드에 따라 달라짐",
+            "evidence_ids": [
+              "F07",
+              "F17"
+            ]
+          },
+          {
+            "id": "L3",
+            "description": "VG-E2E의 추가 지연 감소는 배포 수준 처리에서 발생할 수 있으나, 특정 단일 최적화 요소로 원인을 분리할 수 없음",
+            "evidence_ids": [
+              "F18",
+              "F08"
+            ]
+          },
+          {
+            "id": "L4",
+            "description": "최종 배포 지연 감소가 정확도 보존을 의미하지 않으므로, 지연과 정확도를 함께 봐야 함",
+            "evidence_ids": [
+              "F15"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "S_conclusion",
+        "title": "결론",
+        "role": "conclusion",
+        "purpose": "제안된 분리 평가 방법론과 핵심 결과를 요약하고, 벤더 가이드 최적화를 평가할 때 구성 수준과 배포 수준을 구분해야 하는 실용적 의미를 정리한다.",
+        "status": "write",
+        "subsections": [
+          "연구 요약",
+          "핵심 결과",
+          "실용적 의미와 향후 방향"
+        ],
+        "evidence_ids": [
+          "F01",
+          "F02",
+          "F05",
+          "F06",
+          "F07",
+          "F08"
+        ],
+        "reference_ids": [
+          "ref1_conclusion"
+        ],
+        "table_ids": [],
+        "depends_on": [
+          "S_limit"
+        ],
+        "reference_adaptation": "ref1_conclusion의 ‘문제·방법·핵심 결과·실용 의미’ 압축 요약 구조를 따르되, 본 연구는 새로운 모델 제안이 아니라 벤치마킹 방법론과 구성 비교가 중심이므로 기여 역시 평가 분리 방식과 해석 지침 중심으로 정리한다.",
+        "required_items": [
+          {
+            "id": "C1",
+            "description": "엣지 NPU 성능은 하드웨어뿐 아니라 모델 변환과 배포 파이프라인의 영향을 받으므로, 이를 분리해 비교하는 평가 방법론을 제안함",
+            "evidence_ids": [
+              "F01",
+              "F02",
+              "F03"
+            ]
+          },
+          {
+            "id": "C2",
+            "description": "VG-NPU는 12개 조합 중 10개에서 정확도와 런타임 호출 지연을 함께 개선했고, VG-E2E는 모든 조합에서 시스템 지연을 줄였으나 정확도는 4개 조합에서만 개선됨",
+            "evidence_ids": [
+              "F05",
+              "F06"
+            ]
+          },
+          {
+            "id": "C3",
+            "description": "NPU 수준 성능 순위가 End-to-End 순위와 항상 일치하지는 않으며, VG-E2E는 VG-NPU 대비 10.4–70.7% 추가 시스템 지연 감소를 보임",
+            "evidence_ids": [
+              "F07",
+              "F08"
+            ]
+          },
+          {
+            "id": "C4",
+            "description": "벤더 가이드 최적화를 평가할 때는 모델 변환 수준과 최종 배포 수준을 구분하고, 지연과 정확도를 함께 고려해야 함",
+            "evidence_ids": [
+              "F15",
+              "F17"
+            ]
+          }
+        ]
+      }
+    ],
+    "generation_order": [
+      "S_intro",
+      "S_method",
+      "S_eval_rq1",
+      "S_eval_rq2",
+      "S_eval_rq3",
+      "S_limit",
+      "S_conclusion"
+    ],
+    "unresolved": [
+      "자료에 NPU의 구체적 명칭, 호스트 사양, 워크로드 세부 설정, 절대 수치 형태의 지연·정확도 값이 제시되지 않아, 정량 표나 장치 세부 정보는 작성할 수 없다.",
+      "VG-NPU와 VG-E2E의 개선·감소가 나타난 개별 조합 목록이 자료에 명시되지 않아, 10/12, 4/12, 8/12 같은 개수·범위 표현만 사용하고 특정 조합명을 생성하지 않는다."
+    ]
+  },
+  "reason": "필수 내용의 근거가 해당 장에 없습니다."
+}

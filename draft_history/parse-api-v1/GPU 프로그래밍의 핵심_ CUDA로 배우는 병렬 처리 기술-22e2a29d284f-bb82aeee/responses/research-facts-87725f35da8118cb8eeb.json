@@ -1,0 +1,555 @@
+{
+  "request_fingerprint": "87725f35da8118cb8eebc8f663665c00e592aff3ecf11ea98394707a48b716d8",
+  "value": {
+    "title": "CUDA 기반 CROWN 신경망 검증 가속 및 최적화 과정",
+    "open_questions": [
+      "forward와 backward의 단일 테스트 3배 성능 차이가 다중 데이터셋(92만 회) 실행에서 왜 비슷하게 수렴하는지",
+      "실행 인자(switch문) 및 구조체 값 복사가 전체 실행 시간에 미치는 정확한 영향",
+      "warmup 적용 시 평균 시간이 늘어나거나 스파이크가 발생하는 원인",
+      "작은 입력(1KB)에서 No-Pinning이 Pinned Memory보다 빠르게 측정된 현상의 결정적 원인",
+      "backward_only가 forward 및 forward+backward보다 빠른 이유(final_affine 복사 횟수 외)",
+      "커널 퓨전·그래프 적용 시 forward가 backward보다 더 큰 시간 감소를 보인 이유"
+    ],
+    "facts": [
+      {
+        "id": "F01",
+        "statement": "CUDA 컴파일 환경은 release 13.3, V13.3.73이며 nvcc로 컴파일되었다.",
+        "limits": "특정 개발 환경의 버전 정보이며 성능 결과의 일반성을 보장하지 않는다.",
+        "element_id": "p1:e1",
+        "quote": "Cuda compilation tools, release 13.3, V13.3.73"
+      },
+      {
+        "id": "F02",
+        "statement": "대상 신경망은 Fully Connected 구조이며 입력 256개, 은닉층 2개(491, 491), 출력 16개이다.",
+        "limits": "안테나 선택 신경망이라는 특정 모델과 크기 기준이다.",
+        "element_id": "p2:e28",
+        "quote": "N(0) = 256 N(1) = 491 N(2) ■ 491 N(3) = 16"
+      },
+      {
+        "id": "F03",
+        "statement": "1차 목표는 테스트 데이터 1개와 eps=10^-6으로 CROWN 알고리즘을 돌려 16개 출력을 뽑는 것이었다.",
+        "limits": "초기 과제 목표이며 이후 전체 데이터 검증으로 확장되었다.",
+        "element_id": "p2:e28",
+        "quote": " crown 알고리즘의 입력으로 테스트 데이터 1개와 eps=10^-6으로 crown 알고리즘을 돌려서 16개 출력을 뽑는 것을 1차 목표로"
+      },
+      {
+        "id": "F04",
+        "statement": "CPU ONLY 버전의 단일 실행 elapsed time은 101.237800 ms로 기록되었다.",
+        "limits": "단일 테스트 데이터·단일 실행 기준이며 반복 측정 평균이 아니다.",
+        "element_id": "p3:e35",
+        "quote": "Elapsed time: 101.237800 ms"
+      },
+      {
+        "id": "F05",
+        "statement": "초기 GPU 버전(my_lirpa.cu)의 elapsed time은 353.057200 ms로 CPU보다 느렸다.",
+        "limits": "최적화 이전 버전이며 warmup·메모리 풀 등 적용 전이다.",
+        "element_id": "p4:e37",
+        "quote": "Elapsed time: 353.057200 ms"
+      },
+      {
+        "id": "F06",
+        "statement": "cuBLAS + 메모리 풀 + 벡터 연산 CPU 전환 적용 후 elapsed time은 229.691800 ms였다.",
+        "limits": "특정 최적화 조합을 적용한 한 시점의 결과다.",
+        "element_id": "p5:e43",
+        "quote": "Elapsed time: 229,691800 ms"
+      },
+      {
+        "id": "F07",
+        "statement": "하이브리드 버전(matmul=GPU, rest=CPU)의 elapsed time은 201.670100 ms였다.",
+        "limits": "하이브리드 구성에서의 단일 실행 측정값이다.",
+        "element_id": "p6:e48",
+        "quote": "Elapsed time: 201.670100 ms"
+      },
+      {
+        "id": "F08",
+        "statement": "하이브리드 V2(cuBLAS 예열, 가중치 사전 업로드, 부분 복사)에서 85.785300 ms로 처음 CPU보다 빨라졌다.",
+        "limits": "특정 최적화 적용 후의 단일 실행 값이며 warmup 효과와 분리해 해석해야 한다.",
+        "element_id": "p7:e54",
+        "quote": "Elapsed time: 85,785300 ms"
+      },
+      {
+        "id": "F09",
+        "statement": "메모리 풀 + warmup 조합만으로 거의 200ms 단축 효과가 있었다고 기록되었다.",
+        "limits": "상대적 비교 진술이며 절대 수치는 버전별로 다르다.",
+        "element_id": "p19:e137",
+        "quote": "메모리 풀 + warm up 조합은 일단 매우 좋다는 것 (두 개만으로 거의 200ms 단축함)"
+      },
+      {
+        "id": "F10",
+        "statement": "make_zero_matrix/make_zero_vector를 CPU로 되돌리고 결과 벡터 memcpy를 제거해 22~25ms 정도 추가 감소했다.",
+        "limits": "특정 버전에서의 체감 감소량 진술이다.",
+        "element_id": "p19:e142",
+        "quote": "2 2 ~ 25ms 정도 줄었다!!"
+      },
+      {
+        "id": "F11",
+        "statement": "가중치, positive/negative_part 가중치를 GPU 메모리에 미리 올려 matmul/matvec에서 memcpy가 절반으로 줄고 forward 반복 시 재계산이 없어졌다.",
+        "limits": "특정 최적화 방식의 효과에 대한 설명이다.",
+        "element_id": "p20:e147",
+        "quote": "가중치 , positive_part / negative_part 거친 가중치 GPU 메모리에 미리 올려놓기 (matmul 이나 matvec 에서 memcpy 절반됨 / 양수, 음수부 가중치는 forward 돌때마다 계산 필요없어짐)"
+      },
+      {
+        "id": "F12",
+        "statement": "forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤 elapsed time이 64.716000 ms로 감소했다.",
+        "limits": "특정 시점의 단일 실행 측정값이다.",
+        "element_id": "p22:e151",
+        "quote": "Elapsed time: 64.716000 ms"
+      },
+      {
+        "id": "F13",
+        "statement": "backward GPU 파이프라인 완성 후 elapsed time은 26.529100 ms로 기록되었다.",
+        "limits": "backward 전용 파이프라인의 특정 시점 측정값이다.",
+        "element_id": "p25:e175",
+        "quote": "Elapsed time: 26,529100 ms"
+      },
+      {
+        "id": "F14",
+        "statement": "cudaDeviceSynchronize 제거 후 약 1ms 정도 감소했다.",
+        "limits": "동기화 제거 효과이며 절대 성능은 환경에 따라 달라질 수 있다.",
+        "element_id": "p26:e182",
+        "quote": "1 ms 정도 줄었다"
+      },
+      {
+        "id": "F15",
+        "statement": "cuBLAS 도입 시 오히려 40.050500 ms로 시간이 늘어났다.",
+        "limits": "작은 모델·호출 패턴에서의 결과이며 일반화가 아니다.",
+        "element_id": "p27:e188",
+        "quote": "Elapsed time: 40,050500 ms"
+      },
+      {
+        "id": "F16",
+        "statement": "cuSparse를 이용한 spMV 적용 시 27.107400 ms로 조금 느려졌고, spMM 도입 후에는 거의 40ms로 회귀했다.",
+        "limits": "sparse 라이브러리 적용 실험 결과이며 모델 크기에 의존한다.",
+        "element_id": "p28:e192",
+        "quote": "Elapsed time: 27,107400 ms"
+      },
+      {
+        "id": "F17",
+        "statement": "커널 퓨전 적용 후 backward_bound_gpu에서 23.925200 ms, forward_bound 관련 함수 퓨전으로 22.342900 ms가 기록되었다.",
+        "limits": "퓨전 적용 범위의 차이에 따른 개별 측정값이다.",
+        "element_id": "p31:e214",
+        "quote": "Elapsed time: 23,925200 ms"
+      },
+      {
+        "id": "F18",
+        "statement": "커널 퓨전 + set_shape 내장 등으로 최저 21.375300 ms가 기록되었다.",
+        "limits": "최저치 기준이며 항상 동일하게 유지된다고 보지 않는다.",
+        "element_id": "p34:e227",
+        "quote": "Elapsed time: 21.375300 ms"
+      },
+      {
+        "id": "F19",
+        "statement": "forward-backward 간 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제한 뒤 21.018800 ms가 기록되었다.",
+        "limits": "특정 최적화 적용 후의 단일 실행 값이다.",
+        "element_id": "p35:e235",
+        "quote": "Elapsed time: 21,018800 ms"
+      },
+      {
+        "id": "F20",
+        "statement": "bias도 메모리 풀에서 관리하도록 한 뒤 21~23ms 내에서 특히 21ms로 비교적 안정적으로 동작했다.",
+        "limits": "안정성에 대한 체감 진술이며 수치 범위는 버전·환경에 따라 달라질 수 있다.",
+        "element_id": "p36:e238",
+        "quote": "21 ~ 23ms 내에서 (특히 21 ms) 꽤 안정적으로 동작함"
+      },
+      {
+        "id": "F21",
+        "statement": "backward 호출 시 forward 중간 결과를 CPU로 복사할지 플래그를 도입해 false로 하면 memcpy가 현저히 줄고 17.223600 ms가 기록되었다.",
+        "limits": "플래그 설정에 따른 특정 측정값이다.",
+        "element_id": "p36:e243",
+        "quote": "Elapsed time: 17.223600 ms"
+      },
+      {
+        "id": "F22",
+        "statement": "ActivationType 등 작은 enum/스칼라 값은 커널 런칭 시 값으로 전달되며 별도 cudaMalloc/cudaMemcpy가 필요하지 않다고 설명되었다.",
+        "limits": "CUDA 인자 전달 방식에 대한 설명이다.",
+        "element_id": "p38:e263",
+        "quote": "별도로 cudaMalloc이나 cudaMemcpy를 할 필요가 전혀 없습니다."
+      },
+      {
+        "id": "F23",
+        "statement": "net.act[l] 값을 GPU에 포인터가 아니라 값으로 넘기는 방식에 대한 설명이 이루어졌다.",
+        "limits": "개념 설명이며 특정 구현의 성능 수치를 직접 제공하지는 않는다.",
+        "element_id": "p38:e261",
+        "quote": "CPU는 자기 메모리에서 net.act[l]의 **값(예: Relu면 0, Sigmoid면 1)**을 읽은 다음, 그 숫자 자체를 GPU 커널을 발사할 때 매개변수 주머니(Constant Memory / Registers)에 쏙 넣어서 같이 쏘아 보냅니다."
+      },
+      {
+        "id": "F24",
+        "statement": "affine_min/max까지 backward_bound_gpu에서 실행되도록 개선해 GPU->CPU->GPU->CPU 복사를 최소화한 뒤 15.828400 ms가 기록되었다.",
+        "limits": "복사 최소화 적용 후의 단일 실행 값이다.",
+        "element_id": "p41:e278",
+        "quote": "Elapsed time: 15.828400 ms"
+      },
+      {
+        "id": "F25",
+        "statement": "미리 작성한 퓨전 함수를 사용해 affine_min/max 관련 커널을 합친 뒤 15.751000 ms로 하한선이 약 0.2ms 낮아졌다.",
+        "limits": "퓨전 적용 후의 소폭 개선 측정값이다.",
+        "element_id": "p42:e284",
+        "quote": "Elapsed time: 15.751000 ms"
+      },
+      {
+        "id": "F26",
+        "statement": "Forward 입력 버퍼(x0 ± eps)를 Backward에서 재사용해 H2D 복사를 제거하고, 단위행렬/영벡터 초기화를 GPU 커널에서 직접 생성해 13.939000 ms가 기록되었다.",
+        "limits": "초기화·복사 제거 최적화 적용 후의 측정값이다.",
+        "element_id": "p43:e289",
+        "quote": "lapsed time: 13,939000 ms"
+      },
+      {
+        "id": "F27",
+        "statement": "40000번 루프에서 backward보다 forward가 느린 현상이 확인되었고, 원인은 중간 레이어 결과 저장 여부 플래그에 따른 D2H 복사 오버헤드였다.",
+        "limits": "다중 데이터 테스트에서 관찰된 현상이며 플래그 설정에 의존한다.",
+        "element_id": "p45:e313",
+        "quote": "40000번의 루프에서는 backward보다 forward가 느린것을 확인함, 왜일까? ⇒ 원인은 중간 레이어 결과를 저장하느냐/ 마느냐의 플래그에 있었다."
+      },
+      {
+        "id": "F28",
+        "statement": "단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 넘지 않았지만, 40000번 반복에서는 D2H 복사 오버헤드가 forward의 이득을 넘었다.",
+        "limits": "반복 횟수에 따른 오버헤드 누적 설명이다.",
+        "element_id": "p46:e316",
+        "quote": "40000번 * 각 eps 테스트를 반복하면서 D2H 복사 오버헤드가 backward ⇒ forward 계산의 이득을 뛰어넘어버린 것임.."
+      },
+      {
+        "id": "F29",
+        "statement": "forward 플래그를 3개, backward 플래그를 2개로 분리해 복사 제어를 세분화했다.",
+        "limits": "플래그 분리 설계에 대한 설명이다.",
+        "element_id": "p46:e318",
+        "quote": "⇒ forward의 플래그를 3개로 늘림 (중간 결과(layer_bound 복사용), final_affine 복사용, 최종 결과 복사용) ⇒ 그리고 backward의 플래그도 기존의 layer_bound와 backward result의 affine_bound를 같이 복사할지 제어하는 플래그를 각각 2개로 분리했다."
+      },
+      {
+        "id": "F30",
+        "statement": "92만 번 데이터 테스트에서 forward 전체 실행 시간은 약 64s, backward는 약 98s로 기록되었다.",
+        "limits": "특정 시점의 전체 실행 시간이며 측정 조건에 따라 변동이 있었다.",
+        "element_id": "p47:e337",
+        "quote": "forward 전체 실행 시간이 약 64s / backward 전체 실행 시간이 약 98s 정도.."
+      },
+      {
+        "id": "F31",
+        "statement": "단일 테스트에서 forward/backward가 3배 차이 나지만 92만 개 데이터에서는 차이가 줄어드는 이유가 당시 해결되지 않았다.",
+        "limits": "작성 시점 기준 미해결 의문이다.",
+        "element_id": "p47:e338",
+        "quote": "단일 테스트 forward, backward는 시간에서 3배 차이가 나는데 , 왜 92만개의 데이터를 돌리면 비슷해지는가? (1분 정도 차이나긴 함..) ⇒ 아직 해결 못함.."
+      },
+      {
+        "id": "F32",
+        "statement": "CROWN 결과를 담는 구조체를 switch 바깥에 선언하고 반복문 내부에서 값에 의한 복사가 발생해 성능 문제가 생겼다고 분석되었다.",
+        "limits": "구조체 복사 비용에 대한 분석이며 컴파일러·구조체 크기에 의존한다.",
+        "element_id": "p49:e349",
+        "quote": "이 부분이 옛날에 배웠듯, 값에 의한 복사란 말이다 그래서 그 구조체를 전부 복사하느라고 그렇다는 것이다. (92만번 복사하면 꽤 크다.)"
+      },
+      {
+        "id": "F33",
+        "statement": "switch 안에서 구조체를 중괄호로 지역 선언해 초기화를 스코프 안에서 하도록 수정한 뒤 2100s대 문제가 해결되어 준수한 결과가 나왔다.",
+        "limits": "특정 코드 수정 후의 결과다.",
+        "element_id": "p50:e357",
+        "quote": "음 .. 준수한 결과다. ⇒ 이러면 2100s 초 나오는 문제도 원인 해결 완료"
+      },
+      {
+        "id": "F34",
+        "statement": "실행 인자 없는 backward는 1560.37s, 실행 인자 있는 backward는 1564.18s로 비슷하게 기록되었다.",
+        "limits": "특정 실행 조건에서의 전체 시간이며 변동이 있었다.",
+        "element_id": "p51:e360",
+        "quote": "total elapsed: 1560.37s"
+      },
+      {
+        "id": "F35",
+        "statement": "실행 인자 없는 forward는 1342.47s, 실행 인자 있는 forward는 1360.22s~1447.17s 범위로 기록되었다.",
+        "limits": "forward 전체 시간은 실행 조건·측정 시점에 따라 변동이 컸다.",
+        "element_id": "p51:e365",
+        "quote": "total elapsed: 1342.47s"
+      },
+      {
+        "id": "F36",
+        "statement": "추론·bound 계산·검증을 나눠서 각각 시간을 측정하도록 수정했다.",
+        "limits": "측정 방식 변경에 대한 설명이다.",
+        "element_id": "p54:e393",
+        "quote": "각 추론, bound 계산, 검증에 끝마다 시간을 기록해서(E2E) 각각 시간을 측정하도록 하였다.."
+      },
+      {
+        "id": "F37",
+        "statement": "단일 데이터 forward bound 시간은 1.6966 ms, backward bound 시간은 1.9759 ms로 기록되었다(warmup 1회).",
+        "limits": "단일 샘플·warmup 1회 기준 측정값이다.",
+        "element_id": "p55:e405",
+        "quote": "lapsed time: 1.6966 ms"
+      },
+      {
+        "id": "F38",
+        "statement": "warmup을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 평균이 느려지는 문제가 있었다.",
+        "limits": "측정 불안정성에 대한 진술이다.",
+        "element_id": "p57:e430",
+        "quote": "의 문점 : warm up을 해도 스파이크 데이터가 뜨고, 심지어 가끔은 10번 측정했을 때 평균 시간이 느려지는 문제 생김"
+      },
+      {
+        "id": "F39",
+        "statement": "warmup 이전 버전과 측정 시간에서 큰 차이가 나지 않았고, 스파이크가 안 뜰 때는 변동 계수가 더 낮은 느낌이라고 기록되었다.",
+        "limits": "체감적 비교 진술이다.",
+        "element_id": "p57:e433",
+        "quote": "1. 일단 warm up도 warm up 이전 버전이랑 측정 시간에서 큰 차이 나지 않음 2. 스파이크가 안뜰 때의 시간은 오히려 더 안정적인듯 (변동 계수가 좀 더 낮은 느낌)"
+      },
+      {
+        "id": "F40",
+        "statement": "forward와 backward bound 계산 시간이 약 5.3배 차이 나는 것을 확인했다고 기록되었다.",
+        "limits": "특정 측정 조건에서의 배율이다.",
+        "element_id": "p58:e435",
+        "quote": "5 .3 배 정도 차이나는 것을 확인했고"
+      },
+      {
+        "id": "F41",
+        "statement": "배칭(멀티 스트림) 적용 시 기존 단일 스트림보다 3배 빨라져 25분→8분으로 감소했다고 기록되었다.",
+        "limits": "실험 환경상의 배칭 효과이며 실시간 환경과 다를 수 있다.",
+        "element_id": "p59:e453",
+        "quote": "기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 시간 빨라짐, (25 분 -> 8분)"
+      },
+      {
+        "id": "F42",
+        "statement": "cudaGraph를 이용해 추론·bound를 따로 캡처했을 때 약 400초 정도 줄었다고 기록되었다.",
+        "limits": "그래프 캡처 방식에 따른 특정 시점의 감소량이다.",
+        "element_id": "p59:e456",
+        "quote": "한 400초 정도 줄어든 듯?"
+      },
+      {
+        "id": "F43",
+        "statement": "커널 memcpy에서 MAXDIM 512 float 고정 복사 대신 필요한 만큼만 복사하도록 수정했으나 시간이 늘었다.",
+        "limits": "복사 크기 최적화 시도 결과이며 CPU 계산 오버헤드 가능성이 언급되었다.",
+        "element_id": "p60:e462",
+        "quote": "커 널 memcpy에서 기존에 MAXDIM으로 무조건 512 개의 float만큼 복사했는데, 이걸 고쳤다.. 필요한 만큼의 데이터 크기만 복사해서 주도록 (근데 여기서 cpu 계산 오버헤드가 더 큰 것 같기도 하고 , 왜냐하면 시간이 늘었음)"
+      },
+      {
+        "id": "F44",
+        "statement": "cudaEvent 측정 제어 옵션(0/1/2)에 따라 드라이버 오버헤드 차이가 있다고 설명되었다.",
+        "limits": "측정 옵션에 대한 설명이다.",
+        "element_id": "p61:e471",
+        "quote": "0 = 비활성화 (Off, 드라이버 오버헤드 0, 최고 속도) // 1 = 마지막 샘플만 1회 측정 (Last sample only, 전체 루프 오버헤드 0초 + 맨 마지막 Pure GPU 시간 리포트, 기본값) // 2 를 매 샘플마다 측정 (All samples, 92만 번 전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)"
+      },
+      {
+        "id": "F45",
+        "statement": "cudaGraph만 적용된 버전과 pinned memory + cudaEvent 제어 + 필요만큼 계산 D2H + certify 스택화 버전을 비교했다.",
+        "limits": "비교 대상의 구성이 여러 요소를 포함한다.",
+        "element_id": "p62:e483",
+        "quote": "이게 pinned Memory 추가 + cudaEvent 제어 + 필요한 만큼 계산해서 D2H memcpy + certify topk 자료구조 스택화이고"
+      },
+      {
+        "id": "F46",
+        "statement": "forward에서는 전체적으로 graph 단일 적용이 우수하고 infer에서 약 20초 차이가 났지만, backward는 total 시간이 비슷했다.",
+        "limits": "forward/backward 간 상대적 비교 진술이다.",
+        "element_id": "p62:e485",
+        "quote": "1. forward에선 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하다, 특히 infer_s에 대해 대해서는 20초 차이 남 2. 그런데 backward를 보면 total 시간이 비슷함"
+      },
+      {
+        "id": "F47",
+        "statement": "auto_LiRPA forward+backward 결과는 eps=1e-06에서 T=39969, F=31, ratio=0.999, time=5.04s로 기록되었다.",
+        "limits": "auto_LiRPA 실행 결과의 특정 eps 기준 값이다.",
+        "element_id": "p64:e505",
+        "quote": "eps= | 1e-06: T=39969 | \\| F= 31 \\| ratio=0.999 | \\| time=5.04s"
+      },
+      {
+        "id": "F48",
+        "statement": "auto_LiRPA forward 결과는 eps=1e-06에서 time=5.32s, backward_only 결과는 time=1.09s로 기록되었다.",
+        "limits": "auto_LiRPA의 모드별 실행 시간이다.",
+        "element_id": "p64:e510",
+        "quote": "eps= | 1e-06: T=39969 | \\| F= 31 \\| ratio=0.999 \\| time=5.32s"
+      },
+      {
+        "id": "F49",
+        "statement": "auto_LiRPA backward_only 결과는 eps=1e-06에서 time=1.09s, eps=0.0001에서 time=2.67s로 기록되었다.",
+        "limits": "backward_only 모드 결과의 일부 eps 값이다.",
+        "element_id": "p65:e520",
+        "quote": "eps= | 1e-06: | T=39969 | \\| F= 31 \\| | ratio=0.999 | \\| time=1.09s"
+      },
+      {
+        "id": "F50",
+        "statement": "auto_LiRPA backward_only의 EPS별 연산 시간 합산은 55.77s, 전체 elapsed는 55.78s였다.",
+        "limits": "auto_LiRPA backward_only 전체 시간이다.",
+        "element_id": "p66:e523",
+        "quote": "* EPS별 연산 시간의 합산 (Sum of EPS times) : 55.77s"
+      },
+      {
+        "id": "F51",
+        "statement": "auto_LiRPA는 배치 사이즈 1024, 싱글 스트림으로 동작하며 커널 런치를 1번으로 줄여 빠르다.",
+        "limits": "auto_LiRPA의 실행 방식에 대한 설명이다.",
+        "element_id": "p66:e531",
+        "quote": "여기서 배치 사이즈를 1024로 했다 (그리고 싱글 스트림인듯)"
+      },
+      {
+        "id": "F52",
+        "statement": "작성자의 C++ 멀티스트림 방식은 배치 사이즈만큼 독립 스트림을 만들어 GPU 메모리를 차지하며, 스트림마다 CPU가 다음 커널을 런치해줘야 해서 느리다.",
+        "limits": "작성자 구현 방식에 대한 설명이다.",
+        "element_id": "p67:e535",
+        "quote": "근 데 현재 내 구현 방식은 배치사이즈만큼 동일한 수의 독립 스트림을 만드는 방식이라 각 스트림이 GPU 메모리를 차지함 ⇒ 1024개의 batch size를 하면 1024개의 독립 스트림이라 gpu 메모리를 오버함"
+      },
+      {
+        "id": "F53",
+        "statement": "auto_LiRPA의 빠른 이유는 입력 데이터에 대한 커널 런치를 1번으로 줄여 커널 런치 오버헤드가 적기 때문이라고 설명되었다.",
+        "limits": "성능 차이 원인에 대한 설명이다.",
+        "element_id": "p68:e542",
+        "quote": "그 이유는 쉽게 설명하면 나랑 다르게 입력데이터에 대한 커널 런치를 1번으로 줄여서임(그니까 커널 런치 오버헤드가 상대적으로 없음, 즉 연산 병목이 아니라 일을 시키는 과정의 병목)"
+      },
+      {
+        "id": "F54",
+        "statement": "antenna_lirpa는 싱글 스트림이지만 cuBLAS Batched GEMM과 텐서 코어를 사용해 2분 미만이 나온다고 설명되었다.",
+        "limits": "PyTorch 기반 구현의 가속 방식에 대한 설명이다.",
+        "element_id": "p68:e543",
+        "quote": "비결은 바로 텐서 코어(Tensor Core)와 cuBLAS Batched GEMM입니다."
+      },
+      {
+        "id": "F55",
+        "statement": "작성자는 현재 2차원 블록과 tid로 단일 샘플 행렬 연산을 수행 중이며, z축을 추가하면 3차원 멀티 샘플을 처리하는 텐서 코어 활용이 가능하다고 보았다.",
+        "limits": "향후 최적화 방향에 대한 구상이다.",
+        "element_id": "p68:e544",
+        "quote": "현 재 나는 2차원 block 크기와 그 안의 tid로 평면적인 계산 (단일 샘플에 대한 행렬 연산)을 수행중임 근데 z축을 추가하면 저 평면적인 연산을 한번에 처리가 가능함 ⇒ 3차원 (multi sample)을 처리하는 tensor 코어가 있기 때문"
+      },
+      {
+        "id": "F56",
+        "statement": "backward_only가 graph 미적용 상태에서도 bound 평균이 2.5배 정도 느렸고, 이유는 final_affine까지 복사(true)로 한 번의 bound 계산에서 10번 복사가 일어났기 때문이라고 분석되었다.",
+        "limits": "복사 횟수와 성능의 관계에 대한 분석이다.",
+        "element_id": "p72:e561",
+        "quote": "b ackward_only가 아직 graph로 안만들었다고 해도 boun 평균이 2.5배 정도 된다. 많이 느리네? 이유가 뭐냐 ⇒ 이거 final_affine 까지 복사하느라고(true) 한번의 bound 계산에서 10번 일어남,"
+      },
+      {
+        "id": "F57",
+        "statement": "final_affine 복사를 false로 변경해 memcpy 10번→6번으로 줄이고 graph를 적용한 뒤 backward_only는 787.8832s로 3가지 방법 중 가장 빨랐다.",
+        "limits": "특정 최적화 적용 후의 전체 시간이며 비교 조건이 복합적이다.",
+        "element_id": "p72:e567",
+        "quote": "2 578 초 ⇒ 1543 초 근데 그래프를 적용했더니 787.8832s로 3가지 방법 중 가장 빠르다?"
+      },
+      {
+        "id": "F58",
+        "statement": "pinned memory 미적용(No Pinning)이 가장 빠르게 측정되었고, cudaHostAlloc은 8.64초 더 걸렸다.",
+        "limits": "작은 입력 크기에서의 메모리 방식 비교 결과다.",
+        "element_id": "p73:e573",
+        "quote": "결과는 no Pinning이 젤 빠르다.."
+      },
+      {
+        "id": "F59",
+        "statement": "cudaHostAlloc이 8.64초 더 걸린 이유는 매 루프마다 *pinned_in = dataset[i]; (1,028바이트)를 92만 번 수행하며 회당 약 9.4μs의 CPU 메모리 복사 지연이 누적되었기 때문이라고 분석되었다.",
+        "limits": "특정 테스트 코드에서의 복사 오버헤드 분석이다.",
+        "element_id": "p73:e576",
+        "quote": "매 루프마다 *pinned_in = dataset[i]; (1,028바이트)를 92만 번 수행하면서 약 **8.64초 (회당 약 9.4 $\\mu\\text{s}$)**의 CPU 메모리 복사 지연이 누적되었습니다."
+      },
+      {
+        "id": "F60",
+        "statement": "입력 벡터는 256차원 FP32로 약 1,024바이트(1KB)이며, 이 크기에서는 CPU L1/L2 캐시에 이미 올라와 DMA 대역폭 차이가 크지 않다고 설명되었다.",
+        "limits": "입력 크기에 따른 메모리 전송 특성 설명이다.",
+        "element_id": "p73:e579",
+        "quote": "입력 벡터는 256차원(FP32)으로 불과 **1,024 Byte(1 KB)**에 불과합니다."
+      },
+      {
+        "id": "F61",
+        "statement": "단일 샘플 처리 시간(~840μs) 중 85% 이상(약 716μs)이 순수 GPU 커널 연산(CROWN 역전파 행렬 계산) 시간이라고 설명되었다.",
+        "limits": "특정 측정 기준에서의 시간 구성 비율 설명이다.",
+        "element_id": "p73:e580",
+        "quote": "단일 샘플 처리 시간(~840 $\\mu\\text{s}$) 중 **85% 이상(약 716 $\\mu\\text{s}$)**이 순수 GPU 커널 연산(CROWN 역전파 행렬 계산) 시간입니다."
+      },
+      {
+        "id": "F62",
+        "statement": "cudaHostRegister(787.88s)와 No Pinning(776.70s)의 전체 차이는 약 1.4%(약 11초)이며, 1회당 약 12μs 수준의 미세한 차이라고 분석되었다.",
+        "limits": "두 메모리 방식 간 미세 차이에 대한 분석이다.",
+        "element_id": "p74:e582",
+        "quote": "전체 시간 차이는 787.88초 VS 776.70초로 단 1.4%(약 11초) 차이이며, 92만 번의 루프 중 1회당 불과 약 12 $\\mu\\text{s}$ 수준의 미세한 차이입니다."
+      },
+      {
+        "id": "F63",
+        "statement": "Bound 단계에서는 cudaHostRegister가 4.37초 더 빨랐지만, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 15.26초 더 느려 전체 시간이 역전되었다.",
+        "limits": "단계별 시간 분해에 따른 분석이다.",
+        "element_id": "p74:e582",
+        "quote": "Bound 단계 (전체의 85%) 658.80s 663.17s ◀ Register가 4.37초 더 빠름! (예상대로 DMA 효과) Infer 단계 (전체의 15%) 127.18s 111.92s ◀ 여기서 Register가 15.26초 더 느림"
+      },
+      {
+        "id": "F64",
+        "statement": "GPU 클록을 2800MHz로 고정하고 돌린 HostRegister 결과는 total elapsed 798.78s, Mean Latency 873.54μs였다.",
+        "limits": "클록 고정 조건에서의 특정 측정값이다.",
+        "element_id": "p75:e589",
+        "quote": "total elapsed: 798.78s"
+      },
+      {
+        "id": "F65",
+        "statement": "클록 고정 후 HostAlloc 결과는 total elapsed 806.54s, Mean Latency 869.34μs였다.",
+        "limits": "클록 고정 조건에서의 특정 측정값이다.",
+        "element_id": "p76:e591",
+        "quote": "total elapsed: 806.54s"
+      },
+      {
+        "id": "F66",
+        "statement": "클록 고정 후 No Pinning 결과는 total elapsed 790.64s, Mean Latency 859.20μs였다.",
+        "limits": "클록 고정 조건에서의 특정 측정값이다.",
+        "element_id": "p76:e593",
+        "quote": "total elapsed: 790.64s"
+      },
+      {
+        "id": "F67",
+        "statement": "No-Pin은 CPU가 드라이버 내부 버퍼로 동기식 memcpy를 즉시 수행하며, 1KB 복사는 CPU L1/L2 캐시로 0.02~0.05μs면 끝난다고 설명되었다.",
+        "limits": "메모리 전송 방식에 대한 구조적 설명이다.",
+        "element_id": "p79:e621",
+        "quote": "최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 **0.02 ~ 0.05 μs (20~50 나노초)**면 끝납니다. DMA 셋업보다 30~50배 빠릅니다."
+      },
+      {
+        "id": "F68",
+        "statement": "Pinned Memory는 PCIe DMA 엔진 셋업 오버헤드가 호출 1회당 약 1.0~1.5μs 소모된다고 설명되었다.",
+        "limits": "DMA 셋업 오버헤드에 대한 설명이다.",
+        "element_id": "p79:e621",
+        "quote": "이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0 ~ 1.5 μs가 소모됩니다."
+      },
+      {
+        "id": "F69",
+        "statement": "Pinned Memory는 평균 속도는 약간 느릴 수 있지만 OS 페이징을 차단해 최악 지연(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다고 정리되었다.",
+        "limits": "실시간성 관점의 결론 진술이다.",
+        "element_id": "p78:e617",
+        "quote": "Pinned Memory: 매번 정직하게 DMA 셋업 비용(1~2 $\\mu\\text{s}$)을 치르기 때문에 평균 시간은 살짝 손해를 보지만, OS 페이징을 차단하여 **어떤 상황에서도 1.64ms를 넘지 않는 절대적인 안정성(결정론적 성능)**올 보장합니다."
+      },
+      {
+        "id": "F70",
+        "statement": "여러 번 측정 결과 pinned memory 미적용 버전의 복사 속도가 약 3배 빠르다고 기록되었다.",
+        "limits": "작은 전송에서의 상대적 비교이며 내부 구현 확인이 어려워 확정은 아니라고 단서가 붙었다.",
+        "element_id": "p81:e624",
+        "quote": "여러 번 측정 결과, pinned memory를 미적용한 버전의 복사 속도가 약 3배 빠르다"
+      },
+      {
+        "id": "F71",
+        "statement": "추론 완료까지의 동기화(synchronize) 시간은 pinned memory 미적용 버전이 가장 빠르다고 기록되었다.",
+        "limits": "H2D 복사 시간의 영향 가능성이 함께 언급되었다.",
+        "element_id": "p81:e625",
+        "quote": "추론이 끝나기까지의 동기화(synchronize) 시간이 pinned memory를 미적용한 버전이 가장 빠르다."
+      },
+      {
+        "id": "F72",
+        "statement": "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느렸다가 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다고 기록되었다.",
+        "limits": "측정 결과가 일관되지 않았다는 진술이다.",
+        "element_id": "p81:e628",
+        "quote": "여러 번 측정결과, pinned를 적용한 버전의 cudaMemcpyAsync가 더 빨라서 그래도 2copy에서 1copy로 가면서 고정 setup 비용이 줄긴 했구나 했는데 마지막 측정결과에서 nopinned가 더 빠르게 나오면서 확신할 수 없게 됨.."
+      },
+      {
+        "id": "F73",
+        "statement": "CROWN 3가지 방법에서 커널 퓨전 및 backward_only의 메모리 복사 커널을 제거했다.",
+        "limits": "최적화 적용 범위에 대한 설명이다.",
+        "element_id": "p82:e632",
+        "quote": "추 가로 CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거했다"
+      },
+      {
+        "id": "F74",
+        "statement": "커널 퓨전·복사 커널 제거 후 backward_only total elapsed는 630.94s, forward는 668.37s, forward+backward는 758.37s로 기록되었다.",
+        "limits": "커널 축소 적용 후의 전체 시간이다.",
+        "element_id": "p83:e638",
+        "quote": "total elapsed: 630.94s"
+      },
+      {
+        "id": "F75",
+        "statement": "backward_only는 787s→630s로 157초 감소, forward는 1029s→668s, forward+backward는 1138s→758s로 감소했다.",
+        "limits": "최적화 전후 전체 시간 비교다.",
+        "element_id": "p83:e642",
+        "quote": "1029s ⇒ 668s"
+      },
+      {
+        "id": "F76",
+        "statement": "forward에서는 무거운 커널 연산 호출 횟수가 9개 줄었고, backward에서는 forward 부분 12개, 실제 backward 부분 3개가 줄었으며, backward_only는 커널이 45→33회(26.7%)로 가장 적게 줄었다고 분석되었다.",
+        "limits": "커널 횟수 감소 분석이며 버전·측정 기준에 의존한다.",
+        "element_id": "p84:e647",
+        "quote": "f orward에서는 무거운 커널 연산의 호출 횟수가 9개 줄어듦 backward에서는 forward 부분 12개(9+3(얘는 backward에서 사용하는 cache까지 저장하는 커널을 사용했으니 3개 추가로 줄어듦)) , 실제 backward 부분에서는 3개밖에 안줄어듦 backward_only 에서는 비율로 따지면 45 ⇒ 33회 즉 커널이 26.7%로 가장 적게 줄어듦"
+      },
+      {
+        "id": "F77",
+        "statement": "진행 사항으로 pinned memory 입력층은 제거했으나 Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨두었다.",
+        "limits": "현재 구현 상태에 대한 설명이다.",
+        "element_id": "p84:e650",
+        "quote": "1. pinned memory 입력층은 제거 (다만 Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 놓음)"
+      }
+    ]
+  }
+}

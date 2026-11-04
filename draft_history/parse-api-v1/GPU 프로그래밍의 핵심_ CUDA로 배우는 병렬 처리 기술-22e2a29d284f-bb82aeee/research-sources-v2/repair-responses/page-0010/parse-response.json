@@ -1,0 +1,413 @@
+{
+  "api": "2.0",
+  "content": {
+    "html": "<p id='0' data-category='paragraph'>v4 :</p>\n<p id='1' data-category='paragraph'>1. cuBLAS 미리 예열 : 계산 (시간측정) 전에 미리 cuBLAS 호출해서 초기화 (즉 예열) ← 방법 더미 matmul을 한번 호출 (matmul 안에 cuBLAS가 들어있으니까)</p>\n<ul id='2' data-category='list'><li><b>cuBLAS</b> : 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 <u>NVIDIA Developer</u> 가속 라이브러리</li></ul>\n<p id='3' data-category='paragraph'>2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리 업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)</p>\n<p id='4' data-category='paragraph'>3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 , 2MB행렬을 memcpy 하는중)보다 필요한 부분만 복사하기</p>\n<h3 id='5'>85ms</h3>\n<p id='6' data-category='paragraph'>// crown_test_op_hybrid_v2</p>\n<p id='7' data-category='paragraph'>v1-1 : 벡터연산 중 3가지 (vec_add, sub, mat) 을 cpu로 돌려놓음, <b>300ms</b> // my_lirpa_vector_CPU</p>\n<p id='8' data-category='paragraph'>(v1-1은 잘못 생각한게 아직 메모리 풀도 안해놨고, CuBlas 같은 것도 안해놔서 cpu로 함수를 돌려놓다 보면 결국 v0의 결과와 같아짐, 그러면 정확한 비교를 할 수 없으니까.. 적어도 gpu를 내가 할 수 있는 범위에서 초기화 해놓고 cpu로 바꾸며 비교 해야할듯)</p>\n<p id='9' data-category='paragraph'>v1-1-1 : 일단 메모리풀만 도입한 프로그램 만들어봄 , 결과 <b>205 ~ 250ms</b> // my_lirpa_mempool.cu</p>\n<h3 id='10'>메모리 풀 크기 산정 근거:</h3>\n<p id='11' data-category='paragraph'><b>풀 크기 산정 근거:</b></p>\n<p id='12' data-category='paragraph'>• Matrix 3개: mat_add , matmul 등에서 최대 3개(A, B, C) 동시 사용</p>\n<p id='13' data-category='paragraph'>• Vector 6개: relu_relax 에서 6개(lower, upper, alpha_l, beta_l, alpha_u, beta_u) 동시 사용</p>",
+    "markdown": "v4 :\n\n1. cuBLAS 미리 예열 : 계산 (시간측정) 전에 미리 cuBLAS 호출해서 초기화 (즉 예열) ← 방법 더미 matmul을 한번 호출 (matmul 안에 cuBLAS가 들어있으니까)\n\n- **cuBLAS** : 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 <u>NVIDIA Developer</u> 가속 라이브러리\n\n\n2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리 업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)\n\n3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 , 2MB행렬을 memcpy 하는중)보다 필요한 부분만 복사하기\n\n### 85ms\n\n// crown_test_op_hybrid_v2\n\nv1-1 : 벡터연산 중 3가지 (vec_add, sub, mat) 을 cpu로 돌려놓음, **300ms** // my_lirpa_vector_CPU\n\n(v1-1은 잘못 생각한게 아직 메모리 풀도 안해놨고, CuBlas 같은 것도 안해놔서 cpu로 함수를 돌려놓다 보면 결국 v0의 결과와 같아짐, 그러면 정확한 비교를 할 수 없으니까.. 적어도 gpu를 내가 할 수 있는 범위에서 초기화 해놓고 cpu로 바꾸며 비교 해야할듯)\n\nv1-1-1 : 일단 메모리풀만 도입한 프로그램 만들어봄 , 결과 **205 ~ 250ms** // my_lirpa_mempool.cu\n\n### 메모리 풀 크기 산정 근거:\n\n**풀 크기 산정 근거:**\n\n• Matrix 3개: mat_add , matmul 등에서 최대 3개(A, B, C) 동시 사용\n\n• Vector 6개: relu_relax 에서 6개(lower, upper, alpha_l, beta_l, alpha_u, beta_u) 동시 사용",
+    "text": "v4 :\n1. cuBLAS 미리 예열 : 계산 (시간측정) 전에 미리 cuBLAS 호출해서 초기화 (즉 예열) ← 방법 더미 matmul을 한번 호출 (matmul 안에 cuBLAS가 들어있으니까)\ncuBLAS : 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리\n2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리 업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)\n3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 , 2MB행렬을 memcpy 하는중)보다 필요한 부분만 복사하기\n85ms\n// crown_test_op_hybrid_v2\nv1-1 : 벡터연산 중 3가지 (vec_add, sub, mat) 을 cpu로 돌려놓음, 300ms // my_lirpa_vector_CPU\n(v1-1은 잘못 생각한게 아직 메모리 풀도 안해놨고, CuBlas 같은 것도 안해놔서 cpu로 함수를 돌려놓다 보면 결국 v0의 결과와 같아짐, 그러면 정확한 비교를 할 수 없으니까.. 적어도 gpu를 내가 할 수 있는 범위에서 초기화 해놓고 cpu로 바꾸며 비교 해야할듯)\nv1-1-1 : 일단 메모리풀만 도입한 프로그램 만들어봄 , 결과 205 ~ 250ms // my_lirpa_mempool.cu\n메모리 풀 크기 산정 근거:\n풀 크기 산정 근거:\n• Matrix 3개: mat_add , matmul 등에서 최대 3개(A, B, C) 동시 사용\n• Vector 6개: relu_relax 에서 6개(lower, upper, alpha_l, beta_l, alpha_u, beta_u) 동시 사용"
+  },
+  "elements": [
+    {
+      "id": 0,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='0' data-category='paragraph'>v4 :</p>",
+        "markdown": "v4 :",
+        "text": "v4 :"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.086
+        },
+        {
+          "x": 0.151,
+          "y": 0.086
+        },
+        {
+          "x": 0.151,
+          "y": 0.099
+        },
+        {
+          "x": 0.117,
+          "y": 0.099
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='1' data-category='paragraph'>1. cuBLAS 미리 예열 : 계산 (시간측정) 전에 미리 cuBLAS 호출해서 초기화 (즉 예열) ← 방법 더미 matmul을 한번 호출 (matmul 안에 cuBLAS가 들어있으니까)</p>",
+        "markdown": "1. cuBLAS 미리 예열 : 계산 (시간측정) 전에 미리 cuBLAS 호출해서 초기화 (즉 예열) ← 방법 더미 matmul을 한번 호출 (matmul 안에 cuBLAS가 들어있으니까)",
+        "text": "1. cuBLAS 미리 예열 : 계산 (시간측정) 전에 미리 cuBLAS 호출해서 초기화 (즉 예열) ← 방법 더미 matmul을 한번 호출 (matmul 안에 cuBLAS가 들어있으니까)"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.119
+        },
+        {
+          "x": 0.837,
+          "y": 0.119
+        },
+        {
+          "x": 0.837,
+          "y": 0.152
+        },
+        {
+          "x": 0.116,
+          "y": 0.152
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "page": 1,
+      "category": "list",
+      "sub_category": "ul",
+      "content": {
+        "html": "<ul id='2' data-category='list'><li><b>cuBLAS</b> : 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 <u>NVIDIA Developer</u> 가속 라이브러리</li></ul>",
+        "markdown": "- **cuBLAS** : 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 <u>NVIDIA Developer</u> 가속 라이브러리\n",
+        "text": "cuBLAS : 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리"
+      },
+      "coordinates": [
+        {
+          "x": 0.147,
+          "y": 0.154
+        },
+        {
+          "x": 0.818,
+          "y": 0.154
+        },
+        {
+          "x": 0.818,
+          "y": 0.188
+        },
+        {
+          "x": 0.147,
+          "y": 0.188
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='3' data-category='paragraph'>2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리 업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)</p>",
+        "markdown": "2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리 업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)",
+        "text": "2. 가중치 (W) GPU에 사전 업로드 : 가중치는 고정이므로 네트워크 로드할때 미리 업로드 해놓기 (그리고 matmul에서 호출마다 복사하는 과정 삭제) (memcpy)"
+      },
+      "coordinates": [
+        {
+          "x": 0.115,
+          "y": 0.207
+        },
+        {
+          "x": 0.856,
+          "y": 0.207
+        },
+        {
+          "x": 0.856,
+          "y": 0.241
+        },
+        {
+          "x": 0.115,
+          "y": 0.241
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='4' data-category='paragraph'>3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 , 2MB행렬을 memcpy 하는중)보다 필요한 부분만 복사하기</p>",
+        "markdown": "3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 , 2MB행렬을 memcpy 하는중)보다 필요한 부분만 복사하기",
+        "text": "3. 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512 , 2MB행렬을 memcpy 하는중)보다 필요한 부분만 복사하기"
+      },
+      "coordinates": [
+        {
+          "x": 0.115,
+          "y": 0.259
+        },
+        {
+          "x": 0.803,
+          "y": 0.259
+        },
+        {
+          "x": 0.803,
+          "y": 0.292
+        },
+        {
+          "x": 0.115,
+          "y": 0.292
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "page": 1,
+      "category": "heading1",
+      "sub_category": "h3",
+      "content": {
+        "html": "<h3 id='5'>85ms</h3>",
+        "markdown": "### 85ms",
+        "text": "85ms"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.312
+        },
+        {
+          "x": 0.168,
+          "y": 0.312
+        },
+        {
+          "x": 0.168,
+          "y": 0.324
+        },
+        {
+          "x": 0.116,
+          "y": 0.324
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='6' data-category='paragraph'>// crown_test_op_hybrid_v2</p>",
+        "markdown": "// crown_test_op_hybrid_v2",
+        "text": "// crown_test_op_hybrid_v2"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.329
+        },
+        {
+          "x": 0.348,
+          "y": 0.329
+        },
+        {
+          "x": 0.348,
+          "y": 0.345
+        },
+        {
+          "x": 0.116,
+          "y": 0.345
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='7' data-category='paragraph'>v1-1 : 벡터연산 중 3가지 (vec_add, sub, mat) 을 cpu로 돌려놓음, <b>300ms</b> // my_lirpa_vector_CPU</p>",
+        "markdown": "v1-1 : 벡터연산 중 3가지 (vec_add, sub, mat) 을 cpu로 돌려놓음, **300ms** // my_lirpa_vector_CPU",
+        "text": "v1-1 : 벡터연산 중 3가지 (vec_add, sub, mat) 을 cpu로 돌려놓음, 300ms // my_lirpa_vector_CPU"
+      },
+      "coordinates": [
+        {
+          "x": 0.115,
+          "y": 0.38
+        },
+        {
+          "x": 0.735,
+          "y": 0.38
+        },
+        {
+          "x": 0.735,
+          "y": 0.413
+        },
+        {
+          "x": 0.115,
+          "y": 0.413
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='8' data-category='paragraph'>(v1-1은 잘못 생각한게 아직 메모리 풀도 안해놨고, CuBlas 같은 것도 안해놔서 cpu로 함수를 돌려놓다 보면 결국 v0의 결과와 같아짐, 그러면 정확한 비교를 할 수 없으니까.. 적어도 gpu를 내가 할 수 있는 범위에서 초기화 해놓고 cpu로 바꾸며 비교 해야할듯)</p>",
+        "markdown": "(v1-1은 잘못 생각한게 아직 메모리 풀도 안해놨고, CuBlas 같은 것도 안해놔서 cpu로 함수를 돌려놓다 보면 결국 v0의 결과와 같아짐, 그러면 정확한 비교를 할 수 없으니까.. 적어도 gpu를 내가 할 수 있는 범위에서 초기화 해놓고 cpu로 바꾸며 비교 해야할듯)",
+        "text": "(v1-1은 잘못 생각한게 아직 메모리 풀도 안해놨고, CuBlas 같은 것도 안해놔서 cpu로 함수를 돌려놓다 보면 결국 v0의 결과와 같아짐, 그러면 정확한 비교를 할 수 없으니까.. 적어도 gpu를 내가 할 수 있는 범위에서 초기화 해놓고 cpu로 바꾸며 비교 해야할듯)"
+      },
+      "coordinates": [
+        {
+          "x": 0.115,
+          "y": 0.415
+        },
+        {
+          "x": 0.84,
+          "y": 0.415
+        },
+        {
+          "x": 0.84,
+          "y": 0.466
+        },
+        {
+          "x": 0.115,
+          "y": 0.466
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='9' data-category='paragraph'>v1-1-1 : 일단 메모리풀만 도입한 프로그램 만들어봄 , 결과 <b>205 ~ 250ms</b> // my_lirpa_mempool.cu</p>",
+        "markdown": "v1-1-1 : 일단 메모리풀만 도입한 프로그램 만들어봄 , 결과 **205 ~ 250ms** // my_lirpa_mempool.cu",
+        "text": "v1-1-1 : 일단 메모리풀만 도입한 프로그램 만들어봄 , 결과 205 ~ 250ms // my_lirpa_mempool.cu"
+      },
+      "coordinates": [
+        {
+          "x": 0.115,
+          "y": 0.501
+        },
+        {
+          "x": 0.733,
+          "y": 0.501
+        },
+        {
+          "x": 0.733,
+          "y": 0.535
+        },
+        {
+          "x": 0.115,
+          "y": 0.535
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "page": 1,
+      "category": "heading1",
+      "sub_category": "h3",
+      "content": {
+        "html": "<h3 id='10'>메모리 풀 크기 산정 근거:</h3>",
+        "markdown": "### 메모리 풀 크기 산정 근거:",
+        "text": "메모리 풀 크기 산정 근거:"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.553
+        },
+        {
+          "x": 0.329,
+          "y": 0.553
+        },
+        {
+          "x": 0.329,
+          "y": 0.568
+        },
+        {
+          "x": 0.117,
+          "y": 0.568
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='11' data-category='paragraph'><b>풀 크기 산정 근거:</b></p>",
+        "markdown": "**풀 크기 산정 근거:**",
+        "text": "풀 크기 산정 근거:"
+      },
+      "coordinates": [
+        {
+          "x": 0.129,
+          "y": 0.582
+        },
+        {
+          "x": 0.259,
+          "y": 0.582
+        },
+        {
+          "x": 0.259,
+          "y": 0.598
+        },
+        {
+          "x": 0.129,
+          "y": 0.598
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='12' data-category='paragraph'>• Matrix 3개: mat_add , matmul 등에서 최대 3개(A, B, C) 동시 사용</p>",
+        "markdown": "• Matrix 3개: mat_add , matmul 등에서 최대 3개(A, B, C) 동시 사용",
+        "text": "• Matrix 3개: mat_add , matmul 등에서 최대 3개(A, B, C) 동시 사용"
+      },
+      "coordinates": [
+        {
+          "x": 0.129,
+          "y": 0.608
+        },
+        {
+          "x": 0.609,
+          "y": 0.608
+        },
+        {
+          "x": 0.609,
+          "y": 0.624
+        },
+        {
+          "x": 0.129,
+          "y": 0.624
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='13' data-category='paragraph'>• Vector 6개: relu_relax 에서 6개(lower, upper, alpha_l, beta_l, alpha_u, beta_u) 동시 사용</p>",
+        "markdown": "• Vector 6개: relu_relax 에서 6개(lower, upper, alpha_l, beta_l, alpha_u, beta_u) 동시 사용",
+        "text": "• Vector 6개: relu_relax 에서 6개(lower, upper, alpha_l, beta_l, alpha_u, beta_u) 동시 사용"
+      },
+      "coordinates": [
+        {
+          "x": 0.129,
+          "y": 0.628
+        },
+        {
+          "x": 0.77,
+          "y": 0.628
+        },
+        {
+          "x": 0.77,
+          "y": 0.662
+        },
+        {
+          "x": 0.129,
+          "y": 0.662
+        }
+      ]
+    }
+  ],
+  "model": "document-parse-260930",
+  "ocr": true,
+  "usage": {
+    "pages": 1,
+    "enhanced": [
+      1
+    ]
+  }
+}

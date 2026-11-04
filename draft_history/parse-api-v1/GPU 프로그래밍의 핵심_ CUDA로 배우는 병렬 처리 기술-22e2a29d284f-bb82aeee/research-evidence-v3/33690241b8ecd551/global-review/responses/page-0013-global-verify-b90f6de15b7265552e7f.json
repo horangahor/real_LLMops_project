@@ -1,0 +1,63 @@
+{
+  "request_fingerprint": "b90f6de15b7265552e7fbd7d5efffc9208a63a33b518b91cd5807618dffd2681",
+  "value": {
+    "checks": {
+      "P0011F0002": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "p11:e96에 'v 1-1-2 : 가중치만 미리 업로드 할 수 있게 해봄, 어떻게 바꿨냐면, (149~155ms) // my_lirpa_mempool_preload_on_gpu.cu'가 그대로 기록되어 있어 진술과 파일명 모두 일치한다. p12:e103의 '결과 : 149~155ms'도 범위를 뒷받침한다."
+      },
+      "P0011F0004": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "p11:e96의 '가중치만 미리 업로드 할 수 있게 해봄'과 파일명 my_lirpa_mempool_preload_on_gpu.cu, 그리고 p12:e100의 pre_upload_weights_to_gpu 코드 맥락으로 'GPU에 업로드'와 '변경한 버전'이라는 표현이 뒷받침된다. 측정값 149~155ms 범위도 p11:e96·p12:e103과 일치한다."
+      },
+      "P0012F0001": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "implementation_code",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "p12:e100의 코드에 cudaMalloc(&net->d_W[i], MAX_DIM * MAX_DIM * sizeof(double))와 cudaMemcpy2D를 이용한 Host→Device 복사가 for 루프 안에서 각 레이어마다 수행되는 것으로 명시되어 있어 진술과 정확히 일치한다. p12:e101은 할당된 메모리를 net->d_W[i]에 저장해 재사용한다는 설명을 제공한다."
+      },
+      "P0012F0002": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "p12:e102 화면에 '** MODE: MEMPOOL + Weights PRELOAD ON GPU **'와 'Elapsed time: 149,820400 ms'가 함께 출력되어 있어 진술된 모드·시간·실행 예시 성격이 모두 일치한다."
+      },
+      "P0012F0003": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "p12:e104에 '+ bias까지 미리 업로드 해봤는데 크게 성능개선에 의미를 미치지 못하는듯 (왜냐하면 이게 bias는 Vector인데 코드를 봤을 때 4KB정도 밖에 안돼서 그렇다, 즉 cpu가' 라고 기록되어 있고, p13:e105에서 '연산하기에도 크게 무리가 없는 수준이라서..)'로 이어져 진술된 평가와 이유(bias가 Vector, 약 4KB, CPU 연산 부담 적음)가 모두 뒷받침된다."
+      },
+      "P0012F0004": {
+        "support": "partial",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [
+          "관찰 항목 중 '두 실행의 출력 하한/상한/예측값이 미세하게 다름'은 원문에서 뒷받침되지 않는다. p11:e95와 p12:e102에 출력된 Lower Bound·Upper Bound·Normal Pred (y) 값들은 소수점 표기 차이(쉼표/마침표)를 제외하면 동일하게 보이며, 미세한 차이를 확인할 수 없다."
+        ],
+        "note": "핵심 진술인 'preload 버전 149.820400ms, 비교 실행 228.585200ms'는 p12:e102와 p11:e95에 각각 기록되어 있어 지지된다. 조건(eps = 1e-06, Output Dimension: 16)도 두 화면에 공통으로 나타난다. 다만 두 실행의 동일 조건 반복 여부 등 정확한 비교 기준은 원문에 명시되지 않았다는 한계(p12:e103에는 '결과 : 149~155ms'만 있고 비교 설계 설명은 없음)도 사실이다. 출력값 차이에 관한 관찰은 출처와 불일치하므로 부분 지지로 판정한다."
+      }
+    }
+  }
+}

@@ -1,0 +1,529 @@
+{
+  "initial": [
+    {
+      "statement": "switch문 안에서 ForwardBoundResult/BackwardBoundResult를 선언과 동시에 생성하도록 코드를 수정했다.",
+      "limits": "해당 수정은 switch 케이스별 중괄호 스코프 사용이 필요하며, 중괄호 없이 선언하면 컴파일 경고/오류가 발생할 수 있다.",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [
+        "switch(method) 내부 case 0/1에서 지역 변수로 선언",
+        "중괄호 스코프 사용"
+      ],
+      "observations": [
+        "switch 안에서 선언과 동시에 만들어지도록 변경",
+        "중괄호로 스코프를 덮어주지 않으면 안된다고 기록"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p50:e351",
+          "page": 50,
+          "quote": "![image](/image/placeholder)\n9 0 V V 8 9 e Vector ye = network_forward (*net, dataset[i]); // CROWN backward bound or forward bound 계산 switch(method){ case 0: { ForwardBoundResult fwd = lirpa_forward_bound_impl(*net, dataset[i], eps_f, false, false, true) // Top-k 인증 판정 if (certify_topk(y0, fwd.final_lower, fwd.final_upper, k)) +t_count; else ++f_count; break; } case 1: BackwardBoundResult bwd = lirpa_backward_bound(*net, dataset[i], eps_f, false, false); // Top-k 인증 판정 if (certify_topk(y0, bwd.final_lower, bwd.final_upper, k)) ++t_count; else ++f_count; break; } default: break;",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p50:e352",
+          "page": 50,
+          "quote": "그래서 이런식으로 안에서 선언과 동시에 만들어지도록 해봤다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p50:e353",
+          "page": 50,
+          "quote": "● 참고로 switch 안의 선언문은 중괄호로 저렇게 덮어주지 않으면 안되더라",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0050F0001"
+    },
+    {
+      "statement": "switch문 내부에 중괄호 스코프를 두어 fwd/bwd를 선언·초기화하는 방식으로 수정한 뒤, backward 실행 시간이 다시 2100s 수준으로 증가하는 문제가 해결되었다고 기록했다.",
+      "limits": "해결 판단은 작성자 해석이며, 이후 실행에서 시간 변동이 다시 관찰되었다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "switch 내부 중괄호 스코프에서 fwd/bwd 선언",
+        "실행인자 기반 method 선택"
+      ],
+      "observations": [
+        "준수한 결과라고 평가",
+        "2100s 초 나오는 문제도 원인 해결 완료라고 기록"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p50:e357",
+          "page": 50,
+          "quote": "음 .. 준수한 결과다. ⇒ 이러면 2100s 초 나오는 문제도 원인 해결 완료",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0050F0002"
+    },
+    {
+      "statement": "switch(method) 바깥에서 fwd/bwd를 선언했을 때, nvcc 컴파일에서 transfer of control이 초기화를 우회한다는 경고(warning #546-D)와 함께 fwd/bwd 초기화가 case/default 레이블에 의해 생략되었다는 컴파일 오류(error C2360, C2361)가 발생했다.",
+      "limits": "컴파일러 진단 메시지는 nvcc 컴파일 과정에서 발생한 것으로 기록되었다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "nvcc 컴파일",
+        "switch(method) 바깥에 fwd/bwd 선언",
+        "case 0/1 및 default 레이블"
+      ],
+      "observations": [
+        "warning #546-D: transfer of control bypasses initialization of variable fwd/bwd",
+        "error C2360/C2361: fwd/bwd 초기화가 case/default 레이블에 의해 생략됨"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p50:e354",
+          "page": 50,
+          "quote": "![image](/image/placeholder)\n:#Users\\user#Desktop#cuda#crown\\testing(present)>nvcc -Xcompiler \"/utf-8\" -Xlinker \"/STACK:134217728\" -arch=sm_89 crown _test_all_data.cu -o crown_test_all_data_backward.exe crown_test_all_data.cu crown_test_all_data.cu(250): warning #546-D: transfer of control bypasses initialization of: variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260) switch(method){ Remark: The warnings can be suppressed with \"-diag-suppress <warning-number>\" crown_test_all_data.cu(250): : warning #546-D: transfer of control bypasses initialization of: variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260) switch(method){ Remark: The warnings can be suppressed with \"-diag-suppress <warning-number>\" tmpxft_0000025c_oooo0n_test_all_data.cudafel.cpp crown_test_all_data.cu(259): error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략되었습니다. crown_test_all_data.cu(252): note: 'fwd' 선언을 참조하십시오. crown_test_all_data.cu(267): error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략되었습니다. crown_test_all_data.cu(260): note: 'bwd' 선언을 참조하십시오. crown_test_all_data.cu(267): error C2361: fwd' 초기화가 'default' 레이블에 의해 생략되었습니다. crown_test_all_data.cu(252): note: 'fwd' 선언을 참조하십시오.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p50:e355",
+          "page": 50,
+          "quote": "f wd, bwd 초기화가 해당 레이블에 의해 생략되었다.. 즉 main 함수 scope의 선언문은 무조건\n선언이 되어야하는데 레이블에 의해 그 부분이 생략되고 있으니 작은 scope를 만들어준 것.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "조건·관찰의 원문 미확인 수치: 0, 1"
+      ],
+      "id": "P0050F0003"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "switch(method) 바깥에 ForwardBoundResult fwd와 BackwardBoundResult bwd를 선언한 뒤, case 0에서 fwd를, case 1에서 bwd를 초기화하는 코드를 nvcc로 컴파일했을 때 warning #546-D(transfer of control bypasses initialization of variable fwd/bwd)와 error C2360/C2361(fwd/bwd 초기화가 case/default 레이블에 의해 생략됨)이 발생했다.",
+        "limits": "해당 컴파일 진단은 nvcc 컴파일 과정에서 관찰된 것으로 기록되었으며, 경고 억제 옵션(-diag-suppress <warning-number>) 사용 가능성이 함께 언급되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "nvcc 컴파일",
+          "switch(method) 바깥에 fwd/bwd 선언",
+          "case 0에서 fwd 초기화, case 1에서 bwd 초기화, default 레이블 존재"
+        ],
+        "observations": [
+          "warning #546-D: transfer of control bypasses initialization of: variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260)",
+          "error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략되었습니다.",
+          "error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략되었습니다.",
+          "error C2361: 'fwd' 초기화가 'default' 레이블에 의해 생략되었습니다.",
+          "컴파일러 메시지에 line 252, 260, 267 등 위치 정보가 포함됨",
+          "경고 억제 방법으로 \"-diag-suppress <warning-number>\"가 언급됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e354",
+          "p50:e355"
+        ]
+      },
+      {
+        "statement": "switch 내부 case 0/1에서 중괄호 스코프를 사용해 ForwardBoundResult/BackwardBoundResult를 선언과 동시에 생성하도록 수정한 뒤, 작성자는 결과가 준수하다고 평가하고 2100s 초가 나오던 문제가 원인 해결 완료라고 기록했다.",
+        "limits": "해결 판단은 작성자 해석이며, 이후 실행에서 시간 변동이 다시 관찰되었다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch(method) 내부 case 0/1에서 지역 변수로 선언",
+          "중괄호 스코프 사용",
+          "실행인자 기반 method 선택"
+        ],
+        "observations": [
+          "switch 안에서 선언과 동시에 만들어지도록 변경",
+          "중괄호로 스코프를 덮어주지 않으면 안된다고 기록",
+          "준수한 결과라고 평가",
+          "2100s 초 나오는 문제도 원인 해결 완료라고 기록"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e351",
+          "p50:e352",
+          "p50:e353",
+          "p50:e357"
+        ]
+      },
+      {
+        "statement": "switch 내부 중괄호 스코프 방식으로 수정한 뒤에도 실행 조건에 따라 총 경과 시간이 1560.37s, 1342.47s, 1561.72s, 1460.60s, 1564.18s 등으로 변동하여 기록되었다.",
+        "limits": "기록된 시간은 실행인자 유무, forward/backward 방법 선택 등 실행 조건에 따라 달라진 값으로, 단일 확정값이 아니다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "실행인자 없는 버전 backward",
+          "실행인자 없는 버전 forward",
+          "실행인자 있는 backward",
+          "실행인자 있는 forward"
+        ],
+        "observations": [
+          "실행인자 없는 버전 backward: total elapsed 1560.37s",
+          "실행인자 없는 버전 forward: total elapsed 1342.47s",
+          "실행인자 없는 버전 backward(다른 실행): total elapsed 1561.72s",
+          "실행인자 없는 버전 backward(다른 실행): total elapsed 1460.60s",
+          "실행인자 있는 backward: total elapsed 1564.18s",
+          "실행인자 있는 backward는 1564s 정도로 비슷하다고 기록",
+          "forward는 1342s까지도 떨어진다고 기록",
+          "실행인자 있는 것이 더 빠르다는 취지의 의문이 기록됨"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total elapsed",
+            "value": "1560.37",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "실행인자 없는 버전 backward",
+            "element_ids": [
+              "p51:e360"
+            ]
+          },
+          {
+            "metric": "total elapsed",
+            "value": "1342.47",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "실행인자 없는 버전 forward",
+            "element_ids": [
+              "p51:e364"
+            ]
+          },
+          {
+            "metric": "total elapsed",
+            "value": "1561.72",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "실행인자 없는 버전 backward(다른 실행)",
+            "element_ids": [
+              "p51:e366"
+            ]
+          },
+          {
+            "metric": "total elapsed",
+            "value": "1460.60",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "실행인자 없는 버전 backward(다른 실행)",
+            "element_ids": [
+              "p51:e368"
+            ]
+          },
+          {
+            "metric": "total elapsed",
+            "value": "1564.18",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "실행인자 있는 backward",
+            "element_ids": [
+              "p51:e370"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p51:e360",
+          "p51:e361",
+          "p51:e362",
+          "p51:e363",
+          "p51:e364",
+          "p51:e365",
+          "p51:e366",
+          "p51:e367",
+          "p51:e368",
+          "p51:e369",
+          "p51:e370",
+          "p51:e371",
+          "p51:e372"
+        ]
+      },
+      {
+        "statement": "작성자는 switch 바깥 선언 시 값에 의한 복사가 문제였다는 해석을 남겼고, 이후 forward 실행 시간이 1342s까지 떨어진 것도 값에 의한 복사 해결 때문일 수 있다고 추측했다.",
+        "limits": "해당 원인은 작성자 추측이며, 원문에 확정적 근거로 제시된 것은 아니다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch 바깥 선언 시 구조체 복사 발생",
+          "값에 의한 복사 해결 여부"
+        ],
+        "observations": [
+          "switch 스코프 바깥에 CROWN 결과를 담을 구조체를 선언해놓고 반복문 내부에서 CROWN을 돌려서 결과를 담고 있으며, 이는 값에 의한 복사라는 기록",
+          "구조체를 전부 복사하느라고 그렇다는 기록(92만번 복사하면 꽤 크다)",
+          "forward는 갑자기 또 1342s까지도 떨어지며, 아마 앞서 말했던 값에 의한 복사를 해결해서일 수 있다는 추측 기록"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p49:e349",
+          "p49:e350",
+          "p51:e365"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p50:e351": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p50:e352": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p50:e353": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p50:e354": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p50:e355": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p50:e356": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p50:e357": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p50:e358": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      }
+    },
+    "ledger_validation_error": "대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+  },
+  "facts": [
+    {
+      "statement": "switch문 안에서 ForwardBoundResult/BackwardBoundResult를 선언과 동시에 생성하도록 코드를 수정했다.",
+      "limits": "해당 수정은 switch 케이스별 중괄호 스코프 사용이 필요하며, 중괄호 없이 선언하면 컴파일 경고/오류가 발생할 수 있다.",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [
+        "switch(method) 내부 case 0/1에서 지역 변수로 선언",
+        "중괄호 스코프 사용"
+      ],
+      "observations": [
+        "switch 안에서 선언과 동시에 만들어지도록 변경",
+        "중괄호로 스코프를 덮어주지 않으면 안된다고 기록"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p50:e351",
+          "page": 50,
+          "quote": "![image](/image/placeholder)\n9 0 V V 8 9 e Vector ye = network_forward (*net, dataset[i]); // CROWN backward bound or forward bound 계산 switch(method){ case 0: { ForwardBoundResult fwd = lirpa_forward_bound_impl(*net, dataset[i], eps_f, false, false, true) // Top-k 인증 판정 if (certify_topk(y0, fwd.final_lower, fwd.final_upper, k)) +t_count; else ++f_count; break; } case 1: BackwardBoundResult bwd = lirpa_backward_bound(*net, dataset[i], eps_f, false, false); // Top-k 인증 판정 if (certify_topk(y0, bwd.final_lower, bwd.final_upper, k)) ++t_count; else ++f_count; break; } default: break;",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p50:e352",
+          "page": 50,
+          "quote": "그래서 이런식으로 안에서 선언과 동시에 만들어지도록 해봤다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p50:e353",
+          "page": 50,
+          "quote": "● 참고로 switch 안의 선언문은 중괄호로 저렇게 덮어주지 않으면 안되더라",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0050F0001"
+    },
+    {
+      "statement": "switch문 내부에 중괄호 스코프를 두어 fwd/bwd를 선언·초기화하는 방식으로 수정한 뒤, backward 실행 시간이 다시 2100s 수준으로 증가하는 문제가 해결되었다고 기록했다.",
+      "limits": "해결 판단은 작성자 해석이며, 이후 실행에서 시간 변동이 다시 관찰되었다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "switch 내부 중괄호 스코프에서 fwd/bwd 선언",
+        "실행인자 기반 method 선택"
+      ],
+      "observations": [
+        "준수한 결과라고 평가",
+        "2100s 초 나오는 문제도 원인 해결 완료라고 기록"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p50:e357",
+          "page": 50,
+          "quote": "음 .. 준수한 결과다. ⇒ 이러면 2100s 초 나오는 문제도 원인 해결 완료",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0050F0002"
+    },
+    {
+      "statement": "switch(method) 바깥에서 fwd/bwd를 선언했을 때, nvcc 컴파일에서 transfer of control이 초기화를 우회한다는 경고(warning #546-D)와 함께 fwd/bwd 초기화가 case/default 레이블에 의해 생략되었다는 컴파일 오류(error C2360, C2361)가 발생했다.",
+      "limits": "컴파일러 진단 메시지는 nvcc 컴파일 과정에서 발생한 것으로 기록되었다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "nvcc 컴파일",
+        "switch(method) 바깥에 fwd/bwd 선언",
+        "case 0/1 및 default 레이블"
+      ],
+      "observations": [
+        "warning #546-D: transfer of control bypasses initialization of variable fwd/bwd",
+        "error C2360/C2361: fwd/bwd 초기화가 case/default 레이블에 의해 생략됨"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p50:e354",
+          "page": 50,
+          "quote": "![image](/image/placeholder)\n:#Users\\user#Desktop#cuda#crown\\testing(present)>nvcc -Xcompiler \"/utf-8\" -Xlinker \"/STACK:134217728\" -arch=sm_89 crown _test_all_data.cu -o crown_test_all_data_backward.exe crown_test_all_data.cu crown_test_all_data.cu(250): warning #546-D: transfer of control bypasses initialization of: variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260) switch(method){ Remark: The warnings can be suppressed with \"-diag-suppress <warning-number>\" crown_test_all_data.cu(250): : warning #546-D: transfer of control bypasses initialization of: variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260) switch(method){ Remark: The warnings can be suppressed with \"-diag-suppress <warning-number>\" tmpxft_0000025c_oooo0n_test_all_data.cudafel.cpp crown_test_all_data.cu(259): error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략되었습니다. crown_test_all_data.cu(252): note: 'fwd' 선언을 참조하십시오. crown_test_all_data.cu(267): error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략되었습니다. crown_test_all_data.cu(260): note: 'bwd' 선언을 참조하십시오. crown_test_all_data.cu(267): error C2361: fwd' 초기화가 'default' 레이블에 의해 생략되었습니다. crown_test_all_data.cu(252): note: 'fwd' 선언을 참조하십시오.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p50:e355",
+          "page": 50,
+          "quote": "f wd, bwd 초기화가 해당 레이블에 의해 생략되었다.. 즉 main 함수 scope의 선언문은 무조건\n선언이 되어야하는데 레이블에 의해 그 부분이 생략되고 있으니 작은 scope를 만들어준 것.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "조건·관찰의 원문 미확인 수치: 0, 1"
+      ],
+      "id": "P0050F0003"
+    },
+    {
+      "statement": "switch(method) 바깥에 ForwardBoundResult fwd와 BackwardBoundResult bwd를 선언한 뒤, case 0에서 fwd를, case 1에서 bwd를 초기화하는 코드를 nvcc로 컴파일했을 때 warning #546-D(transfer of control bypasses initialization of variable fwd/bwd)와 error C2360/C2361(fwd/bwd 초기화가 case/default 레이블에 의해 생략됨)이 발생했다.",
+      "limits": "해당 컴파일 진단은 nvcc 컴파일 과정에서 관찰된 것으로 기록되었으며, 경고 억제 옵션(-diag-suppress <warning-number>) 사용 가능성이 함께 언급되었다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "nvcc 컴파일",
+        "switch(method) 바깥에 fwd/bwd 선언",
+        "case 0에서 fwd 초기화, case 1에서 bwd 초기화, default 레이블 존재"
+      ],
+      "observations": [
+        "warning #546-D: transfer of control bypasses initialization of: variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260)",
+        "error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략되었습니다.",
+        "error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략되었습니다.",
+        "error C2361: 'fwd' 초기화가 'default' 레이블에 의해 생략되었습니다.",
+        "컴파일러 메시지에 line 252, 260, 267 등 위치 정보가 포함됨",
+        "경고 억제 방법으로 \"-diag-suppress <warning-number>\"가 언급됨"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p50:e354",
+          "page": 50,
+          "quote": "![image](/image/placeholder)\n:#Users\\user#Desktop#cuda#crown\\testing(present)>nvcc -Xcompiler \"/utf-8\" -Xlinker \"/STACK:134217728\" -arch=sm_89 crown _test_all_data.cu -o crown_test_all_data_backward.exe crown_test_all_data.cu crown_test_all_data.cu(250): warning #546-D: transfer of control bypasses initialization of: variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260) switch(method){ Remark: The warnings can be suppressed with \"-diag-suppress <warning-number>\" crown_test_all_data.cu(250): : warning #546-D: transfer of control bypasses initialization of: variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260) switch(method){ Remark: The warnings can be suppressed with \"-diag-suppress <warning-number>\" tmpxft_0000025c_oooo0n_test_all_data.cudafel.cpp crown_test_all_data.cu(259): error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략되었습니다. crown_test_all_data.cu(252): note: 'fwd' 선언을 참조하십시오. crown_test_all_data.cu(267): error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략되었습니다. crown_test_all_data.cu(260): note: 'bwd' 선언을 참조하십시오. crown_test_all_data.cu(267): error C2361: fwd' 초기화가 'default' 레이블에 의해 생략되었습니다. crown_test_all_data.cu(252): note: 'fwd' 선언을 참조하십시오.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p50:e355",
+          "page": 50,
+          "quote": "f wd, bwd 초기화가 해당 레이블에 의해 생략되었다.. 즉 main 함수 scope의 선언문은 무조건\n선언이 되어야하는데 레이블에 의해 그 부분이 생략되고 있으니 작은 scope를 만들어준 것.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 0, 1",
+        "조건·관찰의 원문 미확인 수치: 0, 1"
+      ],
+      "id": "P0050F0004"
+    },
+    {
+      "statement": "switch 내부 case 0/1에서 중괄호 스코프를 사용해 ForwardBoundResult/BackwardBoundResult를 선언과 동시에 생성하도록 수정한 뒤, 작성자는 결과가 준수하다고 평가하고 2100s 초가 나오던 문제가 원인 해결 완료라고 기록했다.",
+      "limits": "해결 판단은 작성자 해석이며, 이후 실행에서 시간 변동이 다시 관찰되었다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "switch(method) 내부 case 0/1에서 지역 변수로 선언",
+        "중괄호 스코프 사용",
+        "실행인자 기반 method 선택"
+      ],
+      "observations": [
+        "switch 안에서 선언과 동시에 만들어지도록 변경",
+        "중괄호로 스코프를 덮어주지 않으면 안된다고 기록",
+        "준수한 결과라고 평가",
+        "2100s 초 나오는 문제도 원인 해결 완료라고 기록"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p50:e351",
+          "page": 50,
+          "quote": "![image](/image/placeholder)\n9 0 V V 8 9 e Vector ye = network_forward (*net, dataset[i]); // CROWN backward bound or forward bound 계산 switch(method){ case 0: { ForwardBoundResult fwd = lirpa_forward_bound_impl(*net, dataset[i], eps_f, false, false, true) // Top-k 인증 판정 if (certify_topk(y0, fwd.final_lower, fwd.final_upper, k)) +t_count; else ++f_count; break; } case 1: BackwardBoundResult bwd = lirpa_backward_bound(*net, dataset[i], eps_f, false, false); // Top-k 인증 판정 if (certify_topk(y0, bwd.final_lower, bwd.final_upper, k)) ++t_count; else ++f_count; break; } default: break;",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p50:e352",
+          "page": 50,
+          "quote": "그래서 이런식으로 안에서 선언과 동시에 만들어지도록 해봤다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p50:e353",
+          "page": 50,
+          "quote": "● 참고로 switch 안의 선언문은 중괄호로 저렇게 덮어주지 않으면 안되더라",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p50:e357",
+          "page": 50,
+          "quote": "음 .. 준수한 결과다. ⇒ 이러면 2100s 초 나오는 문제도 원인 해결 완료",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0050F0005"
+    }
+  ]
+}

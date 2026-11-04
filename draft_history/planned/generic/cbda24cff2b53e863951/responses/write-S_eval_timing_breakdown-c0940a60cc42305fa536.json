@@ -1,0 +1,11 @@
+{
+  "request_fingerprint": "c0940a60cc42305fa53668eaf13129c6bfa1a1f8a93daeafc57079f015ad791a",
+  "value": {
+    "parts": {
+      "p0": "추론, bound 계산, 검증 시간을 각각 분리 측정하기 위해 각 단계 끝마다 타임스탬프를 기록해 누적했고, forward/backward 각각 20회 측정을 진행했다. 측정 코드에서는 신경망 정방향 통과 직후, bound 계산 종료 직후, 검증 종료 직후에 high_resolution_clock 기준으로 t0, t1, t2, t3를 찍어 time_infer_total, time_bound_total, time_certify_total에 누적하는 구조를 사용했다. case 0(ForwardBoundResult)과 case 1(BackwardBoundResult) 모두 동일한 타임스탬프 누적 경로를 따르며, bound 계산 결과는 NRVO를 적용해 4MB 이상 구조체 복사를 0회로 유지했다. [근거:F24] forward/backward 각 20회 측정을 완료했으며, 튀는 값이 존재해 각 20회 실행의 평균과 분산을 구해 슬라이드에 반영할 예정이었다. [근거:F24]",
+      "p1": "warmup을 적용했으나 오히려 걸리는 시간과 각 평균 시간이 더 늘어나는 현상이 관찰되었다. [근거:F24] CV를 통해 간헐적 스파이크와 분산을 확인했으나, warmup 후 평균 증가 및 스파이크의 원인은 규명되지 않았다. [근거:F24] 클록 고정, GPU 사용량 측정 등은 원인으로 단정하지 못한 채 향후 확인 항목으로 남아 있다. [근거:F24] 즉, warmup이 측정 안정성을 높일 것이라는 기대와 달리 평균 시간 증가와 스파이크가 함께 나타나는 상태가 현재 결과의 한계로 남는다. [근거:F24]",
+      "p2": "Real-Time Single-Sample(B=1) Latency Analysis에서는 평가 샘플 10만개를 대상으로 평균 지연 1145.24us, P99 1311.90us, 최대 7830.90us, 처리량 873.18 samples/sec가 측정되었다. [근거:F25] 전체 elapsed 1055.28s 기준 phase breakdown은 infer 131.799s(12.5%), bound 920.844s(87.3%), certify 1.597s(0.2%)로, bound 계산이 전체 시간의 대부분을 차지했다. [근거:F25] 중앙값(P50)은 1136.80us, P95는 1179.00us, jitter(StdDev)는 60.33us였으며, 마지막 샘플 기준 Pure GPU Execution은 953.70us로 보고되었다. [근거:F25] 평가 샘플이 10만개로 제한된 것은 표본 측정 목적이며, cudaEvent 측정 제어 인자(measure_gpu)에 따라 드라이버 오버헤드가 달라질 수 있다. [근거:F25] measure_gpu=0은 비활성화, 1은 마지막 샘플만 1회 측정, 2는 매 샘플 측정으로 호출당 20~50us 드라이버 오버헤드가 발생할 수 있어, 최대 지연 7830.90us는 이상치 가능성을 함께 고려해야 한다. [근거:F25]",
+      "p3": "전체 elapsed 시간은 787s에서 630s로 약 157초 감소했다. [근거:F32] ‘all eps × all data’ 기준 total elapsed는 630.94s로 줄었고, phase breakdown은 infer 131.248s(20.8%), bound 497.107s(78.8%), certify 1.613s(0.3%)로 변화했다. [근거:F32] Real-Time Single-Sample(B=1) Latency Analysis에서도 평가 샘플 10만개 기준 평균 689.64us, P99 822.90us, 최대 13511.00us, 처리량 1450.02 samples/sec로 측정되어, 이전 측정 대비 평균 지연과 처리량이 개선되었다. [근거:F32] 다만 최대 지연은 13511.00us로 더 커져 이상치 해석이 필요하며, 전체 elapsed 감소와 phase 비율 변화는 bound 계산 중심의 시간 구조가 유지된 상태에서 infer와 bound의 절대 시간이 함께 줄어든 결과로 볼 수 있다. [근거:F32]"
+    }
+  }
+}

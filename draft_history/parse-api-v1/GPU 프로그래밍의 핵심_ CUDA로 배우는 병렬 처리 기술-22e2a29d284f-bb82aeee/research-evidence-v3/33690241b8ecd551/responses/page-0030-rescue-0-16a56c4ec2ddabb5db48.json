@@ -1,0 +1,208 @@
+{
+  "request_fingerprint": "16a56c4ec2ddabb5db48fa4cb8b136efe647f316d0c03d9fa69e366388841ac1",
+  "value": {
+    "facts": [
+      {
+        "statement": "CROWN Verification 실행 결과 화면에서 calc success가 출력되었고, Elapsed time은 38.580600 ms, Output Dimension은 16으로 기록되었다. Index 0부터 15까지 Lower Bound, Upper Bound, Normal Pred (y) 값을 담은 표가 함께 출력되었다.",
+        "limits": "이는 단일 실행 결과의 출력값이며, 반복 측정 평균이나 통계적 신뢰구간은 제시되지 않았다. 표의 개별 수치들은 원문 figure/code 블록에 존재하나, 본 사실에서는 전체 지표(elapsed time, output dimension)와 표 구조만 보존하고 16개 행 전체의 원시 수치는 나열하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CROWN Verification 실행",
+          "eps = 1e-06",
+          "mempool + warmup"
+        ],
+        "observations": [
+          "calc success 출력",
+          "Elapsed time 38.580600 ms",
+          "Output Dimension 16",
+          "Index 0~15의 Lower Bound / Upper Bound / Normal Pred (y) 표 출력"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "38.580600",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CROWN Verification 실행 결과",
+            "element_ids": [
+              "p30:e202",
+              "p30:enh:e0"
+            ]
+          },
+          {
+            "metric": "Output Dimension",
+            "value": "16",
+            "value_kind": "scalar",
+            "unit": "차원",
+            "condition": "CROWN Verification 실행 결과",
+            "element_ids": [
+              "p30:e202",
+              "p30:enh:e0"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p30:e202",
+          "p30:enh:e0"
+        ]
+      },
+      {
+        "statement": "SpMM 도입 후 측정 결과가 거의 40ms로 회귀하여 바람직하지 않다고 기록되었다.",
+        "limits": "정성적 평가이며, 회귀의 원인 정량 분해는 제시되지 않았다. '거의 40ms'는 직전 측정값 38.580600 ms를 반올림하여 표현한 것이다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "SpMM 도입 후 측정"
+        ],
+        "observations": [
+          "거의 40ms로 회귀",
+          "이러면 안된다"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e203",
+          "p30:enh:e1"
+        ]
+      },
+      {
+        "statement": "신경망이 너무 작아서 그런 것일 수 있다는 의견이 있었다.",
+        "limits": "의견/해석이며 실측 원인으로 확정된 것은 아니다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e204",
+          "p30:enh:e2"
+        ]
+      },
+      {
+        "statement": "network_forward는 신경망의 일반 추론값을 출력하는데, 아직 GPU 파이프라인이 아니라서 최적화가 안 되어 있기도 하다는 설명이 있었다.",
+        "limits": "최적화 상태에 대한 설명으로, 정량적 비교 수치는 제시되지 않았다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e205",
+          "p30:enh:e7"
+        ]
+      },
+      {
+        "statement": "cuBLAS와 cuSPARSE는 실험했지만 현재 모델 크기와 호출 패턴에서는 느려졌으므로, 현 기준 코드에는 포함하지 않은 상태이며, 후에 다시 도입해보는 시도가 필요하다고 기록되었다.",
+        "limits": "현재 모델 크기와 호출 패턴에서의 느려짐에 대한 결론이며, 재도입은 향후 시도 계획이다.",
+        "kind": "limitation",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuBLAS, cuSPARSE 실험",
+          "현재 모델 크기와 호출 패턴"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e206",
+          "p30:enh:e8"
+        ]
+      },
+      {
+        "statement": "현재 주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞다는 의견이 있었다.",
+        "limits": "의견/조언이며, 공식 결과 유지 방향에 대한 제안이다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e3"
+        ]
+      },
+      {
+        "statement": "network_forward()가 전체 타이머에 포함되지만 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다고 설명되었다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황이라고 해석되었다.",
+        "limits": "해석/설명이며, 각 비용 항목의 정량 분리는 제시되지 않았다. '38 ms'는 원문 figure/code의 38.580600 ms를 반올림한 값이다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "network_forward() 전체 타이머 포함",
+          "cuSPARSE pipeline 미완성",
+          "SpMM 적용 후 38 ms"
+        ],
+        "observations": [
+          "SpMV / SpMM 호출마다 descriptor와 buffer 처리 비용이 추가됨",
+          "모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 큼",
+          "SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "SpMM 적용 후 Elapsed time",
+            "value": "38",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "오버헤드가 계산 이득보다 큰 상황 언급",
+            "element_ids": [
+              "p30:enh:e5"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p30:enh:e5"
+        ]
+      },
+      {
+        "statement": "공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다는 의견이 있었다.",
+        "limits": "공식 결과 유지 및 별도 비교 제안에 해당한다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "공식 결과 기준선 언급",
+            "value": "24",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "dense baseline 유지 제안",
+            "element_ids": [
+              "p30:enh:e6"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p30:enh:e6"
+        ]
+      },
+      {
+        "statement": "'이유는:'이라는 리드인 문단이 존재한다.",
+        "limits": "단독 내용은 거의 없는 리드인 문단이며, 뒤따르는 목록(p30:enh:e5)의 도입 역할만 한다.",
+        "kind": "limitation",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e4"
+        ]
+      }
+    ]
+  }
+}

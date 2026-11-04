@@ -1,0 +1,273 @@
+{
+  "request_fingerprint": "dcb8ee50b2a41f7abaa052a03ebd5ca1bd1b4b0beb385cab21e915192e4413b2",
+  "value": {
+    "facts": [
+      {
+        "statement": "여 기서 바꾸는 과정에 주목할 부분이라는 섹션 제목이 있으며, 이는 net.act[l] 사용 방식의 변경 과정에 주목해야 함을 나타냄",
+        "limits": "제목만으로 구체적인 변경 내용이 명시되지 않음",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "섹션 제목으로 '바꾸는 과정에 주목할 부분'이 명시됨",
+          "p38:e259에서 net.act[l]을 커널 호출에 사용했으며 메모리풀에 올린 적 없다고 언급됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e258",
+          "p38:e259"
+        ]
+      },
+      {
+        "statement": "위 코드가 실행될 때, CPU는 net.act[l]이 가리키는 메모리 주소(Pointer)를 GPU에 넘겨주는 것이 아니라, CPU가 자기 메모리에서 net.act[l]의 값(예: Relu면 0, Sigmoid면 1)을 읽은 다음, 그 숫자 자체를 GPU 커널을 발사할 때 매개변수 주머니(Constant Memory/Registers)에 넣어서 같이 쏘아 보낸다",
+        "limits": "gemini의 설명에 기반함",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "gemini에 따르면"
+        ],
+        "observations": [
+          "CPU는 net.act[l]의 포인터가 아닌 값을 읽음",
+          "값은 Constant Memory/Registers에 넣어 GPU로 전달됨",
+          "예시: Relu면 0, Sigmoid면 1"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e260",
+          "p38:e261"
+        ]
+      },
+      {
+        "statement": "ActivationType은 단순한 enum(내부적으로는 4바이트짜리 정수)이다",
+        "limits": "gemini의 설명에 기반함",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "gemini에 따르면"
+        ],
+        "observations": [
+          "ActivationType은 enum 타입",
+          "내부적으로 4바이트 정수"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e260",
+          "p38:e262"
+        ]
+      },
+      {
+        "statement": "별도로 cudaMalloc이나 cudaMemcpy를 할 필요가 전혀 없으며, 커널을 런칭할 때 값이 자동으로 GPU로 넘어가므로 속도 저하도 없음. 반면에 크기가 엄청나게 큰 배열이나 구조체 내부의 데이터는 값으로 넘기면 터지기 때문에, 포인터(*d_out, *g_pool.d_weight)를 써서 cudaMemcpy로 올려두고 주소만 넘겨준 것임",
+        "limits": "gemini의 설명에 기반함",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "gemini에 따르면"
+        ],
+        "observations": [
+          "cudaMalloc/cudaMemcpy 불필요",
+          "커널 런칭 시 값 자동 GPU 전달",
+          "속도 저하 없음",
+          "큰 배열/구조체는 포인터로 cudaMemcpy 후 주소 전달",
+          "포인터 예시: *d_out, *g_pool.d_weight"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e260",
+          "p38:e263"
+        ]
+      },
+      {
+        "statement": "용량이 큰 덩어리는 포인터로 넘기고, 작은 숫자나 열거형(Enum)은 그냥 값으로 쏴줄 수 있다",
+        "limits": "gemini의 설명에 기반함",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "gemini에 따르면"
+        ],
+        "observations": [
+          "큰 덩어리: 포인터로 전달",
+          "작은 숫자/Enum: 값으로 전달"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e260",
+          "p38:e264"
+        ]
+      },
+      {
+        "statement": "좀 더 정확히 설명해보자라는 전환 문장이 있음",
+        "limits": "전환 문장일 뿐 구체적 내용 없음",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "'좀 더 정확히 설명해보자'라는 문장이 전환점으로 사용됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e265"
+        ]
+      },
+      {
+        "statement": "코드 주석 '// 3. GPU 내부에서 활성화 함수 적용'이 있음",
+        "limits": "코드 주석으로 구체적 구현 내용 없음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "GPU 내부에서 활성화 함수를 적용하는 코드 섹션임을 나타냄"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:img0:e0"
+        ]
+      },
+      {
+        "statement": "코드 주석 '// 여기서 CPU 메모리에 있는 net.act[1] 를 사용했는데, CUDA 커널 인자 방식을 이해해야함'이 있음",
+        "limits": "코드 주석으로 구체적 구현 내용 없음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "CPU 메모리에 있는 net.act[1]를 CUDA 커널 인자로 사용함",
+          "CUDA 커널 인자 방식에 대한 이해가 필요함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:img0:e1"
+        ]
+      },
+      {
+        "statement": "코드 'apply_activation_gpu<<blocksPerGrid, 256>>>(net.act[1], d_out);'가 있음",
+        "limits": "코드 조각으로 구체적 구현 맥락이 제한적임",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "apply_activation_gpu 커널 호출",
+          "블록 수: blocksPerGrid, 스레드 수: 256",
+          "인자: net.act[1], d_out"
+        ],
+        "parameters": [
+          {
+            "name": "kernel_name",
+            "value": "apply_activation_gpu",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:img0:e2"
+            ]
+          },
+          {
+            "name": "blocksPerGrid",
+            "value": "blocksPerGrid",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:img0:e2"
+            ]
+          },
+          {
+            "name": "thread_count_per_block",
+            "value": "256",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p38:img0:e2"
+            ]
+          },
+          {
+            "name": "argument_1",
+            "value": "net.act[1]",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:img0:e2"
+            ]
+          },
+          {
+            "name": "argument_2",
+            "value": "d_out",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:img0:e2"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p38:img0:e2"
+        ]
+      },
+      {
+        "statement": "그림에서 CUDA 커널 인자에 대한 gemini의 상세 설명이 제공됨: 1) 포인터(배열)는 반드시 GPU 메모리여야 함 (예: d_out은 cudaMalloc된 GPU 메모리 주소), 2) 스칼라(단일 숫자)는 그냥 CPU 변수를 써도 됨 (int, float, double, enum 등 4~8바이트), 3) CPU가 커널 실행 명령을 GPU로 쏠 때 실행 명령서 귀퉁이에 포스트잇처럼 값을 붙여서 같이 보냄 (Parameter Bank 또는 Constant Memory)",
+        "limits": "gemini의 설명에 기반함",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "gemini에 따르면"
+        ],
+        "observations": [
+          "포인터(배열)는 반드시 GPU 메모리여야 함",
+          "스칼라(단일 숫자)는 CPU 변수를 그대로 사용 가능",
+          "커널 실행 시 값이 Parameter Bank/Constant Memory에 붙어 GPU로 전달됨",
+          "예시: blocksPerGrid, 256 같은 CPU 숫자 변수를 자유롭게 커널 인자로 사용 가능",
+          "주석 내용이 100% 정답이라고 확인됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e266"
+        ]
+      },
+      {
+        "statement": "정리하면 포인터 변수는 memcpy를 써서 올려야 함 (참조할 크기가 매우 크고 CPU가 그 내용을 전부 직접 복사해서 커널 함수의 매개변수 주머니에 값을 넣어줄 수 없음)",
+        "limits": "연구자 자신의 정리 노트",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "포인터 변수는 memcpy로 GPU에 올려야 함",
+          "크기가 매우 큰 데이터는 CPU가 직접 복사해서 커널 매개변수 주머니에 넣을 수 없음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e267"
+        ]
+      },
+      {
+        "statement": "반면 값만 나오는 경우 (4~8byte까지는 가능한 듯), CPU가 직접 그 부분을 참조해서 값을 쏴줄 수 있다",
+        "limits": "연구자 자신의 정리 노트, 4~8byte 범위는 추정적 표현",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "값만 나오는 경우 CPU가 직접 참조해서 값을 GPU로 보낼 수 있음",
+          "4~8byte까지는 가능한 것으로 추정"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e268"
+        ]
+      }
+    ]
+  }
+}

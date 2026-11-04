@@ -1,0 +1,260 @@
+{
+  "request_fingerprint": "e5649b58cbc8aa74077c9aa608465b5af14d6666749ba2993b055bd4c456c160",
+  "value": {
+    "facts": [
+      {
+        "statement": "backward_bound_gpu에서 기존에는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고, 이 affine_min/max도 GPU에서 계산이 돌아가기 때문에 GPU → CPU → GPU → CPU의 불필요한 복사가 발생했다.",
+        "limits": "현재 페이지는 기존 데이터 이동 경로의 문제 인식만 기록하며, 정량 성능 수치는 포함하지 않는다.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_bound_gpu",
+          "기존: GPU → CPU → GPU → CPU 경로",
+          "affine_min/max가 GPU에서 계산됨"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e276"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q7",
+          "evaluation_Q7",
+          "limitations_Q6",
+          "conclusion_Q4",
+          "conclusion_Q8"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU → CPU 메모리 복사를 최소화했다.",
+        "limits": "현재 페이지는 개선 방향과 복사 최소화 목적만 기록하며, 개선 후 정량 성능 수치는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_bound_gpu에서 affine_min/max까지 실행되도록 개선",
+          "GPU → CPU 메모리 복사 최소화 목표"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e277"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q7",
+          "evaluation_Q7",
+          "limitations_Q6",
+          "conclusion_Q4",
+          "conclusion_Q8"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "개선 후 CROWN Verification(eps = 1e-06, Output Dimension: 16) 실행 결과 Elapsed time이 15.828400 ms로 기록되었으며, 기록자는 결과가 15ms 후반까지 나온다고 적었다.",
+        "limits": "단일 실행 결과 기록이며, 이전 조건과의 반복 측정 기반 통계나 비교 해석은 이 요소만으로는 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CROWN Verification 실행",
+          "eps = 1e-06",
+          "Output Dimension: 16",
+          "backward_bound_gpu 내 affine_min/max 통합 개선 적용"
+        ],
+        "observations": [
+          "출력 표에 [Index], Lower Bound, Upper Bound, Normal Pred (y) 열이 포함됨",
+          "0번~15번 출력의 Lower/Upper Bound 및 Normal Pred (y) 값이 표시됨"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p41:e278"
+            ]
+          },
+          {
+            "name": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p41:e278"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "15.828400",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CROWN Verification, eps=1e-06, Output Dimension 16, backward_bound_gpu 내 affine_min/max 통합 개선 적용",
+            "element_ids": [
+              "p41:e278"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p41:e278",
+          "p41:e279"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q7",
+          "evaluation_Q7",
+          "limitations_Q6",
+          "conclusion_Q4",
+          "conclusion_Q8"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "GPU 안에서 최종 정답을 계산하기 위해 affine_min_gpu와 affine_max_gpu 커널 호출 코드가 작성되었으며, 기록자는 이 부분에서 커널 퓨전이 가능할 것 같다고 적었다.",
+        "limits": "현재 페이지는 코드 작성 사실과 퓨전 가능성 의견만 기록하며, 실제 퓨전 적용 결과나 성능 수치는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "GPU 안에서 최종 정답 계산",
+          "affine_min_gpu, affine_max_gpu 커널 호출",
+          "커널 퓨전 가능성 검토"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e281",
+          "p41:e282"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q7",
+          "evaluation_Q7",
+          "limitations_Q6",
+          "conclusion_Q4",
+          "conclusion_Q8"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "미리 작성해둔 퓨전 함수가 있어서 사용했다고 기록되었다.",
+        "limits": "현재 페이지는 퓨전 함수 사용 사실만 기록하며, 실제 성능·정확도 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "미리 작성해둔 퓨전 함수 사용"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p42:e283"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q7",
+          "evaluation_Q7",
+          "limitations_Q6",
+          "conclusion_Q4",
+          "conclusion_Q8"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "커널 퓨전 적용 후 CROWN Verification(eps = 1e-06, Output Dimension: 16) 실행 결과 Elapsed time이 15.751000 ms로 기록되었다.",
+        "limits": "단일 실행 결과 기록이며, 이전 조건과의 반복 측정 기반 통계나 비교 해석은 이 요소만으로는 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CROWN Verification 실행",
+          "eps = 1e-06",
+          "Output Dimension: 16",
+          "커널 퓨전 적용"
+        ],
+        "observations": [
+          "출력 표에 [Index], Lower Bound, Upper Bound, Normal Pred (y) 열이 포함됨",
+          "0번~15번 출력의 Lower/Upper Bound 및 Normal Pred (y) 값이 표시됨"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p42:e284"
+            ]
+          },
+          {
+            "name": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p42:e284"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "15.751000",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CROWN Verification, eps=1e-06, Output Dimension 16, 커널 퓨전 적용",
+            "element_ids": [
+              "p42:e284"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p42:e284"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q7",
+          "evaluation_Q7",
+          "limitations_Q6",
+          "conclusion_Q4",
+          "conclusion_Q8"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "기록자는 커널 퓨전 적용 후 0.2ms 정도 하한선이 낮아진 듯하다고 관측했다.",
+        "limits": "정성적 관측 기록이며, 반복 측정 통계나 조건별 분리 측정은 현재 페이지에 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 퓨전 적용 후 CROWN Verification 실행"
+        ],
+        "observations": [
+          "0.2ms 정도 하한선이 낮아진 듯하다고 기록함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p42:e285"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q7",
+          "evaluation_Q7",
+          "limitations_Q6",
+          "conclusion_Q4",
+          "conclusion_Q8"
+        ],
+        "supplemental_reason": ""
+      }
+    ],
+    "existing_links": []
+  }
+}

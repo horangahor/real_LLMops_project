@@ -1,0 +1,298 @@
+{
+  "api": "2.0",
+  "content": {
+    "html": "<p id='0' data-category='paragraph'>my_lirpa_optimizing.cu</p>\n<p id='1' data-category='paragraph'>그럼 여기까지 확실한건 메모리 풀 + warm up 조합은 일단 매우 좋다는 것 (두 개만으로 거의 200ms 단축함) // my_lirpa_mempool_warmup.cu</p>\n<p id='2' data-category='paragraph'>50ms만 더 단축하면 cpu 따라 잡을 수 있는데.. 흠..</p>\n<p id='3' data-category='paragraph'>지금 제일 중요한 건 memcpy 병목인데.. 이걸 잡아야 cpu보다 빨라질 수 있음</p>\n<p id='4' data-category='paragraph'>my_lirpa_mempool_warmup.cu의</p>\n<p id='5' data-category='paragraph'>make_zero_matrix , make_zero_vector</p>\n<p id='6' data-category='paragraph'>를 다시 cpu 실행으로 회귀 // 그리고 수식어를 이제부터 optimizing으로 변경</p>\n<pre id='7'><code>Starting CROWN Verification (eps = 1e-06) mempool + warmup\n\ncalc success\nElapsed time: 128.894800 ms\nOutput Dimension: 16\n\n[Index] | Lower Bound | Upper Bound | Normal | Pred (y)\n\n[ 0] | 0.081772 | 0.082159 | 0.081966\n[ 1] | 0.273538 | 0.273823 | 0.273680\n[ 2] | 0.102147 | 0.102482 | 0.102314\n[ 3] | 0.114244 | 0.114541 | 0.114393\n[ 4] | 2.670552 | 2.670843 | 2.670697\n[ 5] | 1.846574 | 1.846872 | 1.846723\n[ 6] | -1.714750 | -1.714490 | -1.714620\n[ 7] | -1.880139 | -1.879695 | -1.879916\n[ 8] | 0.706986 | 0.707275 | 0.707131\n[ 9] | -2.612086 | -2.611722 | -2.611904\n[ 10] | 0.003713 | 0.003976 | 0.003845\n[ 11] | 1.310476 | 1.310817 | 1.310646\n[ 12] | 2.049539 | 2.049839 | 2.049689\n[ 13] | -1.025923 | -1.025597 | -1.025760\n[ 14] | 1.082576 | 1.082852 | 1.082714\n[ 15] | -3.404772 | -3.404355 | -3.404563\n\n계속하려면 아무 키나 누르십시오 . . .</code></pre>\n<p id='8' data-category='paragraph'>22 ~ 25ms 정도 줄었다!! 이것만으로도 ...</p>\n<p id='9' data-category='paragraph'>혹시 몰라서 영벡터 만들기는 다시 gpu로 해봤는데 이것도 유의미하게 (3~5 ms ) 시간이 늘어남,, 그냥 cpu로 두는게 좋을듯</p>",
+    "markdown": "my_lirpa_optimizing.cu\n\n그럼 여기까지 확실한건 메모리 풀 + warm up 조합은 일단 매우 좋다는 것 (두 개만으로 거의 200ms 단축함) // my_lirpa_mempool_warmup.cu\n\n50ms만 더 단축하면 cpu 따라 잡을 수 있는데.. 흠..\n\n지금 제일 중요한 건 memcpy 병목인데.. 이걸 잡아야 cpu보다 빨라질 수 있음\n\nmy_lirpa_mempool_warmup.cu의\n\nmake_zero_matrix , make_zero_vector\n\n를 다시 cpu 실행으로 회귀 // 그리고 수식어를 이제부터 optimizing으로 변경\n\n```\nStarting CROWN Verification (eps = 1e-06) mempool + warmup\n\ncalc success\nElapsed time: 128.894800 ms\nOutput Dimension: 16\n\n[Index] | Lower Bound | Upper Bound | Normal | Pred (y)\n\n[ 0] | 0.081772 | 0.082159 | 0.081966\n[ 1] | 0.273538 | 0.273823 | 0.273680\n[ 2] | 0.102147 | 0.102482 | 0.102314\n[ 3] | 0.114244 | 0.114541 | 0.114393\n[ 4] | 2.670552 | 2.670843 | 2.670697\n[ 5] | 1.846574 | 1.846872 | 1.846723\n[ 6] | -1.714750 | -1.714490 | -1.714620\n[ 7] | -1.880139 | -1.879695 | -1.879916\n[ 8] | 0.706986 | 0.707275 | 0.707131\n[ 9] | -2.612086 | -2.611722 | -2.611904\n[ 10] | 0.003713 | 0.003976 | 0.003845\n[ 11] | 1.310476 | 1.310817 | 1.310646\n[ 12] | 2.049539 | 2.049839 | 2.049689\n[ 13] | -1.025923 | -1.025597 | -1.025760\n[ 14] | 1.082576 | 1.082852 | 1.082714\n[ 15] | -3.404772 | -3.404355 | -3.404563\n\n계속하려면 아무 키나 누르십시오 . . .\n```\n\n22 ~ 25ms 정도 줄었다!! 이것만으로도 ...\n\n혹시 몰라서 영벡터 만들기는 다시 gpu로 해봤는데 이것도 유의미하게 (3~5 ms ) 시간이 늘어남,, 그냥 cpu로 두는게 좋을듯",
+    "text": "my_lirpa_optimizing.cu\n그럼 여기까지 확실한건 메모리 풀 + warm up 조합은 일단 매우 좋다는 것 (두 개만으로 거의 200ms 단축함) // my_lirpa_mempool_warmup.cu\n50ms만 더 단축하면 cpu 따라 잡을 수 있는데.. 흠..\n지금 제일 중요한 건 memcpy 병목인데.. 이걸 잡아야 cpu보다 빨라질 수 있음\nmy_lirpa_mempool_warmup.cu의\nmake_zero_matrix , make_zero_vector\n를 다시 cpu 실행으로 회귀 // 그리고 수식어를 이제부터 optimizing으로 변경\nStarting CROWN Verification (eps = 1e-06) mempool + warmup\n\ncalc success\nElapsed time: 128.894800 ms\nOutput Dimension: 16\n\n[Index] | Lower Bound | Upper Bound | Normal | Pred (y)\n\n[ 0] | 0.081772 | 0.082159 | 0.081966\n[ 1] | 0.273538 | 0.273823 | 0.273680\n[ 2] | 0.102147 | 0.102482 | 0.102314\n[ 3] | 0.114244 | 0.114541 | 0.114393\n[ 4] | 2.670552 | 2.670843 | 2.670697\n[ 5] | 1.846574 | 1.846872 | 1.846723\n[ 6] | -1.714750 | -1.714490 | -1.714620\n[ 7] | -1.880139 | -1.879695 | -1.879916\n[ 8] | 0.706986 | 0.707275 | 0.707131\n[ 9] | -2.612086 | -2.611722 | -2.611904\n[ 10] | 0.003713 | 0.003976 | 0.003845\n[ 11] | 1.310476 | 1.310817 | 1.310646\n[ 12] | 2.049539 | 2.049839 | 2.049689\n[ 13] | -1.025923 | -1.025597 | -1.025760\n[ 14] | 1.082576 | 1.082852 | 1.082714\n[ 15] | -3.404772 | -3.404355 | -3.404563\n\n계속하려면 아무 키나 누르십시오 . . .\n22 ~ 25ms 정도 줄었다!! 이것만으로도 ...\n혹시 몰라서 영벡터 만들기는 다시 gpu로 해봤는데 이것도 유의미하게 (3~5 ms ) 시간이 늘어남,, 그냥 cpu로 두는게 좋을듯"
+  },
+  "elements": [
+    {
+      "id": 0,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='0' data-category='paragraph'>my_lirpa_optimizing.cu</p>",
+        "markdown": "my_lirpa_optimizing.cu",
+        "text": "my_lirpa_optimizing.cu"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.12
+        },
+        {
+          "x": 0.327,
+          "y": 0.12
+        },
+        {
+          "x": 0.327,
+          "y": 0.138
+        },
+        {
+          "x": 0.117,
+          "y": 0.138
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='1' data-category='paragraph'>그럼 여기까지 확실한건 메모리 풀 + warm up 조합은 일단 매우 좋다는 것 (두 개만으로 거의 200ms 단축함) // my_lirpa_mempool_warmup.cu</p>",
+        "markdown": "그럼 여기까지 확실한건 메모리 풀 + warm up 조합은 일단 매우 좋다는 것 (두 개만으로 거의 200ms 단축함) // my_lirpa_mempool_warmup.cu",
+        "text": "그럼 여기까지 확실한건 메모리 풀 + warm up 조합은 일단 매우 좋다는 것 (두 개만으로 거의 200ms 단축함) // my_lirpa_mempool_warmup.cu"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.141
+        },
+        {
+          "x": 0.841,
+          "y": 0.141
+        },
+        {
+          "x": 0.841,
+          "y": 0.177
+        },
+        {
+          "x": 0.116,
+          "y": 0.177
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='2' data-category='paragraph'>50ms만 더 단축하면 cpu 따라 잡을 수 있는데.. 흠..</p>",
+        "markdown": "50ms만 더 단축하면 cpu 따라 잡을 수 있는데.. 흠..",
+        "text": "50ms만 더 단축하면 cpu 따라 잡을 수 있는데.. 흠.."
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.194
+        },
+        {
+          "x": 0.541,
+          "y": 0.194
+        },
+        {
+          "x": 0.541,
+          "y": 0.21
+        },
+        {
+          "x": 0.116,
+          "y": 0.21
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='3' data-category='paragraph'>지금 제일 중요한 건 memcpy 병목인데.. 이걸 잡아야 cpu보다 빨라질 수 있음</p>",
+        "markdown": "지금 제일 중요한 건 memcpy 병목인데.. 이걸 잡아야 cpu보다 빨라질 수 있음",
+        "text": "지금 제일 중요한 건 memcpy 병목인데.. 이걸 잡아야 cpu보다 빨라질 수 있음"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.228
+        },
+        {
+          "x": 0.759,
+          "y": 0.228
+        },
+        {
+          "x": 0.759,
+          "y": 0.245
+        },
+        {
+          "x": 0.116,
+          "y": 0.245
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='4' data-category='paragraph'>my_lirpa_mempool_warmup.cu의</p>",
+        "markdown": "my_lirpa_mempool_warmup.cu의",
+        "text": "my_lirpa_mempool_warmup.cu의"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.264
+        },
+        {
+          "x": 0.395,
+          "y": 0.264
+        },
+        {
+          "x": 0.395,
+          "y": 0.28
+        },
+        {
+          "x": 0.116,
+          "y": 0.28
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='5' data-category='paragraph'>make_zero_matrix , make_zero_vector</p>",
+        "markdown": "make_zero_matrix , make_zero_vector",
+        "text": "make_zero_matrix , make_zero_vector"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.282
+        },
+        {
+          "x": 0.441,
+          "y": 0.282
+        },
+        {
+          "x": 0.441,
+          "y": 0.296
+        },
+        {
+          "x": 0.116,
+          "y": 0.296
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='6' data-category='paragraph'>를 다시 cpu 실행으로 회귀 // 그리고 수식어를 이제부터 optimizing으로 변경</p>",
+        "markdown": "를 다시 cpu 실행으로 회귀 // 그리고 수식어를 이제부터 optimizing으로 변경",
+        "text": "를 다시 cpu 실행으로 회귀 // 그리고 수식어를 이제부터 optimizing으로 변경"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.297
+        },
+        {
+          "x": 0.747,
+          "y": 0.297
+        },
+        {
+          "x": 0.747,
+          "y": 0.314
+        },
+        {
+          "x": 0.116,
+          "y": 0.314
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "page": 1,
+      "category": "code",
+      "content": {
+        "html": "<pre id='7'><code>Starting CROWN Verification (eps = 1e-06) mempool + warmup\n\ncalc success\nElapsed time: 128.894800 ms\nOutput Dimension: 16\n\n[Index] | Lower Bound | Upper Bound | Normal | Pred (y)\n\n[ 0] | 0.081772 | 0.082159 | 0.081966\n[ 1] | 0.273538 | 0.273823 | 0.273680\n[ 2] | 0.102147 | 0.102482 | 0.102314\n[ 3] | 0.114244 | 0.114541 | 0.114393\n[ 4] | 2.670552 | 2.670843 | 2.670697\n[ 5] | 1.846574 | 1.846872 | 1.846723\n[ 6] | -1.714750 | -1.714490 | -1.714620\n[ 7] | -1.880139 | -1.879695 | -1.879916\n[ 8] | 0.706986 | 0.707275 | 0.707131\n[ 9] | -2.612086 | -2.611722 | -2.611904\n[ 10] | 0.003713 | 0.003976 | 0.003845\n[ 11] | 1.310476 | 1.310817 | 1.310646\n[ 12] | 2.049539 | 2.049839 | 2.049689\n[ 13] | -1.025923 | -1.025597 | -1.025760\n[ 14] | 1.082576 | 1.082852 | 1.082714\n[ 15] | -3.404772 | -3.404355 | -3.404563\n\n계속하려면 아무 키나 누르십시오 . . .</code></pre>",
+        "markdown": "```\nStarting CROWN Verification (eps = 1e-06) mempool + warmup\n\ncalc success\nElapsed time: 128.894800 ms\nOutput Dimension: 16\n\n[Index] | Lower Bound | Upper Bound | Normal | Pred (y)\n\n[ 0] | 0.081772 | 0.082159 | 0.081966\n[ 1] | 0.273538 | 0.273823 | 0.273680\n[ 2] | 0.102147 | 0.102482 | 0.102314\n[ 3] | 0.114244 | 0.114541 | 0.114393\n[ 4] | 2.670552 | 2.670843 | 2.670697\n[ 5] | 1.846574 | 1.846872 | 1.846723\n[ 6] | -1.714750 | -1.714490 | -1.714620\n[ 7] | -1.880139 | -1.879695 | -1.879916\n[ 8] | 0.706986 | 0.707275 | 0.707131\n[ 9] | -2.612086 | -2.611722 | -2.611904\n[ 10] | 0.003713 | 0.003976 | 0.003845\n[ 11] | 1.310476 | 1.310817 | 1.310646\n[ 12] | 2.049539 | 2.049839 | 2.049689\n[ 13] | -1.025923 | -1.025597 | -1.025760\n[ 14] | 1.082576 | 1.082852 | 1.082714\n[ 15] | -3.404772 | -3.404355 | -3.404563\n\n계속하려면 아무 키나 누르십시오 . . .\n```",
+        "text": "Starting CROWN Verification (eps = 1e-06) mempool + warmup\n\ncalc success\nElapsed time: 128.894800 ms\nOutput Dimension: 16\n\n[Index] | Lower Bound | Upper Bound | Normal | Pred (y)\n\n[ 0] | 0.081772 | 0.082159 | 0.081966\n[ 1] | 0.273538 | 0.273823 | 0.273680\n[ 2] | 0.102147 | 0.102482 | 0.102314\n[ 3] | 0.114244 | 0.114541 | 0.114393\n[ 4] | 2.670552 | 2.670843 | 2.670697\n[ 5] | 1.846574 | 1.846872 | 1.846723\n[ 6] | -1.714750 | -1.714490 | -1.714620\n[ 7] | -1.880139 | -1.879695 | -1.879916\n[ 8] | 0.706986 | 0.707275 | 0.707131\n[ 9] | -2.612086 | -2.611722 | -2.611904\n[ 10] | 0.003713 | 0.003976 | 0.003845\n[ 11] | 1.310476 | 1.310817 | 1.310646\n[ 12] | 2.049539 | 2.049839 | 2.049689\n[ 13] | -1.025923 | -1.025597 | -1.025760\n[ 14] | 1.082576 | 1.082852 | 1.082714\n[ 15] | -3.404772 | -3.404355 | -3.404563\n\n계속하려면 아무 키나 누르십시오 . . ."
+      },
+      "coordinates": [
+        {
+          "x": 0.12,
+          "y": 0.316
+        },
+        {
+          "x": 0.728,
+          "y": 0.316
+        },
+        {
+          "x": 0.728,
+          "y": 0.713
+        },
+        {
+          "x": 0.12,
+          "y": 0.713
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='8' data-category='paragraph'>22 ~ 25ms 정도 줄었다!! 이것만으로도 ...</p>",
+        "markdown": "22 ~ 25ms 정도 줄었다!! 이것만으로도 ...",
+        "text": "22 ~ 25ms 정도 줄었다!! 이것만으로도 ..."
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.733
+        },
+        {
+          "x": 0.465,
+          "y": 0.733
+        },
+        {
+          "x": 0.465,
+          "y": 0.749
+        },
+        {
+          "x": 0.116,
+          "y": 0.749
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='9' data-category='paragraph'>혹시 몰라서 영벡터 만들기는 다시 gpu로 해봤는데 이것도 유의미하게 (3~5 ms ) 시간이 늘어남,, 그냥 cpu로 두는게 좋을듯</p>",
+        "markdown": "혹시 몰라서 영벡터 만들기는 다시 gpu로 해봤는데 이것도 유의미하게 (3~5 ms ) 시간이 늘어남,, 그냥 cpu로 두는게 좋을듯",
+        "text": "혹시 몰라서 영벡터 만들기는 다시 gpu로 해봤는데 이것도 유의미하게 (3~5 ms ) 시간이 늘어남,, 그냥 cpu로 두는게 좋을듯"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.767
+        },
+        {
+          "x": 0.847,
+          "y": 0.767
+        },
+        {
+          "x": 0.847,
+          "y": 0.801
+        },
+        {
+          "x": 0.116,
+          "y": 0.801
+        }
+      ]
+    }
+  ],
+  "model": "document-parse-260930",
+  "ocr": true,
+  "usage": {
+    "pages": 1,
+    "enhanced": [
+      1
+    ]
+  }
+}

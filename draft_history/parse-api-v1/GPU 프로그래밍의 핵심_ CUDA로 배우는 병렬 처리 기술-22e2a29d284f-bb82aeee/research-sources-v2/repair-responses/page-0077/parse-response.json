@@ -1,0 +1,303 @@
+{
+  "api": "2.0",
+  "content": {
+    "html": "<p id='0' data-category='paragraph'>Worked for 1m &gt;</p>\n<p id='1' data-category='paragraph'>황당하고 억울하게 느껴지실 수 있지만, 결론부터 말씀드리면 ***측정이 잘못된 것이 아니라, CUDA와 컴퓨터 구조에서 매우 유명한 '초소형 데이터(1 KB)의 역설'이 정직하게 나타난 것***입니다!</p>\n<p id='2' data-category='paragraph'>교과서나 강의에서는 항상 **Pinned Memory가 무조건 빠르다**고 가르치지만, 거기에는 ***데이터가 충분히 클 때***라는 숨겨진 전제 조건이 있습니다.</p>\n<p id='3' data-category='paragraph'>왜 1,028 Byte(1 KB)에서 No-Pin(일반 메모리)이 더 빠른지 그 하드웨어적 비밀을 명쾌하게 풀어드리겠습니다.</p>\n<h2 id='4'>1. 비유: &#34;옆집 가는데 KTX 타는 격&#34;</h2>\n<h3 id='5'>No-Pin (일반 메모리 $to$ CPU가 직접 복사):</h3>\n<ul id='6' data-category='list'><li>1,028 Byte는 CPU 입장에서 너무나 작은 크기입니다.</li><li>CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 **불과 20~30 나노초 (0.00003 ms)**면 끝납니다. 걸어서 옆집 가는 것과 같습니다.</li></ul>\n<h3 id='7'>Pinned Memory (GPU DMA 엔진 호출):</h3>\n<ul id='8' data-category='list'><li>Pinned Memory는 CPU를 거치지 않고 PCIe 버스의 **GPU DMA 엔진(Copy Engine)**을 가동합니다.</li><li>문제는 **PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1 ~ 2 마이크로초(0.0015 ms)**가 걸립니다.</li><li>즉, ***옆집(1KB) 가는데 KTX(DMA 엔진) 예매하고 탑승 수속 밟느라 오히려 시간이 더 걸린 것***입니다.</li></ul>\n<p id='9' data-category='paragraph'>92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 $\\mu\\text{tu}\\text{text{s}$)가 누적되다 보니, infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것입니다.</p>",
+    "markdown": "Worked for 1m >\n\n황당하고 억울하게 느껴지실 수 있지만, 결론부터 말씀드리면 ***측정이 잘못된 것이 아니라, CUDA와 컴퓨터 구조에서 매우 유명한 '초소형 데이터(1 KB)의 역설'이 정직하게 나타난 것***입니다!\n\n교과서나 강의에서는 항상 **Pinned Memory가 무조건 빠르다**고 가르치지만, 거기에는 ***데이터가 충분히 클 때***라는 숨겨진 전제 조건이 있습니다.\n\n왜 1,028 Byte(1 KB)에서 No-Pin(일반 메모리)이 더 빠른지 그 하드웨어적 비밀을 명쾌하게 풀어드리겠습니다.\n\n## 1. 비유: \"옆집 가는데 KTX 타는 격\"\n\n### No-Pin (일반 메모리 $to$ CPU가 직접 복사):\n\n- 1,028 Byte는 CPU 입장에서 너무나 작은 크기입니다.\n- CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 **불과 20~30 나노초 (0.00003 ms)**면 끝납니다. 걸어서 옆집 가는 것과 같습니다.\n\n\n### Pinned Memory (GPU DMA 엔진 호출):\n\n- Pinned Memory는 CPU를 거치지 않고 PCIe 버스의 **GPU DMA 엔진(Copy Engine)**을 가동합니다.\n- 문제는 **PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1 ~ 2 마이크로초(0.0015 ms)**가 걸립니다.\n- 즉, ***옆집(1KB) 가는데 KTX(DMA 엔진) 예매하고 탑승 수속 밟느라 오히려 시간이 더 걸린 것***입니다.\n\n\n92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 $\\mu\\text{tu}\\text{text{s}$)가 누적되다 보니, infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것입니다.",
+    "text": "Worked for 1m >\n황당하고 억울하게 느껴지실 수 있지만, 결론부터 말씀드리면 ***측정이 잘못된 것이 아니라, CUDA와 컴퓨터 구조에서 매우 유명한 '초소형 데이터(1 KB)의 역설'이 정직하게 나타난 것***입니다!\n교과서나 강의에서는 항상 **Pinned Memory가 무조건 빠르다**고 가르치지만, 거기에는 ***데이터가 충분히 클 때***라는 숨겨진 전제 조건이 있습니다.\n왜 1,028 Byte(1 KB)에서 No-Pin(일반 메모리)이 더 빠른지 그 하드웨어적 비밀을 명쾌하게 풀어드리겠습니다.\n1. 비유: \"옆집 가는데 KTX 타는 격\"\nNo-Pin (일반 메모리 $to$ CPU가 직접 복사):\n1,028 Byte는 CPU 입장에서 너무나 작은 크기입니다.\nCPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 **불과 20~30 나노초 (0.00003 ms)**면 끝납니다. 걸어서 옆집 가는 것과 같습니다.\nPinned Memory (GPU DMA 엔진 호출):\nPinned Memory는 CPU를 거치지 않고 PCIe 버스의 **GPU DMA 엔진(Copy Engine)**을 가동합니다.\n문제는 **PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1 ~ 2 마이크로초(0.0015 ms)**가 걸립니다.\n즉, ***옆집(1KB) 가는데 KTX(DMA 엔진) 예매하고 탑승 수속 밟느라 오히려 시간이 더 걸린 것***입니다.\n92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 $\\mu\\text{tu}\\text{text{s}$)가 누적되다 보니, infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것입니다."
+  },
+  "elements": [
+    {
+      "id": 0,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='0' data-category='paragraph'>Worked for 1m &gt;</p>",
+        "markdown": "Worked for 1m >",
+        "text": "Worked for 1m >"
+      },
+      "coordinates": [
+        {
+          "x": 0.135,
+          "y": 0.098
+        },
+        {
+          "x": 0.264,
+          "y": 0.098
+        },
+        {
+          "x": 0.264,
+          "y": 0.112
+        },
+        {
+          "x": 0.135,
+          "y": 0.112
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='1' data-category='paragraph'>황당하고 억울하게 느껴지실 수 있지만, 결론부터 말씀드리면 ***측정이 잘못된 것이 아니라, CUDA와 컴퓨터 구조에서 매우 유명한 '초소형 데이터(1 KB)의 역설'이 정직하게 나타난 것***입니다!</p>",
+        "markdown": "황당하고 억울하게 느껴지실 수 있지만, 결론부터 말씀드리면 ***측정이 잘못된 것이 아니라, CUDA와 컴퓨터 구조에서 매우 유명한 '초소형 데이터(1 KB)의 역설'이 정직하게 나타난 것***입니다!",
+        "text": "황당하고 억울하게 느껴지실 수 있지만, 결론부터 말씀드리면 ***측정이 잘못된 것이 아니라, CUDA와 컴퓨터 구조에서 매우 유명한 '초소형 데이터(1 KB)의 역설'이 정직하게 나타난 것***입니다!"
+      },
+      "coordinates": [
+        {
+          "x": 0.133,
+          "y": 0.125
+        },
+        {
+          "x": 0.736,
+          "y": 0.125
+        },
+        {
+          "x": 0.736,
+          "y": 0.179
+        },
+        {
+          "x": 0.133,
+          "y": 0.179
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='2' data-category='paragraph'>교과서나 강의에서는 항상 **Pinned Memory가 무조건 빠르다**고 가르치지만, 거기에는 ***데이터가 충분히 클 때***라는 숨겨진 전제 조건이 있습니다.</p>",
+        "markdown": "교과서나 강의에서는 항상 **Pinned Memory가 무조건 빠르다**고 가르치지만, 거기에는 ***데이터가 충분히 클 때***라는 숨겨진 전제 조건이 있습니다.",
+        "text": "교과서나 강의에서는 항상 **Pinned Memory가 무조건 빠르다**고 가르치지만, 거기에는 ***데이터가 충분히 클 때***라는 숨겨진 전제 조건이 있습니다."
+      },
+      "coordinates": [
+        {
+          "x": 0.133,
+          "y": 0.182
+        },
+        {
+          "x": 0.737,
+          "y": 0.182
+        },
+        {
+          "x": 0.737,
+          "y": 0.217
+        },
+        {
+          "x": 0.133,
+          "y": 0.217
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='3' data-category='paragraph'>왜 1,028 Byte(1 KB)에서 No-Pin(일반 메모리)이 더 빠른지 그 하드웨어적 비밀을 명쾌하게 풀어드리겠습니다.</p>",
+        "markdown": "왜 1,028 Byte(1 KB)에서 No-Pin(일반 메모리)이 더 빠른지 그 하드웨어적 비밀을 명쾌하게 풀어드리겠습니다.",
+        "text": "왜 1,028 Byte(1 KB)에서 No-Pin(일반 메모리)이 더 빠른지 그 하드웨어적 비밀을 명쾌하게 풀어드리겠습니다."
+      },
+      "coordinates": [
+        {
+          "x": 0.133,
+          "y": 0.22
+        },
+        {
+          "x": 0.734,
+          "y": 0.22
+        },
+        {
+          "x": 0.734,
+          "y": 0.254
+        },
+        {
+          "x": 0.133,
+          "y": 0.254
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "page": 1,
+      "category": "heading1",
+      "sub_category": "h2",
+      "content": {
+        "html": "<h2 id='4'>1. 비유: &#34;옆집 가는데 KTX 타는 격&#34;</h2>",
+        "markdown": "## 1. 비유: \"옆집 가는데 KTX 타는 격\"",
+        "text": "1. 비유: \"옆집 가는데 KTX 타는 격\""
+      },
+      "coordinates": [
+        {
+          "x": 0.134,
+          "y": 0.268
+        },
+        {
+          "x": 0.393,
+          "y": 0.268
+        },
+        {
+          "x": 0.393,
+          "y": 0.284
+        },
+        {
+          "x": 0.134,
+          "y": 0.284
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "page": 1,
+      "category": "heading1",
+      "sub_category": "h3",
+      "content": {
+        "html": "<h3 id='5'>No-Pin (일반 메모리 $to$ CPU가 직접 복사):</h3>",
+        "markdown": "### No-Pin (일반 메모리 $to$ CPU가 직접 복사):",
+        "text": "No-Pin (일반 메모리 $to$ CPU가 직접 복사):"
+      },
+      "coordinates": [
+        {
+          "x": 0.133,
+          "y": 0.3
+        },
+        {
+          "x": 0.482,
+          "y": 0.3
+        },
+        {
+          "x": 0.482,
+          "y": 0.316
+        },
+        {
+          "x": 0.133,
+          "y": 0.316
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "page": 1,
+      "category": "list",
+      "sub_category": "ul",
+      "content": {
+        "html": "<ul id='6' data-category='list'><li>1,028 Byte는 CPU 입장에서 너무나 작은 크기입니다.</li><li>CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 **불과 20~30 나노초 (0.00003 ms)**면 끝납니다. 걸어서 옆집 가는 것과 같습니다.</li></ul>",
+        "markdown": "- 1,028 Byte는 CPU 입장에서 너무나 작은 크기입니다.\n- CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 **불과 20~30 나노초 (0.00003 ms)**면 끝납니다. 걸어서 옆집 가는 것과 같습니다.\n",
+        "text": "1,028 Byte는 CPU 입장에서 너무나 작은 크기입니다.\nCPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 **불과 20~30 나노초 (0.00003 ms)**면 끝납니다. 걸어서 옆집 가는 것과 같습니다."
+      },
+      "coordinates": [
+        {
+          "x": 0.184,
+          "y": 0.326
+        },
+        {
+          "x": 0.709,
+          "y": 0.326
+        },
+        {
+          "x": 0.709,
+          "y": 0.379
+        },
+        {
+          "x": 0.184,
+          "y": 0.379
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "page": 1,
+      "category": "heading1",
+      "sub_category": "h3",
+      "content": {
+        "html": "<h3 id='7'>Pinned Memory (GPU DMA 엔진 호출):</h3>",
+        "markdown": "### Pinned Memory (GPU DMA 엔진 호출):",
+        "text": "Pinned Memory (GPU DMA 엔진 호출):"
+      },
+      "coordinates": [
+        {
+          "x": 0.133,
+          "y": 0.389
+        },
+        {
+          "x": 0.451,
+          "y": 0.389
+        },
+        {
+          "x": 0.451,
+          "y": 0.406
+        },
+        {
+          "x": 0.133,
+          "y": 0.406
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "page": 1,
+      "category": "list",
+      "sub_category": "ul",
+      "content": {
+        "html": "<ul id='8' data-category='list'><li>Pinned Memory는 CPU를 거치지 않고 PCIe 버스의 **GPU DMA 엔진(Copy Engine)**을 가동합니다.</li><li>문제는 **PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1 ~ 2 마이크로초(0.0015 ms)**가 걸립니다.</li><li>즉, ***옆집(1KB) 가는데 KTX(DMA 엔진) 예매하고 탑승 수속 밟느라 오히려 시간이 더 걸린 것***입니다.</li></ul>",
+        "markdown": "- Pinned Memory는 CPU를 거치지 않고 PCIe 버스의 **GPU DMA 엔진(Copy Engine)**을 가동합니다.\n- 문제는 **PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1 ~ 2 마이크로초(0.0015 ms)**가 걸립니다.\n- 즉, ***옆집(1KB) 가는데 KTX(DMA 엔진) 예매하고 탑승 수속 밟느라 오히려 시간이 더 걸린 것***입니다.\n",
+        "text": "Pinned Memory는 CPU를 거치지 않고 PCIe 버스의 **GPU DMA 엔진(Copy Engine)**을 가동합니다.\n문제는 **PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1 ~ 2 마이크로초(0.0015 ms)**가 걸립니다.\n즉, ***옆집(1KB) 가는데 KTX(DMA 엔진) 예매하고 탑승 수속 밟느라 오히려 시간이 더 걸린 것***입니다."
+      },
+      "coordinates": [
+        {
+          "x": 0.184,
+          "y": 0.416
+        },
+        {
+          "x": 0.736,
+          "y": 0.416
+        },
+        {
+          "x": 0.736,
+          "y": 0.525
+        },
+        {
+          "x": 0.184,
+          "y": 0.525
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='9' data-category='paragraph'>92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 $\\mu\\text{tu}\\text{text{s}$)가 누적되다 보니, infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것입니다.</p>",
+        "markdown": "92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 $\\mu\\text{tu}\\text{text{s}$)가 누적되다 보니, infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것입니다.",
+        "text": "92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 $\\mu\\text{tu}\\text{text{s}$)가 누적되다 보니, infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것입니다."
+      },
+      "coordinates": [
+        {
+          "x": 0.158,
+          "y": 0.556
+        },
+        {
+          "x": 0.717,
+          "y": 0.556
+        },
+        {
+          "x": 0.717,
+          "y": 0.592
+        },
+        {
+          "x": 0.158,
+          "y": 0.592
+        }
+      ]
+    }
+  ],
+  "model": "document-parse-260930",
+  "ocr": true,
+  "usage": {
+    "pages": 1,
+    "enhanced": [
+      1
+    ]
+  }
+}

@@ -12,6 +12,8 @@ from paper_prompts import (
 
 
 def extraction_fingerprint(data: dict[str, Any]) -> str:
+    from workspace_cache import canonical_cache_value
+    data = canonical_cache_value(data)
     content = json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 

@@ -1,0 +1,33 @@
+{
+  "id": "0133abf5-a551-4c70-bb29-fb1a9dfb0bbb",
+  "object": "chat.completion",
+  "created": 1793779897,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": [{\"text\": \"CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)에서 컴파일이 가능하다. 이 접근은 lirpa_forward_backward_fc_array.cpp의 기본 틀을 유지한 채 병렬 연산이 필요한 부분을 device(GPU)에서 동작하는 kernel 함수로 바꾸는 구상을 바탕으로 검토되었다. 포팅 대상으로는 mat_add처럼 배열을 통한 연산을 먼저 살폈고, mat_add는 여러 번 호출되어 메모리 할당과 해제가 반복되므로 비효율적이라고 판단했으나 최적화는 나중에 진행하기로 했다.\", \"evidence_ids\": [\"E00001\", \"E00002\", \"E00005\"]}, {\"text\": \"컴파일 및 라이브러리 구성에서는 cuBLAS를 활용했다. 컴파일 옵션 -lcublas에서 -l은 라이브러리를 링크하라는 옵션이며, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이다. my_lirpa_op.cu에서 GPU 최적화 행렬곱 함수인 cublasDgemm()를 사용하기 때문에 이 라이브러리를 연결해줘야 하며, CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되어 별도 설치는 필요하지 않다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다.\", \"evidence_ids\": [\"E00024\", \"E00025\", \"E00026\", \"E00034\"]}, {\"text\": \"GPU 메모리 사전 업로드 함수로는 pre_upload_weights_to_gpu를 구현했다. 이 함수는 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 GPU 메모리를 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하여 net->d_W[i]에 저장한다. 신경망 구조체에는 GPU 메모리 주소를 저장하는 포인터 배열(d_W[MAX_LAYERS])을 미리 만들어 두며, 이 포인터 배열의 크기는 MAX_LAYERS를 기준으로 하므로 신경망이 작으면 공간이 낭비될 수 있다. 또한 double보다 float의 접근 속도가 더 빠르다고 알려져 있으나, 행렬·벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰려면 전체 구조를 바꿔야 한다.\", \"evidence_ids\": [\"E00042\", \"E00323\", \"E00324\"]}, {\"text\": \"메모리풀 기반 구성으로는 v1-1-1-1 버전이 있다. 이 버전은 메모리풀에 cuBLAS를 도입하고 matvec, matmul을 기존의 자체 계산이 아닌 cuBLAS를 활용하도록 한 것으로, 파일은 my_lirpa_mempool_cuBlas.cu이다. 실행 환경 점검 과정에서는 CPU에서 GPU로 신경망 메모리를 어떻게 나누어 복사하는지에 대한 질문이 있었고, GPU 메모리 사용량을 확인하는 방법으로 Nsight System이 제시되었다. Nsight System 계열 도구에서는 GPU VRAM 사용량이 310.00 MiB로 표시되었으며, 이는 메모리풀의 행렬·벡터를 기준으로 계산한 약 114MB와 차이가 있어 이상하다고 기록되었다. 이 차이에 대해서는 CUDA 실행 시 생성되는 CUDA Context가 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하고 VRAM을 사용하므로, 런타임 오버헤드를 감안하면 프로파일러에 보이는 VRAM 사용량이 코드 계산값보다 작을 수 있다고 해석되었다.\", \"evidence_ids\": [\"E00054\", \"E00087\", \"E00088\", \"E00089\"]}, {\"text\": \"CUDA 포팅 및 최적화 구성은 CROWN 검증의 CPU 중심 실행이 느리다는 문제의식 위에서, 실시간 환경의 대규모 연산을 CUDA로 구현·최적화하여 따라잡을 수 있는지를 살펴보기 위한 방법으로 정리되었다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기와 배치 사이즈는 1로 두고 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지를 대상으로 했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 신경망 검증팀 프로그램과 검증 결과·비율이 얼마나 차이 나는지를 기준으로 삼았는데 모두 동일했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이며, warm up은 초기에 이루어졌다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검토하지 못한 점은 한계로 남는다.\", \"evidence_ids\": [\"E00333\", \"E00337\", \"E00233\", \"E00235\"]}]} }"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 50563,
+    "completion_tokens": 914,
+    "total_tokens": 51477,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

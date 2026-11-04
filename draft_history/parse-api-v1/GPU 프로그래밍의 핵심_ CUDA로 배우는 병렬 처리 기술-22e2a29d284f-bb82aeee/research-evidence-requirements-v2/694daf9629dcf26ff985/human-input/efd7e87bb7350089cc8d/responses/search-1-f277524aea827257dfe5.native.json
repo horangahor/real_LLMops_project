@@ -1,0 +1,33 @@
+{
+  "id": "6d64b71c-17ae-497e-a464-37901fda0a59",
+  "object": "chat.completion",
+  "created": 1793707490,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"title\": \"비교 시 어려움 및 공정 비교 조건\", \"facts\": [{\"statement\": \"GPU 버전(my_lirpa.cu)은 CPU ONLY 버전(101.237800 ms)보다 느렸으며(353.057200 ms), 이는 CUDA 커널로 모든 병렬처리 함수를 바꾼 초기 포팅에서 발생한 현상이다.\", \"limits\": \"단일 실행 결과만 제시됨\", \"kind\": \"result\", \"claim_status\": \"observed\", \"source_origin\": \"research_note\", \"conditions\": [\"eps = 1e-06\", \"CROWN verification\", \"신경망 정방향 통과 & CROWN(backward) 계산 시간 측정\"], \"observations\": [\"CPU ONLY Elapsed time: 101.237800 ms\", \"GPU 버전 Elapsed time: 353.057200 ms\"], \"parameters\": [], \"measurements\": [], \"element_ids\": [\"p3:e35\", \"p4:e37\", \"p4:e38\"]}, {\"statement\": \"only_GPU 버전(crown_test_op_only_GPU.cu, 229.691800 ms)은 CPU 버전보다 여전히 느렸고, matmul만 GPU로 실행하는 하이브리드 버전(crown_test_op_hybrid.cu, 201.670100 ms)도 CPU보다 느렸다.\", \"limits\": \"비교 대상 버전 간 구성 차이가 존재\", \"kind\": \"result\", \"claim_status\": \"observed\", \"source_origin\": \"research_note\", \"conditions\": [\"eps = 1e-06\", \"CROWN verification\"], \"observations\": [\"GPU OPTIMIZED (cuBLAS + Pool) Elapsed time: 229.691800 ms\", \"HYBRID (matmul=GPU, rest=CPU) Elapsed time: 201.670100 ms\"], \"parameters\": [], \"measurements\": [], \"element_ids\": [\"p5:e43\", \"p6:e48\", \"p6:e49\"]}, {\"statement\": \"only_GPU와 hybrid를 정확히 비교하기 위해, only_GPU에서 GPU로 돌리던 함수들(make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max)을 hybrid에서는 CPU for 문 등으로 되돌렸고, matmul(cuBLAS + 메모리풀)만 동일하게 유지했다. GPU 풀 구조체도 only_GPU(d_mat[4]+d_vec[2])에서 hybrid(d_A, d_B, d_C 3개)로 축소되었다.\", \"limits\": \"비교는 함수 단위 구성 변경 기준으로 정리됨\", \"kind\": \"result\", \"claim_status\": \"observed\", \"source_origin\": \"research_note\", \"conditions\": [\"eps = 1e-06\", \"CROWN verification\"], \"observations\": [\"only_GPU → hybrid 변경점 표: 함수별 GPU/CPU 처리 구분 및 복잡도\", \"GPU 풀 구조체 축소 내용\"], \"parameters\": [], \"measurements\": [], \"element_ids\": [\"p9:e78\", \"p9:e81\"]}, {\"statement\": \"v1-1(벡터연산 중 3가지를 CPU로 돌린 버전, 300ms)에 대해, 메모리 풀도 안 해놨고 cuBLAS도 안 해놔서 CPU로 함수를 돌리다 보면 결국 v0 결과와 같아져 정확한 비교를 할 수 없다는 지적이 있었다. 따라서 적어도 GPU를 할 수 있는 범위에서 초기화해놓고 CPU로 바꾸며 비교해야 한다는 조건이 언급되었다.\", \"limits\": \"이는 수행 결과라기보다 비교 설계상의 주의점/조건으로 기록됨\", \"kind\": \"result\", \"claim_status\": \"observed\", \"source_origin\": \"research_note\", \"conditions\": [\"eps = 1e-06\", \"CROWN verification\"], \"observations\": [\"v1-1 결과 300ms\", \"비교 조건 관련 메모\"], \"parameters\": [], \"measurements\": [], \"element_ids\": [\"p10:e90\"]}, {\"statement\": \"v1-1-1(메모리풀만 도입한 프로그램, 205~250ms)과 v4(85ms, crown_test_op_hybrid_v2)는 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 부분만 memcpy 하는 등의 적용을 거쳤으며, v4에서 처음으로 CPU보다 빨라졌다(85ms).\", \"limits\": \"버전별 적용/미적용 구성이 다름\", \"kind\": \"result\", \"claim_status\": \"observed\", \"source_origin\": \"research_note\", \"conditions\": [\"eps = 1e-06\", \"CROWN verification\"], \"observations\": [\"HYBRID V2 Elapsed time: 85.785300 ms\", \"v4 관련 85ms 및 crown_test_op_hybrid_v2 표기\"], \"parameters\": [], \"measurements\": [], \"element_ids\": [\"p7:e54\", \"p7:e55\", \"p10:e87\", \"p10:e88\"]}], \"coverage\": {}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 10083,
+    "completion_tokens": 1101,
+    "total_tokens": 11184,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

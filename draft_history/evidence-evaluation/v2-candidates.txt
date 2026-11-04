@@ -1,0 +1,479 @@
+F0001 W p[1] interpretation research_note CUDA는 기본적으로 C++ 언어 기반으로 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 분리해 작성해도 nvcc로 컴파일이 가능하다는 이해가 기록되어 있다. | 이는 작성자의 방법론적 이해이며 실제 컴파일 성공 여부를 일반화한 실측 결과는 아니다.
+F0002 - p[1] hypothesis research_note lirpa_forward_backward_fc_array.cpp를 CUDA로 재작성하는 접근이 제안되었으며, 병렬 연산이 필요한 부분을 device에서 동작하는 kernel 함수로 바꾸는 방안이 언급되었다. | kernel 함수 분리에 대한 구체적 구현 범위나 성공 여부는 이 요소에서 확인되지 않는다.
+F0003 W p[1] observed research_note 진입점 main은 epsilon을 입력받으며, 시스템 호출 인자를 통해 eps 값을 변경할 수 있다고 기록되어 있다. | 인자 전달 방식이나 실제 변경 가능한 eps 범위는 여기서 측정되지 않았다.
+F0004 W p[1] observed research_note main에서 self_test_relaxations와 run_xor_demo가 호출된다고 기록되어 있으며, self_test_relaxations는 안정성 테스트용 코드로 전체 흐름에 큰 영향이 없다고 평가되었다. | self_test_relaxations의 세부 동작이나 실제 영향도는 여기서 정량적으로 확인되지 않는다.
+F0005 W p[1] observed research_note run_xor_demo가 핵심이며, 코드가 복잡하여 기존 cpp 코드를 그대로 복붙하면서 배열 연산이 필요한 지점을 파악하기로 했다고 기록되어 있다. | 이 문장은 진행 방식과 판단 근거를 기술한 것으로, 실제 식별된 연산 지점 목록은 여기서 확인되지 않는다.
+F0006 W p[1] observed research_note mat_add부터 배열을 통한 연산이 시작되어 포팅을 시도했다고 기록되어 있다. | mat_add 포팅의 최종 성공 여부나 세부 변경은 여기서 확인되지 않는다.
+F0007 W p[1] interpretation research_note mat_add가 여러 번 호출되며 메모리 할당/해제도 여러 번 일어나 비효율적이라고 판단했으나, 최적화는 나중에 진행하기로 했다고 기록되어 있다. | 비효율성 판단은 작성자의 해석이며, 실제 호출 횟수나 메모리 할당 횟수는 여기서 정량화되지 않았다.
+F0008 W p[2] observed research_note 최종 포팅, 컴파일, 실행 검증이 완료되었고 동일하게 동작했다고 기록되어 있다. | 동일하게 동작했다는 판단의 구체적 검증 조건이나 비교 범위는 여기서 명시되지 않았다.
+F0009 W p[2] observed research_note 프루닝(pruning)을 적용해 파라미터 수를 약 93% 정도 제한했다고 기록되어 있다. | 약 93%라는 수치는 작성자가 기록한 값이며, 어떤 기준 대비 제한인지는 여기서 명시되지 않았다.
+F0010 W p[2] observed research_note 람다 같은 함수들을 rewrite하는 논의가 교수님과 필요하다고 기록되어 있다. | 논의 대상 함수의 구체적 범위나 논의 결과는 여기서 확인되지 않는다.
+F0011 W p[2] observed research_note 교수(최광훈)의 안내로 대상 신경망이 Fully Connected 구조이며, 입력 256개, 히든 계층 2개(N^(1)=491, N^(2)=491), 출력 16개라는 정보가 전달되었다. | 이는 교수 안내 내용이며, 실제 모델 파일과 완전히 일치하는지 여기서 실측되지는 않았다.
+F0012 W p[2] observed research_note  crown 알고리즘의 입력으로 테스트 데이터 1개와 eps=10^-6을 사용해 CROWN을 돌려 16개 출력을 뽑는 것이 1차 목표로 제시되었다. | 이 목표는 교수 안내/요청 내용이며, 실제 수행 결과는 별도 요소에서 확인된다.
+F0013 W p[2] interpretation research_note my_lirpa.cu에 실제 신경망을 로드(기존에는 가상 신경망 사용)하고 16개 출력을 뽑는 것이 1차 목표로 이해되었다고 기록되어 있다. | 이는 작성자의 해석이며, 실제 로드 방식과 출력 수가 여기서 실측된 것은 아니다.
+F0014 W p[2] observed research_note 새로운 crown_test.cu를 만들어 작성하기로 했다고 기록되어 있다. | 파일 생성 여부나 실제 내용은 여기서 확인되지 않는다.
+F0015 W p[2] observed research_note 모델 파일 로드 시 CustomToLirpa.py를 참조해 model.bin 구조를 파악했다고 기록되어 있다. | 파악한 model.bin 구조의 세부 필드는 여기서 나열되지 않았다.
+F0016 W p[3] observed research_note 새로운 FullyConnectedNetwork를 heap에 할당해 읽어온 신경망을 로드했다고 기록되어 있으며, 이는 트러블 슈팅 참조와 함께 언급되었다. | heap 할당 방식이나 트러블 슈팅 세부 내용은 여기서 확인되지 않는다.
+F0017 W p[3] observed research_note  .Pickle로 된 데이터셋을 CUDA로 읽기 위해 .bin 파일로 변환했으며, 테스트 단계이므로 입력 256개 1세트만 변환했다고 기록되어 있다. | 변환 방식이나 실제 변환된 파일 크기는 여기서 명시되지 않았다.
+F0018 W p[3] observed research_note GPU에 신경망을 로드(Memcpy)하고 CROWN을 호출했다고 기록되어 있다. | Memcpy 규모나 CROWN 호출 세부 조건은 여기서 명시되지 않았다.
+F0019 W p[3] observed research_note CPU ONLY 계산 버전과 GPU 버전을 만들어 신경망 정방향 통과 및 CROWN 알고리즘(backward) 계산 시간을 측정했다고 기록되어 있다. | 측정 환경 세부(정밀도, 반복 횟수, 배치 등)는 여기서 명시되지 않았다.
+F0020 W p[3] observed research_note CPU ONLY 모드에서 CROWN 검증(eps = 1e-06) 계산 성공 후 경과 시간이 101.237800 ms로 기록되었다. | 이 값은 단일 실행 화면 기록이며, 반복 측정 평균이나 분산은 여기서 확인되지 않는다.
+F0021 W p[4] observed research_note GPU 버전에서 CROWN 검증(eps = 1e-06) 계산 성공 후 경과 시간이 353.057200 ms로 기록되었다. | 이 값은 단일 실행 화면 기록이며, GPU 버전의 세부 최적화 적용 여부는 여기서 구분되지 않았다.
+F0022 W p[3, 4] observed research_note CPU ONLY 버전과 GPU 버전의 출력(하한/상한/Normal Pred)이 동일한 값으로 표시되었다고 기록되어 있다. | 동일 출력 여부는 화면 표기 기준이며, 수치적 동등성 검증 절차가 여기서 상세히 기술되지는 않았다.
+F0023 W p[4] observed research_note AI에게 시켜서 대충 최적화한 버전으로 my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu를 만들어 실행해봤다고 기록되어 있다. | AI 생성 코드의 구체적 내용이나 품질 평가는 여기서 확인되지 않는다.
+F0024 W p[4] observed research_note 컴파일 옵션에 -lcublas를 넣었다고 기록되어 있으며, 이는 my_lirpa_op.cu에서 cublasDgemm()를 사용하기 때문에 cuBLAS 라이브러리를 연결해야 한다는 설명과 함께 언급되었다. | 실제 링크 성공 여부나 cublasDgemm 사용 범위는 여기서 확인되지 않는다.
+F0025 - p[1] observed research_note CUDA 컴파일러(nvcc) 버전은 release 13.3, V13.3.73이며 빌드 시점은 2026-06-09이다. | 해당 버전 정보는 특정 개발 머신에서의 nvcc --version 출력값이며, 다른 환경의 CUDA 툴킷 버전과 동일하다고 단정하지 않는다.
+F0026 W p[2] observed research_note 최종 포팅, 컴파일, 실행 검증이 완료되었고 동일하게 동작한다고 기록되어 있다. | 동일하게 동작한다는 판단은 해당 시점의 검증 결과에 기반한 기록이며, 모든 입력/환경에 대한 일반적 동등성을 보장하지는 않는다.
+F0027 - p[2] observed research_note 1차 진행 상황 보고 이후 해야 할 일로 backward only mode의 재귀 버전, loop 버전, iteration 버전을 희소행렬로 만든 버전이 언급되었고, 이 4가지를 CUDA 프로그램으로 만들어 돌려보는 것이 최종 목표라고 기록되어 있다. | 목록 중 하나는 작성자가 기억을 떠올리며 적은 것으로 보이며, 정확한 항목 명칭과 범위는 여기서 완전히 고정되지 않았다.
+F0028 W p[2] observed research_note 교수 안내에서 신경망은 Fully Connected 구조이며 입력 N^(0)=256, 히든 N^(1)=491, N^(2)=491, 출력 N^(3)=16으로 설명되어 있다. | 이 수치는 교수 안내/메시지 내용에 기반한 설명이며, 실제 모델 파일이나 코드상 정의와 동일하다고 단정하지 않는다.
+F0029 W p[3] observed measurement_log CPU ONLY 버전의 CROWN 검증 실행 시간이 101.237800 ms로 측정되었다. | 이 값은 특정 테스트 실행에서의 측정값이며, 측정 환경·배치·반복 조건이 여기서 완전히 특정되지 않았다.
+F0030 W p[4] observed measurement_log GPU 버전(my_lirpa_forward)의 CROWN 검증 실행 시간이 353.057200 ms로 측정되었다. | 이 값은 특정 실행에서의 측정값이며, 측정 환경·배치·반복 조건이 여기서 완전히 특정되지 않았다.
+F0031 W p[5] documented_method research_note 적용된 최적화: 1. cuBLAS로 matmul 대체, 2. 메모리 풀 사용 (미리 큰 공간을 할당해서 빌려주는 형식으로 함, 대신 함수 호출마다 메모리 할당, 해제를 없앰), 3. 벡터 연산을 CPU로 바꿈 | 최적화 항목 나열이며 각 항목의 개별 기여도는 분리 측정되지 않음
+F0032 W p[5] observed research_note matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 만들어봄 | 하이브리드 프로그램의 구체적 함수 분할 범위는 다음 페이지 표에서만 확인됨
+F0033 W p[6] observed research_note Starting CROWN Verification (eps = 1e-06) ** MODE: HYBRID (matmul=GPU, rest=CPU) ** calc success Elapsed time: 201.670100 ms Output Dimension: 16 | 측정 환경·반복 횟수·입력 모델은 원문에 없음
+F0034 W p[6] documented_method research_note v2에서 적용 방안: 1. cuBLAS 미리 예열: 계산(시간측정) 전에 미리 cuBLAS 호출해서 초기화(즉 예열) ← 방법 더미 matmul을 한번 호출(matmul 안에 cuBLAS가 들어있으니까) | 예열용 더미 matmul 호출의 실제 실행 여부·효과는 이 문장만으로 확인되지 않음
+F0035 W p[6] interpretation research_note cuBLAS: 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리 | 라이브러리 설명은 일반 지식 서술
+F0036 W p[6] documented_method research_note 가중치(W) GPU에 사전 업로드: 가중치는 고정이므로 네트워크 로드할때 미리 업로드 해놓기(그리고 matmul에서 호출마다 복사하는 과정 삭제)(memcpy) | 사전 업로드·memcpy 제거의 실제 적용 여부는 후속 측정으로만 간접 확인됨
+F0037 W p[6] observed research_note 16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512, 2MB행렬을 Memcpy 하는중)보다 필요한 부분만 복사하기 | 현재 memcpy 중인 행렬 크기(512x512, 2MB)는 서술된 값이며 실제 측정 전 상태
+F0038 W p[7] observed research_note Starting CROWN Verification (eps = 1e-06) ** MODE: HYBRID V2 ** calc success Elapsed time: 85.785300 ms Output Dimension: 16 | 측정 환경·반복 횟수·입력 모델은 원문에 없음
+F0039 W p[7] observed research_note 85ms 드디어 cpu보다 빨라짐 | CPU 기준 수치는 이 문장만으로 확인되지 않으며 빨라졌다는 비교 판단은 서술 기반
+F0040 W p[7] observed research_note 미 적용 방안: 4. 희소행렬의 계산에서는 cuBLAS보다 cuSPARSE가 더 효과적(0인 부분을 건너뛰고 계산) 대체가능(다만 CSR이라는 특수한 행렬을 계산에 이용하므로 변환에 따른 오버헤드가 더 클 수 있음) ← 적용해볼만 함(해봤는데 cuBlas가 더 빠름 // crown_test_op_hybrid_v2_Sparse) | cuSPARSE 시도는 해봤다고 서술되나 실제 측정값·조건은 원문에 없음
+F0041 W p[7] planned research_note memcpy를 아예 제거하고 GPU내에서만 끝까지 돌아가도록 코드 짜기 ← 이건 코드를 갈아엎어야 하므로 보류(커널 퓨전?) | 보류 사유와 커널 퓨전 언급은 계획/의견 수준이며 실제 구현·측정은 없음
+F0042 W p[7] planned research_note CUDA stream 방안: Memcpy와 커널 실행을 겹쳐서 실행 가능하다고 함 ← 이건 아직 모르니까 보류(멀티 스레딩같은 건가?) | CUDA stream 관련 내용은 아직 모른다는 서술이며 실제 적용·측정은 없음
+F0043 - p[8] hypothesis research_note CROWN 알고리즘에서 출력한 16개의 값 ⇒ a. 신경망을 기준으로 sorting(아마 최댓값을 따라가는 듯?): 최댓값부터 8개의 출력노드를 선택, b. lower_bound, upper_bound를 기준으로 sorting(아마 간격을 기준으로 따라감): 8개의 출력노드를 선택하도록 하기 | sorting 기준과 8개 선택 의도는 추정 서술이며 실제 구현·결과는 없음
+F0044 W p[8] planned research_note 이거에 대한 답지는 교수님께서 제공해주시기로 했음 | 교수 제공 예정이라는 계획/조언 서술이며 실제 제공 여부는 확인되지 않음
+F0045 - p[8] hypothesis research_note 타일링: 메모리 사이즈에 대해 전부 처리하기 어려우니 일부만 올려서 계산하고 다시 다음부분 올려서 계산하고 하는것은 어떻게 처리하고 있나? ex) 예를 들어 1~100까지 있다하면 1~10을 올려서 계산하는동안, 11~20을 올리고 그런거.. | 타일링 관련 질문은 교수/랩미팅 질의 추정이며 실제 타일링 구현 여부는 확인되지 않음
+F0046 - p[8] hypothesis research_note forward + backward로 하고 있으면, 알고리즘을 봤을때(신경망과 상관없이) 고정값인 가중치, 편향 행렬이 있다(적어도 그런 행렬과 벡터가 3쌍 있을것임) ⇒ 즉 신경망 모델 사이즈의 3배정도 메모리를 차지하고 있을것임(그래서 스택 메모리가 128MB 필요했나?) | 메모리 3배·스택 128MB 필요 추정은 알고리즘 해석 기반이며 실제 메모리 사용량 측정은 없음
+F0047 W p[8] planned research_note 내가 할 것은 성능이 개선된 프로그램을 가져가기(cpu보다 빠르도록) ← 지금까지 테스트한 것들 가져가면 될듯 + 더 찾아보기 | 가져갈 버전 범위·추가 탐색 항목은 계획 서술
+F0048 W p[8] planned research_note 메모리 풀(할당, 해제 제거) + memcpy 비용 제거한 버전(고정된 W, B 값) | 해당 버전의 실제 완성·측정 여부는 이 문장만으로 확인되지 않음
+F0049 W p[8] documented_method research_note cuBlas, cuSparse | 비교/적용 후보 목록이며 실제 적용 결과는 앞 항목의 cuSPARSE 서술에서만 부분 확인됨
+F0050 W p[8] observed research_note 정리: v0: 단독 CPU 처리, 96ms | v0의 96ms는 정리 문장에만 등장하며 해당 실행의 상세 조건·출력은 원문에 없음
+F0051 W p[8] observed research_note 정리: v1: 모든 병렬처리 함수를 커널 함수로 바꿈, 355ms // 이게 my_lirpa.cu | v1의 355ms는 정리 문장에만 등장하며 해당 실행의 상세 조건·출력은 원문에 없음
+F0052 W p[8] observed research_note 정리: v2: 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입, 229ms // crown_test_op_only_GPU.cu | v2의 229ms는 정리 문장에만 등장하며 해당 실행의 상세 조건·출력은 원문에 없음
+F0053 W p[8] observed research_note 정리: v3: CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, 200ms // crown_test_op_hybrid.cu | v3의 200ms는 정리 문장에만 등장하며 해당 실행의 상세 조건·출력은 원문에 없음
+F0054 - p[4, 8] observed research_note v1은 모든 병렬처리 함수를 커널 함수로 바꿨고 355ms였다. | CPU 기준(v0 96ms)과의 직접 비교는 이 문장만으로 확인되지 않음
+F0055 - p[5, 8] observed research_note v2는 벡터 연산을 다시 CPU로 처리하고 메모리풀과 cuBLAS를 도입했으며 229ms였다. | CPU 기준(v0 96ms)과의 직접 비교는 이 문장만으로 확인되지 않음
+F0056 - p[6, 8] observed research_note v3는 CPU·GPU 하이브리드로 풀 구조체를 축소했고 200ms였다. | CPU 기준(v0 96ms)과의 직접 비교는 이 문장만으로 확인되지 않음
+F0057 W p[7] observed research_note v4(HYBRID V2)는 85ms로 CPU보다 빨라졌다. | 비교 대상인 CPU 기준 수치는 이 문장만으로 확인되지 않음
+F0058 W p[9] documented_method research_note only_GPU와 hybrid 비교에서 hybrid는 matmul(cuBLAS)만 GPU로 남기고 make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max 등을 CPU for 문으로 되돌린 구성이다. | 복잡도는 표에 O(n), O(n²), O(n³) 등으로 표기되어 있으며, matmul은 cuBLAS + 메모리풀로 동일하다고 적혀 있다.
+F0059 W p[9] documented_method research_note GPU 풀 구조체는 only_GPU에서 d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당)였고, hybrid에서는 matmul 전용 d_A, d_B, d_C 3개로 축소되었다. | 축소 이유는 이 문장만으로 정량적으로 설명되지 않는다.
+F0060 W p[9] interpretation research_note hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for 문으로 되돌린 버전이며, 새로 추가된 것 없이 GPU 코드를 삭제(CPU 회귀)해서 빨라진 사례로 정리되었다. | 이 설명은 작성자의 해석으로 기록되어 있다.
+F0061 W p[10] documented_method research_note v4는 cuBLAS 미리 예열(계산 전 더미 matmul 호출로 초기화) 방안이 포함되었다. | v4의 최종 측정값은 이 자료에서 확인되지 않는다.
+F0062 W p[10] documented_method research_note cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리로 설명되어 있다. | 이 문장은 개념 설명으로, 실측 결과는 아니다.
+F0063 W p[10] documented_method research_note 16x491 행렬 같은 부분도 전부 복사하는 현재 방식(512x512, 2MB 행렬 memcpy 중)보다 필요한 부분만 복사하는 방향이 제시되었다. | 이 방향의 실제 적용 결과는 별도로 확인되지 않는다.
+F0064 - p[10] unclear measurement_log v4 관련 결과로 85ms가 적혀 있다. | 어떤 버전/구성의 측정값인지 문맥이 명확하지 않다.
+F0065 W p[10] observed measurement_log v1-1은 벡터 연산 중 3가지(vec_add, sub, mat)를 CPU로 돌렸고 300ms로 측정되었다. | 구현 파일명은 my_lirpa_vector_CPU로 기록되어 있다.
+F0066 W p[10] interpretation research_note v1-1은 메모리풀과 cuBlas가 적용되지 않아 CPU로 함수를 바꾸면 결국 v0와 비슷해질 수 있어 정확한 비교가 어렵다는 지적이 있었다. | 비교 유효성을 위해 GPU를 가능한 범위에서 초기화한 뒤 CPU로 바꾸며 비교해야 한다는 의견이 함께 적혀 있다.
+F0067 W p[10] observed measurement_log v1-1-1은 메모리풀만 도입한 프로그램으로 205~250ms 결과가 나왔다. | 구현 파일명은 my_lirpa_mempool.cu로 기록되어 있다.
+F0068 W p[10] documented_method research_note 메모리 풀 크기 산정 근거로 Matrix 3개(mat_add, matmul 등에서 최대 A, B, C 동시 사용)와 Vector 6개(relu_relax에서 lower, upper, alpha_l, beta_l, alpha_u, beta_u 동시 사용)가 제시되었다. | 산정 근거는 풀 크기 설계 목적의 설명으로 기록되어 있다.
+F0069 W p[11] observed measurement_log CROWN 검증 실행 예시로 eps = 1e-06 조건에서 출력 차원 16의 lower/upper bound 및 정상 예측(y) 값이 출력된 화면이 기록되어 있다. | 이 화면은 특정 실행 결과 예시이며, 버전별 성능 비교의 대표값으로 쓰였다는 뜻은 아니다.
+F0070 W p[12] documented_method implementation_code pre_upload_weights_to_gpu 함수는 각 레이어마다 cudaMalloc로 MAX_DIM * MAX_DIM * sizeof(double) 크기의 메모리를 할당하고, cudaMemcpy2D로 호스트 가중치를 디바이스로 복사하는 방식으로 기록되어 있다. | 이 코드는 가중치 사전 업로드 구현 예시이며, 실제 실행 측정값과는 별도로 제시되어 있다.
+F0071 W p[12] observed measurement_log 가중치 사전 업로드 후 측정 예시로 MEMPOOL + Weights PRELOAD ON GPU 모드에서 elapsed time 149.820400ms가 출력된 화면이 기록되어 있다. | 이 값은 특정 실행 예시이며, 버전별 대표 성능으로 일반화하지는 않는다.
+F0072 W p[12, 13] interpretation research_note bias까지 미리 업로드해봤으나 성능 개선 의미가 크지 않았다고 평가되었다. | 이유는 bias가 Vector이고 약 4KB 정도라 CPU 연산에도 크게 무리가 없는 수준으로 설명되었다.
+F0073 - p[10] documented_method research_note 가중치(W)는 고정이므로 네트워크 로드 시 GPU에 사전 업로드하고, matmul 호출 시마다 복사하는 과정을 없애는 방향이 제시되었다. | 실제 사전 업로드 적용 결과는 별도 버전(v1-1-2 등)에서 다룬다.
+F0074 - p[11, 12] observed measurement_log v1-1-2는 가중치만 미리 업로드할 수 있게 한 버전으로 149~155ms 범위가 기록되었다. | 구현 파일명은 my_lirpa_mempool_preload_on_gpu.cu로 기록되어 있다.
+F0075 - p[11] documented_method research_note v1-1-2에서는 GPU 메모리 주소를 저장할 포인터 배열을 신경망에 미리 만들고, 포인터 배열 크기는 MAX_LAYERS 기준이라 신경망이 작으면 낭비될 수 있다고 지적되었다. | 이 구조는 double 기준 설계이며, float 포인터로 바꾸려면 전체 구조 변경이 필요하다고 적혀 있다.
+F0076 W p[13] interpretation research_note 작성자가 미리 로드해놓고 matmul 함수에서 활용을 안 했는데 시간이 줄어든 이유를 의문시했다. | 실험 해석 과정의 질문
+F0077 W p[13] interpretation research_note preload로 시간이 줄어든 원인은 GPU 웜업 효과라고 작성자가 판단했다. | 작성자 해석
+F0078 W p[13] interpretation research_note mempool 버전은 GPU 메모리풀 할당까지 시간에 계산되고, mempool_preload 버전은 가중치를 시간 측정 전에 미리 로드해 해당 시간이 제외된다. | 측정 구간 차이에 대한 설명
+F0079 W p[13] interpretation research_note pre_upload_weights_to_gpu가 t_start 앞에서 cudaMalloc과 cudaMemcpy를 호출하면 CUDA 드라이버 초기화가 타이머 구간 밖으로 빠져나가며, 이로 인해 mempool 버전 대비 약 50ms가 줄어든 것으로 설명된다. | 작성자 해석, 초기화 비용 50ms는 별도 실측값이 아니라 설명상의 수치
+F0080 W p[13] interpretation research_note v1-1-2의 50ms 감소는 GPU warmup 때문이며 preload 때문이 아니라고 작성자가 결론지었다. | 작성자 결론
+F0081 W p[14] documented_method research_note v1-1-3은 crown_test_preload_fix로, 미리 로드한 W 가중치를 제대로 활용하도록 고친 버전이다. | 버전 설명
+F0082 W p[14] documented_method research_note pre_upload_weights_to_gpu도 memcpy2D 사용이 아니라 Matrix를 할당, 복사하도록 바꿨다. | 구현 변경 설명
+F0083 W p[14] observed research_note 500회 정도 돌리니 5~10ms 정도 우세했다. | 반복 실험 관측
+F0084 W p[14] interpretation research_note 작성자가 가중치를 미리 로드해 memcpy를 줄이겠다는 접근은 크게 의미를 못 미친다고 결론지었다. | 작성자 결론
+F0085 W p[14] documented_method research_note v1-1-1-1은 메모리풀에 cuBlas를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBlas를 활용하도록 한 버전이다. | 버전 설명
+F0086 W p[15] observed research_note my_lirpa_mempool_cuBlas.cu를 500회 실행했을 때 총 소요시간은 61796.584100 ms, 평균 실행당 시간은 123.593168 ms였다. | 단일 측정 결과
+F0087 W p[15] interpretation research_note my_lirpa_mempool_cuBlas.cu는 기존 v1-1-1 대비 평균 실행당 시간이 30ms 차이난다고 작성자가 기록했다. | 작성자 비교 진술, 기준 실행값 명시 없음
+F0088 W p[15] observed research_note my_lirpa_mempool.cu를 500회 실행했을 때 총 소요시간은 78755.716600 ms, 평균 실행당 시간은 157.511433 ms였다. | 단일 측정 결과
+F0089 W p[15] observed research_note 위 my_lirpa_mempool.cu 500회 실행의 평균 시간은 157ms로 기록되었다. | 작성자 요약
+F0090 W p[15] planned research_note 아직 메모리풀 warm up을 안 한 상태이며, 이를 한 뒤에 진행해보자고 작성자가 계획했다. | 미수행 계획
+F0091 W p[16] observed research_note 메모리풀 warm up을 해봤으나 별로 차이가 나지 않았다. | 실험 관측
+F0092 W p[16] observed research_note my_lirpa_mempool(cuBlas 없는 버전)은 위에서는 늦게 나온 것인지 잘 나올 때는 500회당 평균 120ms 대로 나올 때도 있었다. | 실행 편차 관측
+F0093 - p[16] hypothesis research_note 처음 메모리 풀 할당 비용이 500번의 시행에 묻혀서 크게 차이가 안 나는 것일 수 있다고 작성자가 추측했다. | 작성자 가설
+F0094 W p[16] observed research_note hybrid_v2(v4)를 500번 돌리니 CPU보다 실행 속도가 느려졌다. | 실험 관측
+F0095 W p[16] observed research_note CPU ONLY 모드에서 500회 실행 시 총 소요시간은 39148.493900 ms, 평균 실행당 시간은 78.296988 ms였다. | 단일 측정 결과
+F0096 - p[14] documented_method research_note v1-1-3의 변경점으로 신경망에 GPU 주소를 저장하던 double* 타입을 Matrix* 타입으로 고쳤다. | 구현 변경 설명
+F0097 - p[14] observed research_note v1-1-3은 my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 없어서 100번씩 돌려 누적시간을 보기로 했다. | 실험 계획/관측
+F0098 - p[14] observed research_note 100번씩 돌렸을 때도 별로 성능 차이가 나지 않았다. | 정성적 관측
+F0099 - p[14] documented_method research_note v1-1-3 이후 다시 my_lirpa_mempool.cu로 롤백했다(v1-1-1). | 버전 변경 기록
+F0100 W p[17] observed measurement_log CROWN Verification (eps = 1e-06), MODE: HYBRID V2에서 500회 반복 총 소요시간은 49416.462000 ms, 평균 98.832924 ms/iter이다. | HYBRID V2 모드, 500회 반복 기준
+F0101 - p[17] hypothesis research_note CPU가 더 빠른 이유로 CPU 캐시 때문이라는 말이 있는 것 같아, 일단 1번만 돌리는 실험이 필요하다고 판단했다. | 원인 추정과 실험 계획 수준이며 실측 확인은 아님
+F0102 W p[17] interpretation research_note 이제 보니 cuBlas도 그렇게 영향을 미치진 못하는 것 같다. | 정성적 판단이며 영향 정도의 수치는 제시되지 않음
+F0103 W p[17] observed research_note mempool (v1-1-1)에서 미리 ensure_pool()을 활용해 메모리 할당을 하는 것은 큰 영향을 미치는데, cuBlas를 쓰고 warm up 하는 것과 그렇게 차이나지 않는다. | mempool (v1-1-1) 기준; cuBlas+warm up과의 차이가 크지 않다는 정성적 비교
+F0104 W p[18] observed measurement_log 1번 시도에서 mempool + warmup는 152.902900 ms, mempool + cuBlas + warmup는 174.978400 ms로 측정되었다. | 1회 시도 기준; 두 설정 간 비교
+F0105 W p[18] observed measurement_log 1번 시도에서는 cuBlas가 더 느렸고, 미리 메모리풀을 warm up 하는 것은 확실히 효과가 있어 각 버전에서 50ms 정도 단축되었다. | 1회 시도 기준; warm up 효과는 각 버전에서 약 50ms 단축으로 관찰됨
+F0106 W p[19] interpretation research_note 메모리 풀 + warm up 조합은 매우 좋으며 두 개만으로 거의 200ms 단축한다. | 두 개만으로 거의 200ms 단축이라는 정성적/근사 표현
+F0107 W p[19] interpretation research_note 지금 제일 중요한 건 memcpy 병목이며, 이걸 잡아야 cpu보다 빨라질 수 있다고 판단했다. | 병목 원인 추정 및 필요 조건 진술
+F0108 W p[19] documented_method implementation_code my_lirpa_mempool_warmup.cu의 make_zero_matrix, make_zero_vector를 다시 cpu 실행으로 회귀시키고 수식어를 optimizing으로 변경했다. | 구현 변경 기록이며 성능 영향은 별도 측정 필요
+F0109 W p[19] observed measurement_log mempool + warmup 설정에서 Elapsed time이 128.894800 ms로 측정되었다. | mempool + warmup, 1회 시도 기준
+F0110 W p[19] observed measurement_log 영벡터 만들기를 다시 gpu로 해보니 3~5ms 시간이 늘어나서 그냥 cpu로 두는 게 좋을 것 같다고 판단했다. | gpu 회귀 시 3~5ms 증가 관찰; cpu 유지 권장
+F0111 W p[20] observed measurement_log 결과를 담을 벡터를 memcpy 하는 것을 멈추고, 결과가 저장될 행렬/벡터도 memcpy 하던 것을 제거하니 10ms 정도 또 줄었다. | memcpy 제거 후 약 10ms 감소 관찰
+F0112 W p[20] observed measurement_log mempool + warmup 설정에서 Elapsed time이 115.469900 ms로 측정되었다. | mempool + warmup, 1회 시도 기준
+F0113 W p[20] documented_method implementation_code 가중치, positive_part / negative_part 거친 가중치를 GPU 메모리에 미리 올려놓으면 matmul이나 matvec에서 memcpy가 절반되고, 양수/음수부 가중치는 forward 돌 때마다 계산할 필요가 없어진다. | 미리 올려놓는 방식의 효과에 대한 정성적 설명
+F0114 - p[19] hypothesis research_note 50ms만 더 단축하면 cpu를 따라잡을 수 있을 것이라고 판단했다. | 목표 진술이며 실제 달성 여부는 이 시점에서 확인되지 않음
+F0115 - p[19] observed measurement_log 22~25ms 정도 줄었다. | 감소 폭의 범위 표현
+F0116 W p[21] observed research_note eps = 1e-06 조건에서 CROWN Verification 실행 결과 elapsed time이 103,741500 ms로 측정되었다. | 해당 실행의 구체적 최적화 내용은 명시되지 않았다.
+F0117 W p[21] interpretation research_note elapsed time이 103ms 정도로 이제 거의 CPU와 비슷해졌다고 해석하였다. | 비교 대상인 CPU 실행 수치는 해당 문장에 제시되지 않았다.
+F0118 W p[22] documented_method research_note forward 함수에서 DTOH하는 memcpy를 극단적으로 없앴다. | DTOH의 구체적 의미와 제거된 memcpy 범위는 명시되지 않았다.
+F0119 W p[22] observed research_note eps = 1e-06 조건에서 CROWN Verification 실행 결과 elapsed time이 64.716000 ms로 측정되었다. | 해당 실행의 구체적 최적화 내용은 명시되지 않았다.
+F0120 W p[23] planned research_note lirpa_Backward_only는 현재 재귀 버전으로 GPU에 맞지 않으며, 재귀 실행이라 병렬 처리가 안 될 수 있어 lirpa_backward_bound만 완성한 뒤 테스트하라고 안내하였다. | 완성 및 테스트 시점은 미래 계획이다.
+F0121 W p[23] observed research_note CPU에서 GPU로 신경망 메모리 복사를 어떻게 나누고 있는지 질문받았으며, GPU 메모리 사용량을 확실히 알아내는 방법으로 Nsight System을 언급하였다. | 실제 복사 방식은 해당 문장에 기술되지 않았다.
+F0122 W p[23] observed research_note GPU VRAM 리소스 할당 정보에서 Budget 10.97 GiB, Usage 310.00 MiB, Committed Memory 311.19 MiB가 표시되었다. | 측정 시점과 실행 구성은 명시되지 않았다.
+F0123 W p[23] observed research_note 프로파일러상 VRAM 사용량이 310 MiB로 나와 이상하다고 느꼈으며, Gemini가 메모리 풀에 올라간 행렬·벡터 기준으로 계산한 값은 약 114MB였다고 비교하였다. | Gemini 계산의 세부 조건은 명시되지 않았다.
+F0124 W p[23] interpretation research_note CUDA 실행 시 CUDA Context가 생성되며 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하고 VRAM을 사용하며, 런타임 오버헤드까지 감안하면 프로파일러에 나오는 VRAM 사용량이 코드 계산값보다 작을 수 있다고 설명하였다. | 실제 오버헤드 수치는 제시되지 않았다.
+F0125 W p[23] interpretation research_note CUDA Context와 런타임 오버헤드를 감안해도 결국 300MB 이내이며, VRAM 기준으로는 큰 값이 아니라고 판단하고 해당 내용을 발표에 가져가자고 제안하였다. | 300MB는 해석상 상한 추정이다.
+F0126 W p[23] planned research_note 차후 계획 3번(CPU→GPU 메모리 복사 관련) 설명을 제대로 못 한 것 같아 다음 발표에 설명을 함께 가져가자고 적었다. | 해당 설명은 미래 계획이다.
+F0127 W p[23] planned research_note 향후 검토/설명 주제로 sm, tile, tiling, Nsight compute 등을 적었다. | 구체적 실행 여부는 명시되지 않았다.
+F0128 W p[23] planned research_note 발표는 항상 탑다운 방식으로 개괄 설명을 먼저 하고 내부 내용을 설명해야 하며, 40ms 줄었다는 식으로만 말하지 말고 슬라이드를 읽으면서 설명할 수 있게 만들고 대본만 짜지 말자고 적었다. | 40ms는 특정 비교값이 아니라 발표 태도 관련 예시로 보인다.
+F0129 W p[24] documented_method research_note 교수님께 lirpa_backward_only_iteration_array.cpp를 받아 결과가 잘 나오는지(이전 CROWN과 동일한지) 테스트하였다. | 테스트 결과 동일 여부는 해당 문장에 명시되지 않았다.
+F0130 W p[24] documented_method research_note testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe 파일들을 사용하였으며, 스택 메모리가 기존 128MB로 안 되어 2GB로 늘리니까 되었다. | 컴파일러/환경 세부사항은 명시되지 않았다.
+F0131 W p[24] observed research_note eps = 1e-06 조건에서 ** MODE: CPU ONLY iteration ver **로 CROWN Verification을 실행하여 elapsed time 193,665600 ms가 측정되었다. | 해당 실행의 구체적 최적화 상태는 명시되지 않았다.
+F0132 W p[24] observed research_note 실행 결과는 193ms(CPU 버전)이며 기존 backward보다 93ms 정도 느리다고 기록하였다. | 기존 backward의 기준 수치는 해당 문장에 제시되지 않았다.
+F0133 W p[24] documented_method research_note backward_only의 구조체를 도입해야 했는데 lirpa_backward_only_iteration_array의 구조가 lirpa_forward_backward_fc_array와 좀 다르며, 새로운 함수 추가와 기본 자료구조 등의 차이가 있다고 적었다. | 구체적 구조 차이는 명시되지 않았다.
+F0134 W p[24] documented_method research_note 고민 결과 backward는 그대로 구현(기존 lirpa_backward_bound)하고, 아예 새로운 구조체를 추가(backward_only_iteration)하여 기존 재귀를 활용한 backward_only는 남겨놓기로 하였다. | 실제 적용 결과는 명시되지 않았다.
+F0135 W p[24] documented_method research_note 현재 backward GPU 파이프라인이 완성되었고 실행 결과가 있다고 적었다. | 해당 실행의 구체적 수치는 footer에 명시되지 않았다.
+F0136 - p[22] observed research_note elapsed time이 64ms로 엄청 줄었다고 기록하였다. | 비교 기준 시점은 명시되지 않았다.
+F0137 - p[23] hypothesis research_note 5주차 세미나 이후 해야 할 일로 CROWN 알고리즘의 범위 규정이 잘못되어 접근법이 틀렸을 수 있으며, partial order/total order 여부를 찾아봐야 한다고 적었다. | 해당 내용은 당장 중요한 것은 아니라고 평가하였다.
+F0138 - p[23] planned research_note 이번 주 발표 내용으로 CROWN 범위 다시 찾기(인터벌 등), lirpa_backward_bound 최적화 및 cuBlas/cuSparse 도입, 다음 계획 설명(CPU→GPU 병목 이후 global memory와 sm 병목, Nsight compute, shared memory, tile, tiling 등), GPU VRAM 사용량 보여주기(코드 계산 + system 프로파일)를 정하였다. | 실제 발표 반영 여부는 명시되지 않았다.
+F0139 W p[25] observed research_note mempool + warmup을 적용한 GPU 실행에서 elapsed time은 26,529100 ms였고, 26ms로 기존보다 확실히 빨랐다. | 비교 기준이 되는 이전 실행의 절대 elapsed time은 이 요소에 직접 기록되지 않음
+F0140 W p[25] observed research_note 실시간성을 확인하려면 마이크로초~수 밀리초(ms) 내로 제한해야 한다. | 현재 실행 시간이 이 기준을 충족하는지는 이 요소에 명시되지 않음
+F0141 W p[26] observed research_note 동기화(cudaDeviceSynchronize)를 필요한 부분을 제외하고 제거했다. | 제거 전후 남은 동기화 코드의 구체적 범위는 명시되지 않음
+F0142 W p[26] observed research_note cuBlas를 도입했으나 오히려 결과가 안 좋았다. | 안 좋은 결과의 구체적 지표(elapsed time 등)는 이 요소에 없음
+F0143 W p[26] observed research_note cuSparse나 cuBlas 사용 시 컴파일 옵션에 -lcublas, -lcusparse를 붙여야 한다. | 컴파일 옵션 적용 결과나 실제 빌드 성공 여부는 이 요소에 없음
+F0144 W p[28] observed research_note cuSparse가 잘 되는지 확인하려고 도입해봤다. | 도입 동기만 명시되고 구체적 테스트 범위는 이 요소에 없음
+F0145 W p[28] documented_method research_note 현재 적용된 범위는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고, cuSPARSE handle 및 CSR descriptor를 유지하며, network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하고, 기존 matmul은 아직 유지하는 것이다. | network_forward() 외 다른 단계 적용 여부는 이 요소에 없음
+F0146 - p[26] observed research_note 동기화 제거 후 elapsed time은 25,457200 ms로 1ms 정도 줄었다. | 비교 기준은 동기화 제거 직전 실행(26,529100 ms)으로 보임
+F0147 - p[26] interpretation research_note cuBlas/cuSparse가 자동 링크되지 않는 이유로 1) 표준 라이브러리(libc)가 아니기 때문, 2) 커스텀 모듈은 코드를 직접 가져와 통째로 컴파일하므로 -l을 안 붙여도 됨, 3) cuBlas/cuSparse는 Nvidia의 거대한 소스코드 덩어리로 미리 컴파일되어 있음, 4) 소스코드가 없어 해당 라이브러리를 넣고 한 번에 컴파일할 수 없음을 들었다. | 이 설명은 작성자의 해석/정리이며 실제 빌드 시스템 동작과 다를 수 있음
+F0148 - p[27] observed research_note cuSparse 도입 후 elapsed time은 40,050500 ms로 다시 늘어났다. | 비교 기준은 동기화 제거 후 25,457200 ms 또는 mempool+warmup 26,529100 ms로 보임
+F0149 - p[28] observed research_note cuSparse를 이용해 벡터 곱(spMV)만 적용한 상황에서 결과가 27ms로 좀 더 느려졌으며, 여기서 빠르면 spMM(Sparse 행렬곱)을 도입하기로 했다. | 비교 기준은 이전 최소 24ms 또는 25~26ms대 실행으로 보임
+F0150 W p[30] interpretation research_note 신경망이 너무 작아서 그런 것일 수 있다는 의견이 있었다. | 의견/해석이며 실측 원인으로 확정된 것은 아니다.
+F0151 W p[30] interpretation research_note network_forward는 신경망의 일반 추론값을 출력하는데 아직 GPU 파이프라인이 아니라서 최적화가 안 되어 있기도 하다. | 최적화 상태에 대한 설명으로, 정량적 비교 수치는 제시되지 않았다.
+F0152 W p[30] documented_method research_note cuBLAS와 cuSPARSE는 실험했지만 현재 모델 크기와 호출 패턴에서는 느려졌으므로 현 기준 코드에는 포함하지 않은 상태이며, 후에 다시 도입해보는 시도가 필요하다. | 현재 기준 코드 포함 여부와 향후 재시도 필요성만 기술되어 있다.
+F0153 W p[31] interpretation research_note 원인 분석으로 신경망 크기가 매우 작고, cuBlas/cuSparse의 동작 방식에서 오버헤드가 생겼으며 이 또한 신경망이 작기 때문이라고 정리했다. | 원인 분석은 연구 노트 내 정리이며, 각 요인의 기여도는 정량적으로 분리되지 않았다.
+F0154 W p[31] planned research_note 현재까지 cuBlas, cuSparse의 기본적인 형태의 행렬곱 연산 함수를 사용했으며, 행렬곱에도 변형 함수들이 매우 많아 sm 내 분석과 함께 사용해야 하는 함수들이라 Nsight compute 분석 때 같이 진행하면 될 것 같다고 남겼다. | 향후 진행 제안이며 실제 Nsight compute 분석 수행 결과는 아니다.
+F0155 W p[31] documented_method research_note 커널 퓨전을 진행했으며, 먼저 backward_bound_gpu()에만 진행했다. | 적용 대상이 backward_bound_gpu()로 한정됨.
+F0156 W p[31] observed research_note 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 건 23ms 정도가 보인다는 것이라고 부연했다. | 변동 범위가 언급되며 기준 관찰값은 23ms 정도로 기술됨.
+F0157 W p[32] documented_method research_note 이후 lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해서 성능을 개선했다. | 개선 방향은 기술되어 있으며, 해당 단계의 단일 대표 측정값은 별도 요소로 확인 필요.
+F0158 W p[32] observed research_note 늦으면 28까지도 나오는데 보통은 24 중반정도라고 기록했다. | 변동 범위와 전형적 범위를 함께 언급한 관찰이다.
+F0159 W p[32] documented_method research_note backward_bound_gpu에서 사용하는 affine 중복 계산 삭제로 커널 2개 함수가 줄어들었다. | 커널 수 감소 효과는 기술되어 있으나 정량 성능 수치는 별도 요소에서 확인 필요.
+F0160 W p[32] documented_method research_note backward_bound_gpu에서 사용하는 new_(upper, lower)_p를 복사하지 않고 swap 함수를 이용해서 포인터 스와핑(std::swap 이용)했다. | 구현 방식 기술로, 성능 수치는 별도 요소에서 확인 필요.
+F0161 W p[32] observed research_note backward에서 사용하는 행렬곱 커널 2개를 하나로 합친 커널 함수를 만들었고, backward_matmul_pair_gpu ⇒ 22ms 보이는 비율이 늘었다고 기록했다. | 22ms 보이는 비율 증가는 체감/비율 언급이며, 최저점(28ms)도 잘 안 보이게 됐다고 함께 기술됨.
+F0162 W p[32] documented_method research_note build_coeff_pair_fused_gpu 커널 퓨전과 backward_bias_pair_fused_gpu 커널 퓨전을 진행했다. | 적용 항목 기술로, 개별 성능 수치는 별도 요소에서 확인 필요.
+F0163 W p[29] interpretation research_note 느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문이라는 의견이 있었다. | 해석/조언이며 실측 원인 분리는 아니다.
+F0164 W p[29] interpretation research_note  workload가 cuSPARSE에 불리한 이유로 행렬 크기가 작고 layer가 3개뿐이며, SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 크고, 매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 하며, network_forward()가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행하고, cuSPARSE는 대규모 sparse throughput에는 강하지만 작은 연산의 latency에는 custom kernel이 더 빠를 수 있다는 점이 제시되었다. | 원인 설명은 조언/해석이며, 각 항목의 기여도는 정량 분리되지 않았다.
+F0165 W p[29] interpretation research_note 현재는 cuSPARSE가 적용된 부분이 network_forward()의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황이라고 설명했다. | 24 ms는 기준선 언급이며, 해당 요소에서 cuSPARSE 적용 전 실측값이 직접 출력된 것은 아니다.
+F0166 W p[29] planned research_note 나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가해야 한다고 제안했다. | 향후 재시도에 대한 제안이며 실제 수행 결과는 아니다.
+F0167 W p[30] interpretation research_note 주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞다는 의견이 있었다. | 의견/조언이며, 공식 결과 유지 방향에 대한 제안이다.
+F0168 W p[30] interpretation research_note SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가되고, 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크며, SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황이라고 설명했다. | 해석/설명이며, 각 비용 항목의 정량 분리는 제시되지 않았다.
+F0169 W p[30] interpretation research_note 공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다는 의견이 있었다. | 공식 결과 유지 및 별도 비교 제안에 해당한다.
+F0170 - p[29, 30] observed research_note spMM까지 도입한 후 Elapsed time이 38.580600 ms로 거의 40ms로 회귀했다. | 원문에서는 '거의 40ms'로 표현하며, 38.580600 ms는 해당 실행 출력값이다.
+F0171 - p[31] observed research_note 커널 퓨전을 backward_bound_gpu()에만 진행한 후 23ms 후반대까지 나오는 듯하다고 기록했다. | 정확한 단일 측정값이 아니라 '23ms 후반대'라는 범위로 표현됨.
+F0172 - p[32] observed research_note lirpa_forward_bound 함수들 커널 퓨전 후 Elapsed time이 22.342900 ms로 22ms 초반까지 나왔다. | 해당 실행 출력값 기준이며, 변동 범위는 이후 요소에서 추가로 언급됨.
+F0173 - p[32] observed research_note 커널 퓨전 적용 후 늦으면 28ms까지도 나오지만 보통은 24 중반 정도라고 기록했다. | 단일 측정값이 아니라 변동 범위에 대한 관찰 기록이다.
+F0174 W p[30] documented_method research_note cuBLAS와 cuSPARSE는 실험했지만 현재 모델 크기와 호출 패턴에서는 느려졌으므로 현 기준 코드에는 포함하지 않았고, 후에 다시 도입해보는 시도가 필요하다고 기록했다. | 현재 모델 크기와 호출 패턴에서의 느려짐에 대한 결론이며, 재도입은 향후 시도 계획이다.
+F0175 W p[31] interpretation research_note 원인 분석으로 신경망 크기가 매우 작고, cuBlas/cuSparse 동작 방식에서 오버헤드가 생겼으며 이 또한 신경망이 작기 때문이라고 기록했다. | 원인 분석은 작성자 해석이며, 정량적 인과 검증은 별도로 제시되지 않았다.
+F0176 W p[31] planned research_note 현재까지 cuBlas, cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 많아 sm 내 분석과 함께 사용해야 하므로 Nsight compute 분석 때 같이 진행하면 될 것이라고 기록했다. | 변형 함수 활용은 향후 분석/진행 제안이며, 실제 적용 결과는 아님.
+F0177 W p[33] observed research_note 5번까지 적용 후 최고 성능이 나왔음 | 5번의 범위와 최고 성능 수치는 해당 문단에 명시되지 않음
+F0178 W p[33] documented_method research_note 계속해서 1개의 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전을 모두 진행함 | 적용 대상 커널 목록과 결과는 후속 페이지에 분산됨
+F0179 W p[34] documented_method research_note 커널 퓨전 + set_shape 함수를 다른 커널 함수들에 직접 내장한 결과를 확인함 | 적용 전후 비교 수치는 해당 문단에 없음
+F0180 W p[34] observed research_note 커널 퓨전 + set_shape 내장 적용 후 최저 21ms까지 가능함 | 측정 조건·배치는 명시되지 않고 캡션 형태로 기록됨
+F0181 W p[35] documented_method research_note forward-backward 간에 전달되는 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제함 | 변경 내용은 enhanced_page_image에 상세 서술됨
+F0182 W p[35] documented_method research_note 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하고 forward에서 레이어별로 GPU에 저장함 | 구현 변경 사항이며 정량 비교는 별도 문단에 있음
+F0183 W p[35] documented_method research_note backward가 host ForwardBoundResult에서 alpha/beta를 H2D 복사하지 않고 GPU 버퍼를 직접 사용함 | 구현 변경 사항이며 정량 비교는 별도 문단에 있음
+F0184 W p[35] documented_method research_note alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합함 | 통합 전후 복사 횟수 외 성능 수치는 별도 문단에 있음
+F0185 W p[35] observed research_note alpha/beta 메모리 풀 적용 후 21.0ms 정도 나옴 | 단일 측정값으로 보이며 반복 측정 분포는 제시되지 않음
+F0186 W p[36] documented_method research_note bias도 메모리 풀에서 관리하도록 함 | 구현 변경 사항이며 정량 비교는 별도 문단에 있음
+F0187 W p[36] observed research_note bias 메모리 풀 관리 후 성능 최고점이 올랐는지는 모르겠으나 21~23ms 내에서 특히 21ms로 꽤 안정적으로 동작함 | 최고점 상승 여부는 불확실하다고 명시됨
+F0188 W p[36] observed research_note NVTX 구간 내에서 memcpy 호출이 109회에서 94회로 15번 감소함 | bias 메모리 풀 관리 적용 후 NVTX 기준 관측
+F0189 W p[36] documented_method research_note backward 호출 시 forward를 호출하는데 forward의 중간 결과를 CPU(메모리)에 복사(memcpy)하는 여부의 플래그를 도입함 | 플래그 도입 자체는 구현 변경이며 효과는 별도 문단에 서술됨
+F0190 W p[36] observed research_note 플래그를 false로 할 경우 memcpy가 현저히 줄어듦 | 정량 수치는 enhanced_page_image의 효과 목록에 상세 기록됨
+F0191 W p[36] observed research_note 플래그 false 적용 후 실행 시간이 17ms로 측정됨 | 1회 측정값으로 보이며 반복 분포는 제시되지 않음
+F0192 W p[36] observed research_note 플래그 false 적용 후 cudaMemcpy가 94회→54회, D2H가 44회→20회로 감소함 | enhanced_page_image의 효과 목록에 기록된 수치
+F0193 W p[36] observed research_note 플래그 false 적용 후 CUDA API 복사 시간이 약 7.61ms→3.51ms로 감소함 | enhanced_page_image의 효과 목록에 기록된 수치
+F0194 W p[36] observed research_note 플래그 false 적용 후 실행 시간 1회 측정값이 약 20.22ms로 나옴 | enhanced_page_image의 효과 목록에 기록된 수치이며 결과값은 기존과 동일하게 출력됨
+F0195 W p[32, 33, 34, 35, 36] observed research_note CROWN Verification 실행 시 eps = 1e-06, mempool + warmup, Output Dimension 16 조건으로 반복 측정됨 | 여러 페이지에 동일 조건 출력이 반복 등장함
+F0196 W p[37] observed research_note 6번째 세미나 이후 할 일로 대학원 AI 프로그래밍 관련 논문/영상 확인이 언급됨 | 공유된 논문 git repository 확인 제안 포함
+F0197 W p[37] observed research_note 6번 세미나 3번 슬라이드에 RAM 추가 과제가 있었고 해결됨 | 세미나 3번 슬라이드 관련
+F0198 W p[37] observed research_note 외부 라이브러리 cuBlas, cuSparse는 일단은 도입하지 않기로 함 | 나중에 할 것이 없으면 하는 것으로 보류, cuBlas는 다 하고 테스트해보는 것으로 정리
+F0199 W p[37] observed research_note backward_only는 하지 말고 forward + backward로 계속 진행하고 최적화하는 것이 더 나을 듯하다는 의견이 있음 | 교수님 의견, backward가 잘 진행되고 있어 계속 진행 가능
+F0200 W p[37] observed research_note NNV 저장소 localrobustness_fwd_bwd.py 코드를 보고 이해하여 알고리즘을 완성하기로 함 | 출력 결과는 16개의 1 또는 0으로 출력됨(1이면 선택된 인덱스, 0이면 선택 안 된 인덱스)
+F0201 W p[37] observed research_note 학부 연구생 논문 작성은 나중에 하기로 함 | 추후 계획
+F0202 W p[37] observed research_note Nsight compute 분석 시 CUDA core 점유율이 50% 정도만 넘어도 잘된 편으로 생각할 수 있다고 함 | 50% 넘기는 것을 목표로 해보자고 제안됨
+F0203 W p[38] observed research_note 적용할 것으로 1번 network_forward(추론) 중간 복사 제거가 제시됨 | 적용 대상
+F0204 W p[38] observed research_note 커널 함수 호출에 net.act[l]을 사용했는데 이는 메모리풀에 올리고 관리한 적이 없음 | 활성화 함수 관련
+F0205 W p[38] observed research_note ActivationType은 단순한 enum(내부적으로 4바이트짜리 정수)임 | enum 타입 특성
+F0206 W p[38] observed research_note CPU가 net.act[l]이 가리키는 메모리 주소를 GPU에 넘겨주는 것이 아니라, CPU 메모리에서 net.act[l]의 값을 읽은 뒤 그 숫자 자체를 GPU 커널 발사 시 매개변수 주머니(Constant Memory/Registers)에 넣어 함께 보냄 | gemini 설명 기반
+F0207 W p[38] observed research_note 별도로 cudaMalloc이나 cudaMemcpy를 할 필요가 전혀 없고, 커널을 런칭할 때 값이 자동으로 GPU로 넘어가므로 속도 저하도 없음 | ActivationType처럼 작은 enum/값 기준
+F0208 W p[38] observed research_note 크기가 엄청나게 큰 배열이나 구조체 내부 데이터는 값으로 넘기면 터지기 때문에 포인터(*d_out, *g_pool.d_weight)를 써서 cudaMemcpy로 올려두고 주소만 넘겨줌 | 큰 데이터 전달 방식
+F0209 W p[38] observed research_note 용량이 큰 덩어리는 포인터로 넘기고, 작은 숫자나 열거형(Enum)은 그냥 값으로 보낼 수 있음 | 전달 방식 구분
+F0210 W p[39] observed research_note 포인터 변수(배열)는 반드시 GPU 메모리여야 하며, cudaMemcpy로 VRAM에 옮겨두고 커널에는 주소만 알려줘야 함 | apply_activation_gpu<<<>>>(net._d_out) 예시 포함
+F0211 W p[39] observed research_note 스칼라(단일 숫자)는 CPU 변수를 써도 되며, int/float/double/enum 같은 단일 숫자는 4바이트~8바이트 정도라 CPU가 커널 실행 명령을 GPU로 쏠 때 실행 명령서 귀퉁이에 값을 붙여 함께 보낼 수 있음 | Parameter Bank 또는 Constant Memory라고 불리는 공간 사용
+F0212 W p[39] observed research_note matvec_bias_gpu<<<blocksPerGrid, 256>>>(...)에서 256이나 blocksPerGrid 같은 CPU 쪽 숫자 변수들을 자유롭게 보낼 수 있는 것도 같은 원리임 | 커널 launch 인자 예시
+F0213 W p[39] observed research_note 포인터 변수는 memcpy를 써서 올려야 하며, 참조할 크기가 매우 커서 CPU가 그 내용을 전부 직접 복사해 커널 함수의 매개변수 주머니에 값을 넣어줄 수 없음 | 매개변수 주머니는 임시 표현
+F0214 W p[39] observed research_note 값만 나오는 경우 4~8바이트까지는 CPU가 직접 그 부분을 참조해서 값을 보낼 수 있음 | 스칼라 전달 가능 범위
+F0215 W p[40] observed research_note CROWN 검증 실행 결과 elapsed time이 16.914800ms로 측정됨 | eps=1e-06, mempool + warmup calc, Output Dimension 16
+F0216 W p[40] observed research_note Nsight compute에서 memcpy 호출 1건이 확인됨 | Begins 0.385727s, Ends 0.38664s (+913.313 μs)
+F0217 W p[40] observed research_note 호출 횟수 비교 시 memcpy가 66개에서 56개로 줄어듦 | 호출 횟수 기준 비교
+F0218 - p[37] observed research_note CROWN range 정렬 문제에 대한 해답이 할 일 목록의 5번으로 언급됨 | 할 일 항목
+F0219 - p[40] observed research_note 실행 결과가 16초 후반까지 나오게 됨 | 결과 요약 표현
+F0220 W p[41] documented_method research_note backward_bound_gpu에서 기존에는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고, affine_min/max도 GPU에서 계산되어 GPU -> CPU -> GPU -> CPU 불필요한 복사가 발생했다고 설명함. | 구체적 커널명·데이터 크기는 원문에 없음
+F0221 W p[41] documented_method research_note affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU -> CPU 메모리 복사를 최소화했다고 설명함. | 개선 후 복사량·정량적 감소치는 원문에 없음
+F0222 W p[41] observed research_note 개선 후 CROWN Verification에서 Elapsed time 15.828400 ms가 나왔고, 결과는 15ms 후반까지 나왔다고 기록함. | 측정 조건·반복 횟수는 원문에 상세하지 않음
+F0223 W p[41] documented_method research_note GPU 안에서 최종 정답 계산을 위해 affine_min_gpu와 affine_max_gpu 커널을 호출하는 코드 조각이 제시됨. | 커널 퓨전 적용 여부는 이 요소에서 확정되지 않음
+F0224 - p[41] hypothesis research_note 이 부분에서 커널 퓨전이 가능할 것 같다고 언급함. | 실제 적용 결과는 이후 요소에서 다룸
+F0225 W p[42] documented_method research_note 미리 작성해둔 퓨전 함수가 있어서 사용했다고 기록함. | 퓨전 함수 세부 사양은 원문에 없음
+F0226 W p[42] observed research_note 퓨전 함수 사용 후 CROWN Verification에서 Elapsed time 15.751000 ms가 나왔고, 0.2ms 정도 하한선이 낮아진 듯하다고 기록함. | 하한선 비교 기준·측정 조건은 원문에 상세하지 않음
+F0227 W p[43] documented_method research_note Backward 메모리 복사 제거 및 초기화 최적화로 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, default 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 최소화했다고 설명함. | 재사용 버퍼 크기·초기화 빈도 등 정량 정보는 원문에 없음
+F0228 W p[43] observed research_note 위 최적화 후 CROWN Verification에서 lapsed time 13.939000 ms가 나왔고, 13ms 후반 거의 14ms 정도로 봐도 된다고 기록함. | 측정 조건·반복 횟수는 원문에 상세하지 않음
+F0229 W p[43] documented_method research_note fp32에 단정밀도 연산으로 바꿔보기도 했으며, 이 부분은 fp32에 대한 고찰에 있다고 기록함. | fp32 변경 실험의 구체적 결과는 이 요소에서 제시되지 않음
+F0230 W p[44] planned research_note 안테나 선택 신경망에서 sparse 행렬이 dense 행렬보다 빠르다는 결과를 내기 위해 찬희씨가 테스트를 진행 중이며, dense 또는 sparse 하나를 골라 같은 조건에서 CPU 순차처리와 GPU 병렬처리를 비교하면 될 듯하다고 기록함. | 비교 결과·선택 행렬은 이 요소에서 확정되지 않음
+F0231 W p[44] planned research_note FP32로 바꾸었을 때 Nsight Compute를 해보는 것이 재미있을 것이라는 교수님 의견이 기록됨. | 실제 Nsight Compute 결과는 이 요소에서 제시되지 않음
+F0232 W p[44] documented_method research_note CUDA로 구현한 이유로 CUDA 프로그래밍 역량을 가진 사람이라는 점과, 안테나 신경망 검증 알고리즘을 하드웨어에 구현해 실시간 검증에 관심이 있으며 하드웨어 구현(실시간 검증) 여지가 있다는 논문의 뒷받침 논문으로 작성 가능하다는 점이 기록됨. | 실제 하드웨어 구현 결과는 이 요소에서 제시되지 않음
+F0233 W p[44] documented_method research_note CROWN 알고리즘 개발 팀에서도 GPU를 활용한 검증 가속을 한 적은 있지만 실시간으로 하겠다는 뜻은 아니고, 모든 경우를 다 따져봐야 할 때 병렬성이 생기고 이를 빠르게 하겠다는 관점에서 사용한 적이 있다고 기록함. | 해당 팀의 구체적 구현 세부사항은 이 요소에서 제시되지 않음
+F0234 W p[44] interpretation research_note kernel 시간이 높을수록 좋다고 했는데 compute throughput도 높을수록 좋은 것이 아닌지 질문했고, Nsight System에서 CPU-GPU 간 메모리 교류 비율이 줄어들면 GPU 커널 비중이 늘어나니까 kernel은 높을수록 좋고, compute throughput은 쓸데없이 비효율적인 알고리즘 때문에 하드웨어 한계에 부딪혀서 그럴 수 있다고 생각했다고 기록함. | 이 요소는 작성자 개인의 해석이며 실제 측정 인과관계는 확정되지 않음
+F0235 W p[44] interpretation research_note Nsight System의 kernel도 단순히 높을수록 좋은 것이 아니라 왜 높은지까지 분석해야 한다고 판단했으며, CPU-GPU는 안 줄어들고 비효율적인 GPU 계산 실행으로 계산 시간이 늘어난다면 그것 또한 커널 비중 증가로 이어진다고 기록함. | 이 요소는 작성자 개인의 해석이며 실제 측정 인과관계는 확정되지 않음
+F0236 - p[44] planned research_note 7번째 세미나 이후 할 일(8/20)로 40000개 전체 데이터에 대해 테스트를 진행해보라는 의견이 있었고, 추가 의견으로 forward/backward 2개에 대해 진행할 것과 찬희씨 컨택 필요성이 기록됨. | 실제 수행 결과는 이 요소에서 확인되지 않음
+F0237 W p[45] observed research_note 40000번 루프에서 backward보다 forward가 느린 것을 확인했으며, 원인은 중간 레이어 결과 저장 여부를 제어하는 플래그에 있었다. | 단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 넘지 않았음.
+F0238 W p[45] documented_method research_note forward_bound_impl의 플래그를 true로 두면 중간 결과가 복사된다. | 플래그 동작에 대한 구현 기록.
+F0239 W p[45] observed research_note 단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 뛰어넘지 않았다. | 단일 실행 기준 관측.
+F0240 W p[46] observed research_note 40000번 * 각 eps 테스트를 반복하면서 D2H 복사 오버헤드가 backward 대비 forward 계산의 이득을 뛰어넘었다. | 40000번 반복 및 eps 반복 조건에서의 관측.
+F0241 W p[46] documented_method research_note forward의 플래그를 3개로 늘렸고(중간 결과 layer_bound 복사용, final_affine 복사용, 최종 결과 복사용), backward의 플래그도 layer_bound와 backward result의 affine_bound를 같이 복사할지 제어하는 플래그를 각각 2개로 분리했다. | 플래그 분리/세분화 구현 기록.
+F0242 W p[46] documented_method research_note forward 최종 계산(result -> lower/upper bounds)을 D2H 복사하는 데에 비효율적인 부분이 있어 정확한 테스트를 위해 최적화를 진행했다. | 최적화 목적 및 대상 기록.
+F0243 W p[46] observed research_note backward가 forward보다 빠른 문제는 forward를 최적화해서 일단 해결했다. | 일시적 해결 기록이며 이후 다른 비교가 이어짐.
+F0244 W p[46] observed research_note forward와 backward 결과를 각각 보니 단일 테스트 결과로 비교하면 다중 데이터셋 테스트에서 3배 차이가 나야 하는데 왜 그렇게 나오지 않는지에 대해 Nsight system 분석을 이용하기로 했다. | 기대 차이(3배)와 실제 미도달에 대한 분석 방향 결정 기록.
+F0245 W p[46] observed research_note 단일 데이터에 대한 memcpy 호출 횟수는 forward/backward 각각 6번이다. | 단일 데이터 기준 호출 횟수 기록.
+F0246 W p[46] observed research_note 입력 데이터 +- eps, 가중치, bias, upper bound 결과, lower bound 결과로 총 6개라고 생각했으나, 가중치와 bias는 nvtx 찍기 전에 한 번에 올라간다(prepare network on gpu). | 복사 대상 수에 대한 초기 추정과 수정 기록.
+F0247 W p[46] observed research_note 입력 데이터 +- eps와 upper bound, lower bound 결과만 복사하면 총 4번만 복사해야 하는 것이 아닌지 재검토했다. | 복사 횟수 재검토 기록.
+F0248 W p[46] observed research_note 신경망 추론 결과에서 입력값(H2D), 추론값(D2H)이 있고, CROWN에서 입력 데이터 +- eps와 upper/lower bound를 합쳐 총 6개이다. | 복사 대상 구성에 대한 재집계 기록.
+F0249 W p[47] observed research_note 프로그램 전체 실행에서 18번이므로 6번을 빼면 외부에서 12번이며, 가중치 행은 3개(신경망 구조가 256 * 491 * 491 * 16이므로 개수만큼)이다. | 전체 memcpy 횟수와 가중치 행 수 추정 기록.
+F0250 W p[47] observed research_note 가중치 관련 복사는 (가중치 + 가중치 양수부/음수부 + bias) * 3이다. | 가중치 복사 구성 기록.
+F0251 W p[47] observed research_note forward와 backward의 cudaMemcpy 횟수는 동일하다. | 호출 횟수 동일성 기록.
+F0252 W p[47] observed research_note 단일 테스트 forward/backward는 시간에서 3배 차이가 나는데, 왜 92만개의 데이터를 돌리면 비슷해지는지(약 1분 차이)에 대해 아직 해결하지 못했다. | 미해결 질문 기록.
+F0253 W p[48] observed research_note 중간에 커맨드라인 실행 인자를 주고 그에 따라 forward 또는 backward를 실행하도록 바꿨는데, 기존 번거롭게 backward 할 때의 실행 결과는 1560s이고, 코드를 바꿨을 때 실행 결과는 2164s이다. | 두 실행 결과의 시간 비교 기록.
+F0254 - p[47] observed research_note forward 전체 실행 시간이 약 64s, backward 전체 실행 시간이 약 98s 정도이며, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 많이 잡히는 점이 눈에 띈다. | 전체 실행 시간 및 cudaMemcpy 시간 분포 관측.
+F0255 W p[50] documented_method research_note switch문 안에서 ForwardBoundResult/BackwardBoundResult를 선언과 동시에 생성하도록 코드를 수정했다. | 해당 수정은 switch 케이스별 중괄호 스코프 사용이 필요하며, 중괄호 없이 선언하면 컴파일 경고/오류가 발생할 수 있다.
+F0256 W p[50] interpretation research_note switch문 내부에 중괄호 스코프를 두어 fwd/bwd를 선언·초기화하는 방식으로 수정한 뒤, backward 실행 시간이 다시 2100s 수준으로 증가하는 문제가 해결되었다고 기록했다. | 해결 판단은 작성자 해석이며, 이후 실행에서 시간 변동이 다시 관찰되었다.
+F0257 W p[51] observed research_note 실행인자 없이 backward를 실행했을 때 전체 소요 시간이 1560.37s로 다시 기록되었다. | 실행인자 없는 backward 기준 결과이며, 이후 다른 실행에서는 시간이 변동되었다.
+F0258 W p[51] observed research_note 실행인자 없이 forward를 실행했을 때 전체 소요 시간이 1342.47s로 기록되었다. | 실행인자 없는 forward 기준 결과이며, 작성자는 이 감소를 값에 의한 복사 해결과 연관지어 추정했다.
+F0259 W p[51] observed research_note 실행인자 없이 backward를 실행했을 때 전체 소요 시간이 1561.72s로 기록되었다. | 실행인자 없는 backward 기준 결과이며, 실행인자가 있는 backward와 비교되었다.
+F0260 W p[51] observed research_note 실행인자 없이 forward를 실행했을 때 전체 소요 시간이 1460.60s로 기록되었다. | 실행인자 없는 forward 기준 결과이며, 작성자는 실행인자가 있는 경우가 더 빠르다고 언급했다.
+F0261 W p[51] observed research_note 실행인자가 있는 backward를 실행했을 때 전체 소요 시간이 1564.18s로 기록되었다. | 실행인자 있는 backward 기준 결과이며, 실행인자 없는 backward와 비슷한 수준으로 언급되었다.
+F0262 W p[52] observed research_note 실행인자가 있는 forward를 실행했을 때 전체 소요 시간이 1447.17s로 기록되었다. | 실행인자 있는 forward 기준 결과이며, eps=9.0e-03/1.0e-02/1.0e-01/1.0e+00 조건에서 측정되었다.
+F0263 W p[52] interpretation research_note 작성자는 현재 의문으로 3가지를 정리했다: 다중 데이터 테스트에서 forward 성능 감소가 어디서 일어나는지, 구조체 값에 의한 복사 제거 후 backward가 다시 2100s 정도로 튀는 원인, 실행인자 추가와 switch문 사용이 실제 성능에 영향을 줬는지 여부. | 의문은 작성자 정리이며 각 항목에 대한 확정 원인은 제시되지 않았다.
+F0264 - p[48, 49] observed research_note 코드를 바꿔 실행인자 기반으로 forward/backward를 선택하도록 수정한 뒤 backward 실행 결과가 2164s로 기록되었다. | 측정은 해당 코드 수정 이후 실행 기준이며, 수정 전 backward 결과(1560.37s)와 비교된다.
+F0265 - p[49] interpretation research_note 작성자는 backward 실행 시간이 약 600초(10분) 증가한 원인을 switch문 바깥에 선언된 CROWN 결과 구조체의 값에 의한 복사 때문으로 추정했다. | 원인은 작성자 해석이며 실제 프로파일링 수치로 확인된 것은 아니다.
+F0266 - p[50] observed research_note switch문 바깥에서 fwd/bwd를 선언하면 transfer of control이 초기화를 우회한다는 경고와 함께 초기화가 case/default 레이블에 의해 생략되었다는 컴파일 오류가 발생했다. | 컴파일러 진단 메시지는 nvcc 컴파일 과정에서 발생한 것으로 기록되었다.
+F0267 W p[49] interpretation research_note 작성자는 switch문 바깥에 선언된 CROWN 결과 구조체의 값에 의한 복사가 반복문 내부에서 매번 발생하여 성능 저하의 원인이라고 추정했다. | 원인은 작성자 해석이며 실제 프로파일링 수치로 확인된 것은 아니다.
+F0268 - p[52] observed research_note 실행인자가 있는 forward를 실행했을 때 전체 소요 시간이 1360.22s로 기록되었다. | 실행인자 있는 forward 기준 결과이며, eps=9.0e-05/1.0e-02/1.0e-01/1.0e+00 조건에서 측정되었다.
+F0269 W p[53] planned research_note 발표 자료에서 비교를 한눈에 보이게 구성하고, 표에서 강조할 부분을 따로 계산해서 넣는 등 표 강조 방식을 개선하기로 함 | 
+F0270 W p[53] planned research_note Compute Throughput과 Memory Throughput의 정확한 정의(수식)를 알아보기로 함 | 
+F0271 - p[53] hypothesis research_note Memory throughput 비율 감소 원인으로 SM이 너무 바빠 메모리 병목이 생기는 경우를 떠올림 | 가설 단계
+F0272 W p[53] planned research_note Forward, backward 92만 번 실행에서 가끔 튀는 경우가 있어 평균과 분산을 구하기로 함 | 
+F0273 W p[53] planned research_note 추론 + bound + 검증을 모두 합쳐 측정하던 것을 각각 나눠 측정하기로 함 | 
+F0274 W p[53] observed research_note 92만 번의 forward, backward 측정을 20번씩 측정함 | 
+F0275 W p[53] observed research_note 단일 데이터(optimizing.exe)에 대해 warm up이 얼마나 영향 미치는지 측정 및 검증 완료 | 
+F0276 W p[53] planned research_note sparse.py도 나눠서 측정하기로 하고, 검증팀에 문의한 결과 따로 측정한 것은 없어 forward만 2번 더 측정하기로 함 | 
+F0277 W p[53] planned research_note 이후 sparse.py와 forward, backward 기준으로 각 평균 시간이 몇 배 차이나는지 검사하기로 함 | 
+F0278 W p[53] planned research_note 신경망 검증팀과 얘기해 forward, backward의 검증 비율 결과 차이가 이 정도 나는 것이 맞는지 검사하기로 함 | 
+F0279 W p[53] planned research_note 신경망 검증팀도 sweep으로 추론 + bound + 검증 92만 번 사이클을 한 번에 계산했는지 확인하기로 함 | 
+F0280 W p[53] observed research_note 확인 결과 forward와 backward의 차이, sweep 사이클 모두 맞다고 한다는 결과를 기록함 | 
+F0281 W p[53] planned research_note TensorRT(Nvidia SDK)로 컴파일한 것과 직접 짠 nvcc 컴파일 시간을 비교하는 테스트를 고려함 | 
+F0282 W p[54] documented_method research_note 추론, bound 계산, 검증 끝마다 시간을 기록해 각각 측정하도록 코드를 구성함 | 
+F0283 W p[54] observed research_note Elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있어, 3개 누적 시간을 더한 값을 더 올바른 시간으로 보고 넣기로 함 | 
+F0284 W p[54] observed research_note Forward, backward 각각 20번 측정을 완료했고, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정 | 
+F0285 W p[54] documented_method research_note 단일 데이터 측정 검증 과정에서 warm up 코드를 먼저 넣음 | 
+F0286 W p[55] documented_method research_note 측정 시작을 기준으로 추론 이후 타임스탬프, 이후 추론 시간을 계산하는 방식으로 측정함 | 
+F0287 W p[55] observed research_note CROWN(Backward Bound) 호출 시 BackwardBoundResult 선언으로 4MB 할당 + 자잘한 벡터들로 넉넉 0.25MB 공간이 필요하고, 내부 함수 진입 시 거의 64MB가 필요해 128MB로 설정함 | 왜 128MB가 필요한지는 미확인
+F0288 W p[55] observed research_note 신경망 + forward 결과만 보면 7ms 초반 ~ 8ms 초반 정도라고 기록함 | 
+F0289 W p[55] documented_method research_note 시간 출력은 초 기준 소수점 4자리까지, 결과 출력은 오차 검사를 위해 더 길게 출력하도록 설정함 | 
+F0290 W p[55] observed research_note 단일 실행 결과로 elapsed time 1.6966 ms, inference time 0.1417 ms, bound time 1.5547 ms, output dimension 16이 출력됨 | 
+F0291 W p[55] observed research_note 위 bound time이 20번 92만 번 테스트(test_all_data)의 평균 bound라고 기록함 | 
+F0292 W p[56] observed research_note 단일 테스트에서 warm up을 해도 약 0.2ms 정도 느리다고 기록함 | 
+F0293 - p[56] hypothesis research_note 40000개 데이터 중에도 계산이 더 빠른 데이터와 느린 데이터가 있을 것이라는 교수 발언을 떠올리며, 단일 데이터가 상대적으로 느렸을 가능성을 생각함 | 가설 단계
+F0294 W p[56] planned research_note test_all_data.bin에서 단일 데이터를 다르게 뽑아 검증해볼지, 시간이 얼마나 달라지는지 확인해보는 방안을 생각함 | 
+F0295 W p[56] observed research_note 단일 데이터를 다르게 뽑아 검증해본 결과 평균이 약 1.91 ms 정도로, 좀 다르긴 하다고 기록함 | 
+F0296 W p[56] observed research_note 초기화 비용으로 인해 3배 차이가 났던 것이 맞는지 검증하려고 시작한 것이므로 너무 깊게 파고들지 말자고 기록함 | 
+F0297 W p[56] documented_method research_note Backward 측정 시간(warmup 한번)과 forward 측정 시간(warmup 한번)을 비교함 | 
+F0298 - p[56] observed research_note warmup 1회 조건에서 CROWN Verification 실행 결과로 elapsed time 1.9759 ms, inference time 0.1867 ms, bound time 1.7889 ms, output dimension 16, eps 1e-06, mempool + warmup이 출력됨 | 
+F0299 W p[57] observed research_note warmup을 적용했을 때 걸리는 시간 및 각 평균 시간이 더 늘어났고, forward가 warmup 이전 backward 급 속도가 나올 정도였다. | warmup 전후 비교의 정확한 수치와 측정 조건은 명시되지 않음
+F0300 W p[57] observed research_note warmup을 해도 스파이크 데이터가 뜨고, 가끔 10번 측정했을 때 평균 시간이 느려지는 문제가 발생했다. | 스파이크 발생 빈도와 정확한 평균 증가량은 명시되지 않음
+F0301 W p[57] observed research_note warmup 버전과 warmup 이전 버전의 측정 시간은 큰 차이가 나지 않았고, 스파이크가 안 뜰 때의 시간은 변동 계수가 더 낮은 느낌으로 더 안정적이었다. | 변동 계수 수치는 느낌 수준의 정성적 관찰이며 정확한 값은 제시되지 않음
+F0302 W p[57] planned research_note 추론, bound 계산, 검증 3가지 값을 나눠서 측정하기로 했다. | 측정 구분 계획만 제시됨
+F0303 W p[58] observed research_note 배칭 시스템 구현으로 3배 빨라졌다. | 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 전제가 함께 언급됨
+F0304 W p[58] documented_method research_note 배칭 관련 실험은 별도 branch(temp_batching)로 저장해두었다. | branch 상태나 병합 여부는 명시되지 않음
+F0305 W p[58] documented_method research_note 지금까지 해본 최적화로 제로 memcpy, 커널 실행 횟수 감소(커널 퓨전, 커널 graph), GPU 아키텍처의 SM 구조 고려(FP64 -> FP32, double -> float)를 시도했다. | 각 최적화의 개별 효과 크기는 여기서 분리 제시되지 않음
+F0306 W p[59] documented_method research_note cudaGraph를 이용한 커널 캡처로 하나의 CROWN 계산 내 수십 번 커널 호출을 하나의 호출로 압축할 수 있어 커널 호출 오버헤드 감소 효과가 기대된다. | 커널 자체 최적화까지 끝낸 뒤 고려 가능한 방안으로 제시됨
+F0307 W p[59] documented_method research_note cudaGraph로 추론, bound 따로 / 추론+bound 한 번에 하는 것을 따로 캡처해 커널 런치 비용을 최소화해봤다. | 캡처 방식별 세부 비교 수치는 여기서 분리 제시되지 않음
+F0308 W p[59] observed research_note 추론과 bound를 따로 캡처했을 때 기준으로 약 400초 정도 줄어든 듯했다. | 정확한 기준선과 측정 조건은 문맥상 추론·bound 분리 캡처 기준으로만 언급됨
+F0309 W p[59] documented_method research_note 실시간 환경이 아니라고 판단해 데이터셋을 통째로 넘기는 배칭 대신, 데이터셋이 있는 부분을 pinned Memory로 지정하고 메모리 복사 속도를 최대로 늘렸다. | 실시간 환경 판단의 구체적 기준은 명시되지 않음
+F0310 W p[60] observed research_note 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 고쳤으나, cpu 계산 오버헤드가 더 큰 것 같아 시간이 늘었다. | cpu 계산 오버헤드와 시간 증가의 정량적 비교는 느낌 수준의 진술로 남음
+F0311 W p[60] documented_method research_note cudaMemcpyAsync로 out_bytes만큼 d_final_lower, d_final_upper를 Host로 복사하고 cudaStreamSynchronize(stream)를 수행했다. | out_bytes는 sizeof(int) + out_dim * sizeof(float)로 계산됨
+F0312 W p[60] documented_method research_note 실시간 PCIe H2D 전송 최적화를 위해 cudaHostRegister로 dataset 메모리를 pinned memory로 등록했고, N>0일 때만 등록하며 실패 시 Notice를 출력하도록 했다. | 등록 플래그와 오류 처리 방식은 코드에 명시된 범위로 한정됨
+F0313 W p[60] observed research_note forward_cuda_graph의 전체 시간이 약 983s 정도이고, cpu에서 필요한 만큼만 계산한 뒤 복사한 시간이 1055 정도이며 72초 차이가 나 더 느려졌다. | 두 값의 정확한 측정 조건과 비교 기준은 문맥상 서로 다른 실행 방식으로 언급됨
+F0314 - p[57] observed research_note 초기화 이후 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다. | warmup 1회 기준 측정, 단일 데이터 기준 관찰
+F0315 - p[57] documented_method research_note gpu 벤치마크 기준으로 실제 사이클 시간만 측정, warmup 1회, CV를 통한 스파이크·분산 규명을 기준으로 세웠다. | 실제 적용 세부 설정은 문서에 따라 다를 수 있음
+F0316 W p[61] observed research_note Real-Time Single-Sample(B=1) Latency Analysis에서 Evaluated Samples는 100000, Min Latency는 1092.30 us, Mean Latency는 1145.24 us(1.15 ms), Median(P50)은 1136.80 us, P95 Tail Latency는 1179,00 us, P99 Tail Latency는 1311.90 us, Max Latency는 7830.90 us, Jitter(StdDev)는 60.33 us, Throughput은 873.18 samples/sec, Pure GPU Execution은 953.70 us(last sample)이다. | results saved to results_cuda.csv, timing log appended to timing_log_crown.csv
+F0317 - p[61] hypothesis research_note cudaEvent를 추가해서 그런 걸 수도 있고 일단 시스템 인자 넣어서 제어해보는 중이다. | 원인 확정 아님, 제어 시도 중 상태
+F0318 W p[61] documented_method research_note measure_gpu는 argc > 8 && strlen(argv[8]) > 0이면 std::atoi(argv[8])로 설정하고 아니면 1이며, 0은 비활성화(Off, 드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(전체 루프 오버헤드 0초 + 맨 마지막 Pure GPU 시간 리포트, 기본값), 2는 매 샘플마다 측정(All samples, 92만 번 전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)이다. | argc/argv 기반 시스템 인자 제어 방식
+F0319 - p[61] hypothesis research_note 원인 후보로는 1. cudaMemcpy로 복사할 메모리 계산 cpu 계산 때문, 2. cudaEvent 커널 측정 때문, 3. 진짜 gpu 클럭 때문이 제시되었다. | 원인 확정 아님, 후보 목록
+F0320 W p[61] observed research_note 커밋 이전 버전(graph만 적용한 버전)을 돌려봤고 역시 그게 더 빠르다. | 비교 대상은 graph만 적용한 이전 커밋 버전
+F0321 W p[61] observed research_note topk 속도는 빨라졌고 이건 빼먹을 수 있을지도 모른다. | 확실한 채택 여부 미확정
+F0322 W p[61] planned research_note 빼먹을 부분 정리로 1. 데이터셋 pinnedMemory, 2. 검증(heap -> stack) 배열, 3. cudaEvent는 결국 필요(Nsight Compute 분석 하려면)가 제시되었다. | 정리 목록이며 실행 확정 아님
+F0323 W p[61] interpretation research_note 결국 지워볼 만한 곳은 cpu를 통해서 필요한 만큼만 계산하는 부분이며 이 부분밖에 없다. | 대안 범위가 제한적이라는 관측
+F0324 W p[62] observed research_note 평균으로 측정을 해봤다. | 어떤 대상에 대한 평균인지 구체적 조건 별도 확인 필요
+F0325 W p[62] documented_method research_note cudaGraph만 적용된 버전이 있고, 이게 pinned Memory 추가 + cudaEvent 제어 + 필요한 만큼 계산해서 D2H memcpy + certify topk 자료구조 스택화이다. | 비교 대상 버전 구성 설명
+F0326 W p[62] observed research_note graph와 비교해서 단일 스트림 입력 복사 최적화를 이야기 하자면 forward에선 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에 대해 20초 차이 나며, backward를 보면 total 시간이 비슷하고 그 이유는 infer에서 깎아먹은 20초를 bound에서 graph보다 20초 빨리 수행하고 있다. | infer_s 20초 차이, bound에서 20초 빨리 수행은 관측 기반 해석
+F0327 W p[62] interpretation research_note 그래서 일단 유지하기로 했다. | 결정 사항이며 추가 최적화 가능성은 별도 논의
+F0328 W p[62] planned research_note 굳이 하자면 infer는 어차피 계산이 필요없을 것 같긴해서(벡터라서 크지 않다는 점) 크기 계산을 주석처리한다던가, certify에서는 잘 모르겠고 다시 heap으로 바꿔야하나 고민된다. | 확정 실행이 아닌 가정적 제안
+F0329 W p[63] planned research_note 발표와 관련해서는 7. 발표를 탑다운으로 구성 - 코드는 필요한 만큼만(내가 설명하려는 핵심에 필요할 경우에만..), 핵심적인 문제에 대해서(추상화 할 필요가 있음)가 기록되었다. | 발표 구성 관련 메모
+F0330 W p[63] planned research_note 일단 repo를 받아서 실행해보자며 https://github.com/horangahor/antenna_auto_lirpa가 제시되었다. | 실행 시도 제안
+F0331 W p[63] planned research_note 적용해볼만한 최적화 기법으로 1. 공유 메모리 타일링(Shared Memory Tiling): 현재 행렬곱 커널은 글로벌 메모리에서 직접 원소를 읽으며 L1 공유 메모리(__shared__)에 타일 단위로 올려 재사용하면 글로벌 메모리 대역폭 병목을 더 줄일 수 있다, 2. 루프 언롤링(#pragma unroll): 행렬곱 내부 루프의 분기 검사 비용을 줄이고 명령어 병렬성(ILP) 증대, 3. 고속 내장 수학 함수(Fast Math / Intrinsics): 컴파일러 옵션 -use_fast_math 또는 __expf() 등 하드웨어 전용 특수 함수 사용이 기록되었다. | 고려 대상 기법이며 적용 결과 아님
+F0332 W p[63] planned research_note 그리고 명시적으로는 안해본 것으로 1. warp divergence(스레드 분기 최소화), 2. 비동기 스트림, 3. 블록 사이즈 계산, 4. 메모리 coalescing, 5. 타일링(위에서 언급함)이 기록되었다. | 미시도 항목 목록
+F0333 W p[63] observed research_note auto_lirpa 결과가 나왔고 포워드 + 백워드 결과로 [auto_LiRPA Verification Results]가 제시되었다. | 결과 존재 사실만 기록
+F0334 W p[64] observed research_note eps=1e-06에서 T=39969, F=31, ratio=0.999, time=5.04s이고 eps=1e-05에서 T=39709, F=291, ratio=0.993, time=4.63s이며 eps=0.0001에서 T=37026, F=2974, ratio=0.926, time=4.65s이고 eps=0.0002에서 T=34353, F=5647, ratio=0.859, time=4.64s이며 eps=0.0003에서 T=31826, F=8174, ratio=0.796, time=4.63s이고 eps=0.0004에서 T=29375, F=10625, ratio=0.734, time=4.62s이며 eps=0.0005에서 T=27170, F=12830, ratio=0.679, time=4.65s이고 eps=0.0006에서 T=25103, F=14897, ratio=0.628, time=4.71s이며 eps=0.0007에서 T=23179, F=16821, ratio=0.579, time=4.72s이고 eps=0.0008에서 T=21323, F=18677, ratio=0.533, time=4.77s이며 eps=0.0009에서 T=19656, F=20344, ratio=0.491, time=4.68s이고 eps=0.001에서 T=18128, F=21872, ratio=0.453, time=4.62s이며 eps=0.002에서 T=7461, F=32539, ratio=0.187, time=4.64s이고 eps=0.003에서 T=2754, F=37246, ratio=0.069, time=4.61s이며 eps=0.004에서 T=945, F=39055, ratio=0.024, time=4.63s이고 eps=0.005에서 T=286, F=39714, ratio=0.007, time=4.61s이며 eps=0.006에서 T=71, F=39929, ratio=0.002, time=4.62s이고 eps=0.007에서 T=24, F=39976, ratio=0.001, time=4.60s이고 eps=0.008에서 T=3, F=39997, ratio=0.000, time=4.57s이며 eps=0.009에서 T=1, F=39999, ratio=0.000, time=4.66s이고 eps=0.01에서 T=0, F=40000, ratio=0.000, time=4.66s이며 eps=0.1에서 T=0, F=40000, ratio=0.000, time=4.67s이고 eps=1.0에서 T=0, F=40000, ratio=0.000, time=4.67s이다. | auto_LiRPA 포워드+백워드 결과 표 기준
+F0335 W p[64] observed research_note EPS별 연산 시간의 합산(Sum of EPS times)은 107.30s이고 전체 프로그램 총 소요 시간(Overall elapsed)은 107.32s이다. | 포워드+백워드 결과 기준
+F0336 W p[64] observed research_note 포워드 결과로 [auto_LiRPA Verification Results]가 제시되었고 eps=1e-06에서 T=39969, F=31, ratio=0.999, time=5.32s이며 eps=1e-05에서 T=39709, F=291, ratio=0.993, time=5.03s이고 eps=0.0001에서 T=37026, F=2974, ratio=0.926, time=4.95s이며 eps=0.0002에서 T=34349, F=5651, ratio=0.859, time=4.98s이다. | 포워드 결과 표 일부
+F0337 - p[61] observed research_note total elapsed는 1055.28s이고 Phase Timing Breakdown(all eps × all data)에서 infer는 131.799s(12.5%), bound는 920.844s(87.3%), certify는 1,597s(0.2%)이다. | 평가 샘플이 10만개밖에 안되는 이유는 표본 측정으로 하려고 한 것임
+F0338 - p[63] observed research_note 10주차 세미나 이후 생각해볼 것으로 1. backward_only CUDA로 구현하기 ⇒ 커널 구현 완료, 최적화 적용 여부 탐색중, 2. cudaGraph에 대한 원리 자세히 알아보기, 3. 찬희씨와 소통해서 auto lirpa 모델 얘기하기 ⇒ 얘기 했고 repo 받았다, 데이터셋, 모델은 동일하다고 한다, 4. 오늘(9월 21일) 16시, (다음주?) 화요일 오후 7시 반? 미팅, 5. 배칭 + 다중 스트림 관련해서 실제 환경과의 괴리? ⇒ 다만 얻은것은 일단 gpu 자원이 남는다는 것, 그리고 단일 스트림과 단일 데이터 복사가 현재 큰 병목을 만들고 있다는 것, 6. 컴파일러 팀에 모델 공유하기 ⇒ 공유 완료가 기록되었다. | 미팅 시간 등 일부 정보는 미확정 표현 포함
+F0339 W p[65] observed research_note 포워드 결과에서 eps=0.0003일 때 T=31813, F=8187, ratio=0.795, time=5.00s | 측정 구간·버전 미기재
+F0340 W p[65] observed research_note 포워드 결과에서 eps=0.0004일 때 T=29366, F=10634, ratio=0.734, time=5.02s | 측정 구간·버전 미기재
+F0341 W p[65] observed research_note 포워드 결과에서 eps=0.0005일 때 T=27153, F=12847, ratio=0.679, time=5.09s | 측정 구간·버전 미기재
+F0342 W p[65] observed research_note 포워드 결과에서 eps=0.0006일 때 T=25086, F=14914, ratio=0.627, time=5.10s | 측정 구간·버전 미기재
+F0343 W p[65] observed research_note 포워드 결과에서 eps=0.0007일 때 T=23154, F=16846, ratio=0.579, time=4.99s | 측정 구간·버전 미기재
+F0344 W p[65] observed research_note 포워드 결과에서 eps=0.0008일 때 T=21288, F=18712, ratio=0.532, time=4.97s | 측정 구간·버전 미기재
+F0345 W p[65] observed research_note 포워드 결과에서 eps=0.0009일 때 T=19623, F=20377, ratio=0.491, time=4.97s | 측정 구간·버전 미기재
+F0346 W p[65] observed research_note 포워드 결과에서 eps=0.001일 때 T=18073, F=21927, ratio=0.452, time=5.00s | 측정 구간·버전 미기재
+F0347 W p[65] observed research_note 포워드 결과에서 eps=0.002일 때 T=7380, F=32620, ratio=0.184, time=4.92s | 측정 구간·버전 미기재
+F0348 W p[65] observed research_note 포워드 결과에서 eps=0.003일 때 T=2695, F=37305, ratio=0.067, time=4.93s | 측정 구간·버전 미기재
+F0349 W p[65] observed research_note 포워드 결과에서 eps=0.004일 때 T=905, F=39095, ratio=0.023, time=4.90s | 측정 구간·버전 미기재
+F0350 W p[65] observed research_note 포워드 결과에서 eps=0.005일 때 T=269, F=39731, ratio=0.007, time=4.94s | 측정 구간·버전 미기재
+F0351 W p[65] observed research_note 포워드 결과에서 eps=0.006일 때 T=67, F=39933, ratio=0.002, time=4.97s | 측정 구간·버전 미기재
+F0352 W p[65] observed research_note 포워드 결과에서 eps=0.007일 때 T=20, F=39980, ratio=0.001, time=4.91s | 측정 구간·버전 미기재
+F0353 W p[65] observed research_note 포워드 결과에서 eps=0.008일 때 T=2, F=39998, ratio=0.000, time=4.92s | 측정 구간·버전 미기재
+F0354 W p[65] observed research_note 포워드 결과에서 eps=0.009일 때 T=0, F=40000, ratio=0.000, time=4.94s | 측정 구간·버전 미기재
+F0355 W p[65] observed research_note 포워드 결과에서 eps=0.01일 때 T=0, F=40000, ratio=0.000, time=4.94s | 측정 구간·버전 미기재
+F0356 W p[65] observed research_note 포워드 결과에서 eps=0.1일 때 T=0, F=40000, ratio=0.000, time=4.97s | 측정 구간·버전 미기재
+F0357 W p[65] observed research_note 포워드 결과에서 eps=1.0일 때 T=0, F=40000, ratio=0.000, time=4.99s | 측정 구간·버전 미기재
+F0358 W p[65] observed research_note 포워드 결과 EPS별 연산 시간 합산 114.77s, 전체 프로그램 총 소요 시간 114.78s | 측정 구간·버전 미기재
+F0359 W p[65] observed research_note 포워드 결과가 C:\Users\user\Desktop\antenna_auto_lirpa\antenna_lirpa\results\autolirpa_results_forward.csv에 저장됨 | 측정 구간·버전 미기재
+F0360 W p[65] observed research_note 백워드_only 결과에서 eps=1e-06일 때 T=39969, F=31, ratio=0.999, time=1.09s | 측정 구간·버전 미기재
+F0361 W p[65] observed research_note 백워드_only 결과에서 eps=1e-05일 때 T=39709, F=291, ratio=0.993, time=1.56s | 측정 구간·버전 미기재
+F0362 W p[65] observed research_note 백워드_only 결과에서 eps=0.0001일 때 T=37026, F=2974, ratio=0.926, time=2.67s | 측정 구간·버전 미기재
+F0363 W p[65] observed research_note 백워드_only 결과에서 eps=0.0002일 때 T=34353, F=5647, ratio=0.859, time=2.54s | 측정 구간·버전 미기재
+F0364 W p[66] observed research_note 백워드_only 결과에서 eps=0.0003일 때 T=31826, F=8174, ratio=0.796, time=2.53s | 측정 구간·버전 미기재
+F0365 W p[66] observed research_note 백워드_only 결과에서 eps=0.0004일 때 T=29375, F=10625, ratio=0.734, time=2.52s | 측정 구간·버전 미기재
+F0366 W p[66] observed research_note 백워드_only 결과에서 eps=0.0005일 때 T=27170, F=12830, ratio=0.679, time=2.53s | 측정 구간·버전 미기재
+F0367 W p[66] observed research_note 백워드_only 결과에서 eps=0.0006일 때 T=25103, F=14897, ratio=0.628, time=2.53s | 측정 구간·버전 미기재
+F0368 W p[66] observed research_note 백워드_only 결과에서 eps=0.0007일 때 T=23179, F=16821, ratio=0.579, time=2.59s | 측정 구간·버전 미기재
+F0369 W p[66] observed research_note 백워드_only 결과에서 eps=0.0008일 때 T=21323, F=18677, ratio=0.533, time=2.58s | 측정 구간·버전 미기재
+F0370 W p[66] observed research_note 백워드_only 결과에서 eps=0.0009일 때 T=19656, F=20344, ratio=0.491, time=2.54s | 측정 구간·버전 미기재
+F0371 W p[66] observed research_note 백워드_only 결과에서 eps=0.001일 때 T=18128, F=21872, ratio=0.453, time=2.57s | 측정 구간·버전 미기재
+F0372 W p[66] observed research_note 백워드_only 결과에서 eps=0.002일 때 T=7461, F=32539, ratio=0.187, time=2.51s | 측정 구간·버전 미기재
+F0373 W p[66] observed research_note 백워드_only 결과에서 eps=0.003일 때 T=2754, F=37246, ratio=0.069, time=2.51s | 측정 구간·버전 미기재
+F0374 W p[66] observed research_note 백워드_only 결과에서 eps=0.004일 때 T=945, F=39055, ratio=0.024, time=2.50s | 측정 구간·버전 미기재
+F0375 W p[66] observed research_note 백워드_only 결과에서 eps=0.005일 때 T=286, F=39714, ratio=0.007, time=2.51s | 측정 구간·버전 미기재
+F0376 W p[66] observed research_note 백워드_only 결과에서 eps=0.006일 때 T=71, F=39929, ratio=0.002, time=2.50s | 측정 구간·버전 미기재
+F0377 W p[66] observed research_note 백워드_only 결과에서 eps=0.007일 때 T=24, F=39976, ratio=0.001, time=2.49s | 측정 구간·버전 미기재
+F0378 W p[66] observed research_note 백워드_only 결과에서 eps=0.008일 때 T=3, F=39997, ratio=0.000, time=2.50s | 측정 구간·버전 미기재
+F0379 W p[66] observed research_note 백워드_only 결과에서 eps=0.009일 때 T=1, F=39999, ratio=0.000, time=2.52s | 측정 구간·버전 미기재
+F0380 W p[66] observed research_note 백워드_only 결과에서 eps=0.01일 때 T=0, F=40000, ratio=0.000, time=2.51s | 측정 구간·버전 미기재
+F0381 W p[66] observed research_note 백워드_only 결과에서 eps=0.1일 때 T=0, F=40000, ratio=0.000, time=2.50s | 측정 구간·버전 미기재
+F0382 W p[66] observed research_note 백워드_only 결과에서 eps=1.0일 때 T=0, F=40000, ratio=0.000, time=2.48s | 측정 구간·버전 미기재
+F0383 W p[66] observed research_note 백워드_only 결과 EPS별 연산 시간 합산 55.77s, 전체 프로그램 총 소요 시간 55.78s | 측정 구간·버전 미기재
+F0384 W p[66] observed research_note 백워드_only 결과가 C:\Users\user\Desktop\antenna_auto_lirpa\antenna_lirpa\results\autolirpa_results_backward_only.csv에 저장됨 | 측정 구간·버전 미기재
+F0385 W p[66] observed research_note 특이점으로 backward_only가 가장 빠르다고 기록됨 | 측정 구간·버전 미기재
+F0386 W p[66] observed research_note forward가 제일 느리다고 기록됨 | 측정 구간·버전 미기재
+F0387 W p[66] observed research_note 보통의 상식으로는 forward < forward + backward < backward_only로 알고 있었다고 기록됨 | 측정 구간·버전 미기재
+F0388 W p[66] observed research_note 실행 방식은 python autolirpa_topk_robustness.py --data-path  | 측정 구간·버전 미기재
+F0389 W p[66] observed research_note 배치 사이즈를 1024로 했고 싱글 스트림인듯하다고 기록됨 | 측정 구간·버전 미기재
+F0390 W p[67] observed research_note 배치 사이즈 64일 때 424초 정도 걸린다고 기록됨 | 측정 구간·버전 미기재
+F0391 W p[67] observed research_note 현재 구현 방식은 배치사이즈만큼 동일한 수의 독립 스트림을 만드는 방식이라 각 스트림이 GPU 메모리를 차지하므로 1024개의 batch size를 하면 1024개의 독립 스트림이라 GPU 메모리를 오버한다고 기록됨 | 측정 구간·버전 미기재
+F0392 W p[67] observed research_note 배치 사이즈를 512로 하면 메모리를 안넘긴 하는데 느리다고 기록됨 | 측정 구간·버전 미기재
+F0393 W p[67] observed research_note 느린 이유는 각 스트림마다 CPU가 돌아가면서 다음 커널을 런치해줘야 하는 모양이고 1024개의 스트림이 각각 CPU가 다음 커널을 런치해줄 때까지 기다리고 있기 때문이라고 기록됨 | 측정 구간·버전 미기재
+F0394 W p[67] observed research_note 하나의 스트림이 하나의 입력을 처리하는데 동시에 돌릴 수 있는게 64개의 데이터를 올린 건 알겠는데 16번씩 나눠서 처리한다는 뜻이라고 기록됨 | 측정 구간·버전 미기재
+F0395 W p[67] observed research_note 초기 데이터 H2D 비용은 확 줄지만 연산 병목은 스트림이 64개라 한번에 64개밖에 대응못한다고 기록됨 | 측정 구간·버전 미기재
+F0396 W p[67] observed research_note auto_lirpa가 왜 그렇게 빠른지에 대한 질문이 기록됨 | 측정 구간·버전 미기재
+F0397 W p[68] observed research_note auto_lirpa가 빠른 이유는 입력데이터에 대한 커널 런치를 1번으로 줄여서이고 커널 런치 오버헤드가 상대적으로 없으며 연산 병목이 아니라 일을 시키는 과정의 병목이라고 기록됨 | 측정 구간·버전 미기재
+F0398 W p[68] observed research_note 현재 작성자는 2차원 block 크기와 그 안의 tid로 평면적인 계산(단일 샘플에 대한 행렬 연산)을 수행중이며 z축을 추가하면 저 평면적인 연산을 한번에 처리가 가능하고 3차원(multi sample)을 처리하는 tensor 코어가 있기 때문이라고 기록됨 | 측정 구간·버전 미기재
+F0399 W p[68] observed research_note antenna_lirpa는 싱글 스트림(Single Stream)으로 동작하는데 C++ 멀티스트림(8분)보다 4배나 빠른 이유는 텐서 코어(Tensor Core)와 cuBLAS Batched GEMM 때문이라고 기록됨 | 측정 구간·버전 미기재
+F0400 W p[68] observed research_note 현재 C++ 멀티스트림은 Task Parallelism으로 단일 샘플 연산 커널을 64개 스트림에 각각 런치하고 일반 CUDA 코어(FP32 연산기)만 사용하며 1024개를 처리하려면 수만 번의 커널 호출이 필요하고 결과는 8분 소요라고 기록됨 | 측정 구간·버전 미기재
+F0401 W p[68] observed research_note antenna_lirpa(PyTorch)는 Tensor Parallelism으로 1024개 입력을 [1024, 16, 491] 크기의 3D 텐서 하나로 병합하고 스트림 1개에서 단 1번의 cuBLAS GEMM 커널 호출하며 RTX 4070 SUPER의 텐서 코어(수백 TFLOPS)를 100% 풀가동하고 결과는 2분 미만 완료라고 기록됨 | 측정 구간·버전 미기재
+F0402 W p[68] observed research_note 나아갈 방향으로 방법 A(Multi-Stream 배칭)는 현재 구현으로 기존 단일 샘플 커널을 유지하면서 3.2배 가속(25분 → 8분)하고 스트림 수의 한계(SM 포화)로 7~8분이 한계선이라고 기록됨 | 측정 구간·버전 미기재
+F0403 W p[68] observed research_note 방법 C(Batched GEMM(3D 텐서 연산화))는 차기 로드맵으로 CROWN 행렬식을 3D 텐서 레이아웃으로 변환하여 cublasSgemmBatched 호출하고 PyTorch처럼 텐서 코어를 100% 활용하며 이렇게 구현하면 antenna_lirpa의 2분을 뛰어넘어 30초 ~ 1분대(전체 40,000개) 진입이 가능하다고 기록됨 | 측정 구간·버전 미기재
+F0404 - p[67] observed research_note 해결 방안 고민 1: 스트림 수를 64개 정도로 줄이고 배치 사이즈를 1024로 하면 의미가 없다고 기록됨 | 측정 구간·버전 미기재
+F0405 W p[69] observed research_note 현재 작성자님의 방식은 Z축 = 1(단일 슬라이스)로 그리드 크기가 dim3 grid(num_blocks, 1, 1)이고, 한 번에 종이 1장(샘플 1개)만 올려놓고 연산하며, 1024개를 하려면 CPU가 종이를 1장씩 1024번 날라야 한다. | 그리드 크기 dim3 grid(num_blocks, 1, 1)와 1024번 반복 서술은 비교 설명에서 제시된 값이며, 실제 실험 구성·정밀도·측정 구간 정보는 이 요소에서 확인되지 않는다.
+F0406 W p[70] observed research_note auto-LiRPA / 3D Grid 방식은 Z축 = 1024로 그리드 크기가 dim3 grid(num_blocks_x, num_blocks_y, 1024)이고, 1024장의 종이를 층층이 쌓아 1024층 아파트 큐브를 한 번에 GPU에 통째로 던지며, CPU는 단 1번 발사하고 GPU의 56개 SM들이 1024층을 나눠서 동시 연산한다. | 그리드 크기 dim3 grid(num_blocks_x, num_blocks_y, 1024), 56개 SM, CPU 1번 발사 서술은 비교 설명에서 제시된 값이며, 실제 실험 구성·정밀도·측정 구간 정보는 이 요소에서 확인되지 않는다.
+F0407 W p[70] interpretation research_note 추후 최적화 방안 문서의 방법 1, B가 이 과정을 설명하고 있고, C 과정은 최적화된 라이브러리를 쓰라는 것이다. | 방법 1, B, C의 문서상 역할 서술은 작성자의 정리이며, 실제 문서 내용·실험 결과는 이 요소에서 확인되지 않는다.
+F0408 - p[71] interpretation ai_advice b는 3차원 batching을 만드는 과정이고 c는 최적화된 라이브러리를 쓰라는 것인가라는 질문에 대해, 방법 B는 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것(Custom Implementation)이고 방법 C는 가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리(cuBLAS)에 맡기는 것(Library Integration)이다. | 방법 B와 C의 정의는 대화/AI 응답 기반 서술이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.
+F0409 - p[71] interpretation ai_advice 방법 B는 행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어서 3차원 배칭 커널을 작성하는 것이며, 장점은 알고리즘과 메모리를 100% 완벽히 통제할 수 있고, 아쉬운 점은 C++ CUDA 코드를 잘 짜도 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기 어렵다. | 방법 B의 장단점 서술은 대화/AI 응답 기반이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.
+F0410 - p[71] interpretation ai_advice 방법 C는 CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이고, 이 무거운 행렬 곱셈까지 굳이 손수 짤 필요가 없으니 엔비디아가 텐서 코어용으로 극한까지 깎아놓은 공식 라이브러리(cublasSgemmBatched)를 쓰자는 것이며, 핵심은 CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식이다. | CROWN 연산 시간의 80% 이상이 행렬 곱셈이라는 서술과 하이브리드 방식 설명은 대화/AI 응답 기반이며, 실제 측정값·구현 결과는 이 요소에서 확인되지 않는다.
+F0411 - p[71] interpretation ai_advice 결론은 B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것이다. | 결론 서술은 대화/AI 응답 기반이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.
+F0412 W p[72] observed research_note backward_only가 아직 graph로 안 만들었다고 해도 bound 평균이 2.5배 정도 되고 많이 느리며, 이유는 final_affine까지 복사하느라고(true) 한번의 bound 계산에서 10번 일어나기 때문이다. | bound 평균 2.5배, 10번 복사 서술은 작성자의 관측·추정이며, 실제 측정 조건·정밀도는 이 요소에서 확인되지 않는다.
+F0413 W p[72] planned research_note false로 줘서 다시 측정해야 하며, memcpy 6번이다. | false 설정과 memcpy 6번은 작성자의 계획·관측 서술이며, 실제 측정 조건·정밀도는 이 요소에서 확인되지 않는다.
+F0414 W p[72] observed research_note Starting CROWN Verification 실행 결과에서 Elapsed time: 2,1894 ms, Inference time: 0.1705 ms, Bound time: 2.0184 ms, Output Dimension: 16 = 1e-06, mempool + warmup이 기록되었다. | 해당 수치는 측정 로그에서 제시된 값이며, 실험 구성·배치·정밀도·측정 구간 정보는 이 요소에서 확인되지 않는다.
+F0415 W p[72] observed research_note memcpy 10번 ⇒ 6번 된 결과 + graph 적용한 결과까지 나왔다. | memcpy 10번→6번, graph 적용 결과 도출은 작성자의 진행 서술이며, 실제 측정값·조건은 이 요소에서 확인되지 않는다.
+F0416 W p[72] observed research_note 그래프를 적용했더니 787.8832s로 3가지 방법 중 가장 빠르며, avg 기준 forward 1029s, forward+backward 1138s이다. | 787.8832s, 1029s, 1138s는 작성자가 제시한 수치이며, 실제 측정 조건·정밀도·구간 정보는 이 요소에서 확인되지 않는다.
+F0417 W p[72] planned research_note pinned memory 성능 측정을 위해 pinned memory 미적용, my_lirpa에 있는 입력 공간 하나(HostAlloc), 지금 하는 방식(HostRegister) 3가지를 측정해 보려고 한다. | 3가지 측정 계획은 작성자의 계획 서술이며, 실제 수행 결과·조건은 이 요소에서 확인되지 않는다.
+F0418 - p[71] interpretation research_note 방법 C는 CROWN 연산 시간의 80% 이상을 차지하는 행렬 곱셈(A×W)을 cuBLAS(cublasSgemmBatched)에 맡기고, CROWN 전용 연산(ReLU 완화 계수 계산 등)은 방법 B의 자체 3D 커널로 돌리는 하이브리드 방식이다. | 80% 이상은 작성자가 제시한 비율이며, 실제 측정값·조건은 이 요소에서 확인되지 않는다.
+F0419 W p[72] observed research_note backward_only가 graph로 아직 만들어지지 않았어도 bound 평균이 2.5배 정도 되며, 그 이유는 final_affine까지 복사하느라(true) 한 번의 bound 계산에서 10번 일어나기 때문이다. | 2.5배, 10번은 작성자가 제시한 수치이며, 실제 측정 조건·정밀도·구간 정보는 이 요소에서 확인되지 않는다.
+F0420 W p[72] planned research_note false로 줘서 다시 측정해야 하며, memcpy 6번으로 측정 예정이다. | false 설정 및 memcpy 6번 측정은 작성자의 계획 서술이며, 실제 수행 결과는 이 요소에서 확인되지 않는다.
+F0421 W p[72] observed research_note memcpy 10번에서 6번으로 줄이고 그래프를 적용한 결과가 나왔다. | memcpy 10번→6번 및 그래프 적용은 작성자가 제시한 변경 사항이며, 실제 측정 조건·정밀도·구간 정보는 이 요소에서 확인되지 않는다.
+F0422 - p[72] observed research_note 2578초에서 1543초로 변경되었다. | 2578초, 1543초는 작성자가 제시한 수치이며, 실제 측정 조건·정밀도·구간 정보는 이 요소에서 확인되지 않는다.
+F0423 W p[72] observed research_note 그래프를 적용했더니 787.8832초로 3가지 방법 중 가장 빠르며, avg 기준 forward 1029초, forward+backward 1138초이다. | 787.8832초, 1029초, 1138초는 작성자가 제시한 수치이며, 실제 측정 조건·정밀도·구간 정보는 이 요소에서 확인되지 않는다.
+F0424 - p[72] planned research_note 해야 할 일은 1) 왜 backward_only가 가장 빠른가? 일단 천천히 조사하고, 2) pinned memory의 성능을 정확히 측정해 보려고 한다. | 조사·측정 계획은 작성자의 계획 서술이며, 실제 수행 결과는 이 요소에서 확인되지 않는다.
+F0425 W p[73] observed research_note 결과는 no Pinning이 가장 빨랐다고 기록되었다. | 구체적 수치와 이유는 후속 항목에서 다룸
+F0426 W p[73] interpretation research_note cudaHostAlloc이 8.64초 더 걸린 이유로 CPU 루프 내 복사 오버헤드가 그대로 반영되었다고 해석되었다. | 작성자 해석이며 실측 분해 결과는 별도 항목 참조
+F0427 W p[73] interpretation research_note No Pinning(일반 메모리)과 Pinned 메모리의 차이가 크지 않은 이유로 극도로 작은 입력 크기(1 KB)와 GPU 연산 시간 지배적(Amdahl's Law)이 제시되었다. | 작성자 해석이며 실측 분해 결과는 별도 항목 참조
+F0428 W p[73] interpretation research_note No pinning이 pinned memory를 적용한 것보다 더 빠른 이유를 더 자세히 보려고 한다고 기록되었다. | 추가 분석 의도이며 실측 결론은 아님
+F0429 W p[74] observed research_note 전체 시간 차이는 787.88초 vs 776.70초로 약 1.4%(약 11초) 차이이며, 92만 번의 루프 중 1회당 약 12 μs 수준의 미세한 차이라고 기록되었다. | 어느 두 방식 간 비교인지 문맥상 cudaHostRegister와 No Pinning으로 보임
+F0430 W p[74] observed research_note 세부 수치 비교에서 Bound 단계(전체의 85%)는 cudaHostRegister 658.80s, No Pinning 663.17s로 Register가 4.37초 더 빨랐고, Infer 단계(전체의 15%)는 cudaHostRegister 127.18s, No Pinning 111.92s로 Register가 15.26초 더 느렸다고 기록되었다. | 측정 구간 및 버전 등 세부 조건은 별도 표기 없음
+F0431 W p[74] observed research_note 추론에서 시간이 느려졌다고 기록되었다. | 구체적 수치 없이 정성적 관찰만 있음
+F0432 W p[74] planned research_note 다시 클록을 고정하고 해보기로 하였다. | 계획/의도이며 실측 결과가 아님
+F0433 W p[74] documented_method research_note GPU 클록 자동 잠금/해제를 위한 RAII 구조체 ScopedGpuClockLock이 기록되었으며, 기본 clock_mhz는 2475로 설정되어 있었다. | 코드 주석/구현 기록이며 실제 잠금 성공 여부는 실행 결과에 따라 달라짐
+F0434 W p[75] observed research_note cuda 강의 19장의 GPU 클록 고정을 참고했다고 기록되었다. | 참고 출처 언급이며 세부 내용 재현 아님
+F0435 W p[75] documented_method research_note 현재 클록 확인은 nvidia-smi -q -d CLOCK, 클록 고정은 sudo nvidia-smi -pm 1, sudo nvidia-smi -lgc 1410이 기록되었다. | 명령어 예시 기록이며 실제 실행 성공 여부는 별도
+F0436 W p[75] observed research_note 클록을 2800Mhz로 고정하고 돌린 결과(기존 HostRegister)에서 total elapsed 798.78s, infer 128.893s(16.1%), bound 667.159s(83.5%), certify 1.644s(0.2%)가 기록되었다. | 기존 HostRegister 조건에서의 측정값이며 다른 방식과의 직접 비교는 별도 항목 참조
+F0437 W p[76] observed research_note Host Alloc 결과(total elapsed 806.54s)에서 infer 132.586s(16.4%), bound 670.122s(83.1%), certify 2.077s(0.3%)가 기록되었다. | cudaHostAlloc 방식 결과이며 다른 방식과의 직접 비교는 별도 항목 참조
+F0438 W p[76] observed research_note Host Alloc 결과(cudaHostAlloc)에서 Real-Time Single-Sample(B=1) Latency Analysis 결과 Evaluated Samples 100000, Min Latency 832.80 us, Mean Latency 869.34 us(0.87 ms), Median(P50) 859.80 us, P95 Tail Latency 899.60 us, P99 Tail Latency 1095.90 us, Max Latency 13996.40 us, Jitter(StdDev) 73.27 us, Throughput 1150.30 samples/sec, Pure GPU Execution 705.89 us(마지막 샘플)가 기록되었다. | 마지막 샘플 기준 Pure GPU Execution이며 전체 평균과 구분 필요
+F0439 W p[76] observed research_note nopin 결과(total elapsed 790.64s)에서 infer 119.466s(15.1%), bound 667.611s(84.4%), certify 2.004s(0.3%)가 기록되었다. | Pageable Memory / NO PINNING 방식 결과이며 다른 방식과의 직접 비교는 별도 항목 참조
+F0440 W p[76] observed research_note nopin 결과(Pageable Memory / NO PINNING)에서 Real-Time Single-Sample(B=1) Latency Analysis 결과 Evaluated Samples 100000, Min Latency 822.10 us, Mean Latency 859.20 us(0.86 ms), Median(P50) 847.90 us, P95 Tail Latency 899.40 us, P99 Tail Latency 1089.30 us, Max Latency 14400.40 us, Jitter(StdDev) 105.84 us, Throughput 1163.87 samples/sec, Pure GPU Execution 695.42 us(마지막 샘플)가 기록되었다. | 마지막 샘플 기준 Pure GPU Execution이며 전체 평균과 구분 필요
+F0441 W p[76] interpretation research_note 클록 고정까지 했는데 이런 결과면 받아들여야겠다고 기록되었으며, 왜 nopin이 더 빠른지에 대해 gemini 대답을 참고하였다. | 작성자 반응 및 외부 조언 참고이며 실측 결론은 아님
+F0442 - p[75] observed research_note 클록 2800Mhz 고정, 기존 HostRegister 조건에서 Real-Time Single-Sample(B=1) Latency Analysis 결과 Evaluated Samples 100000, Min Latency 832.10 us, Mean Latency 873.54 us(0.87 ms), Median(P50) 860.10 us, P95 Tail Latency 971.40 us, P99 Tail Latency 1087.80 us, Max Latency 10943.50 us, Jitter(StdDev) 77.94 us, Throughput 1144.77 samples/sec, Pure GPU Execution 717.09 us(마지막 샘플)가 기록되었다. | 마지막 샘플 기준 Pure GPU Execution이며 전체 평균과 구분 필요
+F0443 - p[77] interpretation ai_advice 작성자는 해당 측정이 잘못된 것이 아니라 CUDA와 컴퓨터 구조에서 유명한 '초소형 데이터(1 KB)의 역설'이 정직하게 나타난 것이라고 정리했다. | 이 주장은 gemini 등 외부 조언에 기반한 해석으로, 실측 결과로 확인되지는 않았다.
+F0444 - p[77] interpretation ai_advice 교과서나 강의에서는 Pinned Memory가 무조건 빠르다고 가르치지만, 거기에는 '데이터가 충분히 클 때'라는 숨겨진 전제 조건이 있다고 설명되었다. | 이 설명은 외부 조언/해석이며 실측 결과가 아니다.
+F0445 - p[77] interpretation ai_advice Pinned Memory는 CPU를 거치지 않고 PCIe 버스의 GPU DMA 엔진(Copy Engine)을 가동하며, PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1~2 마이크로초(0.0015 ms)가 걸린다고 설명되었다. | 이 수치와 설명은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0446 - p[77] interpretation ai_advice 92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 μs)가 누적되어 infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것이라고 설명되었다. | 132초 vs 119초, 92만 번 루프, 1~2 μs 누적은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0447 - p[78] interpretation ai_advice NVIDIA 공식 CUDA 프로그래밍 가이드에는 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다는 내용이 명시되어 있다고 인용되었다. | 가이드 원문의 정확한 문구·출처 위치는 이 요소에서 확인되지 않는다.
+F0448 - p[78] interpretation ai_advice No-Pin일 때 CPU는 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 휙 던져 넣고 바로 다음 코드로 넘어가 버리며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 전혀 안 난다고 설명되었다. | 이 설명은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0449 - p[78] interpretation ai_advice 데이터가 수 MB~수백 MB일 때는 CPU 복사 속도가 감당이 안 되고 DMA의 고속 대역폭(1224GB/s)이 압도적이어서 Pinned Memory가 일반 메모리보다 23배 빠르다고 설명되었다. | 1224GB/s, 23배는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0450 - p[78] interpretation ai_advice 평균 속도에서는 No-Pin이 13초 빨랐지만, 실시간성(Real-Time)에서는 치명적인 약점이 있었다고 정리되었다. | 이 정리는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0451 - p[78] interpretation ai_advice 비교 표에서 평균 처리 속도는 No-Pin이 약 13초 빠름(CPU 캐시 복사 이득), Pinned Memory는 약간 느림(DMA 셋업 오버헤드)으로 정리되었다. | 이 표는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0452 - p[78] interpretation ai_advice 비교 표에서 최대 지연(Max Spike)은 No-Pin이 8.8 ms~11.6 ms(치명적), Pinned Memory가 1.64 ms(극도로 안정적)로 정리되었다. | 이 표는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0453 - p[78] interpretation ai_advice 비교 표에서 지터(Jitter)는 No-Pin이 118 μs(불안정), Pinned Memory가 47 μs(안정)로 정리되었다. | 이 표는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0454 - p[78] interpretation ai_advice No-Pin은 평소에는 CPU 캐시빨로 살짝 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 끼어들면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없고(1ms 무선 통신 데드라인 파괴), Pinned Memory는 매번 정직하게 DMA 셋업 비용(1~2 μs)을 치르기 때문에 평균 시간은 살짝 손해를 보지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 절대적인 안정성(결정론적 성능)을 보장한다고 설명되었다. | 이 설명은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0455 - p[78] interpretation ai_advice 논문/보고서에 쓸 수 있는 결론으로, 단일 채널 벡터(1 KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있으나, Pageable 메모리는 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라고 정리되었다. | 1.4%, 60% 이상 안정화는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0456 - p[78] interpretation ai_advice 작성자는 이 현상을 정확히 짚어내고 이유를 분석하면 하드웨어와 OS 동작 메커니즘을 완벽하게 이해하고 있음을 보여주는 매우 훌륭한 학술적 분석 내용이 된다고 평가했다. | 이 평가는 외부 조언/해석이며 실측 결과가 아니다.
+F0457 - p[79] interpretation ai_advice 현재 코드의 run_infer에서 cudaMemcpyAsync가 CUDA Graph 바깥에 있으며, 매 반복문마다 개별 호출된다고 지적되었다. | 코드 실제 구현은 이 요소에서 확인되지 않는다.
+F0458 - p[79] interpretation ai_advice Pinned Memory(cudaHostRegister / cudaHostAlloc)에서는 CPU 드라이버가 &x0의 가상 주소로부터 물리 페이지 주소를 조회하고, DMA 셋업에서 PCIe Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성하며, 큐 제출(Doorbell)로 GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣고, GPU 하드웨어 DMA 엔진이 PCIe TLP 읽기 요청을 보내고 버스 트랜잭션을 개시하며, 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0~1.5 μs가 소모된다고 설명되었다. | 이 설명과 1.0~1.5 μs 수치는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0459 - p[79] interpretation ai_advice No-Pin(일반 Pageable 메모리)에서는 OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없고, 드라이버가 하드웨어 DMA를 부르지 않고 CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로 memcpy를 해버리며, 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 0.02~0.05 μs(20~50 나노초)면 끝나서 DMA 셋업보다 30~50배 빠르고, 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보낸다고 설명되었다. | 이 설명과 수치는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0460 W p[80] planned research_note 작성자는 여기까지 해서 backward_only가 더 빠른 이유 + pinned memory가 더 느린 이유까지 분석 끝나야 한다고 메모했다. | 이 메모는 분석 완료 목표 진술이며 실측 결과가 아니다.
+F0461 - p[77] interpretation ai_advice No-Pin(일반 메모리)에서는 CPU가 직접 복사하며, 1,028 Byte는 CPU 입장에서 너무 작은 크기라서 CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝난다고 설명되었다. | 이 수치와 설명은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0462 - p[78] interpretation ai_advice 데이터가 1 KB일 때는 대역폭은 아무 의미가 없고 셋업 지연시간(Latency)이 지배한다고 설명되었다. | 이 설명은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.
+F0463 W p[82] documented_method research_note CROWN 3가지 방법에서 사용하는 커널을 퓨전하고 backward_only에서 메모리 복사 커널을 제거했다 | 3-layer 네트워크 기준, CUDA kernel launch만 집계(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외)
+F0464 W p[82, 84] documented_method research_note Forward에서는 무거운 커널 연산의 호출 횟수가 9개 줄었다 | method 0 bound 기준, 레이어당 8 → 5회
+F0465 W p[82, 84] documented_method research_note Backward에서는 forward 부분 12개(9+3), 실제 backward 부분에서는 3개 줄었다 | method 1 기준, forward 쪽 relaxation/cache 통합 포함
+F0466 W p[82] documented_method research_note graph mode=1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회다 | graph mode=1 기준, 이번 작업은 graph launch 횟수 대상이 아님
+F0467 W p[83] observed research_note forward total elapsed는 1029s → 668s | figure 측정 기준, all eps × all data
+F0468 W p[84] observed research_note forward+backward total elapsed는 1138s → 758s | figure 측정 기준, all eps × all data
+F0469 W p[84] interpretation research_note 커널 횟수가 더 많이 줄면 더 시간도 줄어야 하지 않나? 왜 forward가 젤 많이 줄었나? | 작성자 의문/해석, 실측 인과 아님
+F0470 W p[81] observed research_note pinned memory 미적용 버전이 복사 속도 약 3배 빠르다 | 여러 번 측정 결과, 작은 전송 기준, CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할 가능성(확정 불가)
+F0471 W p[81] observed research_note 추론이 끝나기까지의 동기화(synchronize) 시간이 pinned memory 미적용 버전이 가장 빠르다 | 추론 과정 cuda stream synchronize: H2D - 추론 graph 실행 - D2H, 1번 H2D 복사 시간 영향 가능
+F0472 W p[81] observed research_note cudaMemcpyAsync 호출 시간에서 pinned memory 적용 버전이 미적용 버전보다 빠르거나 느렸다 | 여러 번 측정 결과, 2copy → 1copy 변경이 크게 효과 보지 못함
+F0473 W p[81] interpretation research_note 작은 데이터 크기(현재 입력 기준 1Kib)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다 | 현재 입력 기준 1Kib, 고정 비용 관련 해석
+F0474 W p[81] observed research_note pinned 적용 버전의 cudaMemcpyAsync가 더 빨라서 2copy→1copy로 가면서 고정 setup 비용이 줄긴 했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 됨 | 여러 번 측정 결과, 마지막 측정 기준 nopinned 더 빠름
+F0475 W p[81] interpretation research_note pinned memory가 더 느린 이유 분석은 이 정도로 종료, 연구 목적이 아니고 너무 깊게 들어가면 다른 것도 못할 것 같음 | 분석 중단 결정, 연구 목적 아님
+F0476 W p[81] interpretation research_note backward_only는 왜 제일 빠른가? | 질문/의제, 답변 아님
+F0477 W p[84] documented_method research_note pinned memory 입력층은 제거했으나 Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 놓았다 | 진행 사항, Graph manager 선택적 할당 가능 상태 유지
+F0478 - p[84] documented_method research_note backward_only에서는 커널이 45 → 33회로 26.7% 수준으로 가장 적게 줄었고, 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄었다 | method 2 bound 기준, 비율 기준 가장 적게 감소
+F0479 - p[83] observed research_note 787s → 630s로 157초 정도 줄었다(figure 기준 total elapsed) | figure 측정 기준, all eps × all data

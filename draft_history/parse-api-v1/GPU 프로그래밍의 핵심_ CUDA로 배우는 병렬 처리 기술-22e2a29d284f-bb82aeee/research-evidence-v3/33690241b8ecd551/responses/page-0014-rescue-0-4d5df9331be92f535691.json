@@ -1,0 +1,192 @@
+{
+  "request_fingerprint": "4d5df9331be92f535691164923f56feab6abf5172246e84f675fad4c2d863569",
+  "value": {
+    "facts": [
+      {
+        "statement": "v1-1-3(crown_test_preload_fix)의 변경점은 신경망에 GPU 주소를 저장하던 double* 타입을 Matrix* 타입으로 고친 것이다.",
+        "limits": "버전 v1-1-3의 구현 변경 설명",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p14:e110",
+          "p14:e111",
+          "p14:enh:e0",
+          "p14:enh:e2",
+          "p14:review:e0",
+          "p14:review:e2"
+        ]
+      },
+      {
+        "statement": "v1-1-3에서 변경 위치는 d_W 타입(double* → Matrix*), positive_part(W,d_W)(W 복사 스킵, 2MB 절약), negative_part(W,d_W)(W 복사 스킵, 2MB 절약), matmul(A, W,d_W)(B행렬 복사 스킵, backward, 2MB×2회=4MB 절약), matvec(W, x,d_W)(A행렬 복사 스킵, forward, 2MB 절약)이다.",
+        "limits": "v1-1-3 변경 위치·내용·절약 효과 표",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p14:enh:e4",
+          "p14:review:e4"
+        ]
+      },
+      {
+        "statement": "v1-1-3에서 pre_upload_weights_to_gpu도 memcpy2D 사용이 아니라 Matrix를 할당, 복사하도록 바꿨다.",
+        "limits": "v1-1-3의 pre_upload_weights_to_gpu 구현 변경",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p14:e113",
+          "p14:enh:e5",
+          "p14:review:e5"
+        ]
+      },
+      {
+        "statement": "v1-1-3(crown_test_preload_fix)는 my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 없어서 100번씩 돌려 누적시간을 보기로 결정했다.",
+        "limits": "v1-1-3과 my_lirpa_mempool_preload_on_gpu.cu 비교 실험 설계 결정",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "비교 대상: my_lirpa_mempool_preload_on_gpu.cu"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p14:e114",
+          "p14:enh:e6",
+          "p14:review:e6"
+        ]
+      },
+      {
+        "statement": "v1-1-3을 100번 돌려도 my_lirpa_mempool_preload_on_gpu.cu와 비교해 별로 성능 차이 안 났다.",
+        "limits": "100회 반복 관측 결과",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "100회 반복",
+          "비교 대상: my_lirpa_mempool_preload_on_gpu.cu"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p14:e115",
+          "p14:enh:e7",
+          "p14:review:e7"
+        ]
+      },
+      {
+        "statement": "v1-1-3을 500회 정도 돌리니 5~10ms 정도 우세했다.",
+        "limits": "500회 반복 관측 결과",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "500회 반복"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p14:e116",
+          "p14:enh:e8",
+          "p14:review:e8"
+        ]
+      },
+      {
+        "statement": "작성자는 가중치를 미리 로드해서 memcpy를 줄이겠다는 접근은 크게 의미를 못 미친다고 결론지었다.",
+        "limits": "작성자 결론/해석",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p14:e117",
+          "p14:enh:e9",
+          "p14:review:e9"
+        ]
+      },
+      {
+        "statement": "v1-1-3 실험 후 다시 my_lirpa_mempool.cu로 롤백했다(v1-1-1).",
+        "limits": "버전 롤백 행동 기록",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p14:e118",
+          "p14:enh:e10",
+          "p14:review:e10"
+        ]
+      },
+      {
+        "statement": "v1-1-1-1은 메모리풀에 cuBlas를 도입하고 matvec, matmul을 기존 나의 계산이 아닌 cuBlas를 활용하도록 한 버전이며, 구현 파일은 my_lirpa_mempool_cuBlas.cu이다.",
+        "limits": "버전 설명 및 파일명 진술",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p14:e120",
+          "p14:enh:e11",
+          "p14:review:e11"
+        ]
+      },
+      {
+        "statement": "p14:e111/p14:enh:e1/p14:review:e1의 '변경점'은 v1-1-3 섹션의 소제목으로, 연구 내용 자체는 아닌 구조적 요소이다.",
+        "limits": "구조적 소제목",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p14:e111",
+          "p14:enh:e1",
+          "p14:review:e1"
+        ]
+      },
+      {
+        "statement": "p14:e112/p14:enh:e3/p14:review:e3의 '(이하는 실제로 주소를 활용하도록 바꾼 함수들)'은 v1-1-3의 함수 변경 목록을 소개하는 리드인 괄호문이다.",
+        "limits": "리드인 괄호문",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p14:e112",
+          "p14:enh:e3",
+          "p14:review:e3"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,274 @@
+{
+  "request_fingerprint": "350ddf00ce7735123f1e8315bb6d868a410c7d163966d478a891f18f7299bb64",
+  "value": {
+    "facts": [
+      {
+        "statement": "v4는 cuBLAS 미리 예열(계산 전 더미 matmul 호출로 초기화) 방안이 포함되었다.",
+        "limits": "v4의 최종 측정값은 이 자료에서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p10:e82",
+          "p10:e83",
+          "p10:enh:e0",
+          "p10:enh:e1",
+          "p10:review:e0",
+          "p10:review:e1"
+        ]
+      },
+      {
+        "statement": "cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리로 설명되어 있다.",
+        "limits": "이 문장은 개념 설명으로, 실측 결과는 아니다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p10:e84",
+          "p10:enh:e2",
+          "p10:review:e2"
+        ]
+      },
+      {
+        "statement": "16x491 행렬 같은 부분도 전부 복사하는 현재 방식(512x512, 2MB 행렬 memcpy 중)보다 필요한 부분만 복사하는 방향이 제시되었다.",
+        "limits": "이 방향의 실제 적용 결과는 별도로 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p10:e86",
+          "p10:enh:e4",
+          "p10:review:e4"
+        ]
+      },
+      {
+        "statement": "v1-1은 벡터 연산 중 3가지(vec_add, sub, mat)를 CPU로 돌렸고 300ms로 측정되었다.",
+        "limits": "구현 파일명은 my_lirpa_vector_CPU로 기록되어 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "3E+2",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "v1-1 벡터 연산 3가지를 CPU 처리",
+            "element_ids": [
+              "p10:e90",
+              "p10:enh:e7",
+              "p10:review:e7"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p10:e90",
+          "p10:enh:e7",
+          "p10:review:e7"
+        ]
+      },
+      {
+        "statement": "v1-1은 메모리풀과 cuBlas가 적용되지 않아 CPU로 함수를 바꾸면 결국 v0와 비슷해질 수 있어 정확한 비교가 어렵다는 지적이 있었다.",
+        "limits": "비교 유효성을 위해 GPU를 가능한 범위에서 초기화한 뒤 CPU로 바꾸며 비교해야 한다는 의견이 함께 적혀 있다.",
+        "kind": "failure",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p10:e90",
+          "p10:enh:e8",
+          "p10:review:e8"
+        ]
+      },
+      {
+        "statement": "v1-1-1은 메모리풀만 도입한 프로그램으로 205~250ms 결과가 나왔다.",
+        "limits": "구현 파일명은 my_lirpa_mempool.cu로 기록되어 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "205~2.5E+2",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "v1-1-1 메모리풀만 도입",
+            "element_ids": [
+              "p10:e92",
+              "p10:enh:e9",
+              "p10:review:e9"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p10:e92",
+          "p10:enh:e9",
+          "p10:review:e9"
+        ]
+      },
+      {
+        "statement": "메모리 풀 크기 산정 근거로 Matrix 3개(mat_add, matmul 등에서 최대 A, B, C 동시 사용)와 Vector 6개(relu_relax에서 lower, upper, alpha_l, beta_l, alpha_u, beta_u 동시 사용)가 제시되었다.",
+        "limits": "산정 근거는 풀 크기 설계 목적의 설명으로 기록되어 있다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p10:enh:e12",
+          "p10:enh:e13",
+          "p10:review:e12",
+          "p10:review:e13"
+        ]
+      },
+      {
+        "statement": "v4에서 cuBLAS 미리 예열을 위해 계산(시간측정) 전에 더미 matmul을 한 번 호출하는 방법이 제시되었다.",
+        "limits": "예열 방법은 matmul 안에 cuBLAS가 들어있기 때문에 더미 matmul 호출로 cuBLAS를 초기화하는 방식이다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p10:e83",
+          "p10:enh:e1",
+          "p10:review:e1"
+        ]
+      },
+      {
+        "statement": "cuBLAS는 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다.",
+        "limits": "정의성 서술이며 특정 실험 측정값은 아니다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p10:e84",
+          "p10:enh:e2",
+          "p10:review:e2"
+        ]
+      },
+      {
+        "statement": "16 x 491 행렬 같은 부분도 있으므로, 현재 기준 512 x 512, 2MB 행렬을 memcpy하는 것보다 필요한 부분만 복사하는 방향이 제시되었다.",
+        "limits": "현재 기준 행렬 크기는 512 x 512, 2MB로 서술되어 있다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p10:e86",
+          "p10:enh:e4",
+          "p10:review:e4"
+        ]
+      },
+      {
+        "statement": "v1-1에서 벡터연산 중 3가지(vec_add, sub, mat)를 CPU로 돌려놓았을 때 300ms가 측정되었다.",
+        "limits": "v1-1은 메모리 풀과 cuBLAS 등이 아직 적용되지 않은 상태로, 작성자는 이 비교가 정확하지 않을 수 있다고 보았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [],
+        "observations": [
+          "v1-1은 메모리 풀도 안 해놨고 cuBLAS 같은 것도 안 해놔서 CPU로 함수를 돌려놓다 보면 결국 v0의 결과와 같아질 수 있다고 작성자가 언급했다."
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "벡터연산 3가지 CPU 처리 시간",
+            "value": "3E+2",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "v1-1, vec_add/sub/mat CPU 처리",
+            "element_ids": [
+              "p10:e90",
+              "p10:enh:e7",
+              "p10:review:e7"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p10:e90",
+          "p10:enh:e7",
+          "p10:review:e7"
+        ]
+      },
+      {
+        "statement": "v1-1-1에서 메모리풀만 도입한 프로그램의 결과가 205~250ms로 측정되었다.",
+        "limits": "메모리풀만 도입한 버전이며 cuBLAS 예열 등 다른 최적화는 포함되지 않은 것으로 보인다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "메모리풀만 도입한 프로그램 처리 시간",
+            "value": "205~2.5E+2",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "v1-1-1, my_lirpa_mempool.cu",
+            "element_ids": [
+              "p10:e92",
+              "p10:enh:e9",
+              "p10:review:e9"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p10:e92",
+          "p10:enh:e9",
+          "p10:review:e9"
+        ]
+      },
+      {
+        "statement": "메모리 풀 크기 산정 근거로 Matrix 3개(mat_add, matmul 등에서 최대 3개 A, B, C 동시 사용)와 Vector 6개(relu_relax에서 lower, upper, alpha_l, beta_l, alpha_u, beta_u 동시 사용)가 제시되었다.",
+        "limits": "산정 근거는 풀 크기 설계 방향의 설명이며 실제 풀 크기 수치 자체는 이 문장들에 직접 제시되지 않았다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p10:enh:e12",
+          "p10:enh:e13",
+          "p10:review:e12",
+          "p10:review:e13"
+        ]
+      }
+    ]
+  }
+}

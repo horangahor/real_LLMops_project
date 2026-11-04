@@ -1,0 +1,932 @@
+{
+  "initial": [
+    {
+      "statement": "CUDA는 기본적으로 C++ 언어 기반으로 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 분리해 작성해도 nvcc로 컴파일이 가능하다는 이해가 기록되어 있다.",
+      "limits": "이는 작성자의 방법론적 이해이며 실제 컴파일 성공 여부를 일반화한 실측 결과는 아니다.",
+      "kind": "method",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "CUDA는 C++ 기반",
+        "GPU 동작이 필요한 코드만 따로 바꿔도 nvcc 컴파일 가능"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e4",
+          "page": 1,
+          "quote": "기본적으로 c++ 언어에서 GPU의 동작을 가능하게 한 것이 CUDA\n그러다 보니 기본적으로 c 언어와 동일하고 CUDA 동작이 필요한 코드만 따로 바꾸어도\nnvcc(NVIDIA C Compiler) 에서 컴파일이 가능",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0001"
+    },
+    {
+      "statement": "lirpa_forward_backward_fc_array.cpp를 CUDA로 재작성하는 접근이 제안되었으며, 병렬 연산이 필요한 부분을 device에서 동작하는 kernel 함수로 바꾸는 방안이 언급되었다.",
+      "limits": "kernel 함수 분리에 대한 구체적 구현 범위나 성공 여부는 이 요소에서 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "hypothesis",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "병렬 연산이 필요한 부분만 kernel 함수로 전환",
+        "kernel 함수는 GPU(device)에서 동작하는 코드"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e2",
+          "page": 1,
+          "quote": "lirpa_forward_backward_fc_array.cpp를 CUDA로 재작성하기",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p1:e5",
+          "page": 1,
+          "quote": "그 럼 lirpa_forward_backward_fc_array.cpp 에서 기본 틀을 가져와서 병렬 연산이 필요한\n부분만\nkernel 함수로 바꾸면 되지 않을까? (이 때 kernel 함수란 device, 즉 GPU에서 동작하는\n코드를 의미)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0002"
+    },
+    {
+      "statement": "진입점 main은 epsilon을 입력받으며, 시스템 호출 인자를 통해 eps 값을 변경할 수 있다고 기록되어 있다.",
+      "limits": "인자 전달 방식이나 실제 변경 가능한 eps 범위는 여기서 측정되지 않았다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "main 진입점",
+        "epsilon 입력"
+      ],
+      "observations": [
+        "epsilon을 입력받음",
+        "시스템 호출 인자로 eps 값 변경 가능"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e8",
+          "page": 1,
+          "quote": "1. epsilon을 입력받음 ⇐ 이때 시스템 호출 인자를 줄 수 있으며 eps의 값을 변경 가능",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0003"
+    },
+    {
+      "statement": "main에서 self_test_relaxations와 run_xor_demo가 호출된다고 기록되어 있으며, self_test_relaxations는 안정성 테스트용 코드로 전체 흐름에 큰 영향이 없다고 평가되었다.",
+      "limits": "self_test_relaxations의 세부 동작이나 실제 영향도는 여기서 정량적으로 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "main 호출 흐름"
+      ],
+      "observations": [
+        "self_test_relaxations 호출",
+        "run_xor_demo 호출",
+        "self_test_relaxations는 안정성 테스트용 코드"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e10",
+          "page": 1,
+          "quote": "2. self_test_relaxations 호출\n3. run_xor_demo 호출",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p1:e12",
+          "page": 1,
+          "quote": "⇐ 사실 본 검증에서는 크게 관련없는 안정성 테스트용 코드라서 크게 흐름에 영향을 미치지\n않음",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0004"
+    },
+    {
+      "statement": "run_xor_demo가 핵심이며, 코드가 복잡하여 기존 cpp 코드를 그대로 복붙하면서 배열 연산이 필요한 지점을 파악하기로 했다고 기록되어 있다.",
+      "limits": "이 문장은 진행 방식과 판단 근거를 기술한 것으로, 실제 식별된 연산 지점 목록은 여기서 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "run_xor_demo가 중요",
+        "cpp 처음 코드부터 복붙하며 배열 연산 필요 지점 파악"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e13",
+          "page": 1,
+          "quote": "중 요한 건 run_xor_demo 인데",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p1:e15",
+          "page": 1,
+          "quote": "하다가 뭔가 매우 복잡해서 일단 cpp 처음 코드부터 그대로 복붙하면서 배열 연산이\n필요해보이는 곳을 파악하기로 했다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0005"
+    },
+    {
+      "statement": "mat_add부터 배열을 통한 연산이 시작되어 포팅을 시도했다고 기록되어 있다.",
+      "limits": "mat_add 포팅의 최종 성공 여부나 세부 변경은 여기서 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "mat_add부터 배열 연산",
+        "포팅 시도"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e16",
+          "page": 1,
+          "quote": "m at_add 부터 배열을 통한 연산을 하고 있음 ⇐ 포팅을 해봤다..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0006"
+    },
+    {
+      "statement": "mat_add가 여러 번 호출되며 메모리 할당/해제도 여러 번 일어나 비효율적이라고 판단했으나, 최적화는 나중에 진행하기로 했다고 기록되어 있다.",
+      "limits": "비효율성 판단은 작성자의 해석이며, 실제 호출 횟수나 메모리 할당 횟수는 여기서 정량화되지 않았다.",
+      "kind": "method",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "mat_add 여러 번 호출",
+        "메모리 할당/해제 여러 번 발생",
+        "비효율적이라 판단",
+        "최적화는 나중에 진행"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e17",
+          "page": 1,
+          "quote": "근 데 이걸 mat_add는 한 두번 호출하는 것도 아니고 여러번 호출한다.\n(메모리 할당, 해제가 여러번 일어남)\n⇒ 비효율적이라 생각하는데 일단 최적화는 나중에 진행하기로 함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0007"
+    },
+    {
+      "statement": "CUDA 컴파일러(nvcc) 버전은 release 13.3, V13.3.73이며 빌드 시점은 2026-06-09이다.",
+      "limits": "해당 버전 정보는 특정 개발 머신에서의 nvcc --version 출력값이며, 다른 환경의 CUDA 툴킷 버전과 동일하다고 단정하지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "CUDA toolkit 13.3",
+        "nvcc --version 출력"
+      ],
+      "observations": [
+        "release 13.3",
+        "V13.3.73",
+        "Built on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e1",
+          "page": 1,
+          "quote": "C :\\Program Files\\Microsoft Visual Studio\\18\\Community>nvcc --version\nnvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2026 NVIDIA Corporation\nBuilt on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026\nCuda compilation tools, release 13.3, V13.3.73\nBuild cuda_13.3.r13.3/compiler.38244171_0",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 06, 09"
+      ],
+      "id": "P0001F0008"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "CUDA 컴파일러(nvcc) 버전 출력에서 release 13.3, V13.3.73이 확인되며, 빌드 시점은 2026년 6월 9일(Pacific Daylight Time)이다.",
+        "limits": "이 버전 정보는 특정 개발 머신에서 nvcc --version을 실행한 결과이며, 다른 환경의 CUDA 툴킷 버전과 동일하다고 단정하지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CUDA toolkit 13.3",
+          "nvcc --version 출력"
+        ],
+        "observations": [
+          "release 13.3",
+          "V13.3.73",
+          "Built on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e1"
+        ]
+      },
+      {
+        "statement": "main 진입점은 epsilon을 입력받으며, 시스템 호출 인자를 통해 eps 값을 변경할 수 있다고 기록되어 있다.",
+        "limits": "인자 전달 방식이나 실제 변경 가능한 eps 범위는 여기서 측정되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "main 진입점",
+          "epsilon 입력"
+        ],
+        "observations": [
+          "epsilon을 입력받음",
+          "시스템 호출 인자로 eps 값 변경 가능"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e8"
+        ]
+      },
+      {
+        "statement": "main에서 self_test_relaxations와 run_xor_demo가 호출된다고 기록되어 있으며, self_test_relaxations는 안정성 테스트용 코드로 전체 흐름에 큰 영향이 없다고 평가되었다.",
+        "limits": "self_test_relaxations의 세부 동작이나 실제 영향도는 여기서 정량적으로 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "main 호출 흐름"
+        ],
+        "observations": [
+          "self_test_relaxations 호출",
+          "run_xor_demo 호출",
+          "self_test_relaxations는 안정성 테스트용 코드"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e10",
+          "p1:e12"
+        ]
+      },
+      {
+        "statement": "run_xor_demo가 핵심이며, 코드가 복잡하여 기존 cpp 코드를 그대로 복붙하면서 배열 연산이 필요한 지점을 파악하기로 했다고 기록되어 있다.",
+        "limits": "이 문장은 진행 방식과 판단 근거를 기술한 것으로, 실제 식별된 연산 지점 목록은 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "run_xor_demo가 중요",
+          "cpp 처음 코드부터 복붙하며 배열 연산 필요 지점 파악"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e13",
+          "p1:e15"
+        ]
+      },
+      {
+        "statement": "mat_add부터 배열을 통한 연산이 시작되어 포팅을 시도했다고 기록되어 있다.",
+        "limits": "mat_add 포팅의 최종 성공 여부나 세부 변경은 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "mat_add부터 배열 연산",
+          "포팅 시도"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e16"
+        ]
+      },
+      {
+        "statement": "mat_add가 여러 번 호출되며 메모리 할당/해제도 여러 번 일어나 비효율적이라고 판단했으나, 최적화는 나중에 진행하기로 했다고 기록되어 있다.",
+        "limits": "비효율성 판단은 작성자의 해석이며, 실제 호출 횟수나 메모리 할당 횟수는 여기서 정량화되지 않았다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "mat_add 여러 번 호출",
+          "메모리 할당/해제 여러 번 발생",
+          "비효율적이라 판단",
+          "최적화는 나중에 진행"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e17"
+        ]
+      },
+      {
+        "statement": "CUDA 컴파일러(nvcc) 버전은 release 13.3, V13.3.73이며 빌드 시점은 2026-06-09이다.",
+        "limits": "해당 버전 정보는 특정 개발 머신에서의 nvcc --version 출력값이며, 다른 환경의 CUDA 툴킷 버전과 동일하다고 단정하지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CUDA toolkit 13.3",
+          "nvcc --version 출력"
+        ],
+        "observations": [
+          "release 13.3",
+          "V13.3.73",
+          "Built on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e1"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p1:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e1": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e2": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e3": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e4": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e5": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e6": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e7": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e8": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e9": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e10": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e11": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e12": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e13": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e14": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e15": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e16": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p1:e17": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      }
+    },
+    "ledger_validation_error": "수집 대장의 사실 인덱스가 잘못됐습니다."
+  },
+  "facts": [
+    {
+      "statement": "CUDA는 기본적으로 C++ 언어 기반으로 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 분리해 작성해도 nvcc로 컴파일이 가능하다는 이해가 기록되어 있다.",
+      "limits": "이는 작성자의 방법론적 이해이며 실제 컴파일 성공 여부를 일반화한 실측 결과는 아니다.",
+      "kind": "method",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "CUDA는 C++ 기반",
+        "GPU 동작이 필요한 코드만 따로 바꿔도 nvcc 컴파일 가능"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e4",
+          "page": 1,
+          "quote": "기본적으로 c++ 언어에서 GPU의 동작을 가능하게 한 것이 CUDA\n그러다 보니 기본적으로 c 언어와 동일하고 CUDA 동작이 필요한 코드만 따로 바꾸어도\nnvcc(NVIDIA C Compiler) 에서 컴파일이 가능",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0001"
+    },
+    {
+      "statement": "lirpa_forward_backward_fc_array.cpp를 CUDA로 재작성하는 접근이 제안되었으며, 병렬 연산이 필요한 부분을 device에서 동작하는 kernel 함수로 바꾸는 방안이 언급되었다.",
+      "limits": "kernel 함수 분리에 대한 구체적 구현 범위나 성공 여부는 이 요소에서 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "hypothesis",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "병렬 연산이 필요한 부분만 kernel 함수로 전환",
+        "kernel 함수는 GPU(device)에서 동작하는 코드"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e2",
+          "page": 1,
+          "quote": "lirpa_forward_backward_fc_array.cpp를 CUDA로 재작성하기",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p1:e5",
+          "page": 1,
+          "quote": "그 럼 lirpa_forward_backward_fc_array.cpp 에서 기본 틀을 가져와서 병렬 연산이 필요한\n부분만\nkernel 함수로 바꾸면 되지 않을까? (이 때 kernel 함수란 device, 즉 GPU에서 동작하는\n코드를 의미)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0002"
+    },
+    {
+      "statement": "진입점 main은 epsilon을 입력받으며, 시스템 호출 인자를 통해 eps 값을 변경할 수 있다고 기록되어 있다.",
+      "limits": "인자 전달 방식이나 실제 변경 가능한 eps 범위는 여기서 측정되지 않았다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "main 진입점",
+        "epsilon 입력"
+      ],
+      "observations": [
+        "epsilon을 입력받음",
+        "시스템 호출 인자로 eps 값 변경 가능"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e8",
+          "page": 1,
+          "quote": "1. epsilon을 입력받음 ⇐ 이때 시스템 호출 인자를 줄 수 있으며 eps의 값을 변경 가능",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0003"
+    },
+    {
+      "statement": "main에서 self_test_relaxations와 run_xor_demo가 호출된다고 기록되어 있으며, self_test_relaxations는 안정성 테스트용 코드로 전체 흐름에 큰 영향이 없다고 평가되었다.",
+      "limits": "self_test_relaxations의 세부 동작이나 실제 영향도는 여기서 정량적으로 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "main 호출 흐름"
+      ],
+      "observations": [
+        "self_test_relaxations 호출",
+        "run_xor_demo 호출",
+        "self_test_relaxations는 안정성 테스트용 코드"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e10",
+          "page": 1,
+          "quote": "2. self_test_relaxations 호출\n3. run_xor_demo 호출",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p1:e12",
+          "page": 1,
+          "quote": "⇐ 사실 본 검증에서는 크게 관련없는 안정성 테스트용 코드라서 크게 흐름에 영향을 미치지\n않음",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0004"
+    },
+    {
+      "statement": "run_xor_demo가 핵심이며, 코드가 복잡하여 기존 cpp 코드를 그대로 복붙하면서 배열 연산이 필요한 지점을 파악하기로 했다고 기록되어 있다.",
+      "limits": "이 문장은 진행 방식과 판단 근거를 기술한 것으로, 실제 식별된 연산 지점 목록은 여기서 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "run_xor_demo가 중요",
+        "cpp 처음 코드부터 복붙하며 배열 연산 필요 지점 파악"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e13",
+          "page": 1,
+          "quote": "중 요한 건 run_xor_demo 인데",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p1:e15",
+          "page": 1,
+          "quote": "하다가 뭔가 매우 복잡해서 일단 cpp 처음 코드부터 그대로 복붙하면서 배열 연산이\n필요해보이는 곳을 파악하기로 했다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0005"
+    },
+    {
+      "statement": "mat_add부터 배열을 통한 연산이 시작되어 포팅을 시도했다고 기록되어 있다.",
+      "limits": "mat_add 포팅의 최종 성공 여부나 세부 변경은 여기서 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "mat_add부터 배열 연산",
+        "포팅 시도"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e16",
+          "page": 1,
+          "quote": "m at_add 부터 배열을 통한 연산을 하고 있음 ⇐ 포팅을 해봤다..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0006"
+    },
+    {
+      "statement": "mat_add가 여러 번 호출되며 메모리 할당/해제도 여러 번 일어나 비효율적이라고 판단했으나, 최적화는 나중에 진행하기로 했다고 기록되어 있다.",
+      "limits": "비효율성 판단은 작성자의 해석이며, 실제 호출 횟수나 메모리 할당 횟수는 여기서 정량화되지 않았다.",
+      "kind": "method",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "mat_add 여러 번 호출",
+        "메모리 할당/해제 여러 번 발생",
+        "비효율적이라 판단",
+        "최적화는 나중에 진행"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e17",
+          "page": 1,
+          "quote": "근 데 이걸 mat_add는 한 두번 호출하는 것도 아니고 여러번 호출한다.\n(메모리 할당, 해제가 여러번 일어남)\n⇒ 비효율적이라 생각하는데 일단 최적화는 나중에 진행하기로 함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0007"
+    },
+    {
+      "statement": "CUDA 컴파일러(nvcc) 버전은 release 13.3, V13.3.73이며 빌드 시점은 2026-06-09이다.",
+      "limits": "해당 버전 정보는 특정 개발 머신에서의 nvcc --version 출력값이며, 다른 환경의 CUDA 툴킷 버전과 동일하다고 단정하지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "CUDA toolkit 13.3",
+        "nvcc --version 출력"
+      ],
+      "observations": [
+        "release 13.3",
+        "V13.3.73",
+        "Built on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e1",
+          "page": 1,
+          "quote": "C :\\Program Files\\Microsoft Visual Studio\\18\\Community>nvcc --version\nnvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2026 NVIDIA Corporation\nBuilt on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026\nCuda compilation tools, release 13.3, V13.3.73\nBuild cuda_13.3.r13.3/compiler.38244171_0",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 06, 09"
+      ],
+      "id": "P0001F0008"
+    },
+    {
+      "statement": "CUDA 컴파일러(nvcc) 버전 출력에서 release 13.3, V13.3.73이 확인되며, 빌드 시점은 2026년 6월 9일(Pacific Daylight Time)이다.",
+      "limits": "이 버전 정보는 특정 개발 머신에서 nvcc --version을 실행한 결과이며, 다른 환경의 CUDA 툴킷 버전과 동일하다고 단정하지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "CUDA toolkit 13.3",
+        "nvcc --version 출력"
+      ],
+      "observations": [
+        "release 13.3",
+        "V13.3.73",
+        "Built on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e1",
+          "page": 1,
+          "quote": "C :\\Program Files\\Microsoft Visual Studio\\18\\Community>nvcc --version\nnvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2026 NVIDIA Corporation\nBuilt on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026\nCuda compilation tools, release 13.3, V13.3.73\nBuild cuda_13.3.r13.3/compiler.38244171_0",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 6, 9"
+      ],
+      "repair_unresolved": true,
+      "id": "P0001F0009"
+    },
+    {
+      "statement": "main 진입점은 epsilon을 입력받으며, 시스템 호출 인자를 통해 eps 값을 변경할 수 있다고 기록되어 있다.",
+      "limits": "인자 전달 방식이나 실제 변경 가능한 eps 범위는 여기서 측정되지 않았다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "main 진입점",
+        "epsilon 입력"
+      ],
+      "observations": [
+        "epsilon을 입력받음",
+        "시스템 호출 인자로 eps 값 변경 가능"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e8",
+          "page": 1,
+          "quote": "1. epsilon을 입력받음 ⇐ 이때 시스템 호출 인자를 줄 수 있으며 eps의 값을 변경 가능",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0010"
+    },
+    {
+      "statement": "main에서 self_test_relaxations와 run_xor_demo가 호출된다고 기록되어 있으며, self_test_relaxations는 안정성 테스트용 코드로 전체 흐름에 큰 영향이 없다고 평가되었다.",
+      "limits": "self_test_relaxations의 세부 동작이나 실제 영향도는 여기서 정량적으로 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "main 호출 흐름"
+      ],
+      "observations": [
+        "self_test_relaxations 호출",
+        "run_xor_demo 호출",
+        "self_test_relaxations는 안정성 테스트용 코드"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e10",
+          "page": 1,
+          "quote": "2. self_test_relaxations 호출\n3. run_xor_demo 호출",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p1:e12",
+          "page": 1,
+          "quote": "⇐ 사실 본 검증에서는 크게 관련없는 안정성 테스트용 코드라서 크게 흐름에 영향을 미치지\n않음",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0011"
+    },
+    {
+      "statement": "run_xor_demo가 핵심이며, 코드가 복잡하여 기존 cpp 코드를 그대로 복붙하면서 배열 연산이 필요한 지점을 파악하기로 했다고 기록되어 있다.",
+      "limits": "이 문장은 진행 방식과 판단 근거를 기술한 것으로, 실제 식별된 연산 지점 목록은 여기서 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "run_xor_demo가 중요",
+        "cpp 처음 코드부터 복붙하며 배열 연산 필요 지점 파악"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e13",
+          "page": 1,
+          "quote": "중 요한 건 run_xor_demo 인데",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p1:e15",
+          "page": 1,
+          "quote": "하다가 뭔가 매우 복잡해서 일단 cpp 처음 코드부터 그대로 복붙하면서 배열 연산이\n필요해보이는 곳을 파악하기로 했다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0012"
+    },
+    {
+      "statement": "mat_add부터 배열을 통한 연산이 시작되어 포팅을 시도했다고 기록되어 있다.",
+      "limits": "mat_add 포팅의 최종 성공 여부나 세부 변경은 여기서 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "mat_add부터 배열 연산",
+        "포팅 시도"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e16",
+          "page": 1,
+          "quote": "m at_add 부터 배열을 통한 연산을 하고 있음 ⇐ 포팅을 해봤다..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0013"
+    },
+    {
+      "statement": "mat_add가 여러 번 호출되며 메모리 할당/해제도 여러 번 일어나 비효율적이라고 판단했으나, 최적화는 나중에 진행하기로 했다고 기록되어 있다.",
+      "limits": "비효율성 판단은 작성자의 해석이며, 실제 호출 횟수나 메모리 할당 횟수는 여기서 정량화되지 않았다.",
+      "kind": "method",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "mat_add 여러 번 호출",
+        "메모리 할당/해제 여러 번 발생",
+        "비효율적이라 판단",
+        "최적화는 나중에 진행"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e17",
+          "page": 1,
+          "quote": "근 데 이걸 mat_add는 한 두번 호출하는 것도 아니고 여러번 호출한다.\n(메모리 할당, 해제가 여러번 일어남)\n⇒ 비효율적이라 생각하는데 일단 최적화는 나중에 진행하기로 함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0001F0014"
+    },
+    {
+      "statement": "CUDA 컴파일러(nvcc) 버전은 release 13.3, V13.3.73이며 빌드 시점은 2026-06-09이다.",
+      "limits": "해당 버전 정보는 특정 개발 머신에서의 nvcc --version 출력값이며, 다른 환경의 CUDA 툴킷 버전과 동일하다고 단정하지 않는다.",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "CUDA toolkit 13.3",
+        "nvcc --version 출력"
+      ],
+      "observations": [
+        "release 13.3",
+        "V13.3.73",
+        "Built on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p1:e1",
+          "page": 1,
+          "quote": "C :\\Program Files\\Microsoft Visual Studio\\18\\Community>nvcc --version\nnvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2026 NVIDIA Corporation\nBuilt on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026\nCuda compilation tools, release 13.3, V13.3.73\nBuild cuda_13.3.r13.3/compiler.38244171_0",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 06, 09"
+      ],
+      "repair_unresolved": true,
+      "id": "P0001F0015"
+    }
+  ]
+}

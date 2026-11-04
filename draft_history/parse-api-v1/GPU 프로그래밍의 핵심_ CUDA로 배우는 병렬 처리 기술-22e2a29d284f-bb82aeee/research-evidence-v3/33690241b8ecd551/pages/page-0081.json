@@ -1,0 +1,698 @@
+{
+  "initial": [
+    {
+      "statement": "pinned memory 미적용 버전이 복사 속도 약 3배 빠르다",
+      "limits": "여러 번 측정 결과, 작은 전송 기준, CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할 가능성(확정 불가)",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "여러 번 측정",
+        "작은 전송",
+        "pinned memory 미적용 vs 적용 비교"
+      ],
+      "observations": [
+        "pinned memory 미적용 버전 복사 속도 약 3배 빠름",
+        "작은 전송에서는 CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할 가능성",
+        "내부 구현 직접 확인 불가로 확정 불가"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e624",
+          "page": 81,
+          "quote": "1. 여러 번 측정 결과, pinned memory를 미적용한 버전의 복사 속도가 약 3배 빠르다 ⇐\n작은 전송에서는 CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할\n가능성이 있다. (다만 내부 구현을 직접 확인할 수 없으므로 확정은 할 수 없다)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0001"
+    },
+    {
+      "statement": "추론이 끝나기까지의 동기화(synchronize) 시간이 pinned memory 미적용 버전이 가장 빠르다",
+      "limits": "추론 과정 cuda stream synchronize: H2D - 추론 graph 실행 - D2H, 1번 H2D 복사 시간 영향 가능",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "추론 과정 cuda stream synchronize",
+        "H2D - 추론 graph 실행 - D2H"
+      ],
+      "observations": [
+        "동기화 시간이 pinned memory 미적용 버전이 가장 빠름",
+        "1번 H2D 복사 시간이 영향을 미칠 수 있음"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e625",
+          "page": 81,
+          "quote": "2. 추론이 끝나기까지의 동기화(synchronize) 시간이 pinned memory를 미적용한\n버전이 가장 빠르다. ⇐ 1번의 H2D 복사 시간이 영향을 미칠 수 있다\n(추론 과정에서의 cuda stream synchronize : H2D - 추론 graph 실행 - D2H)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0002"
+    },
+    {
+      "statement": "cudaMemcpyAsync 호출 시간에서 pinned memory 적용 버전이 미적용 버전보다 빠르거나 느렸다",
+      "limits": "여러 번 측정 결과, 2copy → 1copy 변경이 크게 효과 보지 못함",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "여러 번 측정",
+        "cudaMemcpyAsync 호출 시간",
+        "2copy → 1copy 변경"
+      ],
+      "observations": [
+        "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느렸음",
+        "2copy → 1copy 변경이 크게 효과 보지 못함"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e626",
+          "page": 81,
+          "quote": "3. 여러 번 측정 결과, cudaMemcpyAsync를 호출하는 시간에서 pinned memory를\n적용한 버전이 pinned memory 미적용 버전보다 빠르거나 느렸다 ⇐ 2copy 과정에서\n1copy로 바꾼 것이 크게 효과를 보지 못했다",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0003"
+    },
+    {
+      "statement": "작은 데이터 크기(현재 입력 기준 1Kib)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다",
+      "limits": "현재 입력 기준 1Kib, 고정 비용 관련 해석",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "현재 입력 기준 1Kib",
+        "staging buffer"
+      ],
+      "observations": [
+        "작은 데이터 크기를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있음"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e627",
+          "page": 81,
+          "quote": "⇒ 작은 데이터 크기(현재 입력 기준 1Kib)를 staging buffer로 옮기는 고정 비용이 크지\n않을 수 있다",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0004"
+    },
+    {
+      "statement": "pinned 적용 버전의 cudaMemcpyAsync가 더 빨라서 2copy→1copy로 가면서 고정 setup 비용이 줄긴 했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 됨",
+      "limits": "여러 번 측정 결과, 마지막 측정 기준 nopinned 더 빠름",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "여러 번 측정",
+        "마지막 측정",
+        "nopinned 더 빠름"
+      ],
+      "observations": [
+        "pinned 적용 버전 cudaMemcpyAsync가 더 빠름",
+        "2copy→1copy로 고정 setup 비용 감소 추정",
+        "마지막 측정에서 nopinned가 더 빠르게 나와 확신 불가"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e628",
+          "page": 81,
+          "quote": "3 번은 추가로 말하면\n여러 번 측정결과, pinned를 적용한 버전의 cudaMemcpyAsync가 더 빨라서 그래도\n2copy에서 1copy로 가면서 고정 setup 비용이 줄긴 했구나 했는데 마지막 측정결과에서\nnopinned가 더 빠르게 나오면서 확신할 수 없게 됨..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0005"
+    },
+    {
+      "statement": "pinned memory가 더 느린 이유 분석은 이 정도로 종료, 연구 목적이 아니고 너무 깊게 들어가면 다른 것도 못할 것 같음",
+      "limits": "분석 중단 결정, 연구 목적 아님",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "pinned memory 더 느린 이유 분석 중단",
+        "연구 목적 아님",
+        "깊게 들어가면 다른 작업 못함"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e629",
+          "page": 81,
+          "quote": "일 단 pinned memory가 더 느린 이유는 이정도로 끝내자, 이걸 분석하는 연구도 아니고 너무\n깊게 들어가면 다른 것도 못할 것 같음",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0006"
+    },
+    {
+      "statement": "backward_only는 왜 제일 빠른가?",
+      "limits": "질문/의제, 답변 아님",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "backward_only가 제일 빠른 이유에 대한 질문"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e630",
+          "page": 81,
+          "quote": "backward_only는 왜 제일 빠른가?",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0007"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "pinned memory 적용 버전(hostRegister, hostAlloc)과 미적용 버전(noPinning)의 평균 측정값(n = 920000) 비교에서 cuda stream synchronize는 hostRegister 323μs, hostAlloc 322μs, noPinning 314μs이고, cudaMemcpyAsync는 hostRegister 5.188μs, hostAlloc 5.351μs, noPinning 4.932μs이며, memcpy 복사 시간은 hostRegister 1.117μs, hostAlloc 1.142μs, noPinning 340ns이다",
+        "limits": "평균값(n = 920000) 기준 측정, pinned memory 적용(hostRegister, hostAlloc) vs 미적용(noPinning) 비교",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "평균값(n = 920000)",
+          "cuda stream synchronize",
+          "cudaMemcpyAsync",
+          "memcpy 복사 시간",
+          "hostRegister/hostAlloc/noPinning 비교"
+        ],
+        "observations": [
+          "cuda stream synchronize: hostRegister 323μs, hostAlloc 322μs, noPinning 314μs",
+          "cudaMemcpyAsync: hostRegister 5.188μs, hostAlloc 5.351μs, noPinning 4.932μs",
+          "memcpy 복사 시간: hostRegister 1.117μs, hostAlloc 1.142μs, noPinning 340ns"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:img0:e1"
+        ]
+      },
+      {
+        "statement": "추가로 CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거했다",
+        "limits": "CROWN 3가지 방법, 커널 퓨전, backward_only 메모리 복사 커널 제거",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CROWN 3가지 방법",
+          "커널 퓨전",
+          "backward_only 메모리 복사 커널 제거"
+        ],
+        "observations": [
+          "CROWN 3가지 방법에서 사용하는 커널 퓨전",
+          "backward_only에서 메모리 복사 커널 제거"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:e632",
+          "p82:enh:e0"
+        ]
+      },
+      {
+        "statement": "3-layer 네트워크 기준으로 하나의 bound 내에서 CUDA kernel launch만 센 결과, Forward method=0 bound는 기존 27회 → 현재 18회(9회 감소), Backward method=1 bound 전체는 기존 46회 → 현재 31회(15회 감소), Backward-only method=2 bound 전체는 기존 45회 → 현재 33회(12회 감소)이다",
+        "limits": "3-layer 네트워크 기준, 하나의 bound 내, CUDA kernel launch만 카운트, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "3-layer 네트워크 기준",
+          "하나의 bound 내",
+          "CUDA kernel launch만 카운트",
+          "H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외"
+        ],
+        "observations": [
+          "Forward method=0 bound: 기존 27회 → 현재 18회, 9회 감소",
+          "Backward method=1 bound 전체: 기존 46회 → 현재 31회, 15회 감소",
+          "Backward-only method=2 bound 전체: 기존 45회 → 현재 33회, 12회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e3"
+        ]
+      },
+      {
+        "statement": "추론 커널은 그대로라서 graph mode=1에서 샘플 1개 전체 기준으로 Forward는 기존 33회 → 현재 24회(9회 감소), Backward는 기존 52회 → 현재 37회(15회 감소), Backward-only는 기존 51회 → 현재 39회(12회 감소)이다",
+        "limits": "추론 커널 그대로, graph mode=1, 샘플 1개 전체 기준, CUDA kernel launch 기준",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "추론 커널 그대로",
+          "graph mode=1",
+          "샘플 1개 전체 기준",
+          "CUDA kernel launch 기준"
+        ],
+        "observations": [
+          "Forward: 기존 33회 → 현재 24회, 9회 감소",
+          "Backward: 기존 52회 → 현재 37회, 15회 감소",
+          "Backward-only: 기존 51회 → 현재 39회, 12회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e5"
+        ]
+      },
+      {
+        "statement": "Forward의 구체적 커널 감소는 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회이다",
+        "limits": "Forward, method 0 기준, 레이어당 커널 횟수",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "Forward",
+          "method 0 기준",
+          "레이어당 커널 횟수"
+        ],
+        "observations": [
+          "lower/upper matmul: 2 → 1",
+          "lower/upper bias matvec: 2 → 1",
+          "matrix scaling + vector affine: 2 → 1",
+          "method 0 기준 레이어당 8 → 5회"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e7"
+        ]
+      },
+      {
+        "statement": "Backward의 구체적 커널 감소는 split_pos_neg + bias accumulation 2→1, 레이어당 backward 단계 5→4회이며, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소이다",
+        "limits": "Backward, method 1 포함, 레이어당 backward 단계",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "Backward",
+          "method 1 포함",
+          "레이어당 backward 단계"
+        ],
+        "observations": [
+          "split_pos_neg + bias accumulation: 2 → 1",
+          "레이어당 backward 단계 5 → 4회",
+          "method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e7"
+        ]
+      },
+      {
+        "statement": "Backward-only의 구체적 커널 감소는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거, backward 단계의 split/bias kernel 통합으로 총 12회 감소이다",
+        "limits": "Backward-only, 타깃 레이어 weight/bias 초기 복사, split/bias kernel 통합",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "Backward-only",
+          "타깃 레이어 weight/bias 초기 복사",
+          "split/bias kernel 통합"
+        ],
+        "observations": [
+          "각 타깃 레이어의 weight/bias 초기 복사 2회 제거",
+          "backward 단계의 split/bias kernel 통합",
+          "총 12회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e7"
+        ]
+      },
+      {
+        "statement": "graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회이며 이번 작업은 graph launch 횟수 관련 작업이다",
+        "limits": "graph mode 1, 샘플당 cudaGraphLaunch, infer 1회 + bound 1회, 총 2회",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "graph mode 1",
+          "샘플당 cudaGraphLaunch",
+          "infer 1회 + bound 1회",
+          "총 2회"
+        ],
+        "observations": [
+          "graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회",
+          "이번 작업은 graph launch 횟수 관련 작업"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e8"
+        ]
+      },
+      {
+        "statement": "구체적으로 하나의 bound 내에서 커널이 몇 회 줄었는지에 대한 질문이 있다",
+        "limits": "하나의 bound 내 커널 감소 횟수 질문",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "하나의 bound 내에서 커널이 몇 회 줄었는지 질문"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:e636",
+          "p82:enh:e9"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p81:e623": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p81:e624": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p81:e625": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p81:e626": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p81:e627": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p81:e628": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p81:e629": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p81:e630": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p81:e631": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p81:img0:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p81:img0:e1": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      }
+    },
+    "ledger_validation_error": "구조화된 사실 없이 수집 완료로 표시했습니다."
+  },
+  "facts": [
+    {
+      "statement": "pinned memory 미적용 버전이 복사 속도 약 3배 빠르다",
+      "limits": "여러 번 측정 결과, 작은 전송 기준, CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할 가능성(확정 불가)",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "여러 번 측정",
+        "작은 전송",
+        "pinned memory 미적용 vs 적용 비교"
+      ],
+      "observations": [
+        "pinned memory 미적용 버전 복사 속도 약 3배 빠름",
+        "작은 전송에서는 CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할 가능성",
+        "내부 구현 직접 확인 불가로 확정 불가"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e624",
+          "page": 81,
+          "quote": "1. 여러 번 측정 결과, pinned memory를 미적용한 버전의 복사 속도가 약 3배 빠르다 ⇐\n작은 전송에서는 CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할\n가능성이 있다. (다만 내부 구현을 직접 확인할 수 없으므로 확정은 할 수 없다)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0001"
+    },
+    {
+      "statement": "추론이 끝나기까지의 동기화(synchronize) 시간이 pinned memory 미적용 버전이 가장 빠르다",
+      "limits": "추론 과정 cuda stream synchronize: H2D - 추론 graph 실행 - D2H, 1번 H2D 복사 시간 영향 가능",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "추론 과정 cuda stream synchronize",
+        "H2D - 추론 graph 실행 - D2H"
+      ],
+      "observations": [
+        "동기화 시간이 pinned memory 미적용 버전이 가장 빠름",
+        "1번 H2D 복사 시간이 영향을 미칠 수 있음"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e625",
+          "page": 81,
+          "quote": "2. 추론이 끝나기까지의 동기화(synchronize) 시간이 pinned memory를 미적용한\n버전이 가장 빠르다. ⇐ 1번의 H2D 복사 시간이 영향을 미칠 수 있다\n(추론 과정에서의 cuda stream synchronize : H2D - 추론 graph 실행 - D2H)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0002"
+    },
+    {
+      "statement": "cudaMemcpyAsync 호출 시간에서 pinned memory 적용 버전이 미적용 버전보다 빠르거나 느렸다",
+      "limits": "여러 번 측정 결과, 2copy → 1copy 변경이 크게 효과 보지 못함",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "여러 번 측정",
+        "cudaMemcpyAsync 호출 시간",
+        "2copy → 1copy 변경"
+      ],
+      "observations": [
+        "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느렸음",
+        "2copy → 1copy 변경이 크게 효과 보지 못함"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e626",
+          "page": 81,
+          "quote": "3. 여러 번 측정 결과, cudaMemcpyAsync를 호출하는 시간에서 pinned memory를\n적용한 버전이 pinned memory 미적용 버전보다 빠르거나 느렸다 ⇐ 2copy 과정에서\n1copy로 바꾼 것이 크게 효과를 보지 못했다",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0003"
+    },
+    {
+      "statement": "작은 데이터 크기(현재 입력 기준 1Kib)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다",
+      "limits": "현재 입력 기준 1Kib, 고정 비용 관련 해석",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "현재 입력 기준 1Kib",
+        "staging buffer"
+      ],
+      "observations": [
+        "작은 데이터 크기를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있음"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e627",
+          "page": 81,
+          "quote": "⇒ 작은 데이터 크기(현재 입력 기준 1Kib)를 staging buffer로 옮기는 고정 비용이 크지\n않을 수 있다",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0004"
+    },
+    {
+      "statement": "pinned 적용 버전의 cudaMemcpyAsync가 더 빨라서 2copy→1copy로 가면서 고정 setup 비용이 줄긴 했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 됨",
+      "limits": "여러 번 측정 결과, 마지막 측정 기준 nopinned 더 빠름",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "여러 번 측정",
+        "마지막 측정",
+        "nopinned 더 빠름"
+      ],
+      "observations": [
+        "pinned 적용 버전 cudaMemcpyAsync가 더 빠름",
+        "2copy→1copy로 고정 setup 비용 감소 추정",
+        "마지막 측정에서 nopinned가 더 빠르게 나와 확신 불가"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e628",
+          "page": 81,
+          "quote": "3 번은 추가로 말하면\n여러 번 측정결과, pinned를 적용한 버전의 cudaMemcpyAsync가 더 빨라서 그래도\n2copy에서 1copy로 가면서 고정 setup 비용이 줄긴 했구나 했는데 마지막 측정결과에서\nnopinned가 더 빠르게 나오면서 확신할 수 없게 됨..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0005"
+    },
+    {
+      "statement": "pinned memory가 더 느린 이유 분석은 이 정도로 종료, 연구 목적이 아니고 너무 깊게 들어가면 다른 것도 못할 것 같음",
+      "limits": "분석 중단 결정, 연구 목적 아님",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "pinned memory 더 느린 이유 분석 중단",
+        "연구 목적 아님",
+        "깊게 들어가면 다른 작업 못함"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e629",
+          "page": 81,
+          "quote": "일 단 pinned memory가 더 느린 이유는 이정도로 끝내자, 이걸 분석하는 연구도 아니고 너무\n깊게 들어가면 다른 것도 못할 것 같음",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0006"
+    },
+    {
+      "statement": "backward_only는 왜 제일 빠른가?",
+      "limits": "질문/의제, 답변 아님",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "backward_only가 제일 빠른 이유에 대한 질문"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:e630",
+          "page": 81,
+          "quote": "backward_only는 왜 제일 빠른가?",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0007"
+    },
+    {
+      "statement": "pinned memory 적용 버전(hostRegister, hostAlloc)과 미적용 버전(noPinning)의 평균 측정값(n = 920000) 비교에서 cuda stream synchronize는 hostRegister 323μs, hostAlloc 322μs, noPinning 314μs이고, cudaMemcpyAsync는 hostRegister 5.188μs, hostAlloc 5.351μs, noPinning 4.932μs이며, memcpy 복사 시간은 hostRegister 1.117μs, hostAlloc 1.142μs, noPinning 340ns이다",
+      "limits": "평균값(n = 920000) 기준 측정, pinned memory 적용(hostRegister, hostAlloc) vs 미적용(noPinning) 비교",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "평균값(n = 920000)",
+        "cuda stream synchronize",
+        "cudaMemcpyAsync",
+        "memcpy 복사 시간",
+        "hostRegister/hostAlloc/noPinning 비교"
+      ],
+      "observations": [
+        "cuda stream synchronize: hostRegister 323μs, hostAlloc 322μs, noPinning 314μs",
+        "cudaMemcpyAsync: hostRegister 5.188μs, hostAlloc 5.351μs, noPinning 4.932μs",
+        "memcpy 복사 시간: hostRegister 1.117μs, hostAlloc 1.142μs, noPinning 340ns"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p81:img0:e1",
+          "page": 81,
+          "quote": "| 평균값(n = 920000) | cuda stream synchronize | cudaMemcpyAsync | memcpy 복사 시간 |\n| --- | --- | --- | --- |\n| hostRegister | 323μs | 5.188μs | 1.117μs |\n| hostAlloc | 322μs | 5.351μs | 1.142μs |\n| noPinning | 314μs | 4.932μs | 340ns |",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0081F0008"
+    }
+  ]
+}

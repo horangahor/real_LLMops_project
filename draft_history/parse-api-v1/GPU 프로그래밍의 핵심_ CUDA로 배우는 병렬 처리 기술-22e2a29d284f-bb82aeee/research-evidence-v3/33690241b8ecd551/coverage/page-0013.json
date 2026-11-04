@@ -1,0 +1,82 @@
+{
+  "ledger": {
+    "p13:e105": {
+      "state": "represented",
+      "fact_ids": [
+        "P0012F0003",
+        "P0012F0005",
+        "P0012F0007",
+        "P0012F0008",
+        "P0013F0001"
+      ],
+      "note": "bias 평가 문맥, 파일명(crown_test_mempool_preload_on_gpu_plus_bias.cu), matmul 미활용 의문 모두 포착됨."
+    },
+    "p13:e106": {
+      "state": "represented",
+      "fact_ids": [
+        "P0013F0002"
+      ],
+      "note": "GPU 웜업이 원인이라는 작성자 판단 포착됨."
+    },
+    "p13:e107": {
+      "state": "represented",
+      "fact_ids": [
+        "P0013F0003"
+      ],
+      "note": "mempool vs mempool_preload 측정 구간 차이 설명 포착됨. ensure_pool() / t_start 조건도 보존됨."
+    },
+    "p13:e108": {
+      "state": "represented",
+      "fact_ids": [
+        "P0013F0004",
+        "P0013R0F0001"
+      ],
+      "note": "p13:e108의 주요 내용은 P0013F0004가, last sentence(first_try warmup_cublas 연결)는 P0013R0F0001이 담당. P0013F0002·P0013F0003·P0013F0005는 인접 요소(p13:e106·e107·e109)의 내용이나 p13:e108과 직접 연결됨."
+    },
+    "p13:e109": {
+      "state": "represented",
+      "fact_ids": [
+        "P0013F0005"
+      ],
+      "note": "v1-1-2의 50ms 감소가 GPU warmup 때문이며 preload 때문이 아니라는 결론 포착됨."
+    }
+  },
+  "rescue_history": [
+    {
+      "missing": {
+        "p13:e108": "주요 메커니즘(CUDA 드라이버 초기화 3요소, 타이머 구간 밖 이탈, 50ms 추정치, d_W 활용 아님)은 P0013F0004에 보존됨. 그러나 p13:e108 마지막 문장 'first_try 에서 warmup_cublas() 를 명시적으로 두었 던 것도 이 이유 때문이었습니다.'에 해당하는 내용이 어떤 approved_fact에도 포착되지 않음."
+      },
+      "facts": [
+        {
+          "statement": "first_try에서 warmup_cublas()를 명시적으로 둔 것도 GPU 초기화 비용이 타이머 구간 밖으로 빠져나가게 하려는 이유 때문이었다.",
+          "limits": "작성자 해석, p13:e108의 마지막 문장에 기록된 내용",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p13:e108",
+              "page": 13,
+              "quote": "![image](/image/placeholder)\n50ms가 줄어든 진짜 이유: CUDA 컨텍스 트 초기화 웜업 효과 pre_upload_weights_to_gpu 가 t_start 앞에서 cudaMalloc 과 cudaMemcpy 를 호출 하면, 이 시점에 CUDA 드라이버가 처음 깨어 나면서: 1. GPU 컨텍스트 초기화 (CUDA 드라이버 로드) 2. GPU 클럭 부스팅 (저전력 → 최대 성능 주 파수로 전환) 3. JIT 컴파일 (커널 코드 첫 번째 컴파일) 이 세 가지 초기화 비용이 전부 타이머 구간 밖으로 빠져나가게 됩니다. 반면 mempool 버전에서는 ensure_pool() → 첫 번째 cudaMalloc 이 t_start 안에 들어있어서, 저 초기화 비용 이 전부 측정에 포함됩니다. mempool 버전: [초기화 50ms] + [실 제 연산] = 측정됨 preload 버전: [초기화 50ms] + [실제 연산] = 초기화는 타이머 밖! 즉, d_W 를 활용해서 빨라진 게 아니라, pre_upload_weights_to_gpu 가 의도치 않 게 GPU 웜업 역할을 하면서 초기화 비용을 타이머 밖으로 밀어낸 것입니다. first_try 에서 warmup_cublas() 를 명시적으로 두었 던 것도 이 이유 때문이었습니다.",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0013R0F0001",
+          "support": "supported",
+          "support_note": "p13:e108 마지막 문장에 'first_try에서 warmup_cublas()를 명시적으로 두었던 것도 이 이유 때문이었습니다'라고 명시되어 있음. '이 이유'는 직전 문맥에서 설명된 GPU 초기화 비용(CUDA 컨텍스트 초기화, 클럭 부스팅, JIT 컴파일)이 타이머 구간 밖으로 빠져나가게 되는 효과를 가리킴. 작성자 해석으로 분류되어 있으며, 원문에 기록된 내용을 충실히 반영함.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [],
+          "writing_role": "context_only"
+        }
+      ]
+    }
+  ]
+}

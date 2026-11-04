@@ -1,0 +1,105 @@
+{
+  "request_fingerprint": "b3b4338e4da6c333a83250671503c82f7fecb2174d5dbbc1ca1021a4e7330493",
+  "value": {
+    "decisions": {
+      "P0028F0003": {
+        "action": "repair",
+        "representative_fact_id": "P0028R0F0002",
+        "corrections": [
+          {
+            "statement": "limits의 비교 기준에서 원문 미확인 수치 '25~26ms대'를 제거한다.",
+            "limits": "비교 기준은 이전 최소 24ms 실행(p29:enh:e0 '4단계까지 했을때 최소 24ms까지 나왔는데 말이지')으로 보임. 25~26ms대는 제공된 원문에서 확인되지 않음.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "적용 범위: cuSparse를 이용한 벡터 곱(spMV)만 적용",
+              "eps = 1e-06",
+              "mempool + warmup",
+              "Output Dimension: 16"
+            ],
+            "observations": [
+              "실행 결과 elapsed time: 27.107400 ms (p28:e192, p28:enh:e1 확인)",
+              "27ms로 좀 더 느려짐 (p28:e195, p28:enh:e6 확인)",
+              "빠르면 spMM(Sparse 행렬곱) 도입 검토 계획 (p28:e194, p28:enh:e5 확인)"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "elapsed_time",
+                "value": "27.1074",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "cuSparse spMV만 적용, eps=1e-06, mempool + warmup, Output Dimension 16",
+                "element_ids": [
+                  "p28:e192",
+                  "p28:e195",
+                  "p28:e194"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p28:e192",
+              "p28:e194",
+              "p28:e195"
+            ]
+          }
+        ],
+        "reason": "P0028F0003의 진술은 (1) spMV만 적용한 상황, (2) 27ms로 느려진 결과, (3) spMM 도입 계획의 세 가지 사실을 결합하고 있다. 승인된 후보 P0028R0F0001은 (1)만, P0028R0F0002는 (3)만 커버하며, (2) 결과 관찰은 어느 승인 후보에도 포함되지 않으므로 중복(duplicate)으로 처리할 수 없다. 측정값 27.1074ms는 p28:e192/p28:enh:e1에서 확인되어 지원되나, limits의 '25~26ms대'는 제공된 원문에서 확인되지 않으므로 제거한다. 24ms baseline은 p29:enh:e0에서 확인되므로 limits에 보존한다. 조건(eps=1e-06, mempool+warmup, Output Dimension 16)은 p28:e192/p28:enh:e1에서 확인되어 지원된다."
+      },
+      "P0028R0F0003": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "결과는 27ms로, 좀 더 느려졌다.",
+            "limits": "정밀값 27.107400 ms는 p28:e192/p28:enh:e1에서 확인되며, 이 요소의 '27ms'는 반올림 값. '느려졌다'의 비교 기준은 24ms baseline(p29:enh:e0 '4단계까지 했을때 최소 24ms까지 나왔는데 말이지') 참조. 25~26ms대는 원문에서 확인되지 않음.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "cuSparse spMV만 적용",
+              "eps = 1e-06",
+              "mempool + warmup",
+              "Output Dimension: 16"
+            ],
+            "observations": [
+              "결과 27ms(반올림) (p28:e195, p28:enh:e6)",
+              "24ms baseline 대비 느려짐 (p29:enh:e0)"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "elapsed_time_rounded",
+                "value": "27",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "cuSparse spMV만 적용, eps=1e-06, mempool + warmup, Output Dimension 16",
+                "element_ids": [
+                  "p28:e195",
+                  "p28:enh:e6"
+                ]
+              },
+              {
+                "metric": "elapsed_time_precise",
+                "value": "27.107400",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "cuSparse spMV만 적용, eps=1e-06, mempool + warmup, Output Dimension 16",
+                "element_ids": [
+                  "p28:e192",
+                  "p28:enh:e1"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p28:e195",
+              "p28:enh:e6"
+            ]
+          }
+        ],
+        "reason": "P0028R0F0003은 승인된 후보가 없으며, rejected_measurements로 27ms 반올림값이 등록되어 있었다. 그러나 27ms는 p28:e195('결과는 27ms .. 좀 더 느려졌다')와 p28:enh:e6에서 직접 확인되며, 정밀값 27.107400ms는 p28:e192/p28:enh:e1에서 확인되므로 측정값 자체는 지원된다. limits의 '27.107400, 24' 중 24는 p29:enh:e0에서 확인되나, 기존 issues에 기재된 '25~26ms대'는 원문에서 확인되지 않으므로 limits에서 제거한다. 조건(eps=1e-06, mempool+warmup, Output Dimension 16)은 p28:e192/p28:enh:e1에서 확인되어 지원되므로, 조건·관찰의 원문 미확인 수치 이슈는 해소된다. 정밀 측정값을 추가하여 반올림값과의 관계를 명확히 한다."
+      }
+    }
+  }
+}

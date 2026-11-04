@@ -1,0 +1,210 @@
+{
+  "request_fingerprint": "db2a69eb767481ee5bb019a35c8ceeb4162336390b0b3e66e4b683b593a3b1a4",
+  "value": {
+    "repairs": {
+      "5": [
+        {
+          "statement": "메모리 풀 + warm up 조합은 매우 좋으며 두 개만으로 거의 200ms 단축한다.",
+          "limits": "두 요소만으로 얻은 단축량이라는 표현이며, 정확한 기준선과 측정 조건은 별도 표기로 남김",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "메모리 풀 적용",
+            "warm up 적용",
+            "CROWN Verification (eps = 1e-06)"
+          ],
+          "observations": [
+            "메모리 풀 + warm up 조합은 일단 매우 좋다는 것",
+            "두 개만으로 거의 200ms 단축함"
+          ],
+          "parameters": [
+            {
+              "name": "파일",
+              "value": "my_lirpa_mempool_warmup.cu",
+              "value_kind": "text",
+              "element_ids": [
+                "p19:e137",
+                "p19:review:e1"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "Elapsed time",
+              "value": "128.894800",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "mempool + warmup calc success, eps = 1e-06, Output Dimension 16",
+              "element_ids": [
+                "p19:e141",
+                "p19:review:e7"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p19:e137",
+            "p19:review:e1",
+            "p19:e141",
+            "p19:review:e7"
+          ]
+        },
+        {
+          "statement": "CPU를 따라잡기 위해 50ms만 더 단축하면 된다고 판단했다.",
+          "limits": "목표 진술이며 실제 달성 여부는 이 시점에서 확인되지 않음",
+          "kind": "problem",
+          "claim_status": "hypothesis",
+          "source_origin": "research_note",
+          "conditions": [
+            "CPU 따라잡기 목표",
+            "50ms 추가 단축 필요"
+          ],
+          "observations": [
+            "50ms만 더 단축하면 cpu 따라 잡을 수 있는데"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p19:e138",
+            "p19:review:e2"
+          ]
+        },
+        {
+          "statement": "현재 제일 중요한 병목은 memcpy이며, 이를 잡아야 CPU보다 빨라질 수 있다고 판단했다.",
+          "limits": "작성자 해석이며 memcpy 제거의 실제 효과는 별도 측정으로 확인됨",
+          "kind": "problem",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "memcpy 병목 지목",
+            "CPU보다 빨라지는 조건 탐색"
+          ],
+          "observations": [
+            "지금 제일 중요한 건 memcpy 병목인데",
+            "이걸 잡아야 cpu보다 빨라질 수 있음"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p19:e139",
+            "p19:review:e3"
+          ]
+        },
+        {
+          "statement": "my_lirpa_mempool_warmup.cu의 make_zero_matrix, make_zero_vector를 다시 CPU 실행으로 회귀하고 수식어를 optimizing으로 변경했다.",
+          "limits": "구현 변경 기록이며, 변경 전후 측정값은 별도 요소로 보존함",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "implementation_code",
+          "conditions": [
+            "make_zero_matrix CPU 회귀",
+            "make_zero_vector CPU 회귀",
+            "수식어 optimizing 변경"
+          ],
+          "observations": [
+            "make_zero_matrix , make_zero_vector 를 다시 cpu 실행으로 회귀",
+            "수식어를 이제부터 optimizing으로 변경"
+          ],
+          "parameters": [
+            {
+              "name": "대상 함수",
+              "value": "make_zero_matrix, make_zero_vector",
+              "value_kind": "text",
+              "element_ids": [
+                "p19:e140",
+                "p19:review:e4",
+                "p19:review:e5",
+                "p19:review:e6"
+              ]
+            }
+          ],
+          "measurements": [],
+          "element_ids": [
+            "p19:e140",
+            "p19:review:e4",
+            "p19:review:e5",
+            "p19:review:e6"
+          ]
+        },
+        {
+          "statement": "영벡터 만들기를 다시 GPU로 해봤을 때 3~5ms 정도 시간이 늘어나서 CPU로 두는 것이 좋을 것이라고 판단했다.",
+          "limits": "GPU 재시도 시 관측된 증가 폭이며, 최종 선택은 해석/판단으로 남김",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "영벡터 만들기 GPU 재시도",
+            "CPU 유지 판단"
+          ],
+          "observations": [
+            "영벡터 만들기는 다시 gpu로 해봤는데",
+            "이것도 유의미하게 (3~5 ms ) 시간이 늘어남",
+            "그냥 cpu로 두는게 좋을듯"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p19:e143",
+            "p19:review:e9"
+          ]
+        }
+      ],
+      "6": [
+        {
+          "statement": "결과를 담을 벡터를 memcpy 하는 짓을 멈추니 10ms 정도 또 줄었다.",
+          "limits": "memcpy 제거 후 관측된 감소 폭이며, 정확한 기준선/버전은 별도 요소로 보존함",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "결과 저장 행렬/벡터의 불필요한 memcpy 제거",
+            "CROWN Verification (eps = 1e-06)"
+          ],
+          "observations": [
+            "결과를 담을 벡터를 memcpy 하는 짓 멈추기",
+            "쓸때없이 결과가 저장될 행렬, 벡터도 memcpy 하는 일이 있었는데 이걸 제거하니 10ms 정도 또 줄었음"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "Elapsed time",
+              "value": "115.469900",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "mempool + warmup calc success, eps = 1e-06, Output Dimension 16, test_data_1.bin (dim=256)",
+              "element_ids": [
+                "p20:e145"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p20:e144",
+            "p20:e145"
+          ]
+        },
+        {
+          "statement": "가중치, positive_part / negative_part를 거친 가중치를 GPU 메모리에 미리 올려놓으면 matmul이나 matvec에서 memcpy가 절반되고, 양수/음수부 가중치를 forward 돌 때마다 계산할 필요가 없어진다.",
+          "limits": "미리 올려놓는 방식의 기대 효과 진술이며, 실제 memcpy 감소량은 별도 측정으로 확인됨",
+          "kind": "method",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "가중치 GPU 메모리 사전 적재",
+            "positive_part / negative_part 분리",
+            "matmul / matvec memcpy 감소 기대"
+          ],
+          "observations": [
+            "가중치 , positive_part / negative_part 거친 가중치 GPU 메모리에 미리 올려놓기",
+            "matmul 이나 matvec 에서 memcpy 절반됨",
+            "양수, 음수부 가중치는 forward 돌때마다 계산 필요없어짐"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p20:e147"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "request_fingerprint": "681fa27df0fcc0951bf7672a3d9fe8b06cb080d730db443f937b4e00e569752f",
+  "value": {
+    "decisions": {
+      "P0006F0006": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "v3는 CPU·GPU 하이브리드로 풀 구조체를 축소하였고 200ms가 소요되었다(p8:e77).",
+            "limits": "200ms는 정리 문장(p8:e77)에만 등장하며 해당 실행의 상세 조건·출력은 원문에 없음",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "v3: CPU, GPU 하이브리드, 풀 구조체 축소"
+            ],
+            "observations": [],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "Elapsed time",
+                "value": "200",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "v3: CPU, GPU 하이브리드, 풀 구조체 축소",
+                "element_ids": [
+                  "p8:e77"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p8:e77"
+            ]
+          }
+        ],
+        "reason": "P0006F0006의 원문 출처는 p8:e77('v 3 : CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, 200ms // crown_test_op_hybrid.cu')이다. 이전 수리안은 p6:e48의 HYBRID 모드 기준선 측정 내용(MODE: HYBRID, calc success, Output Dimension: 16, eps=1e-06, 201.6701ms)을 v3 사실에 잘못 포함시켰다. p6:e48은 v3가 아닌 별도 실행 결과이며, v3에 대한 상세 조건·출력은 p8:e77 정리 문장에만 존재한다. 승인 후보 P0008F0015·P0008F0011이 p8:e77만으로 v3=200ms를 정확히 기록하고 있으므로, 대상 사실에서 p6:e48 관련 측정·조건·관찰·매개변수를 모두 제거하고 p8:e77 내용만 남긴다."
+      },
+      "P0006F0011": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "v2(HYBRID) 적용 후 201.670ms로 조금 줄었지만 여전히 CPU보다 느리다고 기록되었고, 이후 v2 최종 결과에서 85ms로 개선되어 드디어 CPU보다 빨라졌다고 기록되었다.",
+            "limits": "CPU 기준 시간 값은 이 요소들만으로 확인되지 않음",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [],
+            "observations": [
+              "p6:e49는 HYBRID 모드에서 201.670ms로 조금 줄었으나 여전히 CPU보다 느리다고 기록",
+              "p7:e55는 HYBRID V2에서 85ms로 개선되어 드디어 CPU보다 빨라졌다고 기록"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "elapsed time",
+                "value": "201.670100",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "MODE: HYBRID (matmul=GPU, rest=CPU), eps = 1e-06",
+                "element_ids": [
+                  "p6:e48"
+                ]
+              },
+              {
+                "metric": "elapsed time",
+                "value": "85.785300",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "MODE: HYBRID V2, eps = 1e-06",
+                "element_ids": [
+                  "p7:e54"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p6:e48",
+              "p6:e49",
+              "p7:e54",
+              "p7:e55"
+            ]
+          }
+        ],
+        "reason": "P0006F0011의 측정값(201.670100ms, 85.785300ms)은 각각 p6:e48과 p7:e54에 존재하나, 사실의 element_ids가 ['p6:e49', 'p7:e55']로만 구성되어 있어 source_id_outside_fact 오류가 발생했다. 측정 출처인 p6:e48과 p7:e54를 element_ids에 추가하여 측정값과 출처 범위를 일치시킨다. 측정값 자체는 p6:e48('Elapsed time: 201.670100 ms')과 p7:e54('Elapsed time: 85,785300 ms')에서 원문 확인되며, 관찰 내용(p6:e49 '201.670ms, 조금 줄었다, 여전히 cpu보다 느림', p7:e55 '85ms 드디어 cpu보다 빨라짐')도 원문에 존재한다. 수리 후 측정값은 유효해지며, 이 사실의 내용은 승인 후보 P0006R0F0001(HYBRID 201.670ms)과 P0007F0007(HYBRID V2 85.785300ms)의 내용을 결합한 형태와 일치한다."
+      }
+    }
+  }
+}

@@ -1,0 +1,318 @@
+{
+  "request_fingerprint": "2d95094abb6677b9c830c0003d39f6008f18b471b7223f01a52c386622fc49bf",
+  "value": {
+    "facts": [
+      {
+        "statement": "작성자는 infer 단계에서 40,000번 동안 CPU 스레드가 cudaStreamSynchronize로 대기하고 깨어나는 과정에서의 미세 지연과 드라이버 동기화 비용이 맞물려, Pinned 쪽이 총 루프 시간에서 약 13초 정도 느려지는 결과가 나왔다고 설명했다.",
+        "limits": "이 진술은 작성자의 설명/해석이며, 40,000회 및 약 13초라는 구체적 수치를 포함하지만 해당 수치의 측정 조건·환경·오차 범위는 별도로 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "unclear",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "여기에 infer 단계에서 40,000번 동안 CPU 스레드가 cudaStreamSynchronize 로 대기하고 깨어나는 과정에서의 미세 지연과 드라이버 동기화 비용이 맞물리면서, Pinned 쪽이 총 루프 시간에서 약 13초 정도 느려지는 결과가 나온 것입니다."
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "infer 단계 cudaStreamSynchronize 대기/깨어남 횟수",
+            "value": "40000",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "infer 단계",
+            "element_ids": [
+              "p80:img0:e2"
+            ]
+          },
+          {
+            "metric": "Pinned 쪽 총 루프 시간 차이",
+            "value": "13",
+            "value_kind": "scalar",
+            "unit": "초",
+            "condition": "No-Pin 대비 Pinned 쪽 느려짐",
+            "element_ids": [
+              "p80:img0:e2"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p80:img0:e2"
+        ]
+      },
+      {
+        "statement": "작성자는 Pinned와 No-Pin의 차이를 비유로 설명하며, Pinned는 매번 우체국에 정식 접수증(DMA 셋업)을 끊고 전용 배송 트럭을 배차하는 것에, No-Pin은 그냥 옆 사람 주머니에 쏙 찔러 넣어버리는(CPU 캐시 복사) 것에 비유했다.",
+        "limits": "이 진술은 설명적 비유로, 사실 주장보다는 개념 해설 목적이다.",
+        "kind": "result",
+        "claim_status": "unclear",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "Pinned: 매번 우체국에 정식 접수증(DMA 셋업) 끊고 전용 배송 트럭을 배차하는 적이고,\nNo-Pin: 그냥 옆 사람 주머니에 쏙 찔러 넣어버린(CPU 캐시 복사) 적입니다."
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p80:img0:e5"
+        ]
+      },
+      {
+        "statement": "작성자는 총 시간(평균 시간)만 보면 No-Pin이 더 빨라 보여 배신감이 들 수 있지만, 지터(Jitter)와 최악 실행 시간(WCET)을 보면 답이 나온다고 전환하며 설명했다.",
+        "limits": "이 진술은 평균 시간과 지터/WCET의 대비를 안내하는 전환 문장으로, 사실 주장보다는 논점 전환 목적이다.",
+        "kind": "result",
+        "claim_status": "unclear",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "총 시간(평균 시간)만 보면 No-Pin이 더 빨라 보여서 배신감이 들 수 있지만, **지터(Jitter)와 최악 실행 시간(WCET)**을 보면 답이 나옵니다:"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p80:img0:e7"
+        ]
+      },
+      {
+        "statement": "여러 번 측정 결과, pinned memory를 미적용한 버전의 복사 속도가 약 3배 빠르다. 작은 전송에서는 CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할 가능성이 있다(다만 내부 구현을 직접 확인할 수 없으므로 확정은 할 수 없다).",
+        "limits": "이 진술은 여러 번 측정 결과에 기반하지만, 내부 구현을 직접 확인할 수 없어 확정적이지 않다. '약 3배'의 측정 조건·환경·오차 범위는 별도로 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "unclear",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "여러 번 측정 결과, pinned memory를 미적용한 버전의 복사 속도가 약 3배 빠르다 ⇐\n작은 전송에서는 CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할\n가능성이 있다. (다만 내부 구현을 직접 확인할 수 없으므로 확정은 할 수 없다)"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "pinned 미적용 버전 대비 pinned 적용 버전 복사 속도 비율",
+            "value": "3",
+            "value_kind": "scalar",
+            "unit": "배",
+            "condition": "여러 번 측정 결과, pinned 미적용 버전이 더 빠름",
+            "element_ids": [
+              "p81:e624"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p81:e624"
+        ]
+      },
+      {
+        "statement": "추론이 끝나기까지의 동기화(synchronize) 시간이 pinned memory를 미적용한 버전이 가장 빠르다. 이는 1번의 H2D 복사 시간이 영향을 미칠 수 있다(추론 과정에서의 cuda stream synchronize: H2D - 추론 graph 실행 - D2H).",
+        "limits": "이 진술은 H2D 복사 시간이 동기화 시간에 영향을 미칠 수 있다는 가능성을 제시하며, 인과 관계가 확정된 것은 아니다.",
+        "kind": "result",
+        "claim_status": "unclear",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "추론이 끝나기까지의 동기화(synchronize) 시간이 pinned memory를 미적용한\n버전이 가장 빠르다. ⇐ 1번의 H2D 복사 시간이 영향을 미칠 수 있다\n(추론 과정에서의 cuda stream synchronize : H2D - 추론 graph 실행 - D2H)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e625"
+        ]
+      },
+      {
+        "statement": "여러 번 측정 결과, cudaMemcpyAsync를 호출하는 시간에서 pinned memory를 적용한 버전이 pinned memory 미적용 버전보다 빠르거나 느렸다. 이는 2copy 과정에서 1copy로 바꾼 것이 크게 효과를 보지 못했음을 시사한다.",
+        "limits": "이 진술은 측정 결과가 일관되지 않았음(빠르거나 느렸다)을 나타내며, 2copy→1copy 변경의 효과가 크지 않았다는 해석이다.",
+        "kind": "result",
+        "claim_status": "unclear",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "여러 번 측정 결과, cudaMemcpyAsync를 호출하는 시간에서 pinned memory를\n적용한 버전이 pinned memory 미적용 버전보다 빠르거나 느렸다 ⇐ 2copy 과정에서\n1copy로 바꾼 것이 크게 효과를 보지 못했다"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e626"
+        ]
+      },
+      {
+        "statement": "작은 데이터 크기(현재 입력 기준 1KB)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다.",
+        "limits": "이 진술은 작성자의 추론/가설이며, 실측으로 확인된 것은 아니다.",
+        "kind": "result",
+        "claim_status": "hypothesis",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "⇒ 작은 데이터 크기(현재 입력 기준 1Kib)를 staging buffer로 옮기는 고정 비용이 크지\n않을 수 있다"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e627"
+        ]
+      },
+      {
+        "statement": "작성자는 추가로, 여러 번 측정 결과 pinned를 적용한 버전의 cudaMemcpyAsync가 더 빨라서 2copy에서 1copy로 가면서 고정 setup 비용이 줄긴 했구나 했으나, 마지막 측정 결과에서 nopinned가 더 빠르게 나오면서 확신할 수 없게 되었다고 기록했다.",
+        "limits": "이 진술은 작성자의 측정 경험 회고이며, 측정 결과가 일관되지 않아 확신할 수 없다는 점을 명시한다.",
+        "kind": "result",
+        "claim_status": "unclear",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "3 번은 추가로 말하면\n여러 번 측정결과, pinned를 적용한 버전의 cudaMemcpyAsync가 더 빨라서 그래도\n2copy에서 1copy로 가면서 고정 setup 비용이 줄긴 했구나 했는데 마지막 측정결과에서\nnopinned가 더 빠르게 나오면서 확신할 수 없게 됨.."
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e628"
+        ]
+      },
+      {
+        "statement": "작성자는 pinned memory가 더 느린 이유 분석을 이 정도로 마무리하기로 했으며, 이를 분석하는 연구도 아니고 너무 깊게 들어가면 다른 것도 못할 것 같다고 메모했다.",
+        "limits": "이 진술은 분석 중단/마무리 결정 메모이며, 실측 결과가 아니다.",
+        "kind": "result",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "일 단 pinned memory가 더 느린 이유는 이정도로 끝내자, 이걸 분석하는 연구도 아니고 너무\n깊게 들어가면 다른 것도 못할 것 같음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e629"
+        ]
+      },
+      {
+        "statement": "작성자는 backward_only가 왜 제일 빠른지 의문을 제기했다.",
+        "limits": "이 진술은 질문/의문 제기이며, 답변이나 실측 결과가 아니다.",
+        "kind": "result",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "backward_only는 왜 제일 빠른가?"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e630"
+        ]
+      },
+      {
+        "statement": "평균값(n = 920000) 측정 결과, cuda stream synchronize 시간은 hostRegister 323μs, hostAlloc 322μs, noPinning 314μs이고, cudaMemcpyAsync 시간은 hostRegister 5.188μs, hostAlloc 5.351μs, noPinning 4.932μs이며, memcpy 복사 시간은 hostRegister 1.117μs, hostAlloc 1.142μs, noPinning 340ns이다.",
+        "limits": "이 수치는 n=920000 기준 평균값 표이나, 측정 환경·조건·오차 범위는 별도로 제시되지 않았다. memcpy 복사 시간의 noPinning 값(340ns)은 다른 값들과 단위가 다르다(μs vs ns).",
+        "kind": "result",
+        "claim_status": "unclear",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "| 평균값(n = 920000) | cuda stream synchronize | cudaMemcpyAsync | memcpy 복사 시간 |",
+          "| hostRegister | 323μs | 5.188μs | 1.117μs |",
+          "| hostAlloc | 322μs | 5.351μs | 1.142μs |",
+          "| noPinning | 314μs | 4.932μs | 340ns |"
+        ],
+        "parameters": [
+          {
+            "name": "표본 수",
+            "value": "920000",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p81:img0:e1"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "cuda stream synchronize 평균 시간",
+            "value": "323",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "hostRegister, n=920000",
+            "element_ids": [
+              "p81:img0:e1"
+            ]
+          },
+          {
+            "metric": "cuda stream synchronize 평균 시간",
+            "value": "322",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "hostAlloc, n=920000",
+            "element_ids": [
+              "p81:img0:e1"
+            ]
+          },
+          {
+            "metric": "cuda stream synchronize 평균 시간",
+            "value": "314",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "noPinning, n=920000",
+            "element_ids": [
+              "p81:img0:e1"
+            ]
+          },
+          {
+            "metric": "cudaMemcpyAsync 평균 시간",
+            "value": "5.188",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "hostRegister, n=920000",
+            "element_ids": [
+              "p81:img0:e1"
+            ]
+          },
+          {
+            "metric": "cudaMemcpyAsync 평균 시간",
+            "value": "5.351",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "hostAlloc, n=920000",
+            "element_ids": [
+              "p81:img0:e1"
+            ]
+          },
+          {
+            "metric": "cudaMemcpyAsync 평균 시간",
+            "value": "4.932",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "noPinning, n=920000",
+            "element_ids": [
+              "p81:img0:e1"
+            ]
+          },
+          {
+            "metric": "memcpy 복사 시간",
+            "value": "1.117",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "hostRegister, n=920000",
+            "element_ids": [
+              "p81:img0:e1"
+            ]
+          },
+          {
+            "metric": "memcpy 복사 시간",
+            "value": "1.142",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "hostAlloc, n=920000",
+            "element_ids": [
+              "p81:img0:e1"
+            ]
+          },
+          {
+            "metric": "memcpy 복사 시간",
+            "value": "340",
+            "value_kind": "scalar",
+            "unit": "ns",
+            "condition": "noPinning, n=920000",
+            "element_ids": [
+              "p81:img0:e1"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p81:img0:e1"
+        ]
+      }
+    ]
+  }
+}

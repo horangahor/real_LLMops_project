@@ -1,0 +1,799 @@
+{
+  "request_fingerprint": "72833ba80444d221539394dfb7a02966199ded652d7c52764346c2ad7085e027",
+  "value": {
+    "facts": [
+      {
+        "statement": "커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 방식을 필요한 만큼의 데이터 크기만 복사하도록 고쳤으나, cpu 계산 오버헤드가 더 큰 것 같아 시간이 늘었다.",
+        "limits": "이 내용은 변경 시도와 시간 증가 관측만 포함하며, cpu 계산 오버헤드의 정량 분리 측정이나 다른 조건과의 비교 해석은 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 memcpy 변경",
+          "기존 MAXDIM 512 float 복사 → 필요한 만큼만 복사",
+          "cpu 계산 오버헤드 증가 추정",
+          "시간이 늘어남"
+        ],
+        "observations": [
+          "cpu 계산 오버헤드가 더 큰 것 같기도 하고, 왜냐하면 시간이 늘었음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p60:e462",
+          "p60:enh:e2",
+          "p60:enh:e3"
+        ],
+        "requirement_ids": [
+          "methods_Q14",
+          "methods_Q13",
+          "evaluation_Q7"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "cudaGraph를 통해 추론과 bound를 따로 캡처한 경우와 추론+bound를 한번에 캡처한 경우를 구분하여 커널 런치 비용을 최소화하는 실험을 수행했다.",
+        "limits": "이 내용은 캡처 방식 구분 실험 수행 사실만 포함하며, 각 방식의 정량 성능 수치는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaGraph 사용",
+          "추론과 bound 따로 캡처",
+          "추론+bound 한번에 캡처",
+          "커널 런치 비용 최소화 목적"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p59:e454",
+          "p60:enh:e11"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q7"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "cudaGraph로 추론과 bound를 따로 캡처했을 때 기준으로 약 400초 정도 시간이 줄어든 것으로 관측되었다.",
+        "limits": "이 수치는 기록자의 정성적 관측 요약이며, 단일 실행의 정밀 수치나 반복 측정 기반 통계는 포함하지 않는다. 또한 '따로 캡처했을 때 기준'이라는 조건이 붙어 있어 통합 캡처 방식과의 직접 비교 수치는 이 사실에 포함되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaGraph로 추론과 bound를 따로 캡처했을 때 기준",
+          "커널 런치 비용 최소화 목적"
+        ],
+        "observations": [
+          "한 400초 정도 줄어든 듯함",
+          "이게 추론이랑 bound랑 따로 캡처했을 때 기준임"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "실행 시간 감소",
+            "value": "약 400",
+            "value_kind": "scalar",
+            "unit": "초",
+            "condition": "cudaGraph로 추론과 bound를 따로 캡처했을 때 기준, 커널 런치 비용 최소화 목적 관측 요약",
+            "element_ids": [
+              "p59:e456"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p59:e456",
+          "p60:enh:e9",
+          "p60:enh:e10",
+          "p60:enh:e11"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q7",
+          "evaluation_Q1"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "cudaGraph를 이용한 커널 캡처는 92만 번의 입력값을 계산하면서 1번의 CROWN 계산 내에서도 수십번의 커널이 호출되는 상황에서, graph 캡처를 통해 이 수십번의 커널 호출을 하나의 호출로 압축하여 커널 호출 횟수로 인한 오버헤드를 줄일 수 있는 방법이다. 단, 커널 자체 최적화까지 끝냈을 때 고려 가능한 기능이며 하나의 스냅샷을 만드는 기능이다.",
+        "limits": "이 내용은 cudaGraph 커널 캡처의 원리와 적용 조건에 대한 계획·설명 기록이며, 실제 적용 후 정량 성능 수치는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "92만 번 입력값 계산",
+          "1번의 CROWN 계산 내 수십번 커널 호출",
+          "커널 자체 최적화 완료 후 고려 가능",
+          "하나의 스냅샷을 만드는 기능"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "입력값 규모",
+            "value": "92만 번",
+            "value_kind": "text",
+            "element_ids": [
+              "p59:e450"
+            ]
+          },
+          {
+            "name": "CROWN 계산 내 커널 호출 횟수",
+            "value": "수십번",
+            "value_kind": "text",
+            "element_ids": [
+              "p59:e450"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p59:e450",
+          "p60:enh:e0"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q7"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "cudaGraph를 통해 추론과 bound를 따로 캡처한 경우와 추론+bound를 한번에 캡처한 경우를 구분하여 커널 런치 비용을 최소화하는 실험을 수행했으며, forward_cuda_graph가 983s 정도 전체 시간이고 아래 1055가 cpu에서 필요한만큼만 계산한 뒤 복사한 시간으로 72초 차이 나며 더 느려졌다.",
+        "limits": "이 내용은 캡처 방식 구분 실험과 두 실행 결과의 수치만 포함하며, 느려진 원인에 대한 확정적 분석은 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaGraph 사용",
+          "추론과 bound 따로 캡처",
+          "추론+bound 한번에 캡처",
+          "커널 런치 비용 최소화 목적",
+          "forward_cuda_graph 전체 시간 983s",
+          "cpu에서 필요한만큼만 계산 후 복사 시간 1055s",
+          "72초 차이, 더 느려짐"
+        ],
+        "observations": [
+          "위의 forward_cuda_graph가 983s 정도가 전체 시간이고, 아래의 1055가 cpu에서 필요한만큼만 계산한 뒤 복사한 시간임",
+          "72초 차이 나는데 (더 늦어짐..)"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "forward_cuda_graph 전체 시간",
+            "value": "983",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaGraph 캡처 방식 실험, 추론+bound 한번에 캡처 기준 관측",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e9"
+            ]
+          },
+          {
+            "metric": "cpu에서 필요한만큼만 계산 후 복사 시간",
+            "value": "1055",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준 관측",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e9"
+            ]
+          },
+          {
+            "metric": "두 방식 간 시간 차이",
+            "value": "72",
+            "value_kind": "scalar",
+            "unit": "초",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 방식이 더 느려짐 관측",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e10"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p60:e467",
+          "p60:enh:e9",
+          "p60:enh:e10",
+          "p60:enh:e11"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q1",
+          "evaluation_Q7"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "cudaGraph 캡처 방식 실험에서 forward_cuda_graph가 983s 정도 전체 시간이고 아래 1055가 cpu에서 필요한만큼만 계산한 뒤 복사한 시간으로 72초 차이 나며 더 느려졌고, 마지막 1055의 자세한 측정 결과를 보면 infer 131.799s(12.5%), bound 920.844s(87.3%), certify 1.597s(0.2%)로 나타났다.",
+        "limits": "이 내용은 캡처 방식 실험 결과와 phase별 시간 breakdown만 포함하며, 느려진 원인에 대한 확정적 분석은 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaGraph 캡처 방식 실험",
+          "forward_cuda_graph 전체 시간 983s",
+          "cpu에서 필요한만큼만 계산 후 복사 시간 1055s",
+          "72초 차이, 더 느려짐",
+          "infer 131.799s(12.5%), bound 920.844s(87.3%), certify 1.597s(0.2%)"
+        ],
+        "observations": [
+          "위의 forward_cuda_graph가 983s 정도가 전체 시간이고, 아래의 1055가 cpu에서 필요한만큼만 계산한 뒤 복사한 시간임",
+          "72초 차이 나는데 (더 늦어짐..)",
+          "total elapsed: 1055.28s Phase Timing Breakdown (all eps × all data) infer : 131.799s (12.5%) bound : 920.844s (87.3%) certify : 1,597s (0.2%)"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "forward_cuda_graph 전체 시간",
+            "value": "983",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaGraph 캡처 방식 실험, 추론+bound 한번에 캡처 기준 관측",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e9"
+            ]
+          },
+          {
+            "metric": "cpu에서 필요한만큼만 계산 후 복사 시간",
+            "value": "1055",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준 관측",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e9"
+            ]
+          },
+          {
+            "metric": "두 방식 간 시간 차이",
+            "value": "72",
+            "value_kind": "scalar",
+            "unit": "초",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 방식이 더 느려짐 관측",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e10"
+            ]
+          },
+          {
+            "metric": "infer 시간",
+            "value": "131.799",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준 phase breakdown, 전체 1055.28s 중 12.5%",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "bound 시간",
+            "value": "920.844",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준 phase breakdown, 전체 1055.28s 중 87.3%",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "certify 시간",
+            "value": "1.597",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준 phase breakdown, 전체 1055.28s 중 0.2%",
+            "element_ids": [
+              "p61:e468"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p60:e467",
+          "p60:enh:e9",
+          "p60:enh:e10",
+          "p60:enh:e11",
+          "p61:e468"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q1",
+          "evaluation_Q7"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "cudaGraph 캡처 방식 실험에서 cpu에서 필요한만큼만 계산한 뒤 복사한 시간 1055s 기준 Real-Time Single-Sample(B=1) Latency Analysis 결과 Evaluated Samples 100000, Min Latency 1092.30us, Mean Latency 1145.24us(1.15ms), Median(P50) 1136.80us, P95 Tail Latency 1179.00us, P99 Tail Latency 1311.90us, Max Latency 7830.90us, Jitter(StdDev) 60.33us, Throughput 873.18 samples/sec, Pure GPU Execution 953.70us(last sample)로 관측되었다.",
+        "limits": "이 내용은 단일 샘플 지연 시간 측정 결과만 포함하며, 다른 조건과의 비교 해석이나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaGraph 캡처 방식 실험",
+          "cpu에서 필요한만큼만 계산 후 복사 시간 1055s 기준",
+          "Real-Time Single-Sample(B=1) Latency Analysis",
+          "Evaluated Samples 100000"
+        ],
+        "observations": [
+          "Min Latency 1092.30us, Mean Latency 1145.24us(1.15ms), Median(P50) 1136.80us, P95 Tail Latency 1179.00us, P99 Tail Latency 1311.90us, Max Latency 7830.90us, Jitter(StdDev) 60.33us, Throughput 873.18 samples/sec, Pure GPU Execution 953.70us(last sample)"
+        ],
+        "parameters": [
+          {
+            "name": "평가 샘플 수",
+            "value": "100000",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p61:e468",
+              "p61:e469"
+            ]
+          },
+          {
+            "name": "측정 방식",
+            "value": "Real-Time Single-Sample(B=1) Latency Analysis",
+            "value_kind": "text",
+            "element_ids": [
+              "p61:e468"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Min Latency",
+            "value": "1092.30",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준, Real-Time Single-Sample(B=1) Latency Analysis, Evaluated Samples 100000",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Mean Latency",
+            "value": "1145.24",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준, Real-Time Single-Sample(B=1) Latency Analysis, Evaluated Samples 100000",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Median(P50) Latency",
+            "value": "1136.80",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준, Real-Time Single-Sample(B=1) Latency Analysis, Evaluated Samples 100000",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "P95 Tail Latency",
+            "value": "1179.00",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준, Real-Time Single-Sample(B=1) Latency Analysis, Evaluated Samples 100000",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "P99 Tail Latency",
+            "value": "1311.90",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준, Real-Time Single-Sample(B=1) Latency Analysis, Evaluated Samples 100000",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Max Latency",
+            "value": "7830.90",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준, Real-Time Single-Sample(B=1) Latency Analysis, Evaluated Samples 100000",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Jitter(StdDev)",
+            "value": "60.33",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준, Real-Time Single-Sample(B=1) Latency Analysis, Evaluated Samples 100000",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Throughput",
+            "value": "873.18",
+            "value_kind": "scalar",
+            "unit": "samples/sec",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준, Real-Time Single-Sample(B=1) Latency Analysis, Evaluated Samples 100000",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Pure GPU Execution(last sample)",
+            "value": "953.70",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "cudaGraph 캡처 방식 실험, cpu 계산 후 복사 기준, Real-Time Single-Sample(B=1) Latency Analysis, Evaluated Samples 100000",
+            "element_ids": [
+              "p61:e468"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p61:e468",
+          "p61:e469"
+        ],
+        "requirement_ids": [
+          "methods_Q8",
+          "evaluation_Q10",
+          "evaluation_Q11"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "평가 샘플이 10만개밖에 안되는 이유는 표본 측정으로 하려고 한 것이다.",
+        "limits": "이 내용은 샘플 수 선정 이유에 대한 기록이며, 실제 표본 측정 결과의 통계적 해석은 포함하지 않는다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "평가 샘플 10만개",
+          "표본 측정 목적"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e469"
+        ],
+        "requirement_ids": [
+          "methods_Q3",
+          "methods_Q14",
+          "evaluation_Q9"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "cudaEvent를 추가해서 그런 걸수도 있으며, 일단 시스템 인자 넣어서 제어해보는 중이다.",
+        "limits": "이 내용은 원인 추정 및 제어 시도 계획만 포함하며, 실제 제어 결과나 정량 성능 수치는 포함하지 않는다.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaEvent 추가",
+          "원인 추정",
+          "시스템 인자 넣어서 제어 시도 중"
+        ],
+        "observations": [
+          "흠.. cudaEvent를 추가해서 그런 걸수도.. ⇐ 일단 이건 시스템 인자 넣어서 제어해보는 중"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e470"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q7",
+          "limitations_Q9"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "측정 관련 시스템 인자로 measure_gpu를 사용하며, 0=비활성화(Off, 드라이버 오버헤드 0, 최고 속도), 1=마지막 샘플만 1회 측정(Last sample only, 전체 루프 오버헤드 0초 + 맨 마지막 Pure GPU 시간 리포트, 기본값), 2=매 샘플마다 측정(All samples, 92만 번 전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 제어한다.",
+        "limits": "이 내용은 시스템 인자 정의와 제어 방식만 포함하며, 실제 측정 결과나 성능 영향은 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "measure_gpu 시스템 인자",
+          "0=비활성화(Off, 드라이버 오버헤드 0, 최고 속도)",
+          "1=마지막 샘플만 1회 측정(Last sample only, 전체 루프 오버헤드 0초 + 맨 마지막 Pure GPU 시간 리포트, 기본값)",
+          "2=매 샘플마다 측정(All samples, 92만 번 전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "measure_gpu 값 0",
+            "value": "비활성화(Off, 드라이버 오버헤드 0, 최고 속도)",
+            "value_kind": "text",
+            "element_ids": [
+              "p61:e471"
+            ]
+          },
+          {
+            "name": "measure_gpu 값 1",
+            "value": "마지막 샘플만 1회 측정(Last sample only, 전체 루프 오버헤드 0초 + 맨 마지막 Pure GPU 시간 리포트, 기본값)",
+            "value_kind": "text",
+            "element_ids": [
+              "p61:e471"
+            ]
+          },
+          {
+            "name": "measure_gpu 값 2",
+            "value": "매 샘플마다 측정(All samples, 92만 번 전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)",
+            "value_kind": "text",
+            "element_ids": [
+              "p61:e471"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p61:e471"
+        ],
+        "requirement_ids": [
+          "methods_Q6",
+          "methods_Q8",
+          "evaluation_Q10",
+          "evaluation_Q11"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "원인으로 cudaMemcpy로 복사할 메모리 계산 cpu 계산 때문, cudaEvent 커널 측정 때문, 진짜 gpu 클럭 때문의 세 가지가 제시되었다.",
+        "limits": "이 내용은 원인 후보 제시만 포함하며, 각 원인의 확정적 검증이나 정량 분리 측정 결과는 포함하지 않는다.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "원인 후보 제시",
+          "cudaMemcpy로 복사할 메모리 계산 cpu 계산 때문",
+          "cudaEvent 커널 측정 때문",
+          "진짜 gpu 클럭 때문"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e473"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q7",
+          "limitations_Q9"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "혹시 몰라서 커밋 이전거 한번 돌려봤는데(graph만 적용한 버전) 역시 그게 더 빠른데, 뭐때문인지 모르겠고, 분명한 건 topk 속도는 빨라져서 이건 빼먹을 수 있을지도 모른다.",
+        "limits": "이 내용은 비교 관측과 정성적 판단만 포함하며, 정량 성능 수치나 원인 분리 실험 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "커밋 이전 버전(graph만 적용한 버전) 재실행",
+          "graph만 적용한 버전이 더 빠름",
+          "topk 속도는 빨라짐"
+        ],
+        "observations": [
+          "혹시 몰라서 커밋 이전거 한번 돌려봤는데 (graph만 적용한 버전) 역시 그게 더 빠른데..",
+          "뭐때문이지",
+          "분명한 건 topk 속도는 빨라져서 이건 빼먹을 수 있을지도 모른다."
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e475",
+          "p61:e476",
+          "p61:e477"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q1",
+          "evaluation_Q7"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "빼먹을 부분으로 데이터셋 pinnedMemory, 검증(heap->stack) 배열, cudaEvent는 결국 필요해(Nsight Compute 분석 하려면)가 정리되었다.",
+        "limits": "이 내용은 정리된 항목 목록만 포함하며, 각 항목의 실제 적용 결과나 정량 성능 수치는 포함하지 않는다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "빼먹을 부분 정리",
+          "데이터셋 pinnedMemory",
+          "검증(heap->stack) 배열",
+          "cudaEvent는 결국 필요(Nsight Compute 분석 하려면)"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e479"
+        ],
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q2",
+          "methods_Q12"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "결국 지워볼 만한 곳은 cpu를 통해서 필요한 만큼만 계산하는 부분이며, 이부분밖에 없는데라고 기록되었다.",
+        "limits": "이 내용은 제거 후보 지점 제안만 포함하며, 실제 제거 결과나 정량 성능 수치는 포함하지 않는다.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "지워볼 만한 곳 후보",
+          "cpu를 통해서 필요한 만큼만 계산하는 부분",
+          "이부분밖에 없음"
+        ],
+        "observations": [
+          "그럼.. 결국 지워볼 만한 곳은 cpu를 통해서 필요한 만큼만 계산하는 부분… 이부분밖에 없는데?"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e480"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q7",
+          "limitations_Q9"
+        ],
+        "supplemental_reason": ""
+      }
+    ],
+    "existing_links": [
+      {
+        "fact_id": "E00214",
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q7"
+        ],
+        "element_ids": [
+          "p60:enh:e0"
+        ]
+      },
+      {
+        "fact_id": "E00215",
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q7"
+        ],
+        "element_ids": [
+          "p60:enh:e11"
+        ]
+      },
+      {
+        "fact_id": "E00216",
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q7"
+        ],
+        "element_ids": [
+          "p60:enh:e9",
+          "p60:enh:e10"
+        ]
+      },
+      {
+        "fact_id": "E00217",
+        "requirement_ids": [
+          "methods_Q3",
+          "methods_Q14",
+          "evaluation_Q9"
+        ],
+        "element_ids": [
+          "p60:enh:e11"
+        ]
+      },
+      {
+        "fact_id": "E00218",
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q2",
+          "methods_Q12"
+        ],
+        "element_ids": [
+          "p60:enh:e0"
+        ]
+      },
+      {
+        "fact_id": "E00167",
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q7",
+          "limitations_Q9"
+        ],
+        "element_ids": [
+          "p60:enh:e11"
+        ]
+      },
+      {
+        "fact_id": "E00179",
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q7",
+          "limitations_Q9"
+        ],
+        "element_ids": [
+          "p60:enh:e11"
+        ]
+      },
+      {
+        "fact_id": "E00200",
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q7",
+          "limitations_Q9"
+        ],
+        "element_ids": [
+          "p60:enh:e11"
+        ]
+      },
+      {
+        "fact_id": "E00208",
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q7",
+          "limitations_Q9"
+        ],
+        "element_ids": [
+          "p60:enh:e11"
+        ]
+      },
+      {
+        "fact_id": "E00209",
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q7",
+          "limitations_Q9"
+        ],
+        "element_ids": [
+          "p60:enh:e11"
+        ]
+      },
+      {
+        "fact_id": "E00211",
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q7",
+          "limitations_Q9"
+        ],
+        "element_ids": [
+          "p60:enh:e11"
+        ]
+      },
+      {
+        "fact_id": "E00212",
+        "requirement_ids": [
+          "methods_Q3",
+          "methods_Q14",
+          "evaluation_Q9"
+        ],
+        "element_ids": [
+          "p60:enh:e11"
+        ]
+      },
+      {
+        "fact_id": "E00213",
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q7"
+        ],
+        "element_ids": [
+          "p60:enh:e11"
+        ]
+      }
+    ]
+  }
+}

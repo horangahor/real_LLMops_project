@@ -1,0 +1,73 @@
+{
+  "request_fingerprint": "0e64903daebb4c08e06340e14f800dfda2bbb49712dfaffd88c652a3cb39bd82",
+  "value": {
+    "title": "CROWN 검증 커널 퓨전 및 pinned memory 제거 실험 결론",
+    "open_questions": [
+      "pinned memory 미적용 버전이 복사 속도에서 약 3배 빠른 원인이 CUDA 내부 staging 경로 우위인지 여부는 내부 구현 미확인으로 확정 불가",
+      "cudaMemcpyAsync 호출 시간에서 pinned 적용/미적용 버전이 측정마다 빠르거나 느리게 나온 원인이 2copy→1copy 전환의 고정 setup 비용 감소 효과인지 여부는 마지막 측정에서 nopinned가 더 빠르게 나와 확신 불가",
+      "커널 횟수 감소 폭과 elapsed 시간 감소 폭이 방법별로 비례하지 않는 이유(forward가 가장 많이 줄었음에도 시간 감소가 가장 큰 이유)는 커널별 비용 차이로 설명되나 정량적 인과 확인은 제한적"
+    ],
+    "facts": [
+      {
+        "statement": "여러 번 측정 결과 pinned memory를 미적용한 버전의 복사 속도가 약 3배 빠르다. 작은 전송에서는 CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할 가능성이 있으나, 내부 구현을 직접 확인할 수 없어 확정은 할 수 없다.",
+        "limits": "작은 전송(현재 입력 기준 1Kib)에서의 결과이며, CUDA 내부 구현 미확인으로 인과 확정 불가",
+        "element_ids": [
+          "p81:e624"
+        ]
+      },
+      {
+        "statement": "추론이 끝나기까지의 동기화(synchronize) 시간은 pinned memory를 미적용한 버전이 가장 빠르다. 이는 1번의 H2D 복사 시간이 영향을 미칠 수 있으며, 추론 과정은 cuda stream synchronize: H2D - 추론 graph 실행 - D2H 순서로 이루어진다.",
+        "limits": "동기화 시간 우위가 H2D 복사 시간 영향일 가능성은 제시되었으나 확정적 인과로 서술되지 않음",
+        "element_ids": [
+          "p81:e625"
+        ]
+      },
+      {
+        "statement": "cudaMemcpyAsync 호출 시간에서 pinned memory 적용 버전이 미적용 버전보다 빠르거나 느렸다. 이는 2copy 과정에서 1copy로 바꾼 것이 크게 효과를 보지 못했기 때문으로 해석된다.",
+        "limits": "여러 번 측정 결과이며 측정마다 결과가 갈렸고, 마지막 측정에서는 nopinned가 더 빠르게 나와 확신할 수 없다고 명시됨",
+        "element_ids": [
+          "p81:e626",
+          "p81:e628"
+        ]
+      },
+      {
+        "statement": "작은 데이터 크기(현재 입력 기준 1Kib)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다.",
+        "limits": "현재 입력 기준 1Kib에서의 추정이며 확정 성과가 아닌 가능성 서술",
+        "element_ids": [
+          "p81:e627"
+        ]
+      },
+      {
+        "statement": "CROWN 3가지 방법에서 사용하는 커널을 퓨전하고 backward_only에서 메모리 복사 커널을 제거했다.",
+        "limits": "CROWN 3가지 방법 및 backward_only 대상이며, 구체적 커널 감소 횟수는 별도 요소에서 확인",
+        "element_ids": [
+          "p82:e632"
+        ]
+      },
+      {
+        "statement": "전체 elapsed 시간은 787s에서 630s로 약 157초 줄었다.",
+        "limits": "‘all eps × all data’ 기준 total elapsed이며, 787s는 원문 표기 ‘7 87s’를 정리한 값",
+        "element_ids": [
+          "p83:e638",
+          "p83:e639"
+        ]
+      },
+      {
+        "statement": "forward의 전체 elapsed는 1029s에서 668s로 줄었고, forward+backward는 1138s에서 758s로 줄었다.",
+        "limits": "각각 ‘all eps × all data’ total elapsed 기준이며, 방법별 phase breakdown과 single-sample latency는 별도 요소로 제시됨",
+        "element_ids": [
+          "p83:e641",
+          "p83:e642",
+          "p84:e644"
+        ]
+      },
+      {
+        "statement": "커널 횟수 감소 폭과 시간 감소 폭이 방법별로 비례하지 않으며, forward에서 무거운 커널 연산 호출 횟수가 9회 줄어 가장 많이 줄었으나 backward_only는 45→33회(26.7%)로 가장 적게 줄었고, 단순 가중치·bias 복사 커널 6개, 부호 분리 커널 6개 감소 등 커널별 비용이 다르다.",
+        "limits": "커널 횟수 감소는 forward/backward/backward_only의 구성 차이(캐시 저장 커널 포함 등)와 커널별 비용 차이로 설명되나, 시간 감소와의 정량적 인과 확인은 제한적",
+        "element_ids": [
+          "p84:e647"
+        ]
+      }
+    ]
+  }
+}

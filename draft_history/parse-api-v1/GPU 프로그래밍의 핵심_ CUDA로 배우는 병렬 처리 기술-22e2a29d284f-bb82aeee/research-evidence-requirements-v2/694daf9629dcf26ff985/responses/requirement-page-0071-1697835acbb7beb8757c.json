@@ -1,0 +1,101 @@
+{
+  "request_fingerprint": "1697835acbb7beb8757c0b6d52a7986426a191ec1280aae61c6952a0514fc343",
+  "value": {
+    "facts": [
+      {
+        "statement": "방법 B는 CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산 등)에 직접 blockIdx.z를 넣어 3차원 배칭 커널을 처음부터 끝까지 직접 작성하는 Custom Implementation 방식이며, 장점은 알고리즘과 메모리를 100% 통제할 수 있다는 점이고, 아쉬운 점은 C++ CUDA 코드를 잘 짜도 엔비디아 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝한 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기 어렵다는 점이다.",
+        "limits": "현재 페이지는 방법 B와 방법 C의 개념·구도 설명만 포함하며, 실제 구현 완료 여부나 정량 성능 수치는 포함하지 않는다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "방법 B: Custom Implementation",
+          "3차원 배칭 커널 직접 작성",
+          "CROWN 모든 커널에 blockIdx.z 적용"
+        ],
+        "observations": [
+          "장점: 알고리즘과 메모리를 100% 완벽히 통제 가능",
+          "아쉬운 점: 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝한 텐서 코어 어셈블리 성능을 손으로 따라잡기 어려움"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e552",
+          "p71:e554",
+          "p71:e555",
+          "p71:enh:e4",
+          "p71:enh:e6",
+          "p71:enh:e7"
+        ],
+        "requirement_ids": [
+          "introduction_Q2",
+          "introduction_Q3",
+          "methods_Q4",
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "방법 C는 CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이라는 점에 착안해, 가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리(cuBLAS, 구체적으로는 cublasSgemmBatched)에 맡기고, CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌리는 하이브리드 방식이다. 이는 파이토치가 내부적으로 동작하는 방식과 100% 동일하다.",
+        "limits": "현재 페이지는 방법 C의 개념·구도 설명만 포함하며, 실제 cuBLAS 교체 후 정량 성능 수치는 포함하지 않는다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "방법 C: Library Integration",
+          "가장 무거운 행렬 곱셈만 cuBLAS(cublasSgemmBatched)에 외주",
+          "CROWN 전용 연산은 방법 B의 자체 3D 커널로 유지",
+          "하이브리드 방식",
+          "파이토치 내부 동작 방식과 100% 동일"
+        ],
+        "observations": [
+          "CROWN 연산 시간의 80% 이상은 행렬 곱셈(A × W)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e552",
+          "p71:e556",
+          "p71:e557",
+          "p71:enh:e4",
+          "p71:enh:e8",
+          "p71:enh:e9"
+        ],
+        "requirement_ids": [
+          "introduction_Q2",
+          "introduction_Q3",
+          "methods_Q4",
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "방법 B와 방법 C의 결합 흐름은 \"B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것\"이다.",
+        "limits": "현재 페이지는 방법 B·C 결합 흐름에 대한 요약 설명만 포함하며, 실제 구현·평가 결과는 포함하지 않는다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "방법 B로 전체 파이프라인을 3차원 텐서 구조로 구성",
+          "가장 무거운 행렬곱 엔진만 방법 C(cuBLAS)로 교체"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e559",
+          "p71:enh:e11",
+          "p71:enh:e12"
+        ],
+        "requirement_ids": [
+          "introduction_Q3",
+          "methods_Q5"
+        ],
+        "supplemental_reason": ""
+      }
+    ],
+    "existing_links": []
+  }
+}

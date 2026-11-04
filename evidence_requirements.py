@@ -35,6 +35,8 @@ applies_when=null은 예외 없이 모든 연구에서 확인해야 하는 질�
 
 
 def fingerprint(value):
+    from workspace_cache import canonical_cache_value
+    value = canonical_cache_value(value)
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
 
 

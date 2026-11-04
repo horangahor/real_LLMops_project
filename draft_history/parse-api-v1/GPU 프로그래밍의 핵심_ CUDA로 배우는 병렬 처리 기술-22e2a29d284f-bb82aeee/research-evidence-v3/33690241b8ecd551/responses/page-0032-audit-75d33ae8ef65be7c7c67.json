@@ -1,0 +1,442 @@
+{
+  "request_fingerprint": "75d33ae8ef65be7c7c6744119e608c2a240d6f508b9779aa3b6ac36b8ec85953",
+  "value": {
+    "additions": [
+      {
+        "statement": "원인 분석으로 신경망 크기가 매우 작고, cuBlas·cuSparse 동작 방식에서 오버헤드가 발생했다고 기록했다.",
+        "limits": "원인 분석은 기술되었으나 정량적 원인 수치는 제시되지 않았다.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "신경망 크기가 매우 작음",
+          "cuBlas, cuSparse 동작 방식 오버헤드"
+        ],
+        "observations": [
+          "신경망 크기가 매우 작음",
+          "cuBlas, cuSparse 동작 방식에서 오버헤드 발생"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e209",
+          "p31:review:e1"
+        ]
+      },
+      {
+        "statement": "현재까지 cuBlas, cuSparse의 기본 행렬곱 연산 함수를 사용했으며, 행렬곱 변형 함수가 많아 sm 내 분석과 함께 Nsight compute 분석 시 진행할 수 있다고 기록했다.",
+        "limits": "변형 함수 활용 가능성은 언급되었으나 실제 적용 결과는 기술되지 않았다.",
+        "kind": "setup",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuBlas, cuSparse 기본 행렬곱 연산 함수 사용"
+        ],
+        "observations": [
+          "행렬곱 변형 함수가 많음",
+          "sm 내 분석과 함께 사용해야 하는 함수들이라 Nsight compute 분석 때 같이 진행하면 될 듯"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e210",
+          "p31:review:e2"
+        ]
+      },
+      {
+        "statement": "커널 퓨전을 진행했으며, 먼저 backward_bound_gpu()에만 진행했다고 기록했다.",
+        "limits": "적용 대상이 backward_bound_gpu()로 한정되었다고 기술됨.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 퓨전 진행",
+          "backward_bound_gpu()에 먼저 진행"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e212",
+          "p31:review:e3",
+          "p31:review:e4"
+        ]
+      },
+      {
+        "statement": "backward_bound_gpu() 커널 퓨전 후 23ms 후반대까지는 나오는 듯하다고 기록했다.",
+        "limits": "단일 대표 측정값이 아니라 체감/범위 수준의 관찰로 기록됨.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_bound_gpu() 커널 퓨전 후"
+        ],
+        "observations": [
+          "23ms 후반대까지는 나오는 듯"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time (언급 범위)",
+            "value": "23 후반",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "backward_bound_gpu() 커널 퓨전 후",
+            "element_ids": [
+              "p31:e213",
+              "p31:review:e5"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p31:e213",
+          "p31:review:e5"
+        ]
+      },
+      {
+        "statement": "컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한건 23ms 정도가 보인다는 것이라고 기록했다.",
+        "limits": "변동 가능성이 언급되었으며, 핵심 관찰은 23ms 정도로 기록됨.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "컴퓨터 사정에 따라 변동 가능"
+        ],
+        "observations": [
+          "컴퓨터 사정에 따라 26까지 뛰는 경우도 있음",
+          "중요한건 23ms 정도가 보인다는 것"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time (핵심 관찰)",
+            "value": "23",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "컴퓨터 사정 변동 가능 상황에서 보이는 정도",
+            "element_ids": [
+              "p31:e215",
+              "p31:review:e7"
+            ]
+          },
+          {
+            "metric": "Elapsed time (최대 언급)",
+            "value": "26",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "컴퓨터 사정에 따라 뛰는 경우",
+            "element_ids": [
+              "p31:e215",
+              "p31:review:e7"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p31:e215",
+          "p31:review:e7"
+        ]
+      },
+      {
+        "statement": "이후 lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해서 성능을 개선했고, 22ms 초반까지 나온다고 기록했다.",
+        "limits": "개선 후 대표 관찰값은 22ms 초반으로 기록되었으며, 단일 고정 측정값은 별도 요소에서 확인 필요.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "lirpa_forward_bound에서 사용하는 함수들 커널 퓨전"
+        ],
+        "observations": [
+          "22ms 초반까지 나온다"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time (언급 범위)",
+            "value": "22 초반",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "lirpa_forward_bound 함수들 커널 퓨전 후",
+            "element_ids": [
+              "p32:e218",
+              "p32:review:e2"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p32:e216",
+          "p32:e218",
+          "p32:review:e2"
+        ]
+      },
+      {
+        "statement": "커널 퓨전 적용 후 늦으면 28까지도 나오는데 보통은 24 중반정도라고 기록했다.",
+        "limits": "변동 범위와 전형적 수준을 함께 언급한 관찰이며, 단일 고정 측정값은 아님.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 퓨전 적용 후"
+        ],
+        "observations": [
+          "늦으면 28까지도 나옴",
+          "보통은 24 중반정도"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time (최대 언급)",
+            "value": "28",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "커널 퓨전 적용 후 늦을 때",
+            "element_ids": [
+              "p32:e219",
+              "p32:review:e3"
+            ]
+          },
+          {
+            "metric": "Elapsed time (보통 언급)",
+            "value": "24 중반",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "커널 퓨전 적용 후 보통 수준",
+            "element_ids": [
+              "p32:e219",
+              "p32:review:e3"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p32:e219",
+          "p32:review:e3"
+        ]
+      },
+      {
+        "statement": "그 외에도 backward_bound_gpu에서 사용하는 affine 중복 계산 삭제, new_(upper, lower)_p를 복사하지 않고 swap 함수를 이용한 포인터 스와핑, backward 행렬곱 커널 2개를 하나로 합친 커널 함수 제작, build_coeff_pair_fused_gpu 커널 퓨전, backward_bias_pair_fused_gpu 커널 퓨전을 진행했다고 기록했다.",
+        "limits": "적용 항목들이 나열되었으며, 개별 정량 성능은 별도 요소에서 확인 필요.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_bound_gpu 대상 최적화",
+          "커널 퓨전 다수 적용"
+        ],
+        "observations": [
+          "affine 중복 계산 삭제로 커널 2개 함수 줄어듦",
+          "포인터 스와핑(std::swap 이용)",
+          "backward 행렬곱 커널 2개를 하나로 합친 커널 함수 제작",
+          "build_coeff_pair_fused_gpu 커널 퓨전",
+          "backward_bias_pair_fused_gpu 커널 퓨전"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e221",
+          "p32:e222",
+          "p32:review:e4",
+          "p32:review:e5"
+        ]
+      },
+      {
+        "statement": "backward에서 사용하는 행렬곱 커널 2개를 하나로 합친 커널 함수를 만들었고, backward_matmul_pair_gpu 적용 후 22ms 보이는 비율이 늘었으며 최저점(28ms)도 잘 안 보이게 됐고 체감상 효과가 있는듯하다고 기록했다.",
+        "limits": "22ms 보이는 비율 증가와 최저점(28ms) 감소, 체감 효과가 함께 기술됨.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward 행렬곱 커널 2개를 하나로 합친 커널 함수",
+          "backward_matmul_pair_gpu"
+        ],
+        "observations": [
+          "22ms 보이는 비율이 늘었다",
+          "최저점(28ms)도 잘 안 보이게 됐다",
+          "체감상 효과가 있는듯"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time (언급)",
+            "value": "22",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "backward_matmul_pair_gpu 적용 후 보이는 비율 증가",
+            "element_ids": [
+              "p32:e222",
+              "p32:review:e5"
+            ]
+          },
+          {
+            "metric": "Elapsed time (최저점 언급)",
+            "value": "28",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "backward_matmul_pair_gpu 적용 후 잘 안 보이게 된 최저점",
+            "element_ids": [
+              "p32:e222",
+              "p32:review:e5"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p32:e222",
+          "p32:review:e5"
+        ]
+      },
+      {
+        "statement": "5번까지 적용하고 최고 성능이 나왔으며, 계속해서 1개의 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전을 모두 진행했다고 기록했다.",
+        "limits": "최고 성능의 구체적 수치는 별도 요소에서 확인 필요.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "5번까지 적용",
+          "1개의 커널 호출로 줄일 수 있는 커널 함수 대상 커널 퓨전"
+        ],
+        "observations": [
+          "5번까지 적용하고 최고 성능 나옴",
+          "1개의 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전 모두 진행"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p33:e224",
+          "p33:e225"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [
+      7
+    ],
+    "ledger": {
+      "p32:e216": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "lirpa_forward_bound 함수들 커널 퓨전 진행 기술이 반영됨.",
+        "addition_refs": [
+          5
+        ]
+      },
+      "p32:e217": {
+        "state": "represented",
+        "fact_refs": [
+          7
+        ],
+        "note": "커널 퓨전 후 CROWN Verification 출력(Elapsed time 22.342900 ms 등)이 반영됨.",
+        "addition_refs": []
+      },
+      "p32:e218": {
+        "state": "represented",
+        "fact_refs": [
+          7,
+          8
+        ],
+        "note": "22ms 초반까지 나온다는 관찰과 측정값 연결이 반영됨.",
+        "addition_refs": [
+          5
+        ]
+      },
+      "p32:e219": {
+        "state": "represented",
+        "fact_refs": [
+          1,
+          8
+        ],
+        "note": "늦으면 28, 보통 24 중반정도라는 변동 범위 관찰이 반영됨.",
+        "addition_refs": [
+          6
+        ]
+      },
+      "p32:e220": {
+        "state": "no_research",
+        "fact_refs": [],
+        "note": "구분선(===) 요소로 연구 내용 없음.",
+        "addition_refs": []
+      },
+      "p32:e221": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "‘그 외에도’ 제목으로 추가 최적화 항목 나열이 시작됨.",
+        "addition_refs": [
+          7
+        ]
+      },
+      "p32:e222": {
+        "state": "represented",
+        "fact_refs": [
+          2,
+          3,
+          4,
+          5,
+          9
+        ],
+        "note": "affine 중복 계산 삭제, 포인터 스와핑, backward 행렬곱 커널 통합, build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 기술이 반영됨.",
+        "addition_refs": [
+          7,
+          9
+        ]
+      },
+      "p32:review:e0": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "리뷰 요소에서도 lirpa_forward_bound 커널 퓨전 개선 기술이 확인됨.",
+        "addition_refs": []
+      },
+      "p32:review:e1": {
+        "state": "represented",
+        "fact_refs": [
+          7
+        ],
+        "note": "리뷰 코드 요소에서 Elapsed time 22.342900 ms 출력이 확인됨.",
+        "addition_refs": []
+      },
+      "p32:review:e2": {
+        "state": "represented",
+        "fact_refs": [
+          8
+        ],
+        "note": "리뷰 요소에서 22ms 초반까지 나온다는 관찰이 확인됨.",
+        "addition_refs": [
+          5
+        ]
+      },
+      "p32:review:e3": {
+        "state": "represented",
+        "fact_refs": [
+          1,
+          8
+        ],
+        "note": "리뷰 요소에서 늦으면 28, 보통 24 중반정도 관찰이 확인됨.",
+        "addition_refs": [
+          6
+        ]
+      },
+      "p32:review:e4": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "리뷰 요소에서 ‘그 외에도’ 제목이 확인됨.",
+        "addition_refs": [
+          7
+        ]
+      },
+      "p32:review:e5": {
+        "state": "represented",
+        "fact_refs": [
+          2,
+          3,
+          4,
+          5,
+          9
+        ],
+        "note": "리뷰 요소에서 추가 최적화 항목들과 backward_matmul_pair_gpu 관련 관찰이 확인됨.",
+        "addition_refs": [
+          7,
+          9
+        ]
+      }
+    }
+  }
+}

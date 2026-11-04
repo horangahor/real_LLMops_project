@@ -1,0 +1,52 @@
+{
+  "request_fingerprint": "b4df46ad89b874be7f8fc5bed298e71140ce967a463defbf29f8e5fa5210a42c",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "CUDA 그래프 기반 커널 축소는 추론 커널을 유지한 채 그래프 실행으로 중복 커널 호출을 통합해 전체 커널 발사 횟수를 줄였다. 3계층 네트워크 기준으로 bound 내 CUDA 커널 발사만 계수했으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했다. 그래프 적용 결과 전체 실행 시간은 787.8832초로, 평균 기준 forward 1029초, forward+backward 1138초와 비교해 세 가지 방법 중 가장 빠른 것으로 기록되었다. 샘플 1개 전체 기준으로도 추론 커널은 그대로인 상태에서 forward 33회→24회(9회 감소), backward 52회→37회(15회 감소), backward-only 51회→39회(12회 감소)로 줄었다. 감소 내역은 forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회이며, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소했다. backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. 다만 graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회이며, 이번 작업은 graph launch 횟수 자체를 줄이지는 않았다. 기록자는 커널 횟수가 더 많이 줄면 시간도 더 줄어야 하지 않는지, 왜 forward가 가장 많이 줄었는지에 대한 의문을 함께 남겼다.",
+          "evidence_ids": [
+            "E00274",
+            "E00311",
+            "E00313",
+            "E00314",
+            "E00315",
+            "E00318",
+            "E00319"
+          ]
+        },
+        {
+          "text": "메모리 방식 비교에서는 cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 그쳤고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨라 DMA 효과가 나타났지만, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐으나, 실시간성 관점에서는 No-Pin의 최대 지연이 8.8ms~11.6ms로 치명적 수준인 반면 Pinned Memory는 1.64ms로 극도로 안정적이었고, 지터도 No-Pin 118μs 대비 Pinned 47μs로 안정되었다. 이는 1KB급 작은 데이터를 매 루프마다 전송할 때 Pinned Memory가 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행해 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하는 반면, No-Pin은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사로 약 0.02~0.05μs에 복사가 끝나 DMA 셋업보다 30~50배 빠르기 때문이다. 그러나 No-Pin은 OS 페이징 정리나 백그라운드 작업 개입 시 최대 11.6ms까지 튀는 지연 스파이크를 피할 수 없고, Pinned Memory는 매번 DMA 셋업 비용을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 안정성을 보장한다. 더 정밀한 표 기준으로도 No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned는 최대 지연시간 1.64ms, 지터 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다.",
+          "evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_41",
+            "H85ca0e507c4e_76"
+          ]
+        },
+        {
+          "text": "측정의 공정성을 높이기 위해 GPU 클록 상태를 확인하고(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1) 및 그래픽 클록 고정(sudo nvidia-smi -lgc 1410)을 통해 클록 저하·스로틀링을 통제했다. 스로틀링 원인은 온도(클록 저하, 냉각 개선), 전력(성능 저하, 전력 제한 확인), API(간헐적 지연, 백그라운드 작업 확인)로 구분해 정리했다. cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해서는 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었으며, 기록자는 추론 단계에서 시간이 느려진 점을 정성적 관찰로 남겼다. 이후 클록을 2800MHz로 고정하고 기존 HostRegister 방식으로 다시 실험하기로 했고, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했다. 다만 구성 요소 단위 성능 순위와 전체 처리 성능 순위가 명시적으로 비교·대조된 기록은 확인되지 않으며, 두 순위의 차이·불일치 비교 역시 원문에서 확인되지 않는다.",
+          "evidence_ids": [
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "Hefd7e87bb735_66",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ]
+        }
+      ]
+    }
+  }
+}

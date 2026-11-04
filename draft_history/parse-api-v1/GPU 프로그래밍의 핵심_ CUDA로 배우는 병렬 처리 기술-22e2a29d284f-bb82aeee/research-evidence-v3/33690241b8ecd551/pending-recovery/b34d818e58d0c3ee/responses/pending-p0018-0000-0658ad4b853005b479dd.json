@@ -1,0 +1,141 @@
+{
+  "request_fingerprint": "0658ad4b853005b479dd087ccf14e508aa1664420bd85328dba54f49fd67222b",
+  "value": {
+    "decisions": {
+      "P0019F0009": {
+        "action": "repair",
+        "representative_fact_id": "P0018F0001",
+        "corrections": [
+          {
+            "statement": "mempool + warmup(152.902900 ms), mempool + warmup + cuBlas(174.978400 ms), mempool + warmup + CPU zero matrix/vector(128.894800 ms)는 각각 원문에서 측정된 값이며, 이들 간 차이(각각 약 46.083600 ms, 약 24.008100 ms)는 측정 로그 기반 산술 계산값으로 원문에 직접 제시된 측정값이 아님",
+            "limits": "제시된 측정 로그 기반 산술 차이이며, 각 시행의 반복·평균·오차 범위는 원문에 제시되지 않음. 차이값은 계산값임",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "measurement_log",
+            "conditions": [
+              "CROWN Verification",
+              "eps = 1e-06",
+              "mempool + warmup",
+              "cuBlas 유무",
+              "zero matrix/vector CPU/GPU 회귀"
+            ],
+            "observations": [
+              "Elapsed time: 152,902900 ms",
+              "Elapsed time: 174,978400 ms",
+              "Elapsed time: 128,894800 ms"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "Elapsed time (mempool + warmup)",
+                "value": "152.9029",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "CROWN Verification, eps=1e-06, 1회 시도",
+                "element_ids": [
+                  "p18:e135"
+                ]
+              },
+              {
+                "metric": "Elapsed time (mempool + cuBlas + warmup)",
+                "value": "174.9784",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "CROWN Verification, eps=1e-06, 1회 시도",
+                "element_ids": [
+                  "p18:e135"
+                ]
+              },
+              {
+                "metric": "Elapsed time (mempool + warmup, CPU zero matrix/vector)",
+                "value": "128.8948",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "CROWN Verification, eps=1e-06, mempool + warmup, CPU zero matrix/vector",
+                "element_ids": [
+                  "p19:e141"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p18:e135",
+              "p19:e141"
+            ]
+          }
+        ],
+        "reason": "원문에 개별 측정값(152.902900, 174.978400, 128.894800 ms)은 확인되나, 차이값(46.083600, 24.008100 ms)은 원문에 직접 제시된 측정값이 아닌 산술 계산값임. 승인된 후보(P0018F0001, P0019R0F0006/P0019F0008)는 개별 측정값만 포함하며 차이값을 포함하지 않으므로 중복이 아님. numeric_issues와 rejected_measurements가 남아있어 repair 필요. 수정 시 원문의 핵심 측정값과 '산술 차이'라는 한계를 보존함."
+      },
+      "P0019R0F0008": {
+        "action": "repair",
+        "representative_fact_id": "P0019R0F0006",
+        "corrections": [
+          {
+            "statement": "make_zero_matrix/make_zero_vector를 CPU로 회귀한 후 mempool + warmup 설정의 CROWN Verification(eps=1e-06)에서 22~25ms 정도 시간이 줄었다고 관찰했다.",
+            "limits": "22~25ms 단축은 저자의 관찰 진술(p19:e142)이며, 비교 기준선은 이전 mempool + warmup 구성(152.902900ms, p18:e135)에 암시적으로 기반함. 실제 감소량은 약 24ms(152.902900 - 128.894800)로 계산되나 이는 원문 미확인 계산값임",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "measurement_log",
+            "conditions": [
+              "CROWN Verification",
+              "eps = 1e-06",
+              "mempool + warmup",
+              "make_zero_matrix/make_zero_vector CPU 회귀",
+              "기준선: 이전 mempool + warmup 구성(152.902900ms)"
+            ],
+            "observations": [
+              "22 ~ 25ms 정도 줄었다!!"
+            ],
+            "parameters": [
+              {
+                "name": "단축 폭",
+                "value": "22~25",
+                "value_kind": "range",
+                "element_ids": [
+                  "p19:e142"
+                ]
+              }
+            ],
+            "measurements": [
+              {
+                "metric": "소요시간 단축 폭 (관찰)",
+                "value": "22~25",
+                "value_kind": "range",
+                "unit": "ms",
+                "condition": "make_zero_matrix/make_zero_vector CPU 회귀 후 mempool + warmup, CROWN Verification, eps=1e-06",
+                "element_ids": [
+                  "p19:e142"
+                ]
+              },
+              {
+                "metric": "이전 구성 소요시간",
+                "value": "152.9029",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "mempool + warmup, CROWN Verification, eps=1e-06 (CPU 회귀 전)",
+                "element_ids": [
+                  "p18:e135"
+                ]
+              },
+              {
+                "metric": "CPU 회귀 후 소요시간",
+                "value": "128.8948",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "mempool + warmup, CROWN Verification, eps=1e-06 (make_zero_matrix/make_zero_vector CPU 회귀 후)",
+                "element_ids": [
+                  "p19:e141"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p18:e135",
+              "p19:e141",
+              "p19:e142"
+            ]
+          }
+        ],
+        "reason": "주요 관찰 진술('22~25ms 정도 줄었다')은 원문(p19:e142)에 확인되나, limits의 '24'는 원문 미확인 계산값임. 승인된 후보(P0019R0F0006/P0019F0008)는 개별 측정값만 포함하며 관찰 진술을 포함하지 않으므로 중복이 아님. numeric_issues가 남아있어 repair 필요. 수정 시 원문의 관찰 진술과 계산값의 한계를 보존함."
+      }
+    }
+  }
+}

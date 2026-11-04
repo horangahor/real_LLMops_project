@@ -1,0 +1,125 @@
+{
+  "request_fingerprint": "32517ac1fbc2cf6bc0039c3ae31225f0b41121c8a15f7ec4a85cb3b2f0112246",
+  "value": {
+    "facts": [
+      {
+        "statement": "nvcc로 crown_test_all_data.cu를 컴파일할 때 warning #546-D(transfer of control bypasses initialization of fwd/bwd)와 error C2360/C2361(case/default 레이블에 의해 fwd/bwd 초기화가 생략됨)이 발생했다.",
+        "limits": "컴파일러 메시지에 기반한 관측이며, 경고 억제 옵션(-diag-suppress) 사용 가능성이 메시지에 언급되어 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "nvcc 컴파일",
+          "-arch=sm_89",
+          "switch(method) 내부에서 main 함수 scope에 fwd/bwd를 선언했으나 case별 중괄호 스코프 없이 작성한 상태"
+        ],
+        "observations": [
+          "warning #546-D: transfer of control bypasses initialization of variable \"fwd\" (declared at line 252) and variable \"bwd\" (declared at line 260)",
+          "error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략되었습니다 (crown_test_all_data.cu line 252 참조)",
+          "error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략되었습니다 (crown_test_all_data.cu line 260 참조)",
+          "error C2361: 'fwd' 초기화가 'default' 레이블에 의해 생략되었습니다 (crown_test_all_data.cu line 252 참조)",
+          "컴파일러 메시지에 -diag-suppress <warning-number>로 경고 억제 가능함이 언급됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e354"
+        ]
+      },
+      {
+        "statement": "작성자는 fwd, bwd 초기화가 해당 레이블에 의해 생략되었고, main 함수 scope의 선언문은 무조건 선언이 되어야 하는데 레이블에 의해 그 부분이 생략되고 있으니 작은 scope(중괄호)를 만들어준 것이라고 설명했다.",
+        "limits": "컴파일 오류 원인에 대한 작성자 해석이며, C++의 switch/case 스코프 규칙에 근거한 설명이다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch(method) 내부 case 0/1에서 지역 변수로 선언",
+          "중괄호 스코프 사용"
+        ],
+        "observations": [
+          "fwd, bwd 초기화가 해당 레이블에 의해 생략되었다고 설명",
+          "main 함수 scope의 선언문은 무조건 선언이 되어야 하는데 레이블에 의해 생략되고 있으니 작은 scope를 만들어준 것이라고 설명"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e355"
+        ]
+      },
+      {
+        "statement": "이미지 출력에서 total elapsed: 1634.61s가 측정되었다.",
+        "limits": "이미지 OCR로 추출된 값이며, 해당 실행이 forward인지 backward인지, 실행인자 유무 등 정확한 조건은 이미지 단독으로는 확정되지 않는다. p50:e357 텍스트의 '2100s'와 수치 차이가 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CUDA CROWN sweep 실행 출력 이미지",
+          "eps= 1.0e+00, T=0, F=40000, ratio=0.000이 함께 출력됨"
+        ],
+        "observations": [
+          "total elapsed: 1634.61s",
+          "results saved to results_cuda.csv",
+          "eps= 1.0e+00: T= 0 F=40000 ratio=0.000"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total elapsed time",
+            "value": "1634.61",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "이미지 출력 기준, eps=1.0e+00, F=40000, ratio=0.000",
+            "element_ids": [
+              "p50:img2:e1"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p50:img2:e0",
+          "p50:img2:e1",
+          "p50:img2:e2"
+        ]
+      },
+      {
+        "statement": "p50:e357 텍스트는 '2100s 초 나오는 문제도 원인 해결 완료'라고 언급하나, 동일 페이지 이미지(p50:img2:e1)의 측정값은 1634.61s로 차이가 있다.",
+        "limits": "텍스트와 이미지 간 수치 차이가 존재하며, 어느 값이 해당 실행의 정확한 측정값인지 또는 두 실행이 서로 다른 조건인지는 원문만으로 확정되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "p50:e357 텍스트의 '2100s' 언급",
+          "p50:img2:e1 이미지의 '1634.61s' 측정값"
+        ],
+        "observations": [
+          "텍스트: '2100s 초 나오는 문제도 원인 해결 완료'",
+          "이미지: total elapsed: 1634.61s",
+          "두 수치 간 차이가 존재함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e357",
+          "p50:img2:e1"
+        ]
+      },
+      {
+        "statement": "작성자는 '하여튼 이렇게 해서 결과를 봤다'고 서술하며 코드 수정 후 결과를 확인했음을 기록했다.",
+        "limits": "전이적 연결 문장으로, 독립적인 연구 주장은 아니다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch 내부 중괄호 스코프로 fwd/bwd 선언 방식 수정 후"
+        ],
+        "observations": [
+          "'하여튼 이렇게 해서 결과를 봤다'"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e356"
+        ]
+      }
+    ]
+  }
+}

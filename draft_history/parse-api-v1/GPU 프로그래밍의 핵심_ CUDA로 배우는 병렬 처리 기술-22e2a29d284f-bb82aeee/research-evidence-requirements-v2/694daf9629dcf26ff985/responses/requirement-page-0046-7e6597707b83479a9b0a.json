@@ -1,0 +1,226 @@
+{
+  "request_fingerprint": "7e6597707b83479a9b0affa1b411bf701503a3e3fe0d9838d27c46cfadb8deb5",
+  "value": {
+    "facts": [
+      {
+        "statement": "40000번 루프 반복 시 D2H 복사 오버헤드가 backward 대비 forward 계산의 이득을 초과하여 forward가 더 느려지는 현상이 관측되었다.",
+        "limits": "이 관측은 40000번 루프 반복 조건에서의 현상이며, 단일 실행이나 다른 반복 횟수에서의 일반화는 별도 확인이 필요하다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "40000번 루프 반복",
+          "forward vs backward 비교",
+          "D2H 복사 오버헤드"
+        ],
+        "observations": [
+          "40000번 루프에서 forward가 backward보다 느림",
+          "D2H 복사 오버헤드가 계산 이득을 초과함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p46:e316"
+        ],
+        "requirement_ids": [
+          "methods_Q14",
+          "methods_Q15",
+          "evaluation_Q7"
+        ],
+        "supplemental_reason": "반복 루프 조건에서 forward/backward 간 성능 역전 현상을 설명하는 핵심 관측으로, 실험 조건 정의와 결과 해석에 모두 관련된다."
+      },
+      {
+        "statement": "forward_bound_impl의 플래그가 true이면 중간 결과가 복사되며, 이 플래그가 forward에서 중간 계산 결과, final_affine, 최종 결과 복사를 제어하는 역할을 한다.",
+        "limits": "플래그 동작 설명은 코드 동작에 대한 기록이며, 실제 성능·정확도 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward_bound_impl 플래그",
+          "중간 결과 복사",
+          "D2H 복사 제어"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p46:e317"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q14"
+        ],
+        "supplemental_reason": "forward/backward 성능 차이의 원인을 설명하는 구현 세부 사항으로, 실험 조건·방법 이해에 필요하다."
+      },
+      {
+        "statement": "forward의 플래그를 3개로 늘려 중간 결과(layer_bound 복사용), final_affine 복사용, 최종 결과 복사용으로 분리했고, backward의 플래그도 layer_bound와 affine_bound 복사 제어용으로 각각 2개로 분리했다.",
+        "limits": "이 내용은 플래그 분리 설계 기록이며, 분리 후 정량 성능 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward 플래그 3개 분리",
+          "backward 플래그 2개 분리",
+          "layer_bound/final_affine/최종 결과 복사 제어"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p46:e318"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q14"
+        ],
+        "supplemental_reason": "복사 제어 플래그 분리라는 구현 변경을 명시하며, 이후 성능 해석·비교의 방법적 전제가 된다."
+      },
+      {
+        "statement": "forward 최종 계산(result -> lower/upper bounds)의 D2H 복사 과정에서 비효율적인 부분이 있어 정확한 테스트를 위해 최적화를 진행했다.",
+        "limits": "최적화 진행 사실과 동기만 기록하며, 최적화 후 정량 성능 수치는 이 요소만으로는 제시되지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward 최종 계산 D2H 복사",
+          "비효율적 부분 존재",
+          "정확한 테스트 목적 최적화"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p46:e319"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q16"
+        ],
+        "supplemental_reason": "최적화 동기와 대상 구간을 명시하여 방법 재현성 및 한계 판단에 필요한 정보이다."
+      },
+      {
+        "statement": "forward 최적화를 통해 backward보다 forward가 느린 문제는 해결되었다.",
+        "limits": "문제 해결 여부는 기록자의 판단이며, 해결 후 정량 성능 수치나 반복 측정 기반 통계는 이 요소만으로는 제시되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward 최적화 적용",
+          "backward 대비 forward 느림 문제 해결"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p46:e320"
+        ],
+        "requirement_ids": [
+          "evaluation_Q7",
+          "evaluation_Q1"
+        ],
+        "supplemental_reason": "문제 해결 선언은 결과 요약에 해당하지만, 정량 근거가 후속 페이지에 이어질 수 있어 현재 페이지 범위 내 진술로 보존한다."
+      },
+      {
+        "statement": "단일 테스트 결과로 비교하면 다중 데이터셋 테스트 시 forward와 backward 간 3배 차이가 나야 하는데, 실제 관측에서는 그 차이가 나타나지 않아 Nsight System 분석을 사용하기로 했다.",
+        "limits": "이 내용은 기대 차이와 실제 관측 간 불일치 및 분석 도구 채택 동기에 대한 기록이며, Nsight 분석 결과 수치는 이 요소만으로는 제시되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "단일 테스트 결과 비교",
+          "다중 데이터셋 테스트 시 3배 차이 기대",
+          "실제 차이 미관측",
+          "Nsight System 분석 채택"
+        ],
+        "observations": [
+          "단일 테스트 비교 시 3배 차이가 기대되나 관측되지 않음",
+          "Nsight System 분석을 이용하기로 결정"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p46:e322"
+        ],
+        "requirement_ids": [
+          "methods_Q2",
+          "evaluation_Q4",
+          "evaluation_Q1"
+        ],
+        "supplemental_reason": "기대 성능과 관측 성능 간 괴리를 해결하기 위한 분석 방법 선택 기록으로, 방법·평가 양쪽에 관련된다."
+      },
+      {
+        "statement": "단일 데이터에 대한 memcpy 호출 횟수는 forward와 backward 각각 6번으로 확인되었다.",
+        "limits": "이 수치는 단일 데이터 기준 관측이며, 전체 프로그램 실행이나 다른 조건에서의 복사 횟수 해석은 별도 문맥이 필요하다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "단일 데이터 기준",
+          "forward memcpy 6회",
+          "backward memcpy 6회"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p46:e323"
+        ],
+        "requirement_ids": [
+          "methods_Q14",
+          "evaluation_Q7"
+        ],
+        "supplemental_reason": "복사 횟수 관측은 성능 차이 원인 분석의 기초 자료로, 실험 조건·결과 해석에 모두 관련된다."
+      },
+      {
+        "statement": "초기에는 입력 데이터 ±eps, 가중치, bias, upper bound 결과, lower bound 결과를 포함해 총 6개의 복사 대상이 있다고 생각했으나, 가중치와 bias는 nvtx 촬영 전에 한 번에 올라간다는 점을 고려해 입력 데이터 ±eps, upper bound, lower bound 결과 총 4회만 복사하면 된다고 재검토했다.",
+        "limits": "이 내용은 복사 대상 수에 대한 사고 과정과 재검토 기록이며, 실제 복사 횟수 측정 결과나 최종 구현 반영 여부는 이 요소만으로는 확정되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "초기 가정: 입력 ±eps, 가중치, bias, upper/lower bound 결과 총 6개",
+          "가중치·bias는 nvtx 전 한 번에 업로드",
+          "재검토 결과: 입력 ±eps, upper/lower bound 결과 총 4회 복사"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p46:e324",
+          "p46:e325",
+          "p46:e326",
+          "p46:e327"
+        ],
+        "requirement_ids": [
+          "methods_Q14",
+          "methods_Q15"
+        ],
+        "supplemental_reason": "복사 대상 수 추정 변화 과정을 보존하여, 이후 memcpy 관련 해석·비교의 맥락을 유지한다."
+      },
+      {
+        "statement": "CROWN에서 입력 데이터 ±eps와 upper/lower bound를 포함해 총 6개의 복사 대상이 있다고 정리되었다.",
+        "limits": "이 진술은 CROWN 관련 복사 대상 수에 대한 정리 기록이며, 실제 복사 횟수 측정이나 전체 프로그램 수준 해석과는 별도 문맥이 필요하다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CROWN 기준",
+          "입력 데이터 ±eps",
+          "upper/lower bound",
+          "총 6개 복사 대상"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p46:e331"
+        ],
+        "requirement_ids": [
+          "methods_Q14"
+        ],
+        "supplemental_reason": "복사 대상 수에 대한 또 다른 정리 진술로, 앞서의 4회/6회 논의와 함께 해석 맥락을 구성한다."
+      }
+    ],
+    "existing_links": []
+  }
+}

@@ -1,0 +1,373 @@
+{
+  "ledger": {
+    "p11:e95": {
+      "state": "represented",
+      "fact_ids": [
+        "P0011F0001",
+        "P0011R0F0001",
+        "P0011R0F0002",
+        "P0011R0F0003"
+      ],
+      "note": "CROWN 검증 실행 결과 화면(eps=1e-06, elapsed time, output dimension 16, index 0~15 bound 값)이 승인된 사실들에 의해 모두 보존됨. P0011R0F0002는 P0011F0001과 output_dimension=16으로 중복."
+    },
+    "p11:e96": {
+      "state": "represented",
+      "fact_ids": [
+        "P0011F0002",
+        "P0011F0004"
+      ],
+      "note": "v1-1-2 버전 설명(가중치만 미리 업로드), 실행 시간 149~155ms 범위, 구현 파일명 my_lirpa_mempool_preload_on_gpu.cu가 P0011F0002와 P0011F0004에 모두 보존됨. 두 팩트는 중복 표현 관계."
+    },
+    "p11:e97": {
+      "state": "represented",
+      "fact_ids": [
+        "P0011R0F0004",
+        "P0011R0F0005"
+      ],
+      "note": "FullyConnectedNetwork 구조체 필드(num_layers, layer_in_dim, layer_out_dim, W, b, act, d_W) 및 d_W의 GPU 사전 로드 가중치 포인터 용도가 모두 보존됨."
+    },
+    "p11:e98": {
+      "state": "represented",
+      "fact_ids": [
+        "P0011R0F0006",
+        "P0011R0F0007"
+      ],
+      "note": "GPU 메모리 주소 포인터 배열 설계 및 MAX_LAYERS 기준 크기로 인한 낭비 우려가 모두 보존됨."
+    },
+    "p11:e99": {
+      "state": "represented",
+      "fact_ids": [
+        "P0011R0F0008",
+        "P0011R0F0009"
+      ],
+      "note": "float가 double보다 접근 속도가 빠르다는 언급과 float 포인터 사용을 위한 전체 코드 갈아엎 필요 판단이 모두 보존됨."
+    }
+  },
+  "rescue_history": [
+    {
+      "missing": {
+        "p11:e95": "P0011F0001은 eps=1e-06, 출력 차원 16, lower/upper bound 및 정상 예측(y) 값 출력 화면 기록이라는 핵심 내용은 보존했으나, 원문에 명시된 Elapsed time: 228,585200 ms 측정값이 approved_facts의 measurements에 포함되지 않아 불완전함. 또한 실제 bound 값들의 구체적 수치(0.081772, 0.273538 등)는 보존되지 않음.",
+        "p11:e97": "struct FullyConnectedNetwork 정의(num_layers, layer_in_dim, layer_out_dim, W, b, act, d_W 등 필드 포함)와 'GPU 사전 로드된 가중치 포인터' 주석이 원문에 있으나, 이에 대응하는 approved_facts가 존재하지 않음. 구조체 필드 구성 및 d_W 배열의 용도가 보존되지 않음.",
+        "p11:e98": "GPU 메모리 주소 저장을 위한 포인터 배열을 신경망에 미리 만들어놓는 설계와, 포인터 배열 크기가 MAX_LAYERS 기준이라 신경망이 작으면 공간 낭비 가능성이라는 내용이 원문에 있으나, 이에 대응하는 approved_facts가 없음.",
+        "p11:e99": "double보다 float가 접근 속도가 빠르다는 언급과, 현재 행렬/벡터 구조체 등이 전부 double 기준이라 float 포인터 사용을 위해 전체 구조 개편이 필요하다는 내용이 원문에 있으나, 이에 대응하는 approved_facts가 없음."
+      },
+      "facts": [
+        {
+          "statement": "CROWN 검증 실행 예시 화면에서 eps = 1e-06 조건으로 Elapsed time: 228,585200 ms가 측정되었다.",
+          "limits": "이 화면은 특정 실행 결과 예시이며, 버전별 성능 비교의 대표값으로 쓰였다는 뜻은 아니다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps = 1e-06"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [
+            {
+              "metric": "elapsed_time",
+              "value": "228585200",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "CROWN 검증 실행 예시 (eps = 1e-06)",
+              "element_ids": [
+                "p11:e95"
+              ],
+              "validation_error": "측정값이 연결 원문에 없습니다."
+            }
+          ],
+          "sources": [
+            {
+              "element_id": "p11:e95",
+              "page": 11,
+              "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) clear Iirpa_forward! calc success Elapsed time: 228,585200 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2.670843 1,846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1,714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1,082714 -3,404563",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0011R0F0001",
+          "support": "supported",
+          "support_note": "원문 p11:e95에 'Elapsed time: 228,585200 ms'가 그대로 존재한다. rejected_measurement의 값 '228585200'(쉼표 없음)은 원문에 없는 표현이지만, 진술 자체는 쉼표 포함 원문을 그대로 인용했으므로 지원된다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [
+            "소스 원문에는 '228,585200 ms'로 쉼표가 포함된 형태로 기록되어 있으며, 진술도 동일한 문자열 표현을 사용하므로 원문에 충실하다. 다만 쉼표의 의미(천 단위 구분자 vs 소수점 구분자)에 따라 실제 수치 해석(228.585200 ms인지 228,585,200 ms인지)은 원문만으로는 확정할 수 없다.",
+            "이 화면은 특정 실행 결과 예시이며, 버전별 성능 비교의 대표값이라는 주장은 진술에 포함되지 않았다."
+          ],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "CROWN 검증 실행 예시 화면에서 출력 차원은 16으로 기록되었다.",
+          "limits": "이 화면은 특정 실행 결과 예시이다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps = 1e-06"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "output_dimension",
+              "value": "16",
+              "value_kind": "scalar",
+              "unit": "dim",
+              "condition": "CROWN 검증 실행 예시",
+              "element_ids": [
+                "p11:e95"
+              ],
+              "raw_value": "16",
+              "normalization_status": "normalized"
+            }
+          ],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p11:e95",
+              "page": 11,
+              "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) clear Iirpa_forward! calc success Elapsed time: 228,585200 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2.670843 1,846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1,714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1,082714 -3,404563",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0011R0F0002",
+          "support": "supported",
+          "support_note": "원문 p11:e95에 'Output Dimension: 16'이 명시되어 있어 진술과 정확히 일치한다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "CROWN 검증 실행 예시 화면에는 인덱스 0~15에 대한 Lower Bound, Upper Bound, Normal Pred (y) 값이 표 형태로 출력되었다.",
+          "limits": "이 화면은 특정 실행 결과 예시이며, bound 값들은 원문에 명시된 수치 그대로이다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps = 1e-06"
+          ],
+          "observations": [
+            "Lower Bound 값 예시: 0.081772, 0.273538, 0.102147, 0.114244, 2.670552, 1.846574, -1.714750, -1.880139, 0.706986, -2.612086, 0.003713, 1.310476, 2.049539, -1.025923, 1.082576, -3.404772",
+            "Upper Bound 값 예시: 0.082159, 0.273823, 0.102482, 0.114541, 2.670843, 1.846872, -1.714490, -1.879695, 0.707275, -2.611722, 0.003976, 1.310817, 2.049839, -1.025597, 1.082852, -3.404355",
+            "Normal Pred (y) 값 예시: 0.081966, 0.273680, 0.102314, 0.114393, 2.670697, 1.846723, -1.714620, -1.879916, 0.707131, -2.611904, 0.003845, 1.310646, 2.049689, -1.025760, 1.082714, -3.404563"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p11:e95",
+              "page": 11,
+              "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) clear Iirpa_forward! calc success Elapsed time: 228,585200 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2.670843 1,846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1,714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1,082714 -3,404563",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0011R0F0003",
+          "support": "supported",
+          "support_note": "원문 p11:e95의 표 형태 출력에서 인덱스 0~15에 대한 Lower Bound, Upper Bound, Normal Pred (y) 값이 진술에 나열된 수치와 모두 일치한다. 예: Lower Bound 0번 0.081772, Upper Bound 0번 0.082159, Normal Pred 0번 0.081966 등.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "FullyConnectedNetwork 구조체는 num_layers, layer_in_dim[MAX_LAYERS], layer_out_dim[MAX_LAYERS], W[MAX_LAYERS], b[MAX_LAYERS], act[MAX_LAYERS], d_W[MAX_LAYERS] 필드를 가진다.",
+          "limits": "d_W는 double* 타입이며 GPU 사전 로드된 가중치 포인터로 주석이 달려 있다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "implementation_code",
+          "conditions": [],
+          "observations": [],
+          "parameters": [
+            {
+              "name": "MAX_LAYERS",
+              "value": "미명시",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p11:e97"
+              ]
+            }
+          ],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p11:e97",
+              "page": 11,
+              "quote": "![image](/image/placeholder)\nstruct FullyConnectedNetwork { int num_layers = 0; int layer_in_dim[MAX_LAYERS]{}; int layer_out_dim[MAX_LAYERS]{}; Matrix W[MAX_LAYERS]{}; Vector b[MAX_LAYERS]{}; ActivationType act[MAX_LAYERS]{}; double* d_W[MAX_LAYERS]{}; // GPU 사전 로드된 가중치 포인터 };",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0011R0F0004",
+          "support": "supported",
+          "support_note": "원문 p11:e97의 struct 정의에 num_layers, layer_in_dim[MAX_LAYERS], layer_out_dim[MAX_LAYERS], W[MAX_LAYERS], b[MAX_LAYERS], act[MAX_LAYERS], d_W[MAX_LAYERS]가 모두 존재한다. 진술은 Matrix/Vector 타입 지정자를 생략했으나 필드명과 배열 차원은 정확하다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "FullyConnectedNetwork 구조체의 d_W[MAX_LAYERS]는 GPU에 사전 로드된 가중치 포인터를 저장하기 위한 double* 포인터 배열이다.",
+          "limits": "원문에 '// GPU 사전 로드된 가중치 포인터' 주석이 존재한다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "implementation_code",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p11:e97",
+              "page": 11,
+              "quote": "![image](/image/placeholder)\nstruct FullyConnectedNetwork { int num_layers = 0; int layer_in_dim[MAX_LAYERS]{}; int layer_out_dim[MAX_LAYERS]{}; Matrix W[MAX_LAYERS]{}; Vector b[MAX_LAYERS]{}; ActivationType act[MAX_LAYERS]{}; double* d_W[MAX_LAYERS]{}; // GPU 사전 로드된 가중치 포인터 };",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0011R0F0005",
+          "support": "supported",
+          "support_note": "원문 p11:e97에 'double* d_W[MAX_LAYERS]{}; // GPU 사전 로드된 가중치 포인터'가 그대로 존재한다. 진술은 타입(double*), 배열 차원([MAX_LAYERS]), 주석 내용(GPU 사전 로드된 가중치 포인터)을 모두 정확히 반영한다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "GPU 메모리 주소를 저장할 수 있는 포인터 배열을 신경망에 미리 만들어놓는 설계가 적용되었다.",
+          "limits": "이 포인터 배열의 크기는 MAX_LAYERS를 기준으로 한다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "implementation_code",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p11:e98",
+              "page": 11,
+              "quote": "G PU의 메모리 주소를 저장할 수 있는 포인터 배열을 미리 신경망에 만들어놓고\n// 이때 포인터 배열의 크기는 MAX_LAYERS를 기준으로 하므로 공간보다 신경망이 작으면\n낭비될듯..",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0011R0F0006",
+          "support": "supported",
+          "support_note": "원문 p11:e98에 'GPU의 메모리 주소를 저장할 수 있는 포인터 배열을 미리 신경망에 만들어놓고'가 명시되어 있어 진술과 일치한다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "포인터 배열의 크기가 MAX_LAYERS를 기준으로 하므로, 신경망이 공간보다 작으면 공간이 낭비될 수 있다는 우려가 기록되었다.",
+          "limits": "이는 작성자의 해석/우려이며 실제 낭비 정도가 측정된 것은 아니다.",
+          "kind": "limitation",
+          "claim_status": "interpretation",
+          "source_origin": "implementation_code",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p11:e98",
+              "page": 11,
+              "quote": "G PU의 메모리 주소를 저장할 수 있는 포인터 배열을 미리 신경망에 만들어놓고\n// 이때 포인터 배열의 크기는 MAX_LAYERS를 기준으로 하므로 공간보다 신경망이 작으면\n낭비될듯..",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0011R0F0007",
+          "support": "supported",
+          "support_note": "원문 p11:e98에 '포인터 배열의 크기는 MAX_LAYERS를 기준으로 하므로 공간보다 신경망이 작으면 낭비될듯..'이라는 작성자의 우려가 그대로 기록되어 있다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [
+            "이는 작성자의 해석/우려이며, 실제 메모리 낭비 정도가 측정되었거나 정량적으로 입증된 것은 아니다.",
+            "진술은 '우려가 기록되었다'고 하여 작성자의 의견임을 정확히 명시하고 있다."
+          ],
+          "writing_role": "context_only"
+        },
+        {
+          "statement": "double보다 float가 접근 속도가 더 빠르다는 언급이 있다.",
+          "limits": "이는 일반적인 주장/언급이며 해당 프로젝트에서 실측된 결과는 아니다.",
+          "kind": "limitation",
+          "claim_status": "hypothesis",
+          "source_origin": "implementation_code",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p11:e99",
+              "page": 11,
+              "quote": "● 그리고 double 보다 float가 접근 속도가 더 빠르다는데 행렬, 벡터 구조체 등이 전부\ndouble을 기준으로 하므로 float 포인터를 쓰기 위해서는 전체적으로 갈아엎을\n필요가 있다.",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0011R0F0008",
+          "support": "supported",
+          "support_note": "원문 p11:e99에 'double 보다 float가 접근 속도가 더 빠르다는데'가 명시되어 있다. 진술은 이를 측정 결과가 아닌 언급으로 정확히 분류한다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [
+            "이는 일반적인 주장/언급이며 해당 프로젝트에서 실측된 결과가 아니다. 진술도 '언급이 있다'고 하여 사실 주장 수준을 정확히 한정하고 있다."
+          ],
+          "writing_role": "context_only"
+        },
+        {
+          "statement": "현재 행렬, 벡터 구조체 등이 전부 double을 기준으로 하므로, float 포인터를 쓰기 위해서는 전체적으로 갈아엎을 필요가 있다고 기록되었다.",
+          "limits": "이는 float 도입 시 필요한 작업 범위에 대한 작성자의 판단이다.",
+          "kind": "limitation",
+          "claim_status": "interpretation",
+          "source_origin": "implementation_code",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p11:e99",
+              "page": 11,
+              "quote": "● 그리고 double 보다 float가 접근 속도가 더 빠르다는데 행렬, 벡터 구조체 등이 전부\ndouble을 기준으로 하므로 float 포인터를 쓰기 위해서는 전체적으로 갈아엎을\n필요가 있다.",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0011R0F0009",
+          "support": "supported",
+          "support_note": "원문 p11:e99에 '행렬, 벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰기 위해서는 전체적으로 갈아엎을 필요가 있다'가 그대로 기록되어 있다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [
+            "이는 float 도입 시 필요한 작업 범위에 대한 작성자의 판단이며, 실제 작업량이나 난이도가 측정된 것은 아니다."
+          ],
+          "writing_role": "context_only"
+        }
+      ]
+    }
+  ]
+}

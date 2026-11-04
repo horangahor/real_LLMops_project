@@ -1,0 +1,497 @@
+{
+  "request_fingerprint": "8fec7b49a9c0aa5320899e5a9c2a405d272554d5f295bf61e094e1d7a28e96c2",
+  "value": {
+    "title": "CROWN CUDA sweep 성능 측정 및 코드 변경 실험 기록",
+    "facts": [
+      {
+        "statement": "실행인자 없이 backward를 실행한 초기 결과에서 전체 소요 시간이 1560.37s로 기록되었다.",
+        "limits": "단일 실행 결과이며 측정 조건(eps_list, N, 네트워크)은 해당 실행 환경에 한정된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward bound",
+          "실행인자 없음",
+          "eps_list sweep",
+          "N개 데이터"
+        ],
+        "observations": [
+          "total elapsed: 1560.37s",
+          "F=40000 ratio=0.000 (eps=9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00)"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total_elapsed_seconds",
+            "value": "1560.37",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "backward, 실행인자 없음, eps_list sweep, N개 데이터",
+            "element_ids": [
+              "p48:e342"
+            ]
+          },
+          {
+            "metric": "certify_fail_count",
+            "value": "40000",
+            "value_kind": "range",
+            "unit": "count",
+            "condition": "backward, 실행인자 없음, eps=9.0e-05/1.0e-02/1.0e-01/1.0e+00",
+            "element_ids": [
+              "p48:e342"
+            ]
+          },
+          {
+            "metric": "certify_fail_ratio",
+            "value": "0.000",
+            "value_kind": "range",
+            "unit": "ratio",
+            "condition": "backward, 실행인자 없음, eps=9.0e-05/1.0e-02/1.0e-01/1.0e+00",
+            "element_ids": [
+              "p48:e342"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p48:e342",
+          "p48:e343"
+        ]
+      },
+      {
+        "statement": "코드를 바꿔 실행인자 기반으로 forward/backward를 선택하도록 수정한 뒤 backward 실행 결과가 2164s로 기록되었다.",
+        "limits": "측정은 해당 코드 수정 이후 실행 기준이며, 수정 전 backward 결과(1560.37s)와 비교된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward bound",
+          "실행인자 기반 method 선택",
+          "eps_list sweep",
+          "N개 데이터"
+        ],
+        "observations": [
+          "total elapsed: 2164s (약 600초 증가)"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total_elapsed_seconds",
+            "value": "2164",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "backward, 실행인자 기반 method 선택, eps_list sweep, N개 데이터",
+            "element_ids": [
+              "p48:e344"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p48:e344",
+          "p49:e345"
+        ]
+      },
+      {
+        "statement": "작성자는 backward 실행 시간이 약 600초(10분) 증가한 원인을 switch문 바깥에 선언된 CROWN 결과 구조체의 값에 의한 복사 때문으로 추정했다.",
+        "limits": "원인은 작성자 해석이며 실제 프로파일링 수치로 확인된 것은 아니다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch문 바깥에 ForwardBoundResult/BackwardBoundResult 선언",
+          "반복문 내부에서 CROWN 결과 대입",
+          "값에 의한 복사"
+        ],
+        "observations": [
+          "구조체 전체를 복사하느라고 느려졌다는 해석",
+          "92만 번 복사하면 꽤 크다는 언급"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p49:e346",
+          "p49:e349",
+          "p49:e350"
+        ]
+      },
+      {
+        "statement": "switch문 안에서 ForwardBoundResult/BackwardBoundResult를 선언과 동시에 생성하도록 코드를 수정했다.",
+        "limits": "해당 수정은 switch 케이스별 중괄호 스코프 사용이 필요하며, 중괄호 없이 선언하면 컴파일 경고/오류가 발생할 수 있다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch(method) 내부 case 0/1에서 지역 변수로 선언",
+          "중괄호 스코프 사용"
+        ],
+        "observations": [
+          "switch 안에서 선언과 동시에 만들어지도록 변경",
+          "중괄호로 스코프를 덮어주지 않으면 안된다고 기록"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e351",
+          "p50:e352",
+          "p50:e353"
+        ]
+      },
+      {
+        "statement": "switch문 바깥에서 fwd/bwd를 선언하면 transfer of control이 초기화를 우회한다는 경고와 함께 초기화가 case/default 레이블에 의해 생략되었다는 컴파일 오류가 발생했다.",
+        "limits": "컴파일러 진단 메시지는 nvcc 컴파일 과정에서 발생한 것으로 기록되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "nvcc 컴파일",
+          "switch(method) 바깥에 fwd/bwd 선언",
+          "case 0/1 및 default 레이블"
+        ],
+        "observations": [
+          "warning #546-D: transfer of control bypasses initialization of variable fwd/bwd",
+          "error C2360/C2361: fwd/bwd 초기화가 case/default 레이블에 의해 생략됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e354",
+          "p50:e355"
+        ]
+      },
+      {
+        "statement": "switch문 내부에 중괄호 스코프를 두어 fwd/bwd를 선언·초기화하는 방식으로 수정한 뒤, backward 실행 시간이 다시 2100s 수준으로 증가하는 문제가 해결되었다고 기록했다.",
+        "limits": "해결 판단은 작성자 해석이며, 이후 실행에서 시간 변동이 다시 관찰되었다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch 내부 중괄호 스코프에서 fwd/bwd 선언",
+          "실행인자 기반 method 선택"
+        ],
+        "observations": [
+          "준수한 결과라고 평가",
+          "2100s 초 나오는 문제도 원인 해결 완료라고 기록"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e357"
+        ]
+      },
+      {
+        "statement": "실행인자 없이 backward를 실행했을 때 전체 소요 시간이 1560.37s로 다시 기록되었다.",
+        "limits": "실행인자 없는 backward 기준 결과이며, 이후 다른 실행에서는 시간이 변동되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward bound",
+          "실행인자 없음",
+          "eps_list sweep"
+        ],
+        "observations": [
+          "total elapsed: 1560.37s",
+          "F=40000 ratio=0.000"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total_elapsed_seconds",
+            "value": "1560.37",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "backward, 실행인자 없음, eps_list sweep",
+            "element_ids": [
+              "p51:e360"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p51:e360",
+          "p51:e361"
+        ]
+      },
+      {
+        "statement": "실행인자 없이 forward를 실행했을 때 전체 소요 시간이 1342.47s로 기록되었다.",
+        "limits": "실행인자 없는 forward 기준 결과이며, 작성자는 이 감소를 값에 의한 복사 해결과 연관지어 추정했다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward bound",
+          "실행인자 없음",
+          "eps_list sweep"
+        ],
+        "observations": [
+          "total elapsed: 1342.47s",
+          "F=40000 ratio=0.000"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total_elapsed_seconds",
+            "value": "1342.47",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "forward, 실행인자 없음, eps_list sweep",
+            "element_ids": [
+              "p51:e364"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p51:e364",
+          "p51:e365"
+        ]
+      },
+      {
+        "statement": "실행인자 없이 backward를 실행했을 때 전체 소요 시간이 1561.72s로 기록되었다.",
+        "limits": "실행인자 없는 backward 기준 결과이며, 실행인자가 있는 backward와 비교되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward bound",
+          "실행인자 없음",
+          "eps_list sweep"
+        ],
+        "observations": [
+          "total elapsed: 1561.72s",
+          "F=40000 ratio=0.000"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total_elapsed_seconds",
+            "value": "1561.72",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "backward, 실행인자 없음, eps_list sweep",
+            "element_ids": [
+              "p51:e366"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p51:e366",
+          "p51:e367"
+        ]
+      },
+      {
+        "statement": "실행인자 없이 forward를 실행했을 때 전체 소요 시간이 1460.60s로 기록되었다.",
+        "limits": "실행인자 없는 forward 기준 결과이며, 작성자는 실행인자가 있는 경우가 더 빠르다고 언급했다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward bound",
+          "실행인자 없음",
+          "eps_list sweep"
+        ],
+        "observations": [
+          "total elapsed: 1460.60s",
+          "F=40000 ratio=0.000"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total_elapsed_seconds",
+            "value": "1460.60",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "forward, 실행인자 없음, eps_list sweep",
+            "element_ids": [
+              "p51:e368"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p51:e368",
+          "p51:e369"
+        ]
+      },
+      {
+        "statement": "실행인자가 있는 backward를 실행했을 때 전체 소요 시간이 1564.18s로 기록되었다.",
+        "limits": "실행인자 있는 backward 기준 결과이며, 실행인자 없는 backward와 비슷한 수준으로 언급되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward bound",
+          "실행인자 있음",
+          "eps_list sweep"
+        ],
+        "observations": [
+          "total elapsed: 1564.18s",
+          "F=40000 ratio=0.000"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total_elapsed_seconds",
+            "value": "1564.18",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "backward, 실행인자 있음, eps_list sweep",
+            "element_ids": [
+              "p51:e370"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p51:e370",
+          "p51:e371",
+          "p51:e372"
+        ]
+      },
+      {
+        "statement": "실행인자가 있는 forward를 실행했을 때 전체 소요 시간이 1447.17s로 기록되었다.",
+        "limits": "실행인자 있는 forward 기준 결과이며, eps=9.0e-03/1.0e-02/1.0e-01/1.0e+00 조건에서 측정되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward bound",
+          "실행인자 있음",
+          "eps_list sweep"
+        ],
+        "observations": [
+          "total elapsed: 1447.17s",
+          "F=40000 ratio=0.000"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total_elapsed_seconds",
+            "value": "1447.17",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "forward, 실행인자 있음, eps=9.0e-03/1.0e-02/1.0e-01/1.0e+00",
+            "element_ids": [
+              "p52:e373"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p52:e373",
+          "p52:e374"
+        ]
+      },
+      {
+        "statement": "실행인자가 있는 forward를 실행했을 때 전체 소요 시간이 1360.22s로 기록되었다.",
+        "limits": "실행인자 있는 forward 기준 결과이며, eps=9.0e-05/1.0e-02/1.0e-01/1.0e+00 조건에서 측정되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward bound",
+          "실행인자 있음",
+          "eps_list sweep"
+        ],
+        "observations": [
+          "total elapsed: 1360.22s",
+          "F=40000 ratio=0.000"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total_elapsed_seconds",
+            "value": "1360.22",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "forward, 실행인자 있음, eps=9.0e-05/1.0e-02/1.0e-01/1.0e+00",
+            "element_ids": [
+              "p52:e375"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p52:e375",
+          "p52:e376",
+          "p52:e377"
+        ]
+      },
+      {
+        "statement": "작성자는 현재 의문으로 3가지를 정리했다: 다중 데이터 테스트에서 forward 성능 감소가 어디서 일어나는지, 구조체 값에 의한 복사 제거 후 backward가 다시 2100s 정도로 튀는 원인, 실행인자 추가와 switch문 사용이 실제 성능에 영향을 줬는지 여부.",
+        "limits": "의문은 작성자 정리이며 각 항목에 대한 확정 원인은 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "단일 데이터 테스트에서는 forward/backward 3배 차이",
+          "다중 데이터 테스트에서는 forward 성능 감소 관찰",
+          "switch문 사용"
+        ],
+        "observations": [
+          "switch 사용하고 좀 느려진 것 같다는 언급"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p52:e380",
+          "p52:e381"
+        ]
+      },
+      {
+        "statement": "랩 미팅 이후 개선/보완 계획으로 Compute Throughput과 Memory Throughput의 정확한 정의(수식) 확인, forward/backward 92만 번 실행의 평균·분산 측정, 추론+bound+검증을 나눠서 측정하는 방안이 기록되었다.",
+        "limits": "계획은 작성자가 정리한 향후 수행 항목이며, 일부는 이미 측정/검증이 완료되었다고 표기되었다.",
+        "kind": "result",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "92만 번 forward/backward 실행",
+          "단일 데이터 optimizing.exe",
+          "sparse.py"
+        ],
+        "observations": [
+          "92만 번 forward/backward 20번씩 측정 완료",
+          "단일 데이터 warm up 영향 측정 & 검증 완료",
+          "sparse.py는 검증팀에 따로 측정한 값이 없다고 하여 forward만 2번 추가 측정 계획"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p53:e387",
+          "p53:e388"
+        ]
+      },
+      {
+        "statement": "신경망 검증팀과 확인한 결과 forward와 backward의 검증 비율 결과 차이, 그리고 sweep으로 추론+bound+검증 92만 번 사이클을 한 번에 계산한 방식 모두 맞다고 확인되었다고 기록되었다.",
+        "limits": "확인 결과는 검증팀과의 대화 기반이며, 작성자가 전달한 내용이다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "신경망 검증팀 확인",
+          "forward/backward 검증 비율 차이",
+          "sweep 사이클 계산 방식"
+        ],
+        "observations": [
+          "둘 다 맞다고 한다고 기록"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p53:e389"
+        ]
+      }
+    ],
+    "coverage": {
+      "p49": {
+        "status": "extracted",
+        "note": "backward가 약 600초 느려진 현상과 switch문 바깥 구조체 선언에 대한 작성자 해석, 값에 의한 복사 관련 논의를 수집함."
+      },
+      "p50": {
+        "status": "extracted",
+        "note": "switch문 내부 중괄호 스코프를 사용한 선언·초기화 수정, nvcc 컴파일 경고/오류, 수정 후 결과 평가를 수집함."
+      },
+      "p51": {
+        "status": "extracted",
+        "note": "실행인자 유무에 따른 forward/backward 여러 실행의 total elapsed 시간 변동과 작성자 반응을 수집함."
+      },
+      "p52": {
+        "status": "extracted",
+        "note": "실행인자 있는 forward의 여러 total elapsed 결과, 새 페이지 확인 계획, 현재 의문 3가지를 수집함."
+      }
+    }
+  }
+}

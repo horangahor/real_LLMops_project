@@ -1,0 +1,33 @@
+{
+  "id": "0ae2609a-c5ad-4edf-be89-033dd26b90e6",
+  "object": "chat.completion",
+  "created": 1793361896,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{ \"parts\": { \"p0\": \"CROWN 검증의 CUDA 가속 최적화 작업은 원본 C++ 구현(lirpa_forward_backward_fc_array.cpp)의 기본 틀을 유지한 채 병렬 연산이 필요한 부분만 GPU 커널로 바꾸는 포팅에서 출발했으며, 초기 포팅 후 컴파일·실행 검증에서 기존과 동일하게 동작함을 확인했다[근거:F02]. 이후 커널 퓨전과 set_shape 함수를 다른 커널에 직접 내장하는 방식으로 CROWN 검증 실행 시간을 최저 약 21.3753ms까지 줄였고, 측정 환경에 따라 23~26ms 수준으로 변동하는 경우도 함께 기록되었다[근거:F14]. 추가로 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용해 H2D 복사를 제거하고, 단위행렬·영벡터 같은 기본 초기 상태를 GPU 커널에서 직접 생성해 PCIe 통신 오버헤드를 최소화한 결과, 전체 elapsed time이 13.939ms 수준으로 낮아진 예시도 확인되었다[근거:F19].\\n\\n성능 결과는 단일 수치가 아니라 단계별·수준별 관점으로 정리할 필요가 있다. Real-Time Single-Sample(B=1) Latency Analysis에서는 평균 지연 1145.24us, P99 1311.90us, 최대 7830.90us, 처리량 873.18 samples/sec가 측정되었고, 전체 elapsed 1055.28s 중 bound가 87.3%, infer가 12.5%, certify가 0.2%를 차지했다[근거:F25]. 이후 추가 최적화를 거친 뒤에는 전체 elapsed가 787s에서 630s로 약 157초 줄었으며, 이 시점의 Real-Time Single-Sample 측정에서는 평균 지연 689.64us, 처리량 1450.02 samples/sec가 기록되었다[근거:F32]. 즉, 이 연구의 중심 성과는 정확도 개선이 아니라 검증 실행 시간의 GPU 가속 최적화이며, 초기 CPU 대비 역전 문제에서 출발해 elapsed time 감소와 단계별 타이밍 분해까지의 과정이 핵심 결과로 정리된다.\\n\\n실용적으로는 CROWN 검증의 반복 실행 부담을 줄여 더 많은 입력·eps 조합에 대한 검증을 수행할 여지를 만들었지만, 측정 환경 명확화, warmup 스파이크 원인 규명, pinned memory와 커널 비용 차이의 정량적 인과 확인, 대규모 모델 대응, 방법 B/C 비교 등은 향후 과제로 남는다. 특히 평가 샘플이 10만개로 제한된 점, cudaEvent 측정 제어 인자에 따라 드라이버 오버헤드가 달라질 수 있는 점, 최대 지연이 이상치일 가능성 등은 결과 해석 시 함께 고려해야 한다[근거:F25].\" } }"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 4207,
+    "completion_tokens": 533,
+    "total_tokens": 4740,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

@@ -46,17 +46,83 @@ class CandidateEvidenceTests(unittest.TestCase):
         self.assertEqual(report["required_content_coverage"]["met"], 1)
         self.assertEqual(report["checks"][0]["verdict"], "missing")
 
-    def test_reported_used_evidence_must_really_be_cited_and_cannot_use_other_items_candidates(self):
+    def test_reported_used_evidence_must_be_cited_even_when_outside_item_candidates(self):
         value, bodies, raw = candidate_fixture()
         raw["checks"][0]["evidence_ids"].append("E00001")
         report = checked_review(raw, value, bodies)
         self.assertFalse(report["approved"])
         self.assertEqual(report["checks"][0]["missing_body_evidence_ids"], ["E00001"])
-        # Even a section-known ID cannot be used as support for a different item's claim.
+        # Section/subsection allocation remains the boundary, not the item pool.
         value["sections"][0]["evidence_ids"].append("OTHER")
         raw["checks"][0]["evidence_ids"] = ["OTHER"]
-        with self.assertRaisesRegex(ValueError, "후보 근거 범위"):
+        report = checked_review(raw, value, bodies)
+        self.assertFalse(report["approved"])
+        self.assertEqual(report["checks"][0]["missing_body_evidence_ids"], ["OTHER"])
+        self.assertEqual(report["checks"][0]["missing_section_evidence_ids"], ["OTHER"])
+        self.assertEqual(report["checks"][0]["failure_owner"], "writer")
+        bodies["s0"] += "\n\n별도로 배정된 승인 근거로 내용을 설명한다. [근거:OTHER]"
+        raw["checks"][0]["paragraph_ids"].append("s0_p2")
+        report = checked_review(raw, value, bodies)
+        self.assertTrue(report["approved"])
+        self.assertEqual(report["checks"][0]["used_non_candidate_evidence_ids"], ["OTHER"])
+
+    def test_candidate_membership_does_not_bypass_section_or_paragraph_boundaries(self):
+        value, bodies, raw = candidate_fixture()
+        for eid in ("UNKNOWN", "F1"):
+            with self.subTest(evidence_id=eid):
+                raw["checks"][0]["evidence_ids"] = [eid]
+                with self.assertRaisesRegex(ValueError, "해당 장에 없는 근거"):
+                    checked_review(raw, value, bodies)
+        value["sections"][0]["evidence_ids"].append("OTHER")
+        bodies["s0"] += "\n\n사용된 다른 승인 근거다. [근거:OTHER]"
+        raw["checks"][0]["evidence_ids"] = ["OTHER"]
+        report = checked_review(raw, value, bodies)
+        self.assertFalse(report["approved"])
+        self.assertEqual(report["checks"][0]["unselected_cited_evidence_ids"], ["OTHER"])
+        self.assertEqual(report["checks"][0]["failure_owner"], "reviewer")
+        raw["checks"][0]["paragraph_ids"] = ["s1_p1"]
+        with self.assertRaisesRegex(ValueError, "없는 초안 문단"):
             checked_review(raw, value, bodies)
+
+    def test_semantic_findings_are_preserved_when_reported_evidence_is_outside_candidates(self):
+        value, bodies, raw = candidate_fixture()
+        value["sections"][0]["evidence_ids"].append("OTHER")
+        bodies["s0"] = "잘못 확대하여 쓴 주장이다. [근거:OTHER]"
+        raw["checks"][0]["evidence_ids"] = ["OTHER"]
+        raw["issues"] = [{"section_id": "s0", "paragraph_id": "s0_p1", "severity": "error",
+                          "reason": "관찰을 검증 완료로 확대했다.", "evidence_ids": ["OTHER"]}]
+        report = checked_review(raw, value, bodies)
+        self.assertFalse(report["approved"])
+        self.assertEqual(report["checks"][0]["verdict"], "met")
+        self.assertEqual(report["issues"][0]["reason"], raw["issues"][0]["reason"])
+        raw["issues"] = []
+        raw["checks"][0]["verdict"] = "missing"
+        self.assertFalse(checked_review(raw, value, bodies)["approved"])
+
+    def test_empty_candidate_pool_can_use_actual_assigned_cited_support(self):
+        value, bodies, raw = candidate_fixture()
+        value["sections"][0]["required_items"][0]["evidence_ids"] = []
+        report = checked_review(raw, value, bodies)
+        self.assertTrue(report["approved"])
+        self.assertEqual(report["required_content_coverage"]["total"], 2)
+        from editorial_review import checked_editorial_review
+        inherited = checked_editorial_review({"issues": []}, value, bodies, {"leaf": report})
+        self.assertEqual(inherited["required_content_coverage"]["total"], 2)
+
+    def test_diagnostics_include_missing_used_evidence_outside_item_candidates(self):
+        from draft_diagnostics import review_diagnostics
+        value = plan(2)
+        bodies = {sid: "배정된 근거의 설명이다. [근거:F1]" for sid in ("s0", "s1")}
+        raw = {"checks": [{"item_id": f"item{i}", "verdict": "met", "paragraph_ids": [f"s{i}_p1"],
+                            "evidence_ids": ["F2"] if i == 0 else ["F1"]} for i in range(2)],
+               "issues": [], "reference_checks": []}
+        report = checked_review(raw, value, bodies)
+        details = review_diagnostics("subsection-s0-p0", value, research(), bodies, report)
+        evidence = {row["id"]: row for row in details["items"][0]["evidence"]}
+        self.assertTrue(evidence["F2"]["outside_item_candidates"])
+        self.assertTrue(evidence["F2"]["missing_body"])
+        self.assertEqual(details["items"][0]["planned_evidence_count"], 1)
+        self.assertEqual(details["items"][0]["unused_candidate_count"], 0)
 
     def test_met_without_any_selected_support_is_not_approved(self):
         value, bodies, raw = candidate_fixture()
@@ -99,6 +165,24 @@ class CandidateEvidenceTests(unittest.TestCase):
             self.assertEqual(saved["value"]["raw_review"]["checks"][0]["evidence_ids"], ["F1"])
             self.assertTrue(result["review"]["approved"])
 
+    def test_runtime_accepts_actually_used_non_candidate_fact_without_repair_or_rewriting(self):
+        client = Client()
+        def response(system, packet, schema, path):
+            raw = client(system, packet, schema, path)
+            if path.parent.parent.name == "subsection-s0-p0":
+                if "parts" in schema["properties"]:
+                    raw["parts"]["p0"] = "소절에 배정된 다른 승인 근거로 내용을 설명한다. [근거:F2]"
+                elif "checks" in schema["properties"]:
+                    raw["checks"][0].update(evidence_ids=["F2"], paragraph_ids=list(packet["draft_paragraphs"]))
+            return raw
+        with TemporaryDirectory() as tmp:
+            result = PlannedPaper(tmp, response).run(research())
+            self.assertTrue(result["review"]["approved"])
+            self.assertEqual([kind for stage, kind, _ in client.events if stage == "subsection-s0-p0"], ["generate", "review"])
+            check = next(c for c in result["review"]["checks"] if c["item_id"] == "item0")
+            self.assertEqual(check["used_non_candidate_evidence_ids"], ["F2"])
+            self.assertEqual(check["unused_candidate_evidence_ids"], ["F1"])
+
     def test_old_review_requests_are_not_reused_under_the_new_policy(self):
         value, bodies, raw = candidate_fixture(2)
         data = research()
@@ -117,15 +201,15 @@ class CandidateEvidenceTests(unittest.TestCase):
             self.assertIn("candidate-pool-v1", calls[-1])
             self.assertTrue(report["approved"])
 
-    def test_coverage_has_candidate_meanings_and_limits_without_repeating_source_quotes(self):
+    def test_coverage_keeps_body_and_criteria_without_resending_fact_records(self):
         from test_drafting_budget import fixture
         data, _, _, _, packet = fixture()
         original = copy.deepcopy(packet)
         scoped = _coverage_packet(packet, {})
-        for before, after in zip(data["facts"], scoped["research"]["facts"]):
-            self.assertEqual(after["statement"], before["statement"])
-            self.assertEqual(after["limits"], before["limits"])
-            self.assertNotIn("sources", after)
+        self.assertNotIn("facts", scoped["research"])
+        self.assertNotIn("tables", scoped["research"])
+        self.assertEqual(scoped["draft_paragraphs"], packet["draft_paragraphs"])
+        self.assertEqual(scoped["plan"]["sections"][0]["required_items"], packet["plan"]["sections"][0]["required_items"])
         self.assertEqual(packet, original)
 
 

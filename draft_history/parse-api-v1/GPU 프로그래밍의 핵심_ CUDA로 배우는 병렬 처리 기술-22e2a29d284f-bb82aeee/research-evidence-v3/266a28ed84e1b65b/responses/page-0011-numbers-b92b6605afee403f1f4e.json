@@ -1,0 +1,406 @@
+{
+  "request_fingerprint": "b92b6605afee403f1f4ec4eb715400ec3d2cbbdc7ee2a68994ecc120c881d43b",
+  "value": {
+    "repairs": {
+      "1": [
+        {
+          "statement": "v1-1-2의 가중치 사전 업로드 함수 pre_upload_weights_to_gpu는 각 레이어마다 cudaMalloc으로 MAX_DIM * MAX_DIM * sizeof(double) 크기의 GPU 메모리를 할당하고 cudaMemcpy2D로 호스트 가중치를 복사한다.",
+          "limits": "이 함수는 net->d_W[i]에 GPU 메모리를 저장하여 이후 재사용할 수 있게 한다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p12:e100",
+            "p12:e101"
+          ]
+        },
+        {
+          "statement": "v1-1-2의 구조체 FullyConnectedNetwork에는 GPU 사전 로드된 가중치 포인터 double* d_W[MAX_LAYERS]가 포함되어 있다.",
+          "limits": "이 설계는 double 기준이며, float 포인터로 바꾸려면 전체적으로 갈아엎을 필요가 있다고 적혀 있다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [
+            {
+              "name": "포인터 배열 크기 기준",
+              "value": "MAX_LAYERS",
+              "value_kind": "text",
+              "element_ids": [
+                "p11:e97",
+                "p11:e98"
+              ]
+            },
+            {
+              "name": "데이터 타입 기준",
+              "value": "double",
+              "value_kind": "text",
+              "element_ids": [
+                "p11:e97",
+                "p11:e99"
+              ]
+            }
+          ],
+          "measurements": [],
+          "element_ids": [
+            "p11:e97",
+            "p11:e98",
+            "p11:e99"
+          ]
+        },
+        {
+          "statement": "v1-1-2 실행 예시의 출력 차원은 16이며, lower bound, upper bound, normal pred(y) 값이 함께 출력되었다.",
+          "limits": "이 화면은 특정 실행 결과 예시이며, 버전별 성능 비교의 대표값으로 쓰였다는 뜻은 아니다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps = 1e-06",
+            "MODE: MEMPOOL + Weights PRELOAD ON GPU"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "output_dimension",
+              "value": "16",
+              "value_kind": "scalar",
+              "unit": "dim",
+              "condition": "v1-1-2 실행 예시",
+              "element_ids": [
+                "p12:e102"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p12:e102"
+          ]
+        },
+        {
+          "statement": "v1-1-2 실행 예시에서 bias까지 미리 업로드했을 때 크게 성능 개선에 의미를 미치지 못하는 것으로 기록되었다.",
+          "limits": "그 이유로 bias는 Vector이며 코드상 약 4KB 정도라서 그렇다고 적혀 있다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p12:e104"
+          ]
+        },
+        {
+          "statement": "v1-1-2의 실행 결과 예시로 Elapsed time: 149.820400 ms가 기록되어 있다.",
+          "limits": "이 값은 특정 실행 예시이며, v1-1-2의 성능 범위가 149~155ms로 기록된 것과 함께 제시된다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps = 1e-06",
+            "MODE: MEMPOOL + Weights PRELOAD ON GPU"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "elapsed_time_ms",
+              "value": "149.820400",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "v1-1-2 실행 예시",
+              "element_ids": [
+                "p12:e102"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p12:e102"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "statement": "v1-1-1은 메모리 풀만 도입한 프로그램이며, 결과는 205~250ms로 기록되었다.",
+          "limits": "v1-1-1은 아직 메모리 풀만 도입한 단계로, cuBLAS 등 다른 최적화는 적용되지 않았다고 적혀 있다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "elapsed_time_ms",
+              "value": "205~250",
+              "value_kind": "range",
+              "unit": "ms",
+              "condition": "v1-1-1 메모리 풀만 도입",
+              "element_ids": [
+                "p10:e92"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p10:e92"
+          ]
+        },
+        {
+          "statement": "v1-1은 벡터연산 중 3가지(vec_add, sub, mat)를 cpu로 돌려놓았으며, 300ms로 기록되었다.",
+          "limits": "v1-1은 메모리 풀도 안 되어 있고 cuBLAS도 안 되어 있어, cpu로 함수를 돌리면 결국 v0의 결과와 같아져 정확한 비교를 할 수 없다고 적혀 있다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "elapsed_time_ms",
+              "value": "300",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "v1-1 cpu 벡터연산",
+              "element_ids": [
+                "p10:e90"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p10:e90"
+          ]
+        },
+        {
+          "statement": "v4는 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하기를 개선 방향으로 제시한다.",
+          "limits": "v4의 구체적 실행 결과 수치는 이 문단들에 직접 기록되어 있지 않다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p10:e83",
+            "p10:e85",
+            "p10:e86"
+          ]
+        },
+        {
+          "statement": "cuBLAS는 엔비디아 GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다.",
+          "limits": "이 정의는 v4 개선 방향 설명의 일부로 제시되어 있다.",
+          "kind": "setup",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p10:e84"
+          ]
+        },
+        {
+          "statement": "v4 개선 방향에는 16 x 491 행렬 같은 부분도 있으므로, 현재 기준 512 x 512, 2MB 행렬을 memcpy하는 것보다 필요한 부분만 복사하자는 내용이 포함된다.",
+          "limits": "이 내용은 전체 복사 대신 필요한 부분만 복사하자는 개선 제안으로 기록되어 있다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p10:e86"
+          ]
+        }
+      ],
+      "3": [
+        {
+          "statement": "메모리 풀 크기 산정 근거로 Matrix 3개(mat_add, matmul 등에서 최대 3개 A, B, C 동시 사용)와 Vector 6개(relu_relax에서 lower, upper, alpha_l, beta_l, alpha_u, beta_u 동시 사용)가 제시되었다.",
+          "limits": "이 산정 근거는 메모리 풀 설계의 근거로 적혀 있으며, 실제 풀 크기 수치 자체는 이 문장들에 직접 제시되지 않았다.",
+          "kind": "setup",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p10:enh:e12",
+            "p10:enh:e13",
+            "p10:review:e12",
+            "p10:review:e13"
+          ]
+        }
+      ],
+      "4": [
+        {
+          "statement": "v1-1-2 실행 예시 화면에는 Starting CROWN Verification (eps = 1e-06), clear Iirpa_forward!, calc success, Elapsed time, Output Dimension: 16이 기록되어 있다.",
+          "limits": "이 화면은 특정 실행 예시이며, 버전별 성능 비교의 대표값으로 쓰였다는 뜻은 아니다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps = 1e-06",
+            "MODE: MEMPOOL + Weights PRELOAD ON GPU"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "elapsed_time_ms",
+              "value": "149.820400",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "v1-1-2 실행 예시",
+              "element_ids": [
+                "p12:e102"
+              ]
+            },
+            {
+              "metric": "output_dimension",
+              "value": "16",
+              "value_kind": "scalar",
+              "unit": "dim",
+              "condition": "v1-1-2 실행 예시",
+              "element_ids": [
+                "p12:e102"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p12:e102"
+          ]
+        }
+      ],
+      "5": [
+        {
+          "statement": "v1-1-2의 가중치 사전 업로드 함수 pre_upload_weights_to_gpu는 각 레이어마다 cudaMalloc으로 MAX_DIM * MAX_DIM * sizeof(double) 크기의 GPU 메모리를 할당하고 cudaMemcpy2D로 호스트 가중치를 복사한다.",
+          "limits": "이 함수는 net->d_W[i]에 GPU 메모리를 저장하여 이후 재사용할 수 있게 한다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p12:e100",
+            "p12:e101"
+          ]
+        },
+        {
+          "statement": "v1-1-2의 구조체 FullyConnectedNetwork에는 GPU 사전 로드된 가중치 포인터 double* d_W[MAX_LAYERS]가 포함되어 있다.",
+          "limits": "이 설계는 double 기준이며, float 포인터로 바꾸려면 전체적으로 갈아엎을 필요가 있다고 적혀 있다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [
+            {
+              "name": "포인터 배열 크기 기준",
+              "value": "MAX_LAYERS",
+              "value_kind": "text",
+              "element_ids": [
+                "p11:e97",
+                "p11:e98"
+              ]
+            },
+            {
+              "name": "데이터 타입 기준",
+              "value": "double",
+              "value_kind": "text",
+              "element_ids": [
+                "p11:e97",
+                "p11:e99"
+              ]
+            }
+          ],
+          "measurements": [],
+          "element_ids": [
+            "p11:e97",
+            "p11:e98",
+            "p11:e99"
+          ]
+        },
+        {
+          "statement": "v1-1-2 실행 예시에서 bias까지 미리 업로드했을 때 크게 성능 개선에 의미를 미치지 못하는 것으로 기록되었다.",
+          "limits": "그 이유로 bias는 Vector이며 코드상 약 4KB 정도라서 그렇다고 적혀 있다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p12:e104"
+          ]
+        },
+        {
+          "statement": "v1-1-2 실행 예시의 출력 차원은 16이며, lower bound, upper bound, normal pred(y) 값이 함께 출력되었다.",
+          "limits": "이 화면은 특정 실행 결과 예시이며, 버전별 성능 비교의 대표값으로 쓰였다는 뜻은 아니다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps = 1e-06",
+            "MODE: MEMPOOL + Weights PRELOAD ON GPU"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "output_dimension",
+              "value": "16",
+              "value_kind": "scalar",
+              "unit": "dim",
+              "condition": "v1-1-2 실행 예시",
+              "element_ids": [
+                "p12:e102"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p12:e102"
+          ]
+        },
+        {
+          "statement": "v1-1-2의 실행 결과 예시로 Elapsed time: 149.820400 ms가 기록되어 있다.",
+          "limits": "이 값은 특정 실행 예시이며, v1-1-2의 성능 범위가 149~155ms로 기록된 것과 함께 제시된다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps = 1e-06",
+            "MODE: MEMPOOL + Weights PRELOAD ON GPU"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "elapsed_time_ms",
+              "value": "149.820400",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "v1-1-2 실행 예시",
+              "element_ids": [
+                "p12:e102"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p12:e102"
+          ]
+        }
+      ]
+    }
+  }
+}

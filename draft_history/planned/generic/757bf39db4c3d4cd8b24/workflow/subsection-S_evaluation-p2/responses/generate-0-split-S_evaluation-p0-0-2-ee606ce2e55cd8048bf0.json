@@ -1,0 +1,38 @@
+{
+  "request_fingerprint": "ee606ce2e55cd8048bf0d00c82dd06aa637e62df81f4b5560ff2f8c68974a540",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "커널 축소와 최적화 효과는 backward_bound_gpu를 중심으로 한 커널 퓨전, 메모리 복사 경로 조정, 동기화 제거, 그리고 cudaGraph 적용 여부로 나누어 정리된다. 먼저 backward_bound_gpu에는 affine 중복 계산 삭제, new_(upper, lower)_p를 복사 대신 std::swap으로 포인터 스와핑, backward 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu 도입, build_coeff_pair_fused_gpu 커널 퓨전, backward_bias_pair_fused_gpu 커널 퓨전이 적용되었다 [근거:E00320]. 이 5가지 적용 후 22.157400 ms가 관측되었고, 이후 1개의 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전을 모두 진행하였다 [근거:E00326]. 다만 backward_bound_gpu에 커널 퓨전을 먼저 진행했을 때 23ms 후반대까지의 실행 시간이 관측되었으며, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 것은 23ms 정도가 보인다는 점으로 기록되었다 [근거:E00329].",
+          "evidence_ids": [
+            "E00320",
+            "E00326",
+            "E00329"
+          ]
+        },
+        {
+          "text": "최적화 과정에서 성능 저하가 발생한 시도도 있었다. 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다 [근거:E00370]. 또한 forward_cuda_graph의 전체 시간이 약 983초이고, CPU에서 필요한 만큼만 계산한 뒤 복사한 버전(1055)이 72초 더 느렸으며, 이는 더 늦어진 결과로 기록되었다 [근거:E00374]. 실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간은 1055.282초, infer는 131.7986초, bound는 920.8438초로 측정되었다 [근거:E00375].",
+          "evidence_ids": [
+            "E00370",
+            "E00374",
+            "E00375"
+          ]
+        },
+        {
+          "text": "커널 축소와 관련된 정량 비교도 함께 제시된다. memcpy 호출 횟수는 66개에서 56개로 감소하였다 [근거:E00339]. 또한 CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거하여, 3-layer 네트워크 기준으로 Forward method=0 bound 27→18회(9회 감소), Backward method=1 bound 전체 46→31회(15회 감소), Backward-only method=2 bound 전체 45→33회(12회 감소)가 되었고, graph mode=1에서 샘플 1개 전체 기준으로는 Forward 33→24회(9회 감소), Backward 52→37회(15회 감소), Backward-only 51→39회(12회 감소)가 되었다 [근거:E00330]. 이 커널 횟수 감소는 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch를 제외하고 CUDA kernel launch만 센 값이다.",
+          "evidence_ids": [
+            "E00339",
+            "E00330"
+          ]
+        },
+        {
+          "text": "성능 문제의 원인으로는 신경망의 크기가 매우 작고, cuBlas/cuSparse의 동작 방식에서 오버헤드가 생겼으며 이 또한 신경망이 작기 때문으로 정리되었다 [근거:E00331]. 현재까지 cuBlas/cuSparse의 기본적인 형태의 행렬곱 연산 함수를 사용했으며, 행렬곱에도 변형 함수들이 매우 많아 sm 내 분석과 함께 사용해야 하는 함수들이라 Nsight compute 분석 때 같이 진행하면 될 것으로 검토되었다 [근거:E00331].",
+          "evidence_ids": [
+            "E00331"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,1035 @@
+{
+  "request_fingerprint": "a162e14e09c0db8d0309cfb1308677b02c7ae869ed0cb93cb75c0b8891530b6a",
+  "value": {
+    "facts": [
+      {
+        "statement": "cuSparse를 도입해 벡터 곱(spMV)만 적용했으며, 적용 범위는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고 cuSPARSE handle 및 CSR descriptor를 유지하며 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체한 상황이다. 기존 matmul은 아직 유지되었다.",
+        "limits": "이 내용은 cuSparse 도입 시도와 적용 범위에 대한 기록이며, spMM 도입 후 최종 성능 결론은 다음 단계의 결과로 이어진다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse 도입 시도",
+          "spMV만 적용",
+          "W, W_pos, W_neg를 CSR 형식으로 변환",
+          "cuSPARSE handle 및 CSR descriptor 유지",
+          "network_forward()의 dense matvec를 cuSPARSE SpMV로 교체",
+          "기존 matmul은 유지"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:enh:e3",
+          "p28:enh:e5",
+          "p28:enh:e6"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q12"
+        ],
+        "supplemental_reason": "cuSparse 도입 시도와 적용 범위, 그리고 기존 matmul 유지 상태를 문서화한 사실"
+      },
+      {
+        "statement": "cuSparse를 이용해 spMV만 적용한 결과 CROWN Verification 실행 시간이 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다.",
+        "limits": "이 수치는 단일 실행 결과이며, 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse 도입",
+          "spMV만 적용",
+          "CROWN Verification 실행",
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "실행 시간이 27.107400 ms로 기록됨",
+          "이전보다 느려졌다고 기록됨"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p28:enh:e1"
+            ]
+          },
+          {
+            "name": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p28:enh:e1"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "27.107400",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuSparse spMV 적용, CROWN Verification, eps=1e-06, Output Dimension 16",
+            "element_ids": [
+              "p28:enh:e1"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p28:enh:e1",
+          "p28:enh:e6"
+        ],
+        "requirement_ids": [
+          "methods_Q6",
+          "evaluation_Q1"
+        ],
+        "supplemental_reason": "cuSparse spMV 적용 후 CROWN Verification 실행 시간 측정 결과와 느려졌다는 관측 사실"
+      },
+      {
+        "statement": "spMV 적용 결과가 느려진 뒤 spMM(Sparse 행렬곱) 도입까지 검토하기로 했다.",
+        "limits": "이 내용은 후속 도입 검토 방향의 기록이며, spMM 도입 후 실제 결과는 다음 페이지에 이어진다.",
+        "kind": "method",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMV 적용 결과가 느려짐",
+          "spMM 도입 검토 예정"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:enh:e5"
+        ],
+        "requirement_ids": [
+          "methods_Q13"
+        ],
+        "supplemental_reason": "spMV 적용 결과가 느려진 후 spMM 도입 검토 계획 사실"
+      },
+      {
+        "statement": "혹시 몰라서 spMM까지 도입한 후에 결과를 봤다.",
+        "limits": "이 내용은 spMM 도입 후 결과 확인 시도 기록이며, 실제 spMM 적용 결과는 다음 페이지 원문에 있다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMM 도입 검토",
+          "spMM 도입 후 결과 확인"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:e201",
+          "p29:enh:e7"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "spMM 도입 후 결과 확인 시도 사실"
+      },
+      {
+        "statement": "혹시 cuSparse는 잘 되나 하고 도입해봤다.",
+        "limits": "이 내용은 cuSparse 도입 시도 동기에 대한 기록이며, 실제 도입 결과나 성능 수치는 포함하지 않는다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse 도입 시도",
+          "도입 동기: cuSparse가 잘 되는지 확인"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:e191",
+          "p28:enh:e0"
+        ],
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q2"
+        ],
+        "supplemental_reason": "cuSparse 도입 시도 동기와 초기 도입 사실"
+      },
+      {
+        "statement": "현재 적용된 범위는 다음과 같습니다: W, W_pos, W_neg 를 네트워크 준비 단계에서 CSR 형식으로 변환, cuSPARSE handle 및 CSR descriptor 유지, network_forward() 의 dense matvec 를 cuSPARSE SpMV 로 교체, 기존 matmul 은 아직 유지.",
+        "limits": "이 내용은 cuSparse 도입 시 적용된 구체적 범위 기록이며, spMM 도입 여부나 최종 성능 결론은 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse 도입 적용 범위",
+          "W, W_pos, W_neg CSR 형식 변환",
+          "cuSPARSE handle 및 CSR descriptor 유지",
+          "network_forward() dense matvec를 cuSPARSE SpMV로 교체",
+          "기존 matmul 유지"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:enh:e3"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q12"
+        ],
+        "supplemental_reason": "cuSparse 도입 시 적용된 구체적 범위 목록 사실"
+      },
+      {
+        "statement": "cuSparse를 이용해서 벡터 곱(spMV)만 적용 해본 상황, 여기서 빠르면 spMM(Sparse 행렬곱) 을 도입하기로 했다.",
+        "limits": "이 내용은 spMV 적용 상황과 spMM 도입 검토 방향 기록이며, spMM 도입 후 실제 결과는 다음 페이지에 이어진다.",
+        "kind": "method",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse로 spMV만 적용",
+          "spMM 도입 검토"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:enh:e5"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "spMV 적용 상황과 spMM 도입 검토 방향 사실"
+      },
+      {
+        "statement": "결과는 27ms .. 좀 더 느려졌다.",
+        "limits": "이 내용은 spMV 적용 후 실행 시간이 27ms 수준으로 느려졌다는 관측 기록이며, 정확한 수치나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse spMV 적용",
+          "CROWN Verification 실행"
+        ],
+        "observations": [
+          "실행 시간이 27ms 수준으로 느려짐"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:enh:e6"
+        ],
+        "requirement_ids": [
+          "methods_Q6",
+          "evaluation_Q1"
+        ],
+        "supplemental_reason": "spMV 적용 후 실행 시간이 느려졌다는 관측 사실"
+      },
+      {
+        "statement": "해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지? cuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나.",
+        "limits": "이 내용은 spMV 적용 후 27ms 결과에 대한 기록자의 의문과 이전 24ms 최소치 비교 기록이며, 정확한 비교 기준 시점이나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse spMV 적용",
+          "27ms 정도 결과",
+          "이전 4단계 최소 24ms와 비교",
+          "cuSparse의 Nvidia 최적화에 대한 의문"
+        ],
+        "observations": [
+          "27ms 정도 결과",
+          "이전 4단계 최소 24ms보다 느림",
+          "cuSparse가 Nvidia 최적화 희소행렬 곱셈 지원인데 왜 느려지는지 의문"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e0"
+        ],
+        "requirement_ids": [
+          "methods_Q6",
+          "evaluation_Q1",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "spMV 적용 후 27ms 결과와 이전 24ms 비교, cuSparse 최적화에 대한 의문 기록"
+      },
+      {
+        "statement": "지금은 cuSPARSE를 계속 확장하지 않는 편이 좋습니다. 24 ms baseline으로 돌아가고, cuSPARSE는 별도 실험으로 두세요.",
+        "limits": "이 내용은 cuSPARSE 확장 중단 권고와 24ms baseline 복귀 제안 기록이며, 실제 baseline 수치나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE 확장 중단 권고",
+          "24 ms baseline으로 복귀 제안",
+          "cuSPARSE 별도 실험 유지"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e2"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5"
+        ],
+        "supplemental_reason": "cuSPARSE 확장 중단 권고와 24ms baseline 복귀 제안 사실"
+      },
+      {
+        "statement": "느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다.",
+        "limits": "이 내용은 느려진 원인에 대한 기록자의 해석이며, workload 불리함의 정량적 검증이나 요소별 분리 측정 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE 적용 후 느려짐",
+          "원인 해석: cuSPARSE 최적화 문제가 아닌 workload 불리함"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e3"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "cuSPARSE 적용 후 느려진 원인에 대한 기록자의 해석 사실"
+      },
+      {
+        "statement": "행렬 크기가 작고 layer가 3개뿐임, SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼, 매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함, network_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함, cuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음.",
+        "limits": "이 내용은 cuSPARSE에 불리한 workload 특성에 대한 목록 기록이며, 각 항목의 정량적 검증이나 요소별 분리 측정 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE에 불리한 workload 특성",
+          "행렬 크기 작음",
+          "layer 3개뿐임",
+          "SpMV 호출 횟수 적음",
+          "kernel/descriptor 생성 비용 큼",
+          "cusparseDnVec 생성·삭제 및 buffer size 계산",
+          "network_forward()의 D2H→CPU vec_add→H2D 수행",
+          "cuSPARSE의 대규모 sparse throughput 강점 vs 작은 연산 latency 약점"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e4"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "cuSPARSE에 불리한 workload 특성 목록 사실"
+      },
+      {
+        "statement": "특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다.",
+        "limits": "이 내용은 cuSPARSE 적용 범위와 오버헤드 추가 상황에 대한 기록이며, 오버헤드의 정량적 분리 측정 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE 적용 범위: network_forward()의 W*x 뿐",
+          "전체 24 ms 중 일부만 영향",
+          "해당 일부에 오버헤드 추가"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e5"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "cuSPARSE 적용 범위와 오버헤드 추가 상황 사실"
+      },
+      {
+        "statement": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다.",
+        "limits": "이 내용은 향후 재시도 방안과 현재 24ms 버전 유지 권고 기록이며, 실제 재시도 결과나 baseline 수치는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "향후 cuSPARSE 재시도 방안",
+          "descriptor와 buffer 미리 만들어 재사용",
+          "network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 평가",
+          "현재 24 ms 버전 기준 유지 권고"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e6"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5",
+          "limitations_Q3"
+        ],
+        "supplemental_reason": "향후 cuSPARSE 재시도 방안과 현재 24ms 버전 유지 권고 사실"
+      },
+      {
+        "statement": "거의 40ms로 회귀.. 이러면 안된다.",
+        "limits": "이 내용은 spMM 도입 후 실행 시간이 거의 40ms로 회귀했다는 관측 기록이며, 정확한 수치나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMM 도입 후 결과 확인",
+          "실행 시간 거의 40ms로 회귀",
+          "부정적 평가"
+        ],
+        "observations": [
+          "실행 시간이 거의 40ms로 회귀함",
+          "이러면 안된다는 평가"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e1"
+        ],
+        "requirement_ids": [
+          "methods_Q6",
+          "evaluation_Q1",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "spMM 도입 후 실행 시간이 거의 40ms로 회귀했다는 관측 사실"
+      },
+      {
+        "statement": "음 .. 너무 신경망이 작아서 그런걸지도 모른다는 의견이 있다.",
+        "limits": "이 내용은 실행 시간 회귀 원인에 대한 의견 기록이며, 신경망 크기와 성능 간 정량적 검증 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMM 도입 후 40ms 회귀",
+          "원인 의견: 신경망이 너무 작아서일 가능성"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e2"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "spMM 도입 후 40ms 회귀 원인에 대한 의견 사실"
+      },
+      {
+        "statement": "현재 주 측정에서는 cuSPARSE SpMV/SpMM 을 빼고 기존 dense matvec/matmul 을 유지하는 것이 맞습니다.",
+        "limits": "이 내용은 주 측정에서 cuSPARSE SpMV/SpMM 제외와 기존 dense matvec/matmul 유지 결정 기록이며, 실제 측정 결과나 반복 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "주 측정에서 cuSPARSE SpMV/SpMM 제외",
+          "기존 dense matvec/matmul 유지 결정"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e3"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5"
+        ],
+        "supplemental_reason": "주 측정에서 cuSPARSE SpMV/SpMM 제외와 기존 dense matvec/matmul 유지 결정 사실"
+      },
+      {
+        "statement": "이유는: network_forward() 는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아님, SpMV / SpMM 호출마다 descriptor와 buffer 처리 비용이 추가됨, 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 큼, SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황.",
+        "limits": "이 내용은 cuSPARSE SpMV/SpMM 제외 이유에 대한 목록 기록이며, 각 항목의 정량적 검증이나 요소별 분리 측정 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE SpMV/SpMM 제외 이유",
+          "network_forward() 전체 타이머 포함",
+          "cuSPARSE pipeline 미완성 상태",
+          "SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용 추가",
+          "모델과 layer 수 작아 setup/launch 비용이 실제 sparse 연산보다 큼",
+          "SpMM 적용 후 38 ms: 오버헤드가 계산 이득보다 큼"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e5"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "cuSPARSE SpMV/SpMM 제외 이유에 대한 목록 사실"
+      },
+      {
+        "statement": "따라서 공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 게 좋습니다.",
+        "limits": "이 내용은 공식 결과 유지 방안과 cuSPARSE 별도 benchmark 비교 제안 기록이며, 실제 baseline 수치나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "공식 결과 24 ms dense baseline 유지",
+          "cuSPARSE 별도 benchmark 옵션으로 비교 제안"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e6"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5",
+          "limitations_Q3"
+        ],
+        "supplemental_reason": "공식 결과 24ms dense baseline 유지 방안과 cuSPARSE 별도 benchmark 비교 제안 사실"
+      },
+      {
+        "statement": "(그리고 network_forward는 신경망의 일반 추론값을 출력하는데 이게 아직 GPU 파이프라인이 아니라서 최적화가 안되어있기도 하고..)",
+        "limits": "이 내용은 network_forward의 GPU 파이프라인 미완성 상태와 최적화 미비 점에 대한 기록이며, 실제 최적화 결과나 정량 수치는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "network_forward는 신경망 일반 추론값 출력",
+          "아직 GPU 파이프라인 아님",
+          "최적화 안됨"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e7"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "network_forward의 GPU 파이프라인 미완성 상태와 최적화 미비 점 사실"
+      },
+      {
+        "statement": "cuBLAS와 cuSPARSE는 실험했지만 현재 모델 크기와 호출 패턴에서는 느려졌으므로, 현 기준 코드에는 포함하지 않은 상태, 후에 다시 도입해보는 시도가 필요함.",
+        "limits": "이 내용은 cuBLAS와 cuSPARSE 실험 결과와 현 기준 코드 미포함 상태, 향후 재시도 필요성 기록이며, 실제 실험 수치나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuBLAS와 cuSPARSE 실험",
+          "현재 모델 크기와 호출 패턴에서 느려짐",
+          "현 기준 코드에 미포함",
+          "후에 다시 도입해보는 시도 필요"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e8"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5",
+          "limitations_Q3"
+        ],
+        "supplemental_reason": "cuBLAS와 cuSPARSE 실험 결과와 현 기준 코드 미포함 상태, 향후 재시도 필요성 사실"
+      },
+      {
+        "statement": "calc success Elapsed time: 38.580600 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) ...",
+        "limits": "이 내용은 spMM 도입 후 CROWN Verification 실행 결과 기록이며, 단일 실행 결과이고 반복 측정 통계나 비교 해석은 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CROWN Verification 실행",
+          "spMM 도입 후",
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "실행 시간 38.580600 ms",
+          "출력 차원 16",
+          "Lower Bound, Upper Bound, Normal Pred (y) 값 출력"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p30:enh:e0"
+            ]
+          },
+          {
+            "name": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p30:enh:e0"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "38.580600",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "spMM 도입 후 CROWN Verification, eps=1e-06, Output Dimension 16",
+            "element_ids": [
+              "p30:enh:e0"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p30:enh:e0"
+        ],
+        "requirement_ids": [
+          "methods_Q6",
+          "evaluation_Q1"
+        ],
+        "supplemental_reason": "spMM 도입 후 CROWN Verification 실행 시간 38.580600 ms 측정 결과 사실"
+      },
+      {
+        "statement": "Starting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 27.107400 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) ...",
+        "limits": "이 내용은 cuSparse spMV 적용 후 CROWN Verification 실행 결과 기록이며, 단일 실행 결과이고 반복 측정 통계나 비교 해석은 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CROWN Verification 실행",
+          "cuSparse spMV 적용 후",
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "실행 시간 27.107400 ms",
+          "출력 차원 16",
+          "Lower Bound, Upper Bound, Normal Pred (y) 값 출력"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p28:enh:e1"
+            ]
+          },
+          {
+            "name": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p28:enh:e1"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "27.107400",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuSparse spMV 적용 후 CROWN Verification, eps=1e-06, Output Dimension 16",
+            "element_ids": [
+              "p28:enh:e1"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p28:enh:e1"
+        ],
+        "requirement_ids": [
+          "methods_Q6",
+          "evaluation_Q1"
+        ],
+        "supplemental_reason": "cuSparse spMV 적용 후 CROWN Verification 실행 시간 27.107400 ms 측정 결과 사실"
+      },
+      {
+        "statement": "현재 적용된 범위는 다음과 같습니다: W, W_pos, W_neg 를 네트워크 준비 단계에서 CSR 형식으로 변환, cuSPARSE handle 및 CSR descriptor 유지, network_forward() 의 dense matvec 를 cuSPARSE SpMV 로 교체, 기존 matmul 은 아직 유지.",
+        "limits": "이 내용은 cuSparse 도입 시 적용된 구체적 범위 기록이며, spMM 도입 여부나 최종 성능 결론은 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse 도입 적용 범위",
+          "W, W_pos, W_neg CSR 형식 변환",
+          "cuSPARSE handle 및 CSR descriptor 유지",
+          "network_forward() dense matvec를 cuSPARSE SpMV로 교체",
+          "기존 matmul 유지"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:enh:e3"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q12"
+        ],
+        "supplemental_reason": "cuSparse 도입 시 적용된 구체적 범위 목록 사실"
+      },
+      {
+        "statement": "혹시 cuSparse는 잘 되나 하고 도입해봤다.",
+        "limits": "이 내용은 cuSparse 도입 시도 동기에 대한 기록이며, 실제 도입 결과나 성능 수치는 포함하지 않는다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse 도입 시도",
+          "도입 동기: cuSparse가 잘 되는지 확인"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:e191",
+          "p28:enh:e0"
+        ],
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q2"
+        ],
+        "supplemental_reason": "cuSparse 도입 시도 동기와 초기 도입 사실"
+      },
+      {
+        "statement": "해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지? cuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나.",
+        "limits": "이 내용은 spMV 적용 후 27ms 결과에 대한 기록자의 의문과 이전 24ms 최소치 비교 기록이며, 정확한 비교 기준 시점이나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse spMV 적용",
+          "27ms 정도 결과",
+          "이전 4단계 최소 24ms와 비교",
+          "cuSparse의 Nvidia 최적화에 대한 의문"
+        ],
+        "observations": [
+          "27ms 정도 결과",
+          "이전 4단계 최소 24ms보다 느림",
+          "cuSparse가 Nvidia 최적화 희소행렬 곱셈 지원인데 왜 느려지는지 의문"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e0"
+        ],
+        "requirement_ids": [
+          "methods_Q6",
+          "evaluation_Q1",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "spMV 적용 후 27ms 결과와 이전 24ms 비교, cuSparse 최적화에 대한 의문 기록"
+      },
+      {
+        "statement": "지금은 cuSPARSE를 계속 확장하지 않는 편이 좋습니다. 24 ms baseline으로 돌아가고, cuSPARSE는 별도 실험으로 두세요.",
+        "limits": "이 내용은 cuSPARSE 확장 중단 권고와 24ms baseline 복귀 제안 기록이며, 실제 baseline 수치나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE 확장 중단 권고",
+          "24 ms baseline으로 복귀 제안",
+          "cuSPARSE 별도 실험 유지"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e2"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5"
+        ],
+        "supplemental_reason": "cuSPARSE 확장 중단 권고와 24ms baseline 복귀 제안 사실"
+      },
+      {
+        "statement": "느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다.",
+        "limits": "이 내용은 느려진 원인에 대한 기록자의 해석이며, workload 불리함의 정량적 검증이나 요소별 분리 측정 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE 적용 후 느려짐",
+          "원인 해석: cuSPARSE 최적화 문제가 아닌 workload 불리함"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e3"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "cuSPARSE 적용 후 느려진 원인에 대한 기록자의 해석 사실"
+      },
+      {
+        "statement": "행렬 크기가 작고 layer가 3개뿐임, SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼, 매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함, network_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함, cuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음.",
+        "limits": "이 내용은 cuSPARSE에 불리한 workload 특성에 대한 목록 기록이며, 각 항목의 정량적 검증이나 요소별 분리 측정 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE에 불리한 workload 특성",
+          "행렬 크기 작음",
+          "layer 3개뿐임",
+          "SpMV 호출 횟수 적음",
+          "kernel/descriptor 생성 비용 큼",
+          "cusparseDnVec 생성·삭제 및 buffer size 계산",
+          "network_forward()의 D2H→CPU vec_add→H2D 수행",
+          "cuSPARSE의 대규모 sparse throughput 강점 vs 작은 연산 latency 약점"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e4"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "cuSPARSE에 불리한 workload 특성 목록 사실"
+      },
+      {
+        "statement": "특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다.",
+        "limits": "이 내용은 cuSPARSE 적용 범위와 오버헤드 추가 상황에 대한 기록이며, 오버헤드의 정량적 분리 측정 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE 적용 범위: network_forward()의 W*x 뿐",
+          "전체 24 ms 중 일부만 영향",
+          "해당 일부에 오버헤드 추가"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e5"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "cuSPARSE 적용 범위와 오버헤드 추가 상황 사실"
+      },
+      {
+        "statement": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다.",
+        "limits": "이 내용은 향후 재시도 방안과 현재 24ms 버전 유지 권고 기록이며, 실제 재시도 결과나 baseline 수치는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "향후 cuSPARSE 재시도 방안",
+          "descriptor와 buffer 미리 만들어 재사용",
+          "network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 평가",
+          "현재 24 ms 버전 기준 유지 권고"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e6"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5",
+          "limitations_Q3"
+        ],
+        "supplemental_reason": "향후 cuSPARSE 재시도 방안과 현재 24ms 버전 유지 권고 사실"
+      },
+      {
+        "statement": "거의 40ms로 회귀.. 이러면 안된다.",
+        "limits": "이 내용은 spMM 도입 후 실행 시간이 거의 40ms로 회귀했다는 관측 기록이며, 정확한 수치나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMM 도입 후 결과 확인",
+          "실행 시간 거의 40ms로 회귀",
+          "부정적 평가"
+        ],
+        "observations": [
+          "실행 시간이 거의 40ms로 회귀함",
+          "이러면 안된다는 평가"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e1"
+        ],
+        "requirement_ids": [
+          "methods_Q6",
+          "evaluation_Q1",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "spMM 도입 후 실행 시간이 거의 40ms로 회귀했다는 관측 사실"
+      },
+      {
+        "statement": "음 .. 너무 신경망이 작아서 그런걸지도 모른다는 의견이 있다.",
+        "limits": "이 내용은 실행 시간 회귀 원인에 대한 의견 기록이며, 신경망 크기와 성능 간 정량적 검증 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMM 도입 후 40ms 회귀",
+          "원인 의견: 신경망이 너무 작아서일 가능성"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e2"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "spMM 도입 후 40ms 회귀 원인에 대한 의견 사실"
+      },
+      {
+        "statement": "현재 주 측정에서는 cuSPARSE SpMV/SpMM 을 빼고 기존 dense matvec/matmul 을 유지하는 것이 맞습니다.",
+        "limits": "이 내용은 주 측정에서 cuSPARSE SpMV/SpMM 제외와 기존 dense matvec/matmul 유지 결정 기록이며, 실제 측정 결과나 반복 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "주 측정에서 cuSPARSE SpMV/SpMM 제외",
+          "기존 dense matvec/matmul 유지 결정"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e3"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5"
+        ],
+        "supplemental_reason": "주 측정에서 cuSPARSE SpMV/SpMM 제외와 기존 dense matvec/matmul 유지 결정 사실"
+      },
+      {
+        "statement": "이유는: network_forward() 는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아님, SpMV / SpMM 호출마다 descriptor와 buffer 처리 비용이 추가됨, 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 큼, SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황.",
+        "limits": "이 내용은 cuSPARSE SpMV/SpMM 제외 이유에 대한 목록 기록이며, 각 항목의 정량적 검증이나 요소별 분리 측정 결과는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE SpMV/SpMM 제외 이유",
+          "network_forward() 전체 타이머 포함",
+          "cuSPARSE pipeline 미완성 상태",
+          "SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용 추가",
+          "모델과 layer 수 작아 setup/launch 비용이 실제 sparse 연산보다 큼",
+          "SpMM 적용 후 38 ms: 오버헤드가 계산 이득보다 큼"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e5"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "cuSPARSE SpMV/SpMM 제외 이유에 대한 목록 사실"
+      },
+      {
+        "statement": "따라서 공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 게 좋습니다.",
+        "limits": "이 내용은 공식 결과 유지 방안과 cuSPARSE 별도 benchmark 비교 제안 기록이며, 실제 baseline 수치나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "공식 결과 24 ms dense baseline 유지",
+          "cuSPARSE 별도 benchmark 옵션으로 비교 제안"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e6"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5",
+          "limitations_Q3"
+        ],
+        "supplemental_reason": "공식 결과 24ms dense baseline 유지 방안과 cuSPARSE 별도 benchmark 비교 제안 사실"
+      },
+      {
+        "statement": "(그리고 network_forward는 신경망의 일반 추론값을 출력하는데 이게 아직 GPU 파이프라인이 아니라서 최적화가 안되어있기도 하고..)",
+        "limits": "이 내용은 network_forward의 GPU 파이프라인 미완성 상태와 최적화 미비 점에 대한 기록이며, 실제 최적화 결과나 정량 수치는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "network_forward는 신경망 일반 추론값 출력",
+          "아직 GPU 파이프라인 아님",
+          "최적화 안됨"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e7"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13",
+          "evaluation_Q3"
+        ],
+        "supplemental_reason": "network_forward의 GPU 파이프라인 미완성 상태와 최적화 미비 점 사실"
+      },
+      {
+        "statement": "cuBLAS와 cuSPARSE는 실험했지만 현재 모델 크기와 호출 패턴에서는 느려졌으므로, 현 기준 코드에는 포함하지 않은 상태, 후에 다시 도입해보는 시도가 필요함.",
+        "limits": "이 내용은 cuBLAS와 cuSPARSE 실험 결과와 현 기준 코드 미포함 상태, 향후 재시도 필요성 기록이며, 실제 실험 수치나 반복 측정 통계는 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuBLAS와 cuSPARSE 실험",
+          "현재 모델 크기와 호출 패턴에서 느려짐",
+          "현 기준 코드에 미포함",
+          "후에 다시 도입해보는 시도 필요"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e8"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5",
+          "limitations_Q3"
+        ],
+        "supplemental_reason": "cuBLAS와 cuSPARSE 실험 결과와 현 기준 코드 미포함 상태, 향후 재시도 필요성 사실"
+      }
+    ],
+    "existing_links": []
+  }
+}

@@ -1,0 +1,367 @@
+[
+  {
+    "statement": "전체 처리 파이프라인의 단계를 구분하고 각 단계가 추가한 시간·자원·복잡도 비용을 별도로 측정한 직접 근거는 원문에서 확인되지 않는다.",
+    "limits": "개별 GPU 최적화 실험의 총 실행시간, 메모리 비교, 클록 설정, 계획·제안·AI 조언은 단계별 부가 비용의 직접 근거로 연결하지 않음",
+    "kind": "limitation",
+    "claim_status": "observed",
+    "source_origin": "research_note",
+    "conditions": [],
+    "observations": [
+      "원문에는 전체 시간 측정(total_start)과 eps×데이터 이중 루프, forward/backward bound 계산, Top-k 인증 판정이 하나의 루프 안에서 함께 기술되어 있음",
+      "forward와 backward의 전체 실행 시간(예: 약 64s/98s, 1560s, 2164s 등)과 memcpy 호출 횟수 비교는 있으나, 이는 개별 bound 방식의 총 실행 비교에 해당함",
+      "구조체 값에 의한 복사 제거, 플래그 분리, switch문/실행인자 변경 등 코드 변경이 전체 실행 시간에 미친 영향은 기록되어 있으나, 처리 단계별로 분리된 부가 비용 측정으로 제시되지 않음",
+      "92만 번 실행에 대한 평균·분산 측정, 추론+bound+검증을 나눠 측정하자는 계획은 기록되어 있으나 실제 단계별 분리 측정 결과로 확인되지 않음"
+    ],
+    "parameters": [],
+    "measurements": [],
+    "id": "Hc4fc4c22ca00_0",
+    "requirement_ids": [
+      "related_work_Q2"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p45:e310",
+        "page": 45,
+        "quote": "![image](/image/placeholder)\n221 222 223 224 225 226 227 228 229 230 231 232 233 234 235 236 237 238 239 240 241 242 243 std::cout << << std::endl; // 5. 전체 시간 측정 시작 auto total_start = std::chrono::high_resolution_clock::now(); // 6. eps X 데이터 이중 루프 (sparse.py sweep() 와 완전히 동일) for (double eps : eps_list) { int t_count = 0, f_count = 0; float eps_f = static_cast<float>(eps); for (int i = 0; i < N; ++i) { // 신경망 정방향 통과 Vector ye = network_forward(*net, dataset[i]); // CROWN backward bound or forward bound 계산 // BackwardBoundResult bwd = lirpa_backward_bound(*net, dataset[i], eps_f, false); const ForwardBoundResult bwd = lirpa_forward_bound_imp1(*net, dataset[i], eps_f, true); // Top-k 인증 판정 if (certify_topk(y0, bwd.final_lower, bwd.final_upper, k)) Ht_count; else +f_count;",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p45:e313",
+        "page": 45,
+        "quote": "40000번의 루프에서는 backward보다 forward가 느린것을 확인함, 왜일까?\n⇒ 원인은 중간 레이어 결과를 저장하느냐/ 마느냐의 플래그에 있었다.",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p46:e316",
+        "page": 46,
+        "quote": "40000번 * 각 eps 테스트를 반복하면서 D2H 복사 오버헤드가 backward ⇒ forward 계산의\n이득을 뛰어넘어버린 것임..",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p46:e320",
+        "page": 46,
+        "quote": "그 래서 일단 backward가 forward보다 빠른 문제는 해결 (forward 최적화 해서)",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p47:e337",
+        "page": 47,
+        "quote": "f orward 전체 실행 시간이 약 64s / backward 전체 실행 시간이 약 98s 정도..\n눈에 띄는 점은 동일한 호출 횟수임에도 불구하고 forward의 cudamemcpy 시간이 왤케 많이\n잡히냐는 것..",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p48:e342",
+        "page": 48,
+        "quote": "![image](/image/placeholder)\neps- eps= eps= eps= 9.0e-05. 1.0e-02: T= 1.0e-01: T= 1.0e+00: T= r-59999 ratio-0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 total elapsed: 1560.37s results saved to results_cuda.csv",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p48:e343",
+        "page": 48,
+        "quote": "이게 기존 번거롭게 backward 할때의 실행 결과고 (1560s)",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p48:e344",
+        "page": 48,
+        "quote": "이게 위와 같이 코드를 바꿨을 때 실행 결과다.. (2164s)",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p50:e357",
+        "page": 50,
+        "quote": "음 .. 준수한 결과다. ⇒ 이러면 2100s 초 나오는 문제도 원인 해결 완료",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p52:e381",
+        "page": 52,
+        "quote": "1. 단일 데이터 테스트(forward/backward 3배차이)와 달리 다중 데이터 테스트만큼의\nforward 성능감소가 어디서 일어나는가?\n2. 구조체 값에 의한 복사를 제거하고 나서 backward가 다시 2100s정도로 튀는 문제가\n있었는데, 일단 전체적으로 시간이 줄긴 했는데 다시 튄건 뭣때문에?\n3. 실행 인자 추가 + switch문 사용이 실제로 성능에 영향을 준건지? (switch 사용하고\n좀 느려진 것 같기도 하니까)",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p53:e387",
+        "page": 53,
+        "quote": "1. Compute Throughput과 Memory Throughput 의 정확한 정의(정확히는 수식)\n알아보기 : memory throughput의 비율 감소 원인엔 뭐가 있을까?\n⇒ 아 맞다.. SM 이 너무 바빠서 메모리 병목이 생기는 경우…\n2. forward, backward 92만번 실행에 대해 가끔 튀는 경우가 있는데 그거 평균, 분산을\n구해보자 ⇐ 측정완료 평균, 분산만 슬라이드에 넣으면 됨\n3. 추론 + bound + 검증 모두 합쳐서 측정하고 있던 걸 나눠서 각각 측정하자",
+        "origin": "standard_parse"
+      }
+    ],
+    "numeric_issues": [],
+    "support": "supported",
+    "support_note": "원문에는 total_start를 통한 전체 시간 측정, forward/backward bound 방식의 총 실행시간 비교(약 64s/98s, 1560s, 2164s 등), memcpy 호출 횟수 비교가 존재하나, 이는 개별 bound 방식의 총 실행 비교에 해당함. 처리 파이프라인 단계(추론, bound, 검증 등)를 구분하고 각 단계가 추가한 시간·자원·복잡도 비용을 별도로 측정한 직접 근거는 확인되지 않음. p53:e387에서 '추론+bound+검증을 나눠서 각각 측정하자'는 계획이 기록되어 있으나 실제 단계별 분리 측정 결과로 확인되지 않음.",
+    "attribution_preserved": true,
+    "verification_conflicts": [],
+    "verification_missing_support": [],
+    "evidence_limitations": [
+      "원문은 연구 노트/실험 기록 형태로, 공식적인 측정 방법론이나 재현 조건이 명시되어 있지 않음",
+      "전체 실행 시간(total_start 기반)과 forward/backward 방식 간 총 실행 비교만 존재하며, 처리 파이프라인 단계별 분리 측정은 계획(p53:e387)으로만 언급되고 실제 결과로 확인되지 않음",
+      "코드 변경(플래그 분리, 구조체 복사 제거, switch문, 실행인자 추가)의 영향은 기록되어 있으나 각 변경이 파이프라인 단계 중 어느 부분에 어떤 부가 비용을 발생시켰는지 분리 측정으로 제시되지 않음"
+    ],
+    "writing_role": "research_fact"
+  },
+  {
+    "statement": "전체 처리 파이프라인의 단계를 구분하고 각 단계가 추가한 시간·자원·복잡도 비용을 별도로 측정한 직접 근거는 원문에서 확인되지 않는다.",
+    "limits": "원문은 forward_only, backward_only, forward+backward 등 실행 모드별 총 소요시간(114.78s, 55.78s, 787.88s 등)과 EPS별 연산 시간 합산, 메모리·클록·커널 런치 방식에 대한 논의를 포함하나, 처리 단계 각각이 추가한 비용을 분리 측정한 직접 기록은 없다.",
+    "kind": "limitation",
+    "claim_status": "unclear",
+    "source_origin": "unknown",
+    "conditions": [],
+    "observations": [
+      "forward_only 전체 프로그램 총 소요 시간 114.78s, EPS별 연산 시간 합산 114.77s (p65:e514)",
+      "backward_only 전체 프로그램 총 소요 시간 55.78s, EPS별 연산 시간 합산 55.77s (p66:e523)",
+      "그래프 적용 후 787.8832s로 3가지 방법 중 가장 빠르며 avg 기준 forward 1029s, forward+backward 1138s (p72:e567)",
+      "backward_only가 final_affine 복사(true)로 인해 1회 bound 계산에서 10번 memcpy가 발생하고, false 적용 후 memcpy 6번으로 줄어 2578초→1543초, 그래프 적용 후 787.88s로 감소 (p72:e561, p72:e562, p72:e565, p72:e566, p72:e567)",
+      "pinned memory 실험에서 cudaHostRegister 787.88s vs No Pinning 776.70s로 약 11초 차이, Bound 단계는 Register가 4.37초 빠르나 Infer 단계에서 15.26초 느려짐 (p74:e582)",
+      "GPU 클록 고정(2800MHz) 시도 및 클록 잠금 코드 기록 (p74:e584, p74:e585, p75:e586, p75:e587, p75:e588)"
+    ],
+    "parameters": [],
+    "measurements": [],
+    "id": "Hc4fc4c22ca00_1",
+    "requirement_ids": [
+      "related_work_Q2"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p65:e514",
+        "page": 65,
+        "quote": "* EPS별 연산 시간의 합산 (Sum of EPS times) : 114.77s\n* 전체 프로그램 총 소요 시간 (Overall elapsed) : 114.78s",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p66:e523",
+        "page": 66,
+        "quote": "* EPS별 연산 시간의 합산 (Sum of EPS times) : 55.77s\n* 전체 프로그램 총 소요 시간 (Overall elapsed) : 55.78s",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p72:e561",
+        "page": 72,
+        "quote": "b ackward_only가 아직 graph로 안만들었다고 해도 boun 평균이 2.5배 정도 된다. 많이\n느리네? 이유가 뭐냐\n⇒ 이거 final_affine 까지 복사하느라고(true) 한번의 bound 계산에서 10번 일어남,",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p72:e562",
+        "page": 72,
+        "quote": "f alse로 줘서 다시 측정해야 한다.(memcpy 6번)",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p72:e565",
+        "page": 72,
+        "quote": "그 래서 memcpy 10번 ⇒ 6번 된 결과 + graph 적용한 결과까지 나왔다",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p72:e566",
+        "page": 72,
+        "quote": "2 578 초 ⇒ 1543 초",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p72:e567",
+        "page": 72,
+        "quote": "근 데 그래프를 적용했더니 787.8832s로 3가지 방법 중 가장 빠르다?\n(avg 기준 forward 1029s , forward+backward 1138s)",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p74:e582",
+        "page": 74,
+        "quote": "![image](/image/placeholder)\n그럼 Register 한 게 더 느린 이유는 뭔데 Thought for 24s > 결과를 자세히 보시면 전체 시간 차이는 787.88초 VS 776.70초로 단 1.4%(약 11초) 차이이며, 92만 번의 루프 중 1회당 불과 약 12 $\\mu\\text{s}$ 수준의 미세한 차이입니다. 하지만 *\"이론상 다이렉트 DMA를 쓰는 Pinned Memory( Register )가 왜 일반 메모리( NoPin )보다 11초 더 느리게 측정되었는가?\"*에 대해서는 컴 퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있습니다. 1. 세부 수치 비교: 어디서 차이가 났는가? 항목 cudaHostRegister (787.88s) No Pinning (776.70s) 분석 Bound 단계 (전체의 85%) 658.80s 663.17s ◀ Register가 4.37초 더 빠름! (예상대로 DMA 효과) Infer 단계 (전체의 15%) 127.18s 111.92s ◀ 여기서 Register가 15.26초 더 느림 연산량이 많은 Bound 단계에서는 오히려 Register가 4초 이상 빨랐지만, 데이터 전송 직후 바로 동기화가 일어나는 Infer 단계에서 15초가 역전되었 습니다. 그 이유는 다음과 같습니다:",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p74:e584",
+        "page": 74,
+        "quote": "그 래서 다시 클록을 고정하고 해보자",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p74:e585",
+        "page": 74,
+        "quote": "![image](/image/placeholder)\n// GPU 클록 자동 잠금 & 자동 해제 구조체 (RAII) struct ScopedGpuClockLock { bool locked = false; }; ScopedGpuClockLock(int clock_mhz = 2475) { char cmd[128]; snprintf(cmd, sizeof(cmd), \"nvidia-smi -1gc %d,%d > nul 2>&1\", clock_mhz, clock_mhz); if (std::system(cmd) -- 0) { locked = true; std::cout << \"[GPU Clock] Successfully locked to HE << clock_mhz << \" MHz (Admin enabled).\" << std::endl; } else { std::cerr << \"\\n[GPU Clock ERROR] Failed to lock clock to 원 << clock_mhz << : MHz!\" << std::endl; std::cerr << \"[GPU Clock ERROR] Administrator privileges are required to change GPU clocks.\" << std::endl; std::cerr << \"[GPU Clock ERROR] Terminating program as requested.\\n\" << std::endl; exit(1); } } ~ScopedGpuClockLock() { if (locked) { std::system(\"nvidia-smi -rgc > nul 2>&1\"); std::cout << \"[GPU Clock] Reset to default dynamic boost.\" << std::endl; } }",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p75:e586",
+        "page": 75,
+        "quote": "쿠다 강의 19장의 GPU 클록 고정을 참고했다.",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p75:e587",
+        "page": 75,
+        "quote": "![image](/image/placeholder)\n# 현재 클록 확인 nvidia-smi -q -d CLOCK # 클록 고정 (root 필요) sudo nvidia-smi -pm 1 # Persistence mode sudo nvidia-smi -lgc 1410 # Lock graphics clock",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p75:e588",
+        "page": 75,
+        "quote": "클 록을 2800Mhz로 고정하고 돌린 결과 (기존 HostRegister)",
+        "origin": "standard_parse"
+      }
+    ],
+    "numeric_issues": [
+      "조건·관찰의 원문 미확인 수치: 2578"
+    ],
+    "support": "unsupported",
+    "support_note": "조건·관찰의 원문 미확인 수치: 2578",
+    "attribution_preserved": false,
+    "writing_role": "context_only"
+  },
+  {
+    "statement": "전체 처리 파이프라인의 단계를 구분하고 각 단계가 추가한 시간·자원·복잡도 비용을 별도로 측정한 직접 근거는 원문에서 확인되지 않는다.",
+    "limits": "제시된 원문은 개별 실행의 총 소요시간, infer/bound/certify 구간별 누적 시간, GPU 커널 호출·메모리 복사 프로파일, 배치·eps별 실행시간, 평균/중앙값/꼬리 지연 등을 포함하나, 처리 단계 자체를 정의하고 각 단계가 추가한 비용을 분리 측정했다는 서술은 없다.",
+    "kind": "limitation",
+    "claim_status": "unclear",
+    "source_origin": "unknown",
+    "conditions": [],
+    "observations": [
+      "p83:review:e1은 backward_only_cuda_graph 실행의 total elapsed 630.94s와 infer 131.248s, bound 497.107s, certify 1.613s의 구간별 누적 시간을 보여준다.",
+      "p83:review:e2는 backward_only_cuda_graph의 수치열(40000 23 630.9374 131.2479 497.1067 1.6127 0.1427 0.5403 0.0018)을 포함한다.",
+      "p83:review:e3은 787s에서 630s로 157초 정도 줄었다는 비교를 서술한다.",
+      "p83:review:e5는 다른 실행의 total elapsed 668.37s와 infer 130.712s, bound 535.361s, certify 1.437s의 구간별 누적 시간을 보여준다.",
+      "p83:review:e6은 1029s에서 668s로 줄었다는 비교를 서술한다.",
+      "p66:pdf:b1은 eps별 T/F/ratio/time과 Sum of EPS times 55.77s, Overall elapsed 55.78s를 보여주며 backward_only가 가장 빠르다는 관찰을 포함한다.",
+      "p68:pdf:b1은 커널 런치 오버헤드와 2차원/3차원 처리, tensor 코어 관련 설명을 포함한다.",
+      "p47:img0:e0은 Total Time 40.726s, Num Calls 240000, Avg 169.691μs 등 cudaMemcpy 프로파일 결과를 보여준다.",
+      "p47:img1:e0은 CROWN_SWEEP [64.064 s] 제목과 cudaLaunchh/cudaMemcpy/cudaMemset 등의 프로파일 표를 보여준다.",
+      "p47:img2:e0은 CROWN_SWEEP [98.995 s] 제목과 cudaLaunchh/cudaMemcpy/cudaMemset 등의 프로파일 표를 보여준다.",
+      "p47:img3:e0은 CROWN_SWEEP [98.995 s] 제목을 다시 보여준다.",
+      "p56:img0:e2는 Elapsed time 1.9254ms, Inference time 0.1404ms, Bound time 1.7846ms를 보여준다.",
+      "p56:img3:e2~e3은 Elapsed time 1.9171ms, Inference time 0.1409ms, Bound time 1.7760ms를 보여준다.",
+      "p58:img0:e1은 forward/backward의 sparse.py와 CUDA bound 계산 시간 및 추론+bound+검증 성능 배율을 보여준다.",
+      "p58:img1:e0은 backward/forward의 수치열(40000 23, total_s, infer_s, bound_s, certify_s 등)을 보여준다.",
+      "p62:img0:e1은 여러 실행의 total_s, infer_s, bound_s, certify_s와 평균 행을 포함한 표를 보여준다.",
+      "p62:img0:e2는 cudaGraph만 적용된 버전이라는 제목을 보여준다."
+    ],
+    "parameters": [],
+    "measurements": [],
+    "id": "Hc4fc4c22ca00_2",
+    "requirement_ids": [
+      "related_work_Q2"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p83:review:e1",
+        "page": 83,
+        "quote": "total elapsed: 630.94s\n\n--- Phase Timing Breakdown (all eps x all data) ---\ninfer : 131.248s (20.8%)\nbound : 497.107s (78.8%)\ncertify : 1.613s (0.3%)\n\n=== Real-Time Single-Sample (B=1) Latency Analysis ===\nEvaluated Samples : 100000\nMin Latency : 658.10 us\nMean Latency : 689.64 us (0.69 ms)\nMedian (P50) : 682.00 us\nP95 Tail Latency : 712.20 us\nP99 Tail Latency : 822.90 us\nMax Latency : 13511.00 us\nJitter (StdDev) : 76.80 us\nThroughput : 1450.02 samples/sec\nPure GPU Execution: 522.05 us (last sample)",
+        "origin": "enhanced_numeric_ocr_review"
+      },
+      {
+        "element_id": "p83:review:e2",
+        "page": 83,
+        "quote": "backward_only_cuda_graph 40000 23 630.9374 131.2479 497.1067 1.6127 0.1427 0.5403 0.0018",
+        "origin": "enhanced_numeric_ocr_review"
+      },
+      {
+        "element_id": "p83:review:e3",
+        "page": 83,
+        "quote": "787s ⇒ 630s로 157초 정도 줄었다",
+        "origin": "enhanced_numeric_ocr_review"
+      },
+      {
+        "element_id": "p83:review:e5",
+        "page": 83,
+        "quote": "total elapsed: 668.37s\n\n--- Phase Timing Breakdown (all eps x all data) ---\ninfer : 130.712s (19.6%)\nbound : 535.361s (80.1%)\ncertify : 1.437s (0.2%)\n\n=== Real-Time Single-Sample (B=1) Latency Analysis ===\nEvaluated Samples : 100000\nMin Latency : 677.20 us\nMean Latency : 723.97 us (0.72 ms)\nMedian (P50) : 719.80 us\nP95 Tail Latency : 752.50 us\nP99 Tail Latency : 780.90 us\nMax Latency : 5496.50 us\nJitter (StdDev) : 28.04 us\nThroughput : 1381.28 samples/sec\nPure GPU Execution: 570.08 us (last sample)",
+        "origin": "enhanced_numeric_ocr_review"
+      },
+      {
+        "element_id": "p83:review:e6",
+        "page": 83,
+        "quote": "1029s ⇒ 668s",
+        "origin": "enhanced_numeric_ocr_review"
+      },
+      {
+        "element_id": "p66:pdf:b1",
+        "page": 66,
+        "quote": "eps=    0.0003: T=31826 | F=8174 | ratio=0.796 | time=2.53s \neps=    0.0004: T=29375 | F=10625 | ratio=0.734 | time=2.52s \neps=    0.0005: T=27170 | F=12830 | ratio=0.679 | time=2.53s \neps=    0.0006: T=25103 | F=14897 | ratio=0.628 | time=2.53s \neps=    0.0007: T=23179 | F=16821 | ratio=0.579 | time=2.59s \neps=    0.0008: T=21323 | F=18677 | ratio=0.533 | time=2.58s \neps=    0.0009: T=19656 | F=20344 | ratio=0.491 | time=2.54s \neps=     0.001: T=18128 | F=21872 | ratio=0.453 | time=2.57s \neps=     0.002: T=7461 | F=32539 | ratio=0.187 | time=2.51s \neps=     0.003: T=2754 | F=37246 | ratio=0.069 | time=2.51s \neps=     0.004: T= 945 | F=39055 | ratio=0.024 | time=2.50s \neps=     0.005: T= 286 | F=39714 | ratio=0.007 | time=2.51s \neps=     0.006: T=  71 | F=39929 | ratio=0.002 | time=2.50s \neps=     0.007: T=  24 | F=39976 | ratio=0.001 | time=2.49s \neps=     0.008: T=   3 | F=39997 | ratio=0.000 | time=2.50s \neps=     0.009: T=   1 | F=39999 | ratio=0.000 | time=2.52s \neps=      0.01: T=   0 | F=40000 | ratio=0.000 | time=2.51s \neps=       0.1: T=   0 | F=40000 | ratio=0.000 | time=2.50s \neps=       1.0: T=   0 | F=40000 | ratio=0.000 | time=2.48s \n--------------------------------------------------------------------- \n * EPS별 연산 시간의 합산 (Sum of EPS times) : 55.77s \n * 전체 프로그램 총 소요 시간 (Overall elapsed) : 55.78s \n--------------------------------------------------------------------- \nresults saved to \nC:\\Users\\user\\Desktop\\antenna_auto_lirpa\\antenna_lirpa\\results\\autolirpa_results_backward\n_only.csv \n \n특이한 점은 backward_only가 젤 빠르네?  \n \nforward가 제일 느리고 \n \n보통의 상식으로는  \n \nforward < forward + backward < backward_only  \n로 알고 있었는데 \n \n \n실행 방식은  \npython autolirpa_topk_robustness.py --data-path \"경로/데이터.pickle\" --device cuda \n--batch-size 1024 \n \n여기서 배치 사이즈를 1024로 했다 (그리고 싱글 스트림인듯) \n매우 빠르다 해서 나도 temp_batching 브랜치를 한 번 만져보기로 했다 \n \n",
+        "origin": "native_pdf_text"
+      },
+      {
+        "element_id": "p68:pdf:b1",
+        "page": 68,
+        "quote": " \n \n그 이유는 쉽게 설명하면 나랑 다르게 입력데이터에 대한 커널 런치를 1번으로 \n줄여서임(그니까 커널 런치 오버헤드가 상대적으로 없음, 즉 연산 병목이 아니라 일을 \n시키는 과정의 병목) \n \n현재 나는 2차원 block 크기와 그 안의 tid로 평면적인 계산 (단일 샘플에 대한 행렬 연산)을 \n수행중임 \n근데 z축을 추가하면 저 평면적인 연산을 한번에 처리가 가능함 ⇒ 3차원 (multi sample)을 \n처리하는 tensor 코어가 있기 때문 (현재 나는 2차원 커널이라 fp32 코어로만 하고 있음..) \n",
+        "origin": "native_pdf_text"
+      },
+      {
+        "element_id": "p47:img0:e0",
+        "page": 47,
+        "quote": "| ▼ | Total Time | Num Calls | Avg | Med | Min | Max | StdDev | Name |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 79.7% | 40.726 s | 240000 | 169.691 μs | 18.120 μs | 3.599 μs | 7.616 ms | 316.565 μs | cudaMemcpy |\n| 17.0% | 8.698 s | 1520000 | 5.722 μs | 3.843 μs | 2.785 μs | 6.908 ms | 9.200 μs | cudaLaunchK |\n| 3.0% | 1.523 s | 160000 | 9.518 μs | 5.344 μs | 2.696 μs | 7.272 ms | 20.329 μs | cudaMemset |\n| 0.4% | 184.318 ms | 1520000 | 121 ns | 96 ns | 70 ns | 196.708 μs | 398 ns | cuKernelGetN |\n| 0.0% | 7.814 μs | 12 | 651 ns | 449 ns | 242 ns | 1.903 μs | 545 ns | cuLibraryGetK |",
+        "origin": "pdf_image_gap_ocr"
+      },
+      {
+        "element_id": "p47:img1:e0",
+        "page": 47,
+        "quote": "CROWN_SWEEP [64.064 s]",
+        "origin": "pdf_image_gap_ocr"
+      },
+      {
+        "element_id": "p47:img2:e0",
+        "page": 47,
+        "quote": "| Total Time | Num Calls | Avg | Med | Min | Max | StdDev | Name |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| 18.527 s | 2160000 | 8.577 μs | 7.208 μs | 2.779 μs | 7.565 ms | 14.922 μs | cudaLaunchh |\n| 11.332 s | 240000 | 47.216 μs | 24.612 μs | 3.642 μs | 7.404 ms | 51.755 μs | cudaMemcpy |\n| 2.121 s | 160000 | 13.259 μs | 8.447 μs | 2.684 μs | 2.041 ms | 14.919 μs | cudaMemset |\n| 392.770 ms | 2160000 | 181 ns | 160 ns | 74 ns | 222.425 μs | 713 ns | cuKernelGetN |\n| 16.718 μs | 18 | 928 ns | 638 ns | 304 ns | 2.763 μs | 767 ns | cuLibraryGetK |",
+        "origin": "pdf_image_gap_ocr"
+      },
+      {
+        "element_id": "p47:img3:e0",
+        "page": 47,
+        "quote": "CROWN_SWEEP [98.995 s]",
+        "origin": "pdf_image_gap_ocr"
+      },
+      {
+        "element_id": "p56:img0:e2",
+        "page": 56,
+        "quote": "| Elapsed time: | 1.9254 ms |\n| --- | --- |\n| Inference time: | 0.1404 ms |\n| Bound time: | 1.7846 ms |",
+        "origin": "pdf_image_gap_ocr"
+      },
+      {
+        "element_id": "p56:img3:e2",
+        "page": 56,
+        "quote": "Inference time: 0.1409 ms",
+        "origin": "pdf_image_gap_ocr"
+      },
+      {
+        "element_id": "p56:img3:e3",
+        "page": 56,
+        "quote": "Bound time: 1.7760 ms",
+        "origin": "pdf_image_gap_ocr"
+      },
+      {
+        "element_id": "p58:img0:e1",
+        "page": 58,
+        "quote": "| CROWN method | sparse.py (ms) | CUDA (ms) | bound 계산 성능 | 추론 + bound + 검증 |\n| --- | --- | --- | --- | --- |\n| forward | 6.951 | 1.307 | 5.32x <br>(81.2% 단축) | 4.86x <br>(79.4% 단축) |\n| backward | 8.044 | 1.519 | 5.30x <br>(81.1% 단축) | 4.89x <br>(79.6% 단축) |",
+        "origin": "pdf_image_gap_ocr"
+      },
+      {
+        "element_id": "p58:img1:e0",
+        "page": 58,
+        "quote": "| ### | backward | 40000 | 23 | 481.7157 | 1.3569 | 479.6443 | 0.6957 | 0.0015 | 0.5214 | 0.0008 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| ### | forward | 40000 | 23 | 438.3345 | 1.599 | 435.8792 | 0.6724 | 0.0017 | 0.4738 | 0.0007 |",
+        "origin": "pdf_image_gap_ocr"
+      },
+      {
+        "element_id": "p62:img0:e1",
+        "page": 62,
+        "quote": "| timestamp | method | N | eps_count | total_s | infer_s | bound_s | certify_s | avg_infer_ms | avg_bound_ms | avg_certify_ms |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| ####### | forward_cuc | 40000 | 23 | 1035,2962 | 119,6961 | 911,4919 | 2,8799 | 0,1301 | 0,9908 | 0,0031 |\n| ####### | backward_c | 40000 | 23 | 1123,7942 | 113,2002 | 993,6226 | 2,0701 | 0,123 | 1,08 | 0,0023 |\n| ####### | forward_cuc | 40000 | 23 | 985,8562 | 112,0688 | 872,9448 | 0,7701 | 0,1218 | 0,9489 | 0,0008 |\n| ####### | forward_cuc | 40000 | 23 | 1052,5192 | 111,2484 | 940,4763 | 0,7258 | 0,1209 | 1,0223 | 0,0008 |\n| ####### | forward_cuc | 40000 | 23 | 976,4102 | 110,8478 | 864,7812 | 0,7137 | 0,1205 | 0,94 | 0,0008 |\n| ####### | forward_cuc | 40000 | 23 | 1027,604 | 111,162 | 915,6468 | 0,7254 | 0,1208 | 0,9953 | 0,0008 |\n| ####### | forward_cuc | 40000 | 23 | 1037,4762 | 111,8296 | 924,8194 | 0,7549 | 0,1216 | 1,0052 | 0,0008 |\n| ####### | forward_cuc | 40000 | 23 | 982,9074 | 111,2852 | 870,8195 | 0,733 | 0,121 | 0,9465 | 0,0008 |\n| ####### | forward_cuc | 40000 | 23 | 1007,0036 | 110,8921 | 895,3312 | 0,7128 | 0,1205 | 0,9732 | 0,0008 |\n| ####### | forward_cuc | 40000 | 23 | 974,9798 | 110,9293 | 863,2666 | 0,7153 | 0,1206 | 0,9383 | 0,0008 |\n| ####### | forward_cuc | 40000 | 23 | 974,3991 | 110,769 | 862,8576 | 0,7056 | 0,1204 | 0,9379 | 0,0008 |\n| ####### | forward_cuc | 40000 | 23 | 1008,6291 | 110,7722 | 897,0824 | 0,7066 | 0,1204 | 0,9751 | 0,0008 |\n|  | 평균 | 920000 |  | 1002,77848 | 111,18044 | 890,80258 | 0,72632 | 0,12085 | 0,96827 | 0,0008 |\n| timestamp | method | N | eps_count | total_s | infer_s | bound_s | certify_s | avg_infer_ms | avg_bound_ms | avg_certify_ms |\n| ####### | backward_c | 40000 | 23 | 1133,8077 | 110,7947 | 1022,221 | 0,7237 | 0,1204 | 1,1111 | 0,0008 |\n| ####### | backward_c | 40000 | 23 | 1112,32 | 110,6234 | 1000,9186 | 0,71 | 0,1202 | 1,088 | 0,0008 |\n| ####### | backward_c | 40000 | 23 | 1112,263 | 110,6063 | 1000,8752 | 0,7141 | 0,1202 | 1,0879 | 0,0008 |\n| ####### | backward_c | 40000 | 23 | 1132,4453 | 110,7491 | 1020,9089 | 0,719 | 0,1204 | 1,1097 | 0,0008 |\n| ####### | backward_c | 40000 | 23 | 1155,8213 | 117,6799 | 1036,8659 | 1,1365 | 0,1279 | 1,127 | 0,0012 |\n| ####### | backward_c | 40000 | 23 | 1114,5961 | 119,9604 | 993,1675 | 1,287 | 0,1304 | 1,0795 | 0,0014 |\n| ####### | backward_c | 40000 | 23 | 1145,7508 | 119,1598 | 1025,1157 | 1,2969 | 0,1295 | 1,1143 | 0,0014 |\n| ####### | backward_c | 40000 | 23 | 1141,1841 | 117,6279 | 1022,1586 | 1,2246 | 0,1279 | 1,111 | 0,0013 |\n| ####### | backward_c | 40000 | 23 | 1190,0012 | 118,4774 | 1070,1121 | 1,2377 | 0,1288 | 1,1632 | 0,0013 |\n| ####### | backward_c | 40000 | 23 | 1157,8767 | 118,2467 | 1038,2333 | 1,2267 | 0,1285 | 1,1285 | 0,0013 |\n|  | 평균 | 920000 |  | 1139,60662 | 115,39256 | 1023,05768 | 1,02762 | 0,12542 | 1,11202 | 0,00111 |",
+        "origin": "pdf_image_gap_ocr"
+      },
+      {
+        "element_id": "p62:img0:e2",
+        "page": 62,
+        "quote": "cudaGraph만 적용된 버전",
+        "origin": "pdf_image_gap_ocr"
+      }
+    ],
+    "numeric_issues": [
+      "조건·관찰의 원문 미확인 수치: 1.9171"
+    ],
+    "support": "unsupported",
+    "support_note": "조건·관찰의 원문 미확인 수치: 1.9171",
+    "attribution_preserved": false,
+    "writing_role": "context_only"
+  }
+]

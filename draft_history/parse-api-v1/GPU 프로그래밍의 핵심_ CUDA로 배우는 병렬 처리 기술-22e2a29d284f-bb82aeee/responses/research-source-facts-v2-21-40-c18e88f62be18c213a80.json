@@ -1,0 +1,83 @@
+{
+  "request_fingerprint": "c18e88f62be18c213a805e65edd72f8f4fabb9e4044f48ed1f76d47b06c42e02",
+  "value": {
+    "title": "GPU 기반 CROWN 검증 파이프라인의 커널 퓨전 및 메모리 전송 최적화",
+    "open_questions": [
+      "CROWN 범위 규정(partial/total order) 재검토 필요",
+      "cuBlas/cuSparse의 소규모 신경망에서의 오버헤드 원인 및 Nsight Compute 기반 함수 선택",
+      "CUDA core 점유율 50% 이상 달성 가능성"
+    ],
+    "facts": [
+      {
+        "statement": "forward 함수의 DTOH memcpy를 극단적으로 제거한 후 CROWN 검증(eps=1e-6, 출력 차원 16) 실행 시간이 약 103ms에서 약 64ms로 감소했다.",
+        "limits": "측정 환경·반복 조건에 따라 변동 가능. 단일 시점 측정값.",
+        "element_ids": [
+          "p21:e148",
+          "p21:e149",
+          "p22:e150"
+        ]
+      },
+      {
+        "statement": "CUDA 동기화(cudaDeviceSynchronize)를 필요한 부분만 남기고 제거한 결과 실행 시간이 약 1ms 감소했다(26.5291ms → 25.4572ms).",
+        "limits": "측정 시점 기준. 감소폭은 1ms 수준.",
+        "element_ids": [
+          "p26:e180",
+          "p26:e181",
+          "p26:e182"
+        ]
+      },
+      {
+        "statement": "cuBlas 도입 후 실행 시간이 약 40ms로 다시 늘어났고, cuSparse로 spMV만 적용한 경우에도 약 27ms로 더 느려졌으며, spMM까지 도입하면 약 38.58ms로 회귀했다.",
+        "limits": "현재 모델 크기와 호출 패턴에서 측정된 결과이며, 라이브러리 함수 선택에 따라 결과가 달라질 수 있음.",
+        "element_ids": [
+          "p26:e184",
+          "p27:e188",
+          "p27:e189"
+        ]
+      },
+      {
+        "statement": "cuBlas/cuSparse 실험 결과 현재 모델 크기와 호출 패턴에서는 느려져 현 기준 코드에는 포함하지 않았으며, 추후 재도입 시도가 필요하다고 정리했다.",
+        "limits": "소규모 신경망에서의 실험 기준. 함수 변형 및 Nsight Compute 분석과 함께 재검토 예정.",
+        "element_ids": [
+          "p30:e206",
+          "p31:e209",
+          "p31:e210"
+        ]
+      },
+      {
+        "statement": "backward_bound_gpu의 affine 중복 계산 삭제, new_(upper,lower)_p 복사 대신 std::swap 포인터 스와핑, backward 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu 도입, build_coeff_pair_fused_gpu 및 backward_bias_pair_fused_gpu 커널 퓨전을 적용했다.",
+        "limits": "적용 범위는 backward_bound_gpu 및 관련 커널 함수 중심.",
+        "element_ids": [
+          "p32:e222"
+        ]
+      },
+      {
+        "statement": "커널 퓨전과 set_shape 함수를 다른 커널에 직접 내장한 결과 CROWN 검증 실행 시간이 최저 약 21.3753ms까지 감소했다.",
+        "limits": "측정 환경에 따라 23~26ms 수준으로 변동하는 경우가 있다고 함께 기록됨.",
+        "element_ids": [
+          "p34:e226",
+          "p34:e227",
+          "p34:e228"
+        ]
+      },
+      {
+        "statement": "forward-backward 간 전달되는 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제하고, bias도 메모리 풀에서 관리하도록 한 뒤 memcpy 호출이 109→94번으로 감소했으며, 21~23ms 구간에서 비교적 안정적으로 동작했다.",
+        "limits": "memcpy 감소 횟수와 안정 구간은 Nsight 구간 및 측정 시점 기준.",
+        "element_ids": [
+          "p35:e230",
+          "p36:e238",
+          "p36:e239"
+        ]
+      },
+      {
+        "statement": "backward 호출 시 forward 중간 결과를 CPU로 복사할지 여부를 플래그로 제어(false 시 memcpy 현저히 감소)하여 실행 시간이 약 17.2236ms로 줄었고, memcpy 호출 횟수도 66→56회로 감소했다.",
+        "limits": "플래그 적용 여부에 따른 비교. memcpy 횟수는 Nsight 기준.",
+        "element_ids": [
+          "p36:e241",
+          "p36:e242",
+          "p36:e243"
+        ]
+      }
+    ]
+  }
+}

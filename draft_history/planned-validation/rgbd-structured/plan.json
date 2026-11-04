@@ -1,0 +1,453 @@
+{
+  "title": "Cross-attention driven RGBD fusion in lightweight CNN–Transformer for real-time stress classification of seedlings during robotic transplanting",
+  "rationale": "연구 자료가 단일 논문 수준의 사실(프레임워크, 데이터셋, 하드웨어, 학습/평가 설정, 성능 지표, ablation)을 제공하므로, 이를 그대로 논문 구조로 재구성한다. 관련 연구는 근거 자료가 없어 omit_without_evidence 정책에 따라 빈 장으로 둔다. 참고 가이드(ref1_introduction, ref1_methods, ref1_evaluation, ref1_limitations, ref1_conclusion)의 역할·문단 전개·표 활용 방식을 적용하되, 절 개수와 소절 구성은 연구 자료의 목적과 근거에 맞춰 조정한다.",
+  "sections": [
+    {
+      "id": "S_intro",
+      "title": "서론",
+      "role": "introduction",
+      "purpose": "로봇 이식 공정에서 묘목 스트레스 분류의 실용적 중요성과 실시간성 요구를 제시하고, RGB-only 대비 RGBD 융합의 필요성, 측정 범위(정확도·FPS)와 비교의 어려움을 명확히 한 뒤 제안 프레임워크와 주요 결과를 요약한다.",
+      "status": "write",
+      "subsections": [
+        "연구 동기와 문제 제기",
+        "비교의 어려움과 측정 범위의 모호함",
+        "제안 구성과 연구 질문",
+        "실험 조건 정의와 각 조건이 포착하는 효과",
+        "주요 발견 요약 및 논문 구성 안내"
+      ],
+      "evidence_ids": [
+        "F01",
+        "F02",
+        "F03",
+        "F04",
+        "F05",
+        "F06",
+        "F18"
+      ],
+      "reference_ids": [
+        "ref1_introduction"
+      ],
+      "table_ids": [],
+      "depends_on": [],
+      "reference_adaptation": "ref1_introduction의 문단 전개(영역 중요성→비교 어려움→연구 공백→조건 정의→결과 요약→구성 안내)를 따르되, 본 연구는 벤치마킹·시스템 오버헤드 문헌이 아니라 단일 프레임워크 제안 논문이므로 ‘비교의 어려움’을 RGB-only 대비 RGBD 융합, 정확도·FPS 동시 고려, 이식 제어 파이프라인 통합 맥락으로 좁혀 서술한다.",
+      "required_items": [
+        {
+          "id": "I_intro_motivation",
+          "description": "로봇 이식 중 묘목 스트레스 분류의 실용적 중요성과 실시간 처리 요구",
+          "evidence_ids": [
+            "F01",
+            "F04"
+          ]
+        },
+        {
+          "id": "I_intro_gap",
+          "description": "RGB-only 대비 RGBD 융합의 필요성 및 기존 접근의 한계(색-질감 vs 기하 단서 분리 부재)",
+          "evidence_ids": [
+            "F02",
+            "F05"
+          ]
+        },
+        {
+          "id": "I_intro_rq",
+          "description": "연구 질문: (RQ1) RGBD 융합이 RGB-only 대비 정확도를 높이는가, (RQ2) 경량 CNN–Transformer에서 교차 주의 기반 융합이 실시간성을 유지하는가, (RQ3) 이식 제어 파이프라인 통합 시 FPS는 어느 수준인가",
+          "evidence_ids": [
+            "F01",
+            "F02",
+            "F04"
+          ]
+        },
+        {
+          "id": "I_intro_conditions",
+          "description": "실험 조건 정의: 6단계 스트레스 수준(W2N2 등), oblique-view RGBD 수집, edge 장치 배포, 이식 제어 파이프라인 통합",
+          "evidence_ids": [
+            "F01",
+            "F03",
+            "F04",
+            "F06"
+          ]
+        },
+        {
+          "id": "I_intro_summary",
+          "description": "주요 결과 요약: RGBD-CTA-F 정확도 95.8%, FPS 5.2, RGB-only 대비 +4.9% ablation",
+          "evidence_ids": [
+            "F04",
+            "F05",
+            "F18"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S_methods",
+      "title": "방법",
+      "role": "methods",
+      "purpose": "스트레스 분류 프레임워크, 데이터셋 수집·환경, 전처리·증강, 모델 구조(RGB-CTA, RGBD-CTA-F, RGBD-CTA-D), 교차 주의 융합, 학습·검증 설정을 단계적으로 정의한다.",
+      "status": "write",
+      "subsections": [
+        "스트레스 수준 정의와 재배·수집 환경",
+        "RGBD 데이터셋과 전처리·증강",
+        "경량 CNN–Transformer 이중 스트림 구조",
+        "계층적 교차 주의 융합 모듈",
+        "학습·검증 설정과 평가 프로토콜"
+      ],
+      "evidence_ids": [
+        "F01",
+        "F02",
+        "F03",
+        "F06",
+        "F07",
+        "F08",
+        "F09",
+        "F10",
+        "F11",
+        "F12",
+        "F13",
+        "F14",
+        "F15",
+        "F16",
+        "F17"
+      ],
+      "reference_ids": [
+        "ref1_methods"
+      ],
+      "table_ids": [],
+      "depends_on": [
+        "S_intro"
+      ],
+      "reference_adaptation": "ref1_methods의 문단 전개(구성/조건 정의→실행 경로·측정 구간→공통 고정 요소→워크로드·데이터셋→환경별 설정→플랫폼·스택)를 따르되, 본 연구는 ‘실행 경로·측정 구간’을 추론 FPS 측정 조건(Jetson AGX Xavier, PyTorch FP32, batch 1, 100장 평균, 전처리·병렬 제어 스레드 포함)으로 구체화하고, 모델 구조 표는 RGB-CTA / RGBD-CTA-D / RGBD-CTA-F의 차이를 기준선·변경 범위·측정 초점 관점에서 정리한다.",
+      "required_items": [
+        {
+          "id": "M_stress_def",
+          "description": "6단계 스트레스 치료 조건 정의(W2N2, W2N0, W4N4, W4N0, W6N6, W6N0)와 W2N2가 표준 regimen 제어 조건임",
+          "evidence_ids": [
+            "F06"
+          ]
+        },
+        {
+          "id": "M_cultivation",
+          "description": "실내 인큐베이터 재배 조건(27°C, 70% RH, 15h 광주기), 36-hole tray, coconut coir",
+          "evidence_ids": [
+            "F07"
+          ]
+        },
+        {
+          "id": "M_dataset_collection",
+          "description": "oblique-view 센서로 pick-and-place 주기 중 수집한 1537장의 paired RGBD 이미지",
+          "evidence_ids": [
+            "F03"
+          ]
+        },
+        {
+          "id": "M_hardware",
+          "description": "Jetson AGX Xavier(8-core ARM CPU, 512-core CUDA GPU, up to 32 TOPS), Azure Kinect DK RGBD 카메라, 로봇 암·힘 피드백 그리퍼 제어",
+          "evidence_ids": [
+            "F08"
+          ]
+        },
+        {
+          "id": "M_capture",
+          "description": "카메라-대상 거리 30cm(최소 감지 범위 25cm 초과), 35° oblique 각도, RGB 4096×3072 / depth 640×576, 5 FPS 동기화 캡처",
+          "evidence_ids": [
+            "F09",
+            "F10",
+            "F11"
+          ]
+        },
+        {
+          "id": "M_augmentation",
+          "description": "RGB 증강: 수평 뒤집기, 밝기·대비 [0.8,1.2] 무작위 조정; depth는 paired RGB 뒤집기 시에만 수평 뒤집기, 밝기·대비 조작 없음",
+          "evidence_ids": [
+            "F12"
+          ]
+        },
+        {
+          "id": "M_dataset_split",
+          "description": "총 2769 샘플(원본 1537 + 증강 1232), 8:2 train/test 분할",
+          "evidence_ids": [
+            "F13"
+          ]
+        },
+        {
+          "id": "M_rgb_cta",
+          "description": "RGB-CTA 기준선 구조: tokenizer(CRP 2개, Conv2d 7×7, ReLU, MaxPool2d 3×3, 출력 채널 64/256, 224×224×C → 14×14×256), transformer encoder 7개, layer norm, attention pooling, 가중 평균, MLP 분류기",
+          "evidence_ids": [
+            "F14"
+          ]
+        },
+        {
+          "id": "M_cross_attention",
+          "description": "교차 주의 융합: RGB 특징을 query, depth 특징을 key/value로 사용, F = softmax((W^Q R)(W^K D)^T / sqrt(d)) D W^1, 융합 특징 C = F + R",
+          "evidence_ids": [
+            "F15"
+          ]
+        },
+        {
+          "id": "M_training",
+          "description": "배치 32, 초기 LR 5×10^{-4}, cosine annealing 최소 1×10^{-5}, AdamW, weight decay 6×10^{-2}, warm-up 1×10^{-6} 10 epoch, 200 epoch, label smoothing 0.1, AMP",
+          "evidence_ids": [
+            "F16"
+          ]
+        },
+        {
+          "id": "M_validation",
+          "description": "80/20 hold-out + 훈련 구간 stratified 5-fold CV, 전체 데이터셋의 20%를 최종 평가용 unseen test로 1회만 사용",
+          "evidence_ids": [
+            "F17"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S_eval",
+      "title": "평가",
+      "role": "evaluation",
+      "purpose": "연구 질문별로 정확도·정밀도·재현율·F1·파라미터·GFLOPs·FPS를 제시하고, RGB-only 대비 융합 효과, 모델 변형 간 차이, 이식 제어 파이프라인 통합 시 실시간성을 해석한다.",
+      "status": "write",
+      "subsections": [
+        "평가 대상과 지표",
+        "RQ1: RGBD 융합의 정확도 개선 효과",
+        "RQ2: 모델 변형 간 정확도·복잡도·속도 비교",
+        "RQ3: 이식 제어 파이프라인 통합 시 실시간 성능",
+        "결과 해석과 상충 관계"
+      ],
+      "evidence_ids": [
+        "F04",
+        "F05",
+        "F18"
+      ],
+      "reference_ids": [
+        "ref1_evaluation"
+      ],
+      "table_ids": [],
+      "depends_on": [
+        "S_methods"
+      ],
+      "reference_adaptation": "ref1_evaluation의 문단 전개(평가 대상·표 안내→질문별 결과→구성 간 차이·순위 변화→추가 이득 크기·동시 변경 제약)를 따르되, 본 연구는 단일 테이블(모델별 정확도·정밀도·재현율·F1·Params·GFLOPs·FPS)을 기준선으로 먼저 제시하고, 본문에서는 RGBD-CTA-F의 +4.9% ablation, 파라미터·GFLOPs·FPS 증가, 이식 파이프라인 통합 시 5.2 FPS 유지 등 차이점과 예외만 서술한다.",
+      "required_items": [
+        {
+          "id": "E_metrics_table",
+          "description": "모델별 정확도·정밀도·재현율·F1·Params·GFLOPs·FPS 표(RGB-CTA, RGBD-CTA-D, RGBD-CTA-F)",
+          "evidence_ids": [
+            "F18"
+          ]
+        },
+        {
+          "id": "E_rq1_fusion_gain",
+          "description": "RGBD 채널 융합이 RGB-only 대비 정확도 +4.9% 개선(ablation)",
+          "evidence_ids": [
+            "F05"
+          ]
+        },
+        {
+          "id": "E_rq2_model_compare",
+          "description": "RGBD-CTA-F 정확도 95.8% / RGB-CTA 90.9% / RGBD-CTA-D 91.2%, Params 23.2M vs 18.1M/18.4M, GFLOPs 10.3 vs 8.2/8.6",
+          "evidence_ids": [
+            "F18"
+          ]
+        },
+        {
+          "id": "E_rq3_fps",
+          "description": "Jetson AGX Xavier 배포 시 RGBD-CTA-F 5.2 FPS, 이식 제어 파이프라인 통합 상태 유지",
+          "evidence_ids": [
+            "F04",
+            "F18"
+          ]
+        },
+        {
+          "id": "E_tradeoff",
+          "description": "정확도 상승과 함께 Params·GFLOPs·FPS 간 상충 존재(5.2 vs 7.6/7.4 FPS)",
+          "evidence_ids": [
+            "F18"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S_limit",
+      "title": "한계",
+      "role": "limitations",
+      "purpose": "실험 범위, 통제 조건, 동시 변경의 제약, 측정 환경 차이, 제외된 평가 항목을 밝혀 결과 해석 범위를 제한한다.",
+      "status": "write",
+      "subsections": [
+        "실험 범위와 대상 제한",
+        "동시 변경과 개별 요인 분리 제약",
+        "측정 환경과 FPS 해석 범위",
+        "제외된 평가 항목과 해석 공백",
+        "결과 적용 범위의 제한"
+      ],
+      "evidence_ids": [
+        "F01",
+        "F03",
+        "F04",
+        "F08",
+        "F09",
+        "F10",
+        "F11",
+        "F13",
+        "F18",
+        "F06",
+        "F07"
+      ],
+      "reference_ids": [
+        "ref1_limitations"
+      ],
+      "table_ids": [],
+      "depends_on": [
+        "S_eval"
+      ],
+      "reference_adaptation": "ref1_limitations의 문단 전개(범위·조건→제한한 최적화 사유→동시 변경→호스트 차이→제외 지표→적용 범위)를 따르되, 본 연구는 전력·에너지 효율 평가가 자료에 없으므로 해당 항목을 ‘제외된 평가’로 명시하고, FPS가 특정 edge 장치·PyTorch FP32·batch 1·100장 평균·전처리·병렬 제어 스레드 포함 조건에서 측정된 점을 해석 제약으로 밝힌다.",
+      "required_items": [
+        {
+          "id": "L_scope",
+          "description": "단일 작물(벨페퍼), 6단계 스트레스 수준, 실내 인큐베이터 재배, oblique-view 단일 센서 수집으로 범위 제한",
+          "evidence_ids": [
+            "F01",
+            "F03",
+            "F06",
+            "F07"
+          ]
+        },
+        {
+          "id": "L_simultaneous_change",
+          "description": "RGBD-CTA-F는 융합 모듈 외에도 구조·파라미터·GFLOPs가 함께 달라 개별 요인 분리가 어려움",
+          "evidence_ids": [
+            "F18"
+          ]
+        },
+        {
+          "id": "L_fps_context",
+          "description": "FPS 5.2는 Jetson AGX Xavier, PyTorch FP32, batch 1, 100 테스트 이미지 평균, 전처리·병렬 제어 스레드 포함 조건에서 측정",
+          "evidence_ids": [
+            "F04",
+            "F18"
+          ]
+        },
+        {
+          "id": "L_excluded",
+          "description": "전력·에너지 효율, 다른 작물·야외 환경·다른 센서/거리·각도 일반화 평가는 자료에 없어 해석 범위에서 제외",
+          "evidence_ids": [
+            "F01",
+            "F03",
+            "F08",
+            "F10",
+            "F11"
+          ]
+        },
+        {
+          "id": "L_generalization",
+          "description": "결과 적용 범위는 제어된 실내 재배·특정 하드웨어·이식 제어 파이프라인 통합 맥락으로 제한",
+          "evidence_ids": [
+            "F01",
+            "F04",
+            "F08"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S_conclusion",
+      "title": "결론",
+      "role": "conclusion",
+      "purpose": "수준별 핵심 발견(융합 효과, 모델 변형 간 차이, 실시간성)을 다시 정리하고, 정확도·FPS 상충과 비교 시 고려 요소, 향후 확장 방향을 제시한다.",
+      "status": "write",
+      "subsections": [
+        "연구 범위와 접근 요약",
+        "수준별 핵심 발견",
+        "정확도·지연 시간 상충과 비교 시 고려 요소",
+        "향후 확장 방향"
+      ],
+      "evidence_ids": [
+        "F01",
+        "F02",
+        "F04",
+        "F05",
+        "F18",
+        "F10",
+        "F11"
+      ],
+      "reference_ids": [
+        "ref1_conclusion"
+      ],
+      "table_ids": [],
+      "depends_on": [
+        "S_limit"
+      ],
+      "reference_adaptation": "ref1_conclusion의 문단 전개(범위·접근 재제시→수준별 발견 정리→순위 변화·추가 이득·정확도 보존→비교 고려 요소→확장 방향)를 따르되, 본 연구는 ‘수준별’을 (1) RGBD 융합 효과, (2) 모델 변형 간 정확도·복잡도·속도, (3) 이식 파이프라인 통합 실시간성으로 구분해 정리한다.",
+      "required_items": [
+        {
+          "id": "C_summary",
+          "description": "경량 CNN–Transformer 이중 스트림과 계층적 교차 주의 융합으로 6단계 묘목 스트레스를 분류하는 프레임워크 제안",
+          "evidence_ids": [
+            "F01",
+            "F02"
+          ]
+        },
+        {
+          "id": "C_findings",
+          "description": "RGBD 융합으로 RGB-only 대비 +4.9% 정확도 개선, RGBD-CTA-F 정확도 95.8%·FPS 5.2 달성, 파라미터·GFLOPs 증가 동반",
+          "evidence_ids": [
+            "F04",
+            "F05",
+            "F18"
+          ]
+        },
+        {
+          "id": "C_tradeoff",
+          "description": "정확도 향상과 실시간성(5.2 FPS) 간 상충이 존재하며, 비교 시 정확도·FPS·모델 크기를 함께 고려해야 함",
+          "evidence_ids": [
+            "F18"
+          ]
+        },
+        {
+          "id": "C_future",
+          "description": "향후 확장 방향: 작물·스트레스 범위 확대, 요인 분리 실험, 거리·각도·조명 등 제약 조건 변화 반영, 에너지·전력 평가 추가",
+          "evidence_ids": [
+            "F01",
+            "F10",
+            "F11"
+          ]
+        }
+      ]
+    }
+  ],
+  "generation_order": [
+    "S_intro",
+    "S_methods",
+    "S_eval",
+    "S_limit",
+    "S_conclusion"
+  ],
+  "unresolved": [
+    "[확인 필요: RGBD-CTA-D의 ‘D’가 의미하는 변형 방향(예: depth-only 또는 depth-dominant)이 원문에 명시되어 있는지]",
+    "[확인 필요: 계층적 교차 주의가 shallow/deep feature layers에서 각각 어떻게 배치되는지의 구체적 층위 정보]",
+    "[확인 필요: 6단계 스트레스 수준의 라벨 분포 및 클래스별 성능(정밀도·재현율·F1)이 클래스 단위로 제시되는지]",
+    "[확인 필요: FPS 측정 시 전처리·추론·병렬 제어 스레드 각각의 기여 분해 여부]"
+  ],
+  "evidence_binding": [
+    {
+      "section_id": "S_intro",
+      "added_from_explicit_requirements": [
+        "F06",
+        "F18"
+      ]
+    },
+    {
+      "section_id": "S_limit",
+      "added_from_explicit_requirements": [
+        "F06",
+        "F07"
+      ]
+    },
+    {
+      "section_id": "S_conclusion",
+      "added_from_explicit_requirements": [
+        "F10",
+        "F11"
+      ]
+    }
+  ],
+  "label_normalizations": [],
+  "omitted_empty_related_work": [
+    "S_rw"
+  ]
+}

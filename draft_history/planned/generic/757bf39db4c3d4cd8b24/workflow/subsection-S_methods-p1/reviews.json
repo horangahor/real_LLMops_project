@@ -1,0 +1,177 @@
+[
+  {
+    "checks": [
+      {
+        "item_id": "RI_methods_2",
+        "verdict": "met",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p2",
+          "S_methods_p3",
+          "S_methods_p4",
+          "S_methods_p5",
+          "S_methods_p6",
+          "S_methods_p7",
+          "S_methods_p8",
+          "S_methods_p9",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12"
+        ],
+        "evidence_ids": [
+          "E00001",
+          "E00002",
+          "E00005",
+          "E00024",
+          "E00025",
+          "E00026",
+          "E00034",
+          "E00042",
+          "E00323",
+          "E00324",
+          "E00054",
+          "E00087",
+          "E00088",
+          "E00089",
+          "E00252",
+          "E00253",
+          "E00254",
+          "E00255",
+          "E00257",
+          "E00261",
+          "E00263",
+          "E00260",
+          "E00264",
+          "E00265",
+          "E00262",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00288",
+          "E00290",
+          "E00291",
+          "E00297",
+          "E00333",
+          "E00233",
+          "E00235",
+          "E00353",
+          "E00354",
+          "E00376"
+        ],
+        "quote": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)로 컴파일이 가능하다. 초기 구상 단계에서는 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 device, 즉 GPU에서 동작하는 kernel 함수로 바꾸는 방향을 검토했다. 포팅 대상으로는 mat_add처럼 배열을 통한 연산을 먼저 확인했고, mat_add는 여러 번 호출되어 메모리 할당과 해제가 반복되므로 비효율적이라고 판단했으나 최적화는 나중에 진행하기로 했다. [근거:E00001,E00002,E00005]",
+        "paragraph_quotes": [
+          "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)로 컴파일이 가능하다. 초기 구상 단계에서는 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 device, 즉 GPU에서 동작하는 kernel 함수로 바꾸는 방향을 검토했다. 포팅 대상으로는 mat_add처럼 배열을 통한 연산을 먼저 확인했고, mat_add는 여러 번 호출되어 메모리 할당과 해제가 반복되므로 비효율적이라고 판단했으나 최적화는 나중에 진행하기로 했다. [근거:E00001,E00002,E00005]",
+          "컴파일 및 라이브러리 구성에서는 컴파일 옵션에 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. -l은 라이브러리를 링크하라는 옵션이고, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이다. my_lirpa_op.cu에서 GPU 최적화 행렬곱 함수인 cublasDgemm()를 사용하기 때문에 이 라이브러리를 연결해줘야 하며, CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되어 별도 설치는 필요하지 않다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다. [근거:E00024,E00025,E00026,E00034]",
+          "메모리 및 가중치 처리 구성에서는 FullyConnectedNetwork 구조체에 GPU 메모리 주소를 저장할 수 있는 포인터 배열(d_W)을 미리 만들어 두고, 이 포인터 배열의 크기를 MAX_LAYERS 기준으로 설정했다. 이 방식은 신경망이 작으면 공간이 낭비될 수 있다. 가중치를 GPU에 사전 업로드하는 함수 pre_upload_weights_to_gpu를 구현해 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 GPU 메모리를 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하여 net->d_W[i]에 저장했다. double보다 float의 접근 속도가 더 빠르다고 알려져 있으나, 행렬·벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰려면 전체 구조를 바꿔야 한다. [근거:E00323,E00042,E00324]",
+          "최적화 구성 단계에서는 메모리풀에 cuBLAS를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBLAS를 활용하도록 한 v1-1-1-1(my_lirpa_mempool_cuBlas.cu)이 구성되었다. 이후 실행 환경에서는 CPU에서 GPU로 신경망 메모리를 어떻게 나누어 복사하는지에 대한 질문이 있었고, GPU 메모리 사용량을 확인하는 방법으로 Nsight System이 제시되었다. 프로파일러에서는 GPU VRAM 사용량이 310.00 MiB로 표시되었으나, 메모리 풀의 행렬·벡터를 기준으로 계산한 약 114MB와 차이가 있어 이상하다고 기록되었다. CUDA 실행 시 CUDA Context가 생성되어 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하고 VRAM을 사용하므로, 런타임 오버헤드를 감안하면 프로파일러에 보이는 VRAM 사용량이 코드 계산값보다 작을 수 있다고 해석되었다. [근거:E00054,E00087,E00088,E00089]",
+          "실행 방식은 CROWN의 forward, forward+backward, backward_only를 대상으로 진행했으며, 신경망 크기와 배치 사이즈는 1로 두고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용해 시간을 비교했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었다. 측정 환경 설정으로는 초기화 지연 제거를 위해 Persistence mode를 활성화(sudo nvidia-smi -pm 1)하고, 클록 확인(nvidia-smi -q -d CLOCK)과 클록 고정(sudo nvidia-smi -lgc 1410)을 사용했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라 CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00297,E00333,E00281,E00282,E00283,E00284,E00286,E00287]",
+          "최적화 과정의 관찰로는 배치 사이즈 64일 때 약 424초가 걸렸고, 현재 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들어 각 스트림이 GPU 메모리를 차지하는 방식이었다. 배치 사이즈를 512로 하면 메모리를 넘지 않지만 느렸는데, 각 스트림마다 CPU가 돌아가면서 다음 커널을 런치해줘야 해서 1024개의 스트림이 각각 CPU의 다음 커널 런치를 기다리는 구조였기 때문이다. 스트림 수를 64개 정도로 줄이고 배치 사이즈를 1024로 하는 방안은 하나의 스트림이 하나의 입력을 처리하므로 동시에 돌릴 수 있는 데이터가 64개이고 16번씩 나눠 처리하게 되어 의미가 없다고 판단했다. 스트림 수를 줄이면 초기 데이터 H2D 비용은 줄지만, 연산 병목은 스트림이 64개라 한 번에 64개밖에 대응하지 못하는 제약이 있었다. [근거:E00252,E00253,E00254,E00255]",
+          "현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 현재 작성자는 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. [근거:E00257,E00261,E00263,E00260]",
+          "auto-LiRPA / 3D Grid 방식은 그리드 크기를 dim3 grid(num_blocks_x, num_blocks_y, 1024)로 설정하여 Z축(배치 축)을 1024로 만들고, 1024개 샘플을 하나의 3D 큐브(텐서)로 GPU 메모리에 적재한다. 이 방식에서는 CPU가 커널을 단 1번만 발사하고, GPU의 56개 SM들이 1024층을 나누어 동시에 연산하여 7,168개 GPU 코어가 1024개 샘플을 동시에 연산한다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00264,E00265,E00262]",
+          "cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고(예상대로 DMA 효과), Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었고, 추론(Infer) 단계에서 시간이 느려졌다는 정성적 관찰도 함께 기록되었다. [근거:E00277,E00278,E00279,E00280]",
+          "GPU 클록을 고정하고 다시 실험하기 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했으며, 클록을 2800MHz로 고정하고 돌린 결과(기존 HostRegister)가 기록되었다. GPU 클록 고정 방법은 CUDA 강의 19장을 참고했다. No-Pin(일반 메모리)일 때 CPU는 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 전혀 나지 않는다. 데이터가 수 MB~수백 MB일 때는 데이터가 커지면 CPU 복사 속도가 감당이 안 되며, 이때는 DMA의 고속 대역폭(1224GB/s)이 압도적이어서 Pinned Memory가 일반 메모리보다 23배 빠르다. 우리 데이터처럼 1KB일 때는 대역폭은 아무 의미가 없고 셋업 지연시간(Latency)이 지배한다. 1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory는 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin(일반 메모리)은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 약 0.02~0.05μs(20~50ns)에 복사가 끝나 DMA 셋업보다 30~50배 빠르다. [근거:E00281,E00282,E00283,E00288,E00290,E00291,E00297]",
+          "6번째 세미나 이후 할 일로는 대학원 AI 프로그래밍 논문 영상 재확인, 6번 세미나 3번 슬라이드에 RAM 추가(해결), 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 기록되었다. 10주차 세미나 이후에는 backward_only CUDA 구현(커널 구현 완료, 최적화 적용 여부 탐색중), cudaGraph 원리 학습, 찬희씨와 auto lirpa 모델 소통(repo 수령, 데이터셋·모델 동일 확인), 미팅 일정, 배칭+다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 기록되었다. auto lirpa repo를 받아서 실행해보기로 했으며, repo 주소는 https://github.com/horangahor/antenna_auto_lirpa이다. [근거:E00333,E00233,E00235]",
+          "CUDA 포팅 및 최적화 구성은 CROWN 검증의 forward, forward+backward, backward_only 세 실행 방식을 GPU에서 구동하도록 옮기는 과정에서 발생한 컴파일 제약과 커널 실행 구조를 정리한 것이다. switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 또한 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 관찰이 있었다. 현재 작성자의 방식은 Z축=1(단일 슬라이스)로, 그리드 크기가 dim3 grid(num_blocks, 1, 1)이며 한 번에 샘플 1개만 연산한다. 1024개를 처리하려면 CPU가 커널을 1,024번 계속 발사해야 하므로 CPU가 커널을 쏘느라 지치고 GPU는 샘플 1장씩 받아 감질나는 구조가 된다. [근거:E00353,E00354,E00376]"
+        ],
+        "guideline_ids": [
+          "ref1_methods_required_5"
+        ],
+        "unused_candidate_evidence_ids": [
+          "E00256",
+          "E00337"
+        ]
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "S_methods",
+        "reference_id": "ref1_methods",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p2",
+          "S_methods_p3",
+          "S_methods_p4",
+          "S_methods_p5",
+          "S_methods_p6",
+          "S_methods_p7",
+          "S_methods_p8",
+          "S_methods_p9",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12"
+        ],
+        "reason": "구성 요소별 역할과 결합 방식은 CUDA 포팅·컴파일·라이브러리·메모리·가중치·스트림·커널 구조·메모리 방식 비교 등 여러 문단에서 부분적으로 서술되어 있으나, 각 구성 요소의 역할을 하나의 체계로 묶어 결합 방식과 상호작용 효과를 명확히 정리한 단일 서술은 부족하다. 특히 스트림 수·배치·메모리 방식·클록 고정 등 변경 요인 간 효과 분리나 결합 시 상호작용에 대한 직접 근거는 연구 노트상 제한적이다.",
+        "quote": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)로 컴파일이 가능하다. 초기 구상 단계에서는 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 device, 즉 GPU에서 동작하는 kernel 함수로 바꾸는 방향을 검토했다. 포팅 대상으로는 mat_add처럼 배열을 통한 연산을 먼저 확인했고, mat_add는 여러 번 호출되어 메모리 할당과 해제가 반복되므로 비효율적이라고 판단했으나 최적화는 나중에 진행하기로 했다. [근거:E00001,E00002,E00005]",
+        "paragraph_quotes": [
+          "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)로 컴파일이 가능하다. 초기 구상 단계에서는 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 device, 즉 GPU에서 동작하는 kernel 함수로 바꾸는 방향을 검토했다. 포팅 대상으로는 mat_add처럼 배열을 통한 연산을 먼저 확인했고, mat_add는 여러 번 호출되어 메모리 할당과 해제가 반복되므로 비효율적이라고 판단했으나 최적화는 나중에 진행하기로 했다. [근거:E00001,E00002,E00005]",
+          "컴파일 및 라이브러리 구성에서는 컴파일 옵션에 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. -l은 라이브러리를 링크하라는 옵션이고, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이다. my_lirpa_op.cu에서 GPU 최적화 행렬곱 함수인 cublasDgemm()를 사용하기 때문에 이 라이브러리를 연결해줘야 하며, CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되어 별도 설치는 필요하지 않다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다. [근거:E00024,E00025,E00026,E00034]",
+          "메모리 및 가중치 처리 구성에서는 FullyConnectedNetwork 구조체에 GPU 메모리 주소를 저장할 수 있는 포인터 배열(d_W)을 미리 만들어 두고, 이 포인터 배열의 크기를 MAX_LAYERS 기준으로 설정했다. 이 방식은 신경망이 작으면 공간이 낭비될 수 있다. 가중치를 GPU에 사전 업로드하는 함수 pre_upload_weights_to_gpu를 구현해 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 GPU 메모리를 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하여 net->d_W[i]에 저장했다. double보다 float의 접근 속도가 더 빠르다고 알려져 있으나, 행렬·벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰려면 전체 구조를 바꿔야 한다. [근거:E00323,E00042,E00324]",
+          "최적화 구성 단계에서는 메모리풀에 cuBLAS를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBLAS를 활용하도록 한 v1-1-1-1(my_lirpa_mempool_cuBlas.cu)이 구성되었다. 이후 실행 환경에서는 CPU에서 GPU로 신경망 메모리를 어떻게 나누어 복사하는지에 대한 질문이 있었고, GPU 메모리 사용량을 확인하는 방법으로 Nsight System이 제시되었다. 프로파일러에서는 GPU VRAM 사용량이 310.00 MiB로 표시되었으나, 메모리 풀의 행렬·벡터를 기준으로 계산한 약 114MB와 차이가 있어 이상하다고 기록되었다. CUDA 실행 시 CUDA Context가 생성되어 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하고 VRAM을 사용하므로, 런타임 오버헤드를 감안하면 프로파일러에 보이는 VRAM 사용량이 코드 계산값보다 작을 수 있다고 해석되었다. [근거:E00054,E00087,E00088,E00089]",
+          "실행 방식은 CROWN의 forward, forward+backward, backward_only를 대상으로 진행했으며, 신경망 크기와 배치 사이즈는 1로 두고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용해 시간을 비교했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었다. 측정 환경 설정으로는 초기화 지연 제거를 위해 Persistence mode를 활성화(sudo nvidia-smi -pm 1)하고, 클록 확인(nvidia-smi -q -d CLOCK)과 클록 고정(sudo nvidia-smi -lgc 1410)을 사용했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라 CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00297,E00333,E00281,E00282,E00283,E00284,E00286,E00287]",
+          "최적화 과정의 관찰로는 배치 사이즈 64일 때 약 424초가 걸렸고, 현재 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들어 각 스트림이 GPU 메모리를 차지하는 방식이었다. 배치 사이즈를 512로 하면 메모리를 넘지 않지만 느렸는데, 각 스트림마다 CPU가 돌아가면서 다음 커널을 런치해줘야 해서 1024개의 스트림이 각각 CPU의 다음 커널 런치를 기다리는 구조였기 때문이다. 스트림 수를 64개 정도로 줄이고 배치 사이즈를 1024로 하는 방안은 하나의 스트림이 하나의 입력을 처리하므로 동시에 돌릴 수 있는 데이터가 64개이고 16번씩 나눠 처리하게 되어 의미가 없다고 판단했다. 스트림 수를 줄이면 초기 데이터 H2D 비용은 줄지만, 연산 병목은 스트림이 64개라 한 번에 64개밖에 대응하지 못하는 제약이 있었다. [근거:E00252,E00253,E00254,E00255]",
+          "현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 현재 작성자는 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. [근거:E00257,E00261,E00263,E00260]",
+          "auto-LiRPA / 3D Grid 방식은 그리드 크기를 dim3 grid(num_blocks_x, num_blocks_y, 1024)로 설정하여 Z축(배치 축)을 1024로 만들고, 1024개 샘플을 하나의 3D 큐브(텐서)로 GPU 메모리에 적재한다. 이 방식에서는 CPU가 커널을 단 1번만 발사하고, GPU의 56개 SM들이 1024층을 나누어 동시에 연산하여 7,168개 GPU 코어가 1024개 샘플을 동시에 연산한다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00264,E00265,E00262]",
+          "cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고(예상대로 DMA 효과), Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었고, 추론(Infer) 단계에서 시간이 느려졌다는 정성적 관찰도 함께 기록되었다. [근거:E00277,E00278,E00279,E00280]",
+          "GPU 클록을 고정하고 다시 실험하기 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했으며, 클록을 2800MHz로 고정하고 돌린 결과(기존 HostRegister)가 기록되었다. GPU 클록 고정 방법은 CUDA 강의 19장을 참고했다. No-Pin(일반 메모리)일 때 CPU는 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 전혀 나지 않는다. 데이터가 수 MB~수백 MB일 때는 데이터가 커지면 CPU 복사 속도가 감당이 안 되며, 이때는 DMA의 고속 대역폭(1224GB/s)이 압도적이어서 Pinned Memory가 일반 메모리보다 23배 빠르다. 우리 데이터처럼 1KB일 때는 대역폭은 아무 의미가 없고 셋업 지연시간(Latency)이 지배한다. 1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory는 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin(일반 메모리)은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 약 0.02~0.05μs(20~50ns)에 복사가 끝나 DMA 셋업보다 30~50배 빠르다. [근거:E00281,E00282,E00283,E00288,E00290,E00291,E00297]",
+          "6번째 세미나 이후 할 일로는 대학원 AI 프로그래밍 논문 영상 재확인, 6번 세미나 3번 슬라이드에 RAM 추가(해결), 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 기록되었다. 10주차 세미나 이후에는 backward_only CUDA 구현(커널 구현 완료, 최적화 적용 여부 탐색중), cudaGraph 원리 학습, 찬희씨와 auto lirpa 모델 소통(repo 수령, 데이터셋·모델 동일 확인), 미팅 일정, 배칭+다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 기록되었다. auto lirpa repo를 받아서 실행해보기로 했으며, repo 주소는 https://github.com/horangahor/antenna_auto_lirpa이다. [근거:E00333,E00233,E00235]",
+          "CUDA 포팅 및 최적화 구성은 CROWN 검증의 forward, forward+backward, backward_only 세 실행 방식을 GPU에서 구동하도록 옮기는 과정에서 발생한 컴파일 제약과 커널 실행 구조를 정리한 것이다. switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 또한 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 관찰이 있었다. 현재 작성자의 방식은 Z축=1(단일 슬라이스)로, 그리드 크기가 dim3 grid(num_blocks, 1, 1)이며 한 번에 샘플 1개만 연산한다. 1024개를 처리하려면 CPU가 커널을 1,024번 계속 발사해야 하므로 CPU가 커널을 쏘느라 지치고 GPU는 샘플 1장씩 받아 감질나는 구조가 된다. [근거:E00353,E00354,E00376]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p5",
+        "reason": "E00297은 cudaMemcpyAsync 동작 설명이나 측정 조건·결과보다는 드라이버 내부 동작 해석 및 1KB 전송 오버헤드 해석에 가까운 근거이며, 문단 내 'CUDA 공식 가이드에 따르면...' 문장과 직접 연결되기에는 근거 성격이 다르다. 또한 E00281·E00282·E00283·E00284·E00286은 클록 고정·재실험 계획·명령어 확인·Persistence mode 설정 등 계획/설정 성격이 강해, 문단처럼 '측정 환경 설정'으로 단정해 묶을 때 수행 결과로 오해될 여지가 있다.",
+        "evidence_ids": [
+          "E00297",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286"
+        ],
+        "failure_owner": "none",
+        "quote": "실행 방식은 CROWN의 forward, forward+backward, backward_only를 대상으로 진행했으며, 신경망 크기와 배치 사이즈는 1로 두고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용해 시간을 비교했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었다. 측정 환경 설정으로는 초기화 지연 제거를 위해 Persistence mode를 활성화(sudo nvidia-smi -pm 1)하고, 클록 확인(nvidia-smi -q -d CLOCK)과 클록 고정(sudo nvidia-smi -lgc 1410)을 사용했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라 CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00297,E00333,E00281,E00282,E00283,E00284,E00286,E00287]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p10",
+        "reason": "E00288·E00290·E00291·E00297은 모두 드라이버 내부 동작 해석 또는 데이터 규모별 상대적 성능 설명으로, 실제 측정 결과나 정량 비교의 직접 근거로 쓰기보다 해석/맥락 근거로 분류하는 것이 적절하다. 문단에서는 이를 사실 서술처럼 연결해 'GPU TLB 미스가 전혀 나지 않는다', 'Pinned Memory가 일반 메모리보다 23배 빠르다' 같은 표현의 근거 강도가 과장될 수 있다.",
+        "evidence_ids": [
+          "E00288",
+          "E00290",
+          "E00291",
+          "E00297"
+        ],
+        "failure_owner": "none",
+        "quote": "GPU 클록을 고정하고 다시 실험하기 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했으며, 클록을 2800MHz로 고정하고 돌린 결과(기존 HostRegister)가 기록되었다. GPU 클록 고정 방법은 CUDA 강의 19장을 참고했다. No-Pin(일반 메모리)일 때 CPU는 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 전혀 나지 않는다. 데이터가 수 MB~수백 MB일 때는 데이터가 커지면 CPU 복사 속도가 감당이 안 되며, 이때는 DMA의 고속 대역폭(1224GB/s)이 압도적이어서 Pinned Memory가 일반 메모리보다 23배 빠르다. 우리 데이터처럼 1KB일 때는 대역폭은 아무 의미가 없고 셋업 지연시간(Latency)이 지배한다. 1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory는 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin(일반 메모리)은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 약 0.02~0.05μs(20~50ns)에 복사가 끝나 DMA 셋업보다 30~50배 빠르다. [근거:E00281,E00282,E00283,E00288,E00290,E00291,E00297]"
+      }
+    ],
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 1,
+      "total": 1,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 1,
+      "not_visible": 0,
+      "total": 1,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+  }
+]

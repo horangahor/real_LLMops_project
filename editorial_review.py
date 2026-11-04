@@ -57,12 +57,19 @@ def checked_editorial_review(raw, plan, bodies, children):
             old = refs.get(key)
             if old is None or ref_order[check["verdict"]] > ref_order[old["verdict"]]:
                 refs[key] = {**copy.deepcopy(check), "inherited": True}
-    supported = {i["id"] for s in plan["sections"] for i in s["required_items"] if i["evidence_ids"]}
+    supported = {i["id"] for s in plan["sections"] for i in s["required_items"]
+                 if i["evidence_ids"] or checks.get(i["id"], {}).get("evidence_ids")}
     met = sum(c["verdict"] == "met" and key in supported for key, c in checks.items())
     total = len(supported)
     checks, refs = list(checks.values()), list(refs.values())
+    warnings = [copy.deepcopy(i) for report in children.values() for i in report.get("editorial_warnings", [])]
+    content_warnings = [copy.deepcopy(i) for report in children.values() for i in report.get("content_warnings", [])]
     return {"review_policy": POLICY, "review_kind": "editorial", "issues": issues,
+        "content_warnings": content_warnings,
+        "content_status": "needs_attention" if content_warnings else "reviewed",
+        "content_approved": all(r.get("content_approved", r["approved"]) for r in children.values()),
         "approved": not any(i["severity"] == "error" for i in issues), "checks": checks, "reference_checks": refs,
+        "editorial_warnings": warnings, "editorial_status": "needs_revision" if any(i["severity"] == "error" for i in issues) else "reviewed",
         "required_content_coverage": {"met": met, "total": total, "value": met / total if total else None,
                                       "scope": "inherited_subsection_reviews", "rechecked": False},
         "reference_application": {"applied": sum(c["verdict"] == "applied" for c in refs),
@@ -71,13 +78,39 @@ def checked_editorial_review(raw, plan, bodies, children):
         "assessment": "Editorial quality only; content/reference judgments are inherited from child reviews."}
 
 
-def review_editorial(engine, folder, name, level, plan, bodies, children):
+def finish_editorial(report, stage, completion):
+    """A usable draft may proceed with explicitly unresolved editorial feedback."""
+    report = copy.deepcopy(report)
+    report["editorial_warnings"] = [i for i in report.get("editorial_warnings", []) if i.get("stage") != stage]
+    if completion is not None:
+        if completion.get("policy") not in ("editorial-revision-v1", "editorial-provenance-v2", "editorial-patch-v1", "editorial-fixed-slots-v1") or completion.get("status") != "needs_attention":
+            raise ValueError("편집 보완 완료 기록이 잘못됐습니다.")
+        for issue in report["issues"]:
+            if issue["severity"] == "error":
+                issue.update(severity="warning", original_severity="error", deferred=True)
+        report.update(approved=True, editorial_status="needs_attention", editorial_completion=copy.deepcopy(completion))
+    report["editorial_warnings"].extend({**copy.deepcopy(i), "stage": stage} for i in report["issues"] if i["severity"] == "warning")
+    if report["editorial_warnings"] and report["approved"]:
+        report["editorial_status"] = "needs_attention"
+    return report
+
+
+def review_editorial(engine, folder, name, level, plan, bodies, children, pending_issues=None):
     from planned_paper import index_paragraphs
     paragraphs = index_paragraphs(bodies)
     outline = [{k: copy.deepcopy(s[k]) for k in ("id", "title", "purpose", "subsections")} for s in plan["sections"]]
     system = INSTRUCTION + ("\n소절들을 엮은 현재 절의 편집 품질을 검토한다." if level == "section" else "\n전체 논문의 절 간 연결과 일관성을 검토한다.")
+    if pending_issues is not None:
+        system += "\n이번에는 previous_findings의 기존 지적이 해결됐는지만 확인한다. 새로운 편집 취향·문제를 추가하지 않는다. " \
+                  "문단은 삭제·통합·재번호화될 수 있으므로 이전 ID가 아니라 지적 사유와 이전 본문을 현재 본문과 대조한다. " \
+                  "해결한 지적은 반환하지 않고, 미해결 지적만 현재 문단 ID로 반환한다."
     def packet(rows):
-        return {"operation": "editorial_review", "workflow_stage": level, "outline": outline, "draft_paragraphs": rows}
+        value = {"operation": "editorial_review", "workflow_stage": level, "outline": outline, "draft_paragraphs": rows}
+        if pending_issues is not None:
+            value.update(review_scope="previous_findings_only", previous_findings=[
+                {k: copy.deepcopy(i[k]) for k in ("section_id", "paragraph_id", "category", "severity", "reason", "quote")}
+                for i in pending_issues])
+        return value
     batches, current = [], {}
     for pid, paragraph in paragraphs.items():
         proposed = {**current, pid: paragraph}
@@ -108,6 +141,9 @@ def review_editorial(engine, folder, name, level, plan, bodies, children):
                 for issue in response.get("issues", []):
                     if issue.get("paragraph_id") != "none" and issue.get("paragraph_id") not in rows:
                         raise ValueError("편집 검토가 현재 입력에 없는 문단을 인용했습니다.")
+                    if pending_issues is not None and not any(
+                            issue.get("section_id") == i["section_id"] and issue.get("category") == i["category"] for i in pending_issues):
+                        raise ValueError("편집 재검토가 기존 지적 밖의 장·문제 유형을 추가했습니다.")
                 checked_editorial_review(response, plan, bodies, children)
                 combined["issues"].extend(response["issues"])
                 break

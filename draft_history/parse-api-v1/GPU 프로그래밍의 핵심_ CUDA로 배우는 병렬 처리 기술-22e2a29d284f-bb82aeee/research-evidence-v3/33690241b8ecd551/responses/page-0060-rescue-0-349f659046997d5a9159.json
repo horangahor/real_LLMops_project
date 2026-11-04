@@ -1,0 +1,175 @@
+{
+  "request_fingerprint": "349f659046997d5a9159a4322ab0bd2917046d57e90991cb07fb6c25ee94c229",
+  "value": {
+    "facts": [
+      {
+        "statement": "커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 고쳤으나, cpu 계산 오버헤드가 더 큰 것 같아 시간이 늘었다.",
+        "limits": "cpu 계산 오버헤드와 시간 증가의 정량적 비교는 느낌 수준의 진술로 남음",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "MAXDIM 512 float 복사",
+          "필요한 만큼만 복사"
+        ],
+        "observations": [
+          "cpu 계산 오버헤드 증가 가능성",
+          "시간 증가"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p60:e462",
+          "p60:enh:e3"
+        ]
+      },
+      {
+        "statement": "cudaMemcpyAsync로 out_bytes만큼 d_final_lower, d_final_upper를 Host로 복사하고 cudaStreamSynchronize(stream)를 수행했다.",
+        "limits": "out_bytes는 sizeof(int) + out_dim * sizeof(float)로 계산됨",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaMemcpyAsync",
+          "cudaStreamSynchronize"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "out_bytes",
+            "value": "sizeof(int) + (size_t)out_dim * sizeof(float)",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e4"
+            ]
+          },
+          {
+            "name": "copy_kind",
+            "value": "cudaMemcpyDeviceToHost",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e4"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e4"
+        ]
+      },
+      {
+        "statement": "실시간 PCIe H2D 전송 최적화를 위해 cudaHostRegister로 dataset 메모리를 pinned memory로 등록했고, N>0일 때만 등록하며 실패 시 Notice를 출력하도록 했다.",
+        "limits": "등록 플래그와 오류 처리 방식은 코드에 명시된 범위로 한정됨",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "N > 0",
+          "cudaHostRegisterDefault"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "register_flag",
+            "value": "cudaHostRegisterDefault",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          },
+          {
+            "name": "register_size",
+            "value": "(size_t)N * sizeof(Vector)",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e0"
+        ]
+      },
+      {
+        "statement": "forward_cuda_graph의 전체 시간이 약 983s 정도이고, cpu에서 필요한 만큼만 계산한 뒤 복사한 시간이 1055 정도이며 72초 차이가 나 더 느려졌다.",
+        "limits": "두 값의 정확한 측정 조건과 비교 기준은 문맥상 서로 다른 실행 방식으로 언급됨",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward_cuda_graph",
+          "cpu 계산 후 복사 방식"
+        ],
+        "observations": [
+          "72초 차이",
+          "더 느려짐"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "forward_cuda_graph 전체 시간",
+            "value": "983",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "forward_cuda_graph",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e9"
+            ]
+          },
+          {
+            "metric": "cpu 계산 후 복사 시간",
+            "value": "1055",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cpu에서 필요한 만큼만 계산 후 복사",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e9"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p60:e467",
+          "p60:enh:e9",
+          "p60:enh:e10"
+        ]
+      },
+      {
+        "statement": "cudaHostRegister로 데이터셋 메모리를 pinned memory로 등록할 때, 등록 크기는 (size_t)N * sizeof(Vector)이며, 성공 시 'Dataset host memory pinned via cudaHostRegister (<MB> MB, zero CPU blocking DMA enabled).'를 출력하고, 실패 시 cudaGetErrorString(reg_err)를 포함한 Notice를 출력한다.",
+        "limits": "등록 플래그와 오류 처리 방식은 코드에 명시된 범위로 한정됨",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "N > 0",
+          "cudaHostRegisterDefault"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "register_flag",
+            "value": "cudaHostRegisterDefault",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          },
+          {
+            "name": "register_size",
+            "value": "(size_t)N * sizeof(Vector)",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e0"
+        ]
+      }
+    ]
+  }
+}

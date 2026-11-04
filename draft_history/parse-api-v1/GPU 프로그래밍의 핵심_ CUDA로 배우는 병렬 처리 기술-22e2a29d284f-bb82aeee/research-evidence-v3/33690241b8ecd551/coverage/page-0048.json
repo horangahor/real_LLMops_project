@@ -1,0 +1,315 @@
+{
+  "ledger": {
+    "p48:e340": {
+      "state": "unresolved",
+      "fact_ids": [],
+      "note": "최종 원문 검사 응답 미완료: 모델이 완결된 JSON을 반환하지 못했습니다. 원본과 재시도 응답은 보존했고 기존 초안은 유지합니다."
+    },
+    "p48:e341": {
+      "state": "represented",
+      "fact_ids": [
+        "P0048F0001"
+      ],
+      "note": "커맨드라인 인자로 forward/backward 선택 실행하도록 변경했다는 핵심 내용은 보존됨. 다만 '매번 forward, backward를 할 때 번거로워서'라는 변경 동기의 세부 맥락은 진술에 완전히 포함되지 않음."
+    },
+    "p48:e342": {
+      "state": "unresolved",
+      "fact_ids": [],
+      "note": "최종 원문 검사 응답 미완료: 모델이 완결된 JSON을 반환하지 못했습니다. 원본과 재시도 응답은 보존했고 기존 초안은 유지합니다."
+    },
+    "p48:e343": {
+      "state": "represented",
+      "fact_ids": [
+        "P0048F0001"
+      ],
+      "note": "기존 backward 실행 결과 1560s가 observations 및 measurement로 보존됨."
+    },
+    "p48:e344": {
+      "state": "represented",
+      "fact_ids": [
+        "P0048F0001"
+      ],
+      "note": "코드 변경 후 실행 결과 2164s가 measurement로 보존됨. 단, 정밀값은 2164s로 반올림되어 있음(아래 img2:e1 참조)."
+    },
+    "p48:img2:e0": {
+      "state": "unresolved",
+      "fact_ids": [],
+      "note": "최종 원문 검사 응답 미완료: 모델이 완결된 JSON을 반환하지 못했습니다. 원본과 재시도 응답은 보존했고 기존 초안은 유지합니다."
+    },
+    "p48:img2:e1": {
+      "state": "unresolved",
+      "fact_ids": [],
+      "note": "최종 원문 검사 응답 미완료: 모델이 완결된 JSON을 반환하지 못했습니다. 원본과 재시도 응답은 보존했고 기존 초안은 유지합니다."
+    },
+    "p48:img2:e2": {
+      "state": "unresolved",
+      "fact_ids": [],
+      "note": "최종 원문 검사 응답 미완료: 모델이 완결된 JSON을 반환하지 못했습니다. 원본과 재시도 응답은 보존했고 기존 초안은 유지합니다."
+    }
+  },
+  "rescue_history": [
+    {
+      "missing": {
+        "p48:e340": "C++ 코드 스니펫(ForwardBoundResult/BackwardBoundResult 선언, switch(method) 분기, eps_list 이중 루프, certify_topk 판정 등)이 approved_facts에 전혀 보존되지 않음. p49에서 지적된 '구조체 값에 의한 복사' 문제의 해당 코드 맥락이 누락됨.",
+        "p48:e342": "total elapsed: 1560.37s는 측정값으로 보존됨. 그러나 그림에 표시된 4개 eps 조건(9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00) 각각의 'T=0 F=40000 ratio=0.000' 결과와 'r-59999' 표기는 보존되지 않음.",
+        "p48:img2:e0": "OCR 단락 'eps= 1.0e+00: T= 0 F=40000 ratio=0.000'이 approved_facts에 없음. p48:e342의 eps 결과 라인과 동일한 내용이나 별도 요소로 존재.",
+        "p48:img2:e1": "OCR 단락 'total elapsed: 2164.98s'가 approved_facts에 없음. 승인된 측정값은 2164s(반올림)로, 실제 OCR 정밀값 2164.98s와 차이가 있음. 더 정밀한 값이 원시 자료에 존재함에도 구조화되지 않음.",
+        "p48:img2:e2": "OCR 단락 'results saved to results_cuda.csv'가 approved_facts에 없음. 결과 저장 경로에 대한 정보가 누락됨."
+      },
+      "facts": [
+        {
+          "statement": "C++ 측정 루프 코드에서 ForwardBoundResult fwd와 BackwardBoundResult bwd를 switch 스코프 바깥에 선언하고, switch(method) 분기 내에서 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하며, eps_list와 데이터 N에 대한 이중 루프에서 certify_topk로 Top-k 인증 판정을 수행한다.",
+          "limits": "코드 스니펫의 구조적 설명이며, 실제 성능 영향은 p49에서 별도로 지적됨(구조체 값에 의한 복사 문제).",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "implementation_code",
+          "conditions": [
+            "switch(method) 분기 사용",
+            "eps_list 이중 루프",
+            "N개 데이터 반복"
+          ],
+          "observations": [
+            "ForwardBoundResult fwd와 BackwardBoundResult bwd를 switch 스코프 바깥에 선언",
+            "case 0: lirpa_forward_bound_impl(*net, dataset[i], eps_f, false, false, true) 호출",
+            "case 1: lirpa_backward_bound(*net, dataset[i], eps_f, false, false) 호출",
+            "1b = &fwd.final_lower / &bwd.final_lower, ub = &fwd.final_upper / &bwd.final_upper 할당",
+            "certify_topk(y0, *1b, *ub, k) 판정 결과에 따라 Ht_count 또는 f_count 증가"
+          ],
+          "parameters": [
+            {
+              "name": "method",
+              "value": "0 또는 1",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p48:e340"
+              ]
+            },
+            {
+              "name": "eps_list",
+              "value": "double 배열",
+              "value_kind": "text",
+              "element_ids": [
+                "p48:e340"
+              ]
+            },
+            {
+              "name": "N",
+              "value": "데이터 개수",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p48:e340"
+              ]
+            }
+          ],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p48:e340",
+              "page": 48,
+              "quote": "![image](/image/placeholder)\n236 237 238 239 240 241 242 243 244 245 246 247 248 249 250 251 252 253 254 255 256 257 258 259 260 261 262 263 264 265 266 267 268 269 270 271 272 273 274 275 const Vector* 1b = nullptr; const Vector* ub = nullptr; ForwardBoundResult fwd; BackwardBoundResult bwd; // 5. 전체 시간 측정 시작 auto total_start = std::chrono::high_resolution_clock::now(); nvtxRangePushA(\"CROWN_SWEEP\"); // 6. eps X 데이터 이중 루프 (sparse.py sweep() 와 완전히 동일) for (double eps : eps_list) { int t_count = 0, f_count = 0; float eps_f = static_cast<float>(eps); for (int i = 0; i < N; ++i) { // 신경망 정방향 통과 Vector ye = network_forward(*net, dataset[i]); // CROWN backward bound or forward bound 계산 switch(method){ case 0: fwd = lirpa_forward_bound_impl(*net, dataset[i], eps_f, false, false, true); 1b = &fwd.final_lower; ub = &fwd.final_upper; break; case 1: bwd = lirpa_backward_bound( *net, dataset[i], eps_f, false, false); 1b = &bwd.final_lower; ub = &bwd.final_upper; break; default: break; } // Top-k 인증 판정 if (certify_topk(y0, *1b, *ub, k)) Ht_count; else +f_count;",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0048R0F0001",
+          "support": "supported",
+          "support_note": "p48:e340의 코드와 진술이 일치함: fwd/bwd가 switch 바깥에 선언되고, case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하며, eps_list와 N에 대한 이중 루프에서 certify_topk로 Top-k 판정을 수행함.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [
+            "코드 스니펫은 구조적 설명만 제공하며, 실제 성능 영향(구조체 값에 의한 복사 문제 등)은 p49에서 별도로 지적됨",
+            "switch 스코프 바깥 선언의 성능 함의는 이 스니펫만으로는 평가 불가"
+          ],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "실행 결과 그림에서 eps 조건 4가지(9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00) 각각에 대해 T=0, F=40000, ratio=0.000의 결과가 표시되고, r-59999 표기가 있으며, total elapsed: 1560.37s로 측정되고 results saved to results_cuda.csv로 저장된다.",
+          "limits": "이 그림은 코드 변경 전 기존 실행 결과(1560s)로 해석됨(p48:e343 참조). 1560.37s는 정밀 측정값이며 1560s는 반올림 표기.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps 조건 4가지",
+            "커맨드라인 인자 방식 이전 실행",
+            "기존 번거롭게 backward 실행"
+          ],
+          "observations": [
+            "eps=9.0e-05: T=0 F=40000 ratio=0.000",
+            "eps=1.0e-02: T=0 F=40000 ratio=0.000",
+            "eps=1.0e-01: T=0 F=40000 ratio=0.000",
+            "eps=1.0e+00: T=0 F=40000 ratio=0.000",
+            "r-59999 표기 존재",
+            "total elapsed: 1560.37s",
+            "results saved to results_cuda.csv"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "전체 실행 시간",
+              "value": "1560.37",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "코드 변경 전 기존 backward 실행, 커맨드라인 인자 방식 이전",
+              "element_ids": [
+                "p48:e342"
+              ],
+              "raw_value": "1560.37",
+              "normalization_status": "normalized"
+            }
+          ],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p48:e342",
+              "page": 48,
+              "quote": "![image](/image/placeholder)\neps- eps= eps= eps= 9.0e-05. 1.0e-02: T= 1.0e-01: T= 1.0e+00: T= r-59999 ratio-0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 total elapsed: 1560.37s results saved to results_cuda.csv",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [
+            "statement의 원문 미확인 수치: 4, 9.0e-05",
+            "limits의 원문 미확인 수치: 1560",
+            "조건·관찰의 원문 미확인 수치: 4",
+            "조건·관찰의 원문 미확인 수치: 9.0e-05",
+            "설정값을 원문에서 확인하지 못했습니다: 9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00"
+          ],
+          "repair_unresolved": true,
+          "id": "P0048R0F0002",
+          "support": "unsupported",
+          "support_note": "statement의 원문 미확인 수치: 4, 9.0e-05; limits의 원문 미확인 수치: 1560; 조건·관찰의 원문 미확인 수치: 4; 조건·관찰의 원문 미확인 수치: 9.0e-05; 설정값을 원문에서 확인하지 못했습니다: 9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00",
+          "attribution_preserved": false,
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "OCR로 추출된 단락에서 'eps= 1.0e+00: T= 0 F=40000 ratio=0.000'이라는 eps 결과 라인이 확인된다.",
+          "limits": "OCR 추출 텍스트이며, p48:e342 그림의 eps 결과 라인 중 하나(eps=1.0e+00 조건)와 동일한 내용.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "OCR 추출",
+            "eps=1.0e+00 조건"
+          ],
+          "observations": [
+            "eps= 1.0e+00: T= 0 F=40000 ratio=0.000"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p48:img2:e0",
+              "page": 48,
+              "quote": "eps= 1.0e+00: T= 0 F=40000 ratio=0.000",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0048R0F0003",
+          "support": "supported",
+          "support_note": "p48:img2:e0의 OCR 텍스트와 p48:e342 그림의 해당 라인이 'eps= 1.0e+00: T= 0 F=40000 ratio=0.000'으로 일치함.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [
+            "OCR 추출 텍스트로, p48:e342 그림의 eps 결과 라인 중 하나(eps=1.0e+00 조건)와 동일한 내용임",
+            "OCR 특성상 미세한 문자 인식 오류 가능성은 배제할 수 없음"
+          ],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "OCR로 추출된 단락에서 'total elapsed: 2164.98s'라는 정밀한 전체 실행 시간이 확인된다.",
+          "limits": "이 값은 코드 변경 후 실행 결과의 정밀한 측정값이며, 승인된 사실 P0048F0001에는 2164s(반올림/정수 표기)로 보존됨. 원시 OCR에는 2164.98s로 더 정밀한 값이 존재.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "OCR 추출",
+            "코드 변경 후 실행",
+            "커맨드라인 인자로 forward/backward 선택 실행"
+          ],
+          "observations": [
+            "total elapsed: 2164.98s"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "전체 실행 시간",
+              "value": "2164.98",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "커맨드라인 인자로 forward/backward 선택 실행, 코드 변경 후",
+              "element_ids": [
+                "p48:img2:e1"
+              ],
+              "raw_value": "2164.98",
+              "normalization_status": "normalized"
+            }
+          ],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p48:img2:e1",
+              "page": 48,
+              "quote": "total elapsed: 2164.98s",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "numeric_issues": [
+            "limits의 원문 미확인 수치: 2164"
+          ],
+          "repair_unresolved": true,
+          "id": "P0048R0F0004",
+          "support": "unsupported",
+          "support_note": "limits의 원문 미확인 수치: 2164",
+          "attribution_preserved": false,
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "OCR로 추출된 단락에서 'results saved to results_cuda.csv'라는 결과 저장 경로가 확인된다.",
+          "limits": "결과 파일 저장 경로에 대한 정보이며, p48:e342 그림에도 동일한 내용이 표기됨.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "OCR 추출",
+            "결과 저장"
+          ],
+          "observations": [
+            "results saved to results_cuda.csv"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p48:img2:e2",
+              "page": 48,
+              "quote": "results saved to results_cuda.csv",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0048R0F0005",
+          "support": "supported",
+          "support_note": "p48:img2:e2의 OCR 텍스트와 p48:e342 그림의 'results saved to results_cuda.csv'가 일치함.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "evidence_limitations": [
+            "OCR 추출 텍스트로, p48:e342 그림에도 동일한 내용이 표기됨",
+            "OCR 특성상 미세한 문자 인식 오류 가능성은 배제할 수 없음"
+          ],
+          "writing_role": "research_fact"
+        }
+      ]
+    },
+    {
+      "stage": "reconcile",
+      "request_error": "모델이 완결된 JSON을 반환하지 못했습니다. 원본과 재시도 응답은 보존했고 기존 초안은 유지합니다.",
+      "facts": []
+    }
+  ]
+}

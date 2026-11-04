@@ -1,0 +1,507 @@
+{
+  "request_fingerprint": "df2f09d4fd6c494873c83360c126176c5393db5e5cc55aaf4ed837cb30300acc",
+  "value": {
+    "title": "CROWN Verification 성능 최적화 실험 기록 (GPU 파이프라인, 동기화 제거, cuBlas/cuSparse 도입)",
+    "facts": [
+      {
+        "statement": "교수님으로부터 lirpa_backward_only_iteration_array.cpp를 받아 이전 CROWN과 동일한 결과가 나오는지 테스트했다.",
+        "limits": "테스트 대상 파일과 비교 기준(이전 CROWN)은 명시되나 정량 비교 결과는 이 문장에만 있지 않다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "테스트 대상: lirpa_backward_only_iteration_array.cpp",
+          "비교 기준: 이전 CROWN"
+        ],
+        "observations": [
+          "교수님께 lirpa_backward_only_iteration_array.cpp를 받음",
+          "결과가 잘 나오는지(이전 CROWN과 동일한지) 테스트"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p24:e167"
+        ]
+      },
+      {
+        "statement": "crown_test_cpu_iteration.cpp를 컴파일한 .exe 파일들을 사용했으며, 스택 메모리가 기존 128MB로는 안 되어 2GB로 늘리자 동작했다.",
+        "limits": "스택 메모리 변경 전후 실행 성공 여부는 서술되나 다른 환경 수치는 없다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "사용 파일: /testing(present)/crown_test_cpu_iteration.cpp 컴파일 .exe",
+          "스택 메모리 변경: 128MB → 2GB"
+        ],
+        "observations": [
+          "crown_test_cpu_iteration.cpp를 컴파일한 .exe 파일들 사용",
+          "스택 메모리가 기존 128MB로 안되어서 2GB로 늘리니까 됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p24:e168"
+        ]
+      },
+      {
+        "statement": "CPU ONLY iteration ver로 CROWN Verification을 실행했을 때 elapsed time은 193,665600 ms였고, 기존 backward보다 약 93ms 느렸다.",
+        "limits": "비교 기준 실행의 elapsed time은 이 문장에 직접 제시되지 않고 차이(93ms)만 서술된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "MODE: CPU ONLY iteration ver",
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Starting CROWN Verification (eps = 1e-06) MODE: CPU ONLY iteration ver calc success Elapsed time: 193,665600 ms Output Dimension: 16",
+          "실행결과는 193ms (CPU 버전), 기존 backward보다 93ms 정도 느림"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "193.665600",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "CPU ONLY iteration ver, eps=1e-06, Output Dimension 16",
+            "element_ids": [
+              "p24:e169",
+              "p24:e170"
+            ]
+          },
+          {
+            "metric": "elapsed_time_difference_vs_backward",
+            "value": "93",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "기존 backward 대비 CPU ONLY iteration ver",
+            "element_ids": [
+              "p24:e170"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p24:e169",
+          "p24:e170"
+        ]
+      },
+      {
+        "statement": "lirpa_backward_only_iteration_array의 구조가 lirpa_forward_backward_fc_array와 달라 새로운 함수 추가와 기본 자료구조 차이가 있어, backward_only 구조체 도입이 필요했다.",
+        "limits": "구조 차이의 구체적 항목은 서술되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "비교 대상 구조체: lirpa_backward_only_iteration_array vs lirpa_forward_backward_fc_array"
+        ],
+        "observations": [
+          "lirpa_backward_only_iteration_array의 구조가 lirpa_forward_backward_fc_array와 좀 다름",
+          "새로운 함수 추가, 기본 자료구조 등 차이 존재"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p24:e171"
+        ]
+      },
+      {
+        "statement": "고민 결과 1) backward는 기존 lirpa_backward_bound로 그대로 구현하고, 2) 아예 새로운 구조체(backward_only_iteration)를 추가하되 기존 재귀를 활용한 backward_only는 남겨두는 방안을 검토했다.",
+        "limits": "최종 채택 여부는 이 목록만으로 확정되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "검토 방안 1: backward는 기존 lirpa_backward_bound 유지",
+          "검토 방안 2: 새로운 구조체 backward_only_iteration 추가, 기존 재귀 기반 backward_only 유지"
+        ],
+        "observations": [
+          "1. backward는 그대로 구현 (기존 lirpa_backward_bound)",
+          "2. 아예 새로운 구조체를 추가 (backward_only_iteration, 기존 재귀를 활용한 backward_only는 남겨놓음)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p24:e173"
+        ]
+      },
+      {
+        "statement": "현재 backward GPU 파이프라인이 완성되어 실행 결과를 확인했다.",
+        "limits": "해당 실행 결과의 수치는 이 문장에 포함되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "상태: backward GPU 파이프라인 완성"
+        ],
+        "observations": [
+          "현재 backward GPU 파이프라인 완성",
+          "실행 결과"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p24:e174"
+        ]
+      },
+      {
+        "statement": "mempool + warmup을 적용한 GPU 실행에서 elapsed time은 26,529100 ms였고, 26ms로 확실히 빨랐다.",
+        "limits": "비교 기준 실행의 elapsed time은 이 문장에 직접 제시되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "mempool + warmup",
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Starting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 26,529100 ms Output Dimension: 16",
+          "26ms",
+          "확실히 빠름"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "26.529100",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "mempool + warmup, eps=1e-06, Output Dimension 16",
+            "element_ids": [
+              "p25:e175",
+              "p25:e176"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p25:e175",
+          "p25:e176"
+        ]
+      },
+      {
+        "statement": "실시간성 확인을 위해서는 마이크로초~수 밀리초(ms) 내로 제한해야 한다고 판단했다.",
+        "limits": "이 기준은 목표/제약 서술이며 실제 달성 여부는 별도 측정으로 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "실시간성 요구: 마이크로초 ~ 수 밀리초(ms) 내 제한"
+        ],
+        "observations": [
+          "실시간성을 확인하려면 마이크로초 ~ 수 밀리초(ms) 내로 제한해야 함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p25:e178"
+        ]
+      },
+      {
+        "statement": "동기화(cudaDeviceSynchronize)를 필요한 부분을 제외하고 제거했다.",
+        "limits": "제거 범위와 '필요한 부분'의 구체적 기준은 서술되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "변경 내용: cudaDeviceSynchronize 제거",
+          "범위: 필요한 부분을 제외하고 제거"
+        ],
+        "observations": [
+          "동기화 (cudaDeviceSynchronize) 제거",
+          "필요한 부분을 제외하고 동기화 코드 제거함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e180"
+        ]
+      },
+      {
+        "statement": "동기화 제거 후 elapsed time은 25,457200 ms로 1ms 정도 줄었다.",
+        "limits": "비교 기준은 동기화 제거 직전 실행(26,529100 ms)으로 보인다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "mempool + warmup",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Starting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 25,457200 ms Output Dimension: 16",
+          "1 ms 정도 줄었다"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "25.457200",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "동기화 제거 후, eps=1e-06, mempool + warmup, Output Dimension 16",
+            "element_ids": [
+              "p26:e181",
+              "p26:e182"
+            ]
+          },
+          {
+            "metric": "elapsed_time_difference",
+            "value": "1",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "동기화 제거 전후 비교",
+            "element_ids": [
+              "p26:e182"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p26:e181",
+          "p26:e182"
+        ]
+      },
+      {
+        "statement": "cuBlas를 도입했으나 오히려 결과가 안 좋았다.",
+        "limits": "'결과가 안 좋음'의 구체적 지표/수치는 이 문장에 제시되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "도입 대상: cuBlas"
+        ],
+        "observations": [
+          "cuBlas 도입함.. 근데 오히려 결과가 안좋음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e184"
+        ]
+      },
+      {
+        "statement": "cuSparse나 cuBlas 사용 시 -lcublas, -lcusparse를 컴파일 옵션에 붙여야 한다고 기록했다.",
+        "limits": "이는 빌드/링크 관련 참고사항이다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "대상 라이브러리: cuSparse, cuBlas",
+          "컴파일 옵션: -lcublas, -lcusparse"
+        ],
+        "observations": [
+          "참고 cuSparse나, cuBlas를 사용할때는 -lcublas, -lcusparse를 컴파일 옵션에 붙여야함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e185"
+        ]
+      },
+      {
+        "statement": "cuBlas/cuSparse가 자동 링크되지 않는 이유로 1) 표준 라이브러리(libc)가 아니기 때문, 2) 커스텀 모듈은 코드를 직접 가져와 통째로 컴파일하므로 -l을 안 붙여도 됨, 3) cuBlas/cuSparse는 Nvidia의 거대한 소스코드 덩어리로 미리 컴파일되어 있음, 4) 소스코드가 없어 해당 라이브러리를 넣고 한 번에 컴파일할 수 없음을 들었다.",
+        "limits": "이 설명은 작성자의 해석/정리이며 실제 빌드 시스템 동작과 다를 수 있다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "설명 대상: cuBlas, cuSparse의 자동 링크 불가 이유"
+        ],
+        "observations": [
+          "표준 라이브러리(libc)가 아니기 때문임, 표준 라이브러리에 속하는 헤더들(iostream 등)은 include 하면 자동으로 링크됨",
+          "표준 라이브러리가 아닌 커스텀 모듈(내가 직접 만들었다던가..) 들도 -l를 안붙이는데, 그 이유는 코드를 직접 가져와서 통째로 컴파일하기 때문 (즉 구현체가 컴파일에 통째로 들어감)",
+          "cuBlas, cuSparse 같은 라이브러리들은 Nvidia에서 만든 매우 거대한 소스코드 덩어리라 미리 컴파일 되어있음 (컴파일 하는데 실제로 매우 오래걸림)",
+          "소스코드가 없기 때문에 해당 라이브러리를 넣고 한번에 컴파일 불가"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e186",
+          "p26:e187"
+        ]
+      },
+      {
+        "statement": "cuSparse 도입 후 elapsed time은 40,050500 ms로 다시 늘어났다.",
+        "limits": "비교 기준은 동기화 제거 후 25,457200 ms 또는 mempool+warmup 26,529100 ms로 보인다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "mempool + warmup",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Starting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 40,050500 ms Output Dimension: 16",
+          "40ms 정도로 다시 시간이 늘어남"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "40.050500",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "cuSparse 도입 후, eps=1e-06, mempool + warmup, Output Dimension 16",
+            "element_ids": [
+              "p27:e188",
+              "p27:e189"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p27:e188",
+          "p27:e189"
+        ]
+      },
+      {
+        "statement": "cuSparse를 이용해 벡터 곱(spMV)만 적용한 상황에서 결과가 27ms로 좀 더 느려졌으며, 여기서 빠르면 spMM(Sparse 행렬곱)을 도입하기로 했다.",
+        "limits": "비교 기준은 이전 최소 24ms 또는 25~26ms대 실행으로 보인다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "적용 범위: cuSparse를 이용한 벡터 곱(spMV)만 적용",
+          "eps = 1e-06",
+          "mempool + warmup",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Starting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 27,107400 ms Output Dimension: 16",
+          "cuSparse를 이용해서 벡터 곱(spMV)만 적용 해본 상황, 여기서 빠르면 spMM(Sparse 행렬곱) 을 도입하기로 했다.",
+          "결과는 27ms .. 좀 더 느려졌다."
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "27.107400",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "cuSparse spMV만 적용, eps=1e-06, mempool + warmup, Output Dimension 16",
+            "element_ids": [
+              "p28:e192",
+              "p28:e194",
+              "p28:e195"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p28:e192",
+          "p28:e194",
+          "p28:e195"
+        ]
+      },
+      {
+        "statement": "spMV 적용 범위는 네트워크 준비 단계에서 W, W_pos, W_neg를 CSR 형식으로 변환하고, cuSPARSE handle 및 CSR descriptor를 유지하며, network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하되 기존 matmul은 아직 유지하는 방식이었다.",
+        "limits": "이는 적용 방식에 대한 서술이며 성능 결론과는 별개다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "적용 범위: cuSparse spMV",
+          "변환 대상: W, W_pos, W_neg",
+          "유지 대상: cuSPARSE handle 및 CSR descriptor, 기존 matmul"
+        ],
+        "observations": [
+          "W, W_pos, W_neg 를 네트워크 준비 단계에서 CSR 형식으로 변환",
+          "cuSPARSE handle 및 CSR descriptor 유지",
+          "network_forward() 의 dense matvec 를 cuSPARSE SpMV 로 교체",
+          "기존 matmul 은 아직 유지"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:enh:e3"
+        ]
+      },
+      {
+        "statement": "spMM까지 도입한 후 결과를 확인했으나, 27ms 정도 나와 4단계까지 했을 때 최소 24ms까지 나왔던 것보다 느려 cuSparse 확장을 계속 진행하지 않는 편이 좋다는 조언이 있었다.",
+        "limits": "이는 제3자 조언이며 실제 측정/결정은 별도다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "비교 기준: 4단계까지 했을 때 최소 24ms",
+          "현재 측정: 27ms 정도"
+        ],
+        "observations": [
+          "해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지?",
+          "cuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나",
+          "지금은 cuSPARSE를 계속 확장하지 않는 편이 좋습니다. 24 ms baseline으로 돌아가고, cuSPARSE는 별도 실험으로 두세요."
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e0",
+          "p29:enh:e2"
+        ]
+      },
+      {
+        "statement": "cuSparse가 느려진 이유는 최적화 부족이 아니라 현재 workload가 cuSparse에 불리하기 때문이라는 해석이 제시되었다.",
+        "limits": "이는 제3자 해석이며 실제 원인 규명은 별도 검증이 필요하다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "해석 대상: cuSparse 도입 후 느려진 원인"
+        ],
+        "observations": [
+          "느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다.",
+          "행렬 크기가 작고 layer가 3개뿐임",
+          "SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼",
+          "매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함",
+          "network_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함",
+          "cuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음",
+          "특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다."
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e3",
+          "p29:enh:e4",
+          "p29:enh:e5"
+        ]
+      },
+      {
+        "statement": "추후 재시도는 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가해야 한다는 조언이 있었다.",
+        "limits": "이는 제3자 조언/계획이며 실제 구현 결과는 아니다.",
+        "kind": "method",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "추후 재시도 조건: descriptor와 buffer 미리 만들어 재사용",
+          "network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 평가"
+        ],
+        "observations": [
+          "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다.",
+          "지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다."
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e6"
+        ]
+      }
+    ],
+    "coverage": {
+      "p25": {
+        "status": "extracted",
+        "note": "mempool + warmup GPU 실행 결과(26,529100 ms)와 실시간성 제약(마이크로초~수 ms) 수집"
+      },
+      "p26": {
+        "status": "extracted",
+        "note": "동기화 제거(25,457200 ms, 1ms 감소), cuBlas 도입 결과 안 좋음, cuBlas/cuSparse 링크 옵션 및 비자동 링크 이유 해석 수집"
+      },
+      "p27": {
+        "status": "extracted",
+        "note": "cuSparse 도입 후 40,050500 ms로 시간 증가 수집"
+      },
+      "p28": {
+        "status": "extracted",
+        "note": "cuSparse spMV만 적용 결과 27,107400 ms, spMM 도입 검토, 적용 범위(CSR 변환, handle/descriptor 유지, network_forward SpMV 교체, 기존 matmul 유지) 수집"
+      }
+    }
+  }
+}

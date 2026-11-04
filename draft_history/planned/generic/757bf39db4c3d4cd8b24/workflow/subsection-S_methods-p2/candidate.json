@@ -1,0 +1,220 @@
+{
+  "sections": {
+    "S_methods": {
+      "parts": {
+        "p0": "실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다 . CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다 . [근거:E00017,E00095]\n\n측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다 . 이후 GPU 클록을 고정하고 다시 실험하기로 하여, RAII 방식으로 GPU 클록을 자동 잠금·해제하는 ScopedGpuClockLock 구조체를 작성했고, 기본 클록 목표값은 2475 MHz로 설정했다 . 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다 . Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다 . [근거:E00203,E00281,E00284,E00286]\n\n클록 고정 실험은 CUDA 강의 19장의 GPU 클록 고정을 참고해 진행했으며, 이후 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 실행했다 . CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다 . [근거:E00283,E00282,E00287]\n\n6번째 세미나 이후에는 대학원 AI 프로그래밍 논문 영상 재확인, 6번 세미나 3번 슬라이드의 RAM 추가(해결), 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 할 일로 정리되었다 . [근거:E00333]\n\n코드 작성 과정에서는 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 제약이 관찰되었다 . 또한 switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 해결했다 . [근거:E00353,E00354]\n\n실행 및 측정은 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 평가 대상 신경망은 256-491-491-16 크기이고 배치 크기는 1로 설정했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용했고, 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only를 모두 다루었다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이며, warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 확인했고, 그 결과는 모두 동일했다. [근거:E00094,E00096,E00097,E00174,E00202,E00205,E00206,E00207,E00208,E00366]\n\n측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했으며, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍고 추론 시간을 계산하는 방식을 사용했다. elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있으나, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 했다. 각 forward와 backward는 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생기기도 했다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00206,E00207,E00208]\n\n측정 제어와 관련해서는 measure_gpu 시스템 인자가 cudaEvent 하드웨어 타이머 측정을 제어하며, 0은 비활성화(드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(기본값), 2는 매 샘플마다 측정(전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 정의된다. 보완 실행 항목으로는 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며(교수님은 초기화 비용 때문으로 언급), sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측도 있었다. [근거:E00221,E00184,E00202]"
+      }
+    }
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "RI_methods_3",
+        "verdict": "met",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p2",
+          "S_methods_p3",
+          "S_methods_p4",
+          "S_methods_p5",
+          "S_methods_p6",
+          "S_methods_p7",
+          "S_methods_p8"
+        ],
+        "evidence_ids": [
+          "E00017",
+          "E00095",
+          "E00203",
+          "E00281",
+          "E00284",
+          "E00286",
+          "E00283",
+          "E00282",
+          "E00287",
+          "E00333",
+          "E00353",
+          "E00354",
+          "E00094",
+          "E00096",
+          "E00097",
+          "E00174",
+          "E00202",
+          "E00205",
+          "E00206",
+          "E00207",
+          "E00208",
+          "E00366",
+          "E00184",
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00198",
+          "E00199",
+          "E00221"
+        ],
+        "quote": "실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다 . CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다 . [근거:E00017,E00095]",
+        "paragraph_quotes": [
+          "실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다 . CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다 . [근거:E00017,E00095]",
+          "측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다 . 이후 GPU 클록을 고정하고 다시 실험하기로 하여, RAII 방식으로 GPU 클록을 자동 잠금·해제하는 ScopedGpuClockLock 구조체를 작성했고, 기본 클록 목표값은 2475 MHz로 설정했다 . 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다 . Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다 . [근거:E00203,E00281,E00284,E00286]",
+          "클록 고정 실험은 CUDA 강의 19장의 GPU 클록 고정을 참고해 진행했으며, 이후 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 실행했다 . CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다 . [근거:E00283,E00282,E00287]",
+          "6번째 세미나 이후에는 대학원 AI 프로그래밍 논문 영상 재확인, 6번 세미나 3번 슬라이드의 RAM 추가(해결), 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 할 일로 정리되었다 . [근거:E00333]",
+          "코드 작성 과정에서는 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 제약이 관찰되었다 . 또한 switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 해결했다 . [근거:E00353,E00354]",
+          "실행 및 측정은 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 평가 대상 신경망은 256-491-491-16 크기이고 배치 크기는 1로 설정했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용했고, 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only를 모두 다루었다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이며, warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 확인했고, 그 결과는 모두 동일했다. [근거:E00094,E00096,E00097,E00174,E00202,E00205,E00206,E00207,E00208,E00366]",
+          "측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했으며, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍고 추론 시간을 계산하는 방식을 사용했다. elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있으나, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 했다. 각 forward와 backward는 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생기기도 했다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00206,E00207,E00208]",
+          "측정 제어와 관련해서는 measure_gpu 시스템 인자가 cudaEvent 하드웨어 타이머 측정을 제어하며, 0은 비활성화(드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(기본값), 2는 매 샘플마다 측정(전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 정의된다. 보완 실행 항목으로는 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며(교수님은 초기화 비용 때문으로 언급), sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측도 있었다. [근거:E00221,E00184,E00202]"
+        ],
+        "guideline_ids": [
+          "ref1_methods_required_6"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [
+          "E00023",
+          "E00030",
+          "E00031",
+          "E00033",
+          "E00035",
+          "E00044",
+          "E00045",
+          "E00046",
+          "E00068",
+          "E00069",
+          "E00070",
+          "E00071",
+          "E00075",
+          "E00081",
+          "E00083",
+          "E00100",
+          "E00102",
+          "E00106",
+          "E00119",
+          "E00120",
+          "E00131",
+          "E00132",
+          "E00139",
+          "E00140",
+          "E00172",
+          "E00270",
+          "E00271",
+          "E00272",
+          "E00274",
+          "E00275",
+          "E00276",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00298",
+          "E00326",
+          "E00329"
+        ]
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "S_methods",
+        "reference_id": "ref1_methods",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p2",
+          "S_methods_p3",
+          "S_methods_p4",
+          "S_methods_p5",
+          "S_methods_p6",
+          "S_methods_p7",
+          "S_methods_p8"
+        ],
+        "reason": "실행·측정 방식과 검증 절차(측정 구간 분리, 반복 측정 계획, warm up, 클록·Persistence mode 설정, measure_gpu 제어 등)는 연구 노트에서 확인되나, 평가 대상·입력 조건·통제 변수의 일부는 원문만으로 완전히 특정되지 않아 ref1_methods_required_6의 완전한 재현 가능 서술 기준에는 부분적으로만 부합한다.",
+        "quote": "실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다 . CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다 . [근거:E00017,E00095]",
+        "paragraph_quotes": [
+          "실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다 . CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다 . [근거:E00017,E00095]",
+          "측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다 . 이후 GPU 클록을 고정하고 다시 실험하기로 하여, RAII 방식으로 GPU 클록을 자동 잠금·해제하는 ScopedGpuClockLock 구조체를 작성했고, 기본 클록 목표값은 2475 MHz로 설정했다 . 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다 . Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다 . [근거:E00203,E00281,E00284,E00286]",
+          "클록 고정 실험은 CUDA 강의 19장의 GPU 클록 고정을 참고해 진행했으며, 이후 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 실행했다 . CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다 . [근거:E00283,E00282,E00287]",
+          "6번째 세미나 이후에는 대학원 AI 프로그래밍 논문 영상 재확인, 6번 세미나 3번 슬라이드의 RAM 추가(해결), 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 할 일로 정리되었다 . [근거:E00333]",
+          "코드 작성 과정에서는 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 제약이 관찰되었다 . 또한 switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 해결했다 . [근거:E00353,E00354]",
+          "실행 및 측정은 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 평가 대상 신경망은 256-491-491-16 크기이고 배치 크기는 1로 설정했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용했고, 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only를 모두 다루었다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이며, warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 확인했고, 그 결과는 모두 동일했다. [근거:E00094,E00096,E00097,E00174,E00202,E00205,E00206,E00207,E00208,E00366]",
+          "측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했으며, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍고 추론 시간을 계산하는 방식을 사용했다. elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있으나, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 했다. 각 forward와 backward는 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생기기도 했다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00206,E00207,E00208]",
+          "측정 제어와 관련해서는 measure_gpu 시스템 인자가 cudaEvent 하드웨어 타이머 측정을 제어하며, 0은 비활성화(드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(기본값), 2는 매 샘플마다 측정(전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 정의된다. 보완 실행 항목으로는 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며(교수님은 초기화 비용 때문으로 언급), sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측도 있었다. [근거:E00221,E00184,E00202]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p6",
+        "reason": "평가 대상(CROWN을 구현한 C++ 프로그램), 신경망 크기(256-491-491-16), 배치 크기 1, 입력 데이터셋·eps_list 출처, 실행 방식(forward/forward+backward/backward_only), 정확도 지표(검증 결과·비율 동일) 등은 연구 노트에 직접 기록된 내용이 아니라 사용자 임시 승인 범위로 반영된 부분이다. 원문 단독 근거로는 충분히 특정되지 않으므로, 해당 서술이 원문 사실인 것처럼 읽히지 않도록 한계를 함께 명시하거나 표현을 완화할 필요가 있다.",
+        "evidence_ids": [
+          "E00094",
+          "E00096",
+          "E00097",
+          "E00174",
+          "E00202",
+          "E00205",
+          "E00206",
+          "E00207",
+          "E00208",
+          "E00366"
+        ],
+        "failure_owner": "none",
+        "quote": "실행 및 측정은 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 평가 대상 신경망은 256-491-491-16 크기이고 배치 크기는 1로 설정했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용했고, 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only를 모두 다루었다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이며, warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 확인했고, 그 결과는 모두 동일했다. [근거:E00094,E00096,E00097,E00174,E00202,E00205,E00206,E00207,E00208,E00366]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p2",
+        "reason": "GPU 클록 고정, Persistence mode, warm up 가이드라인 채택 등은 계획·설정·참고 기록 성격이 강하며, 실제 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않는다. 따라서 이를 이미 완료된 공정성 통제 조건으로 단정하기보다, 일부 통제 시도와 설정 기록으로 한정해 서술하는 것이 적절하다.",
+        "evidence_ids": [
+          "E00203",
+          "E00281",
+          "E00284",
+          "E00286"
+        ],
+        "failure_owner": "none",
+        "quote": "측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다 . 이후 GPU 클록을 고정하고 다시 실험하기로 하여, RAII 방식으로 GPU 클록을 자동 잠금·해제하는 ScopedGpuClockLock 구조체를 작성했고, 기본 클록 목표값은 2475 MHz로 설정했다 . 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다 . Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다 . [근거:E00203,E00281,E00284,E00286]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p7",
+        "reason": "반복 측정(forward/backward 각 20회)과 평균·분산 산출 계획이 언급되지만, 실제 평균·분산 수치나 조건별 분리 측정 결과는 현재 페이지에 제시되지 않는다. 또한 warm up 관련 관측(스파이크, 평균 시간 느려짐, 안정성 느낌)은 정성적 관찰로 남아 있어, 측정 방식의 충분성을 단정하기보다 한계를 함께 남기는 것이 좋다.",
+        "evidence_ids": [
+          "E00184",
+          "E00189",
+          "E00190",
+          "E00206",
+          "E00207",
+          "E00208"
+        ],
+        "failure_owner": "none",
+        "quote": "측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했으며, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍고 추론 시간을 계산하는 방식을 사용했다. elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있으나, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 했다. 각 forward와 backward는 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생기기도 했다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00206,E00207,E00208]"
+      }
+    ],
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 1,
+      "total": 1,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 1,
+      "not_visible": 0,
+      "total": 1,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+  }
+}

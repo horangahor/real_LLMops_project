@@ -1,0 +1,510 @@
+{
+  "request_fingerprint": "7b68da0b8604d1ca80c9d986ffe772d2cf3cc1643d27c76a907610d207792696",
+  "value": {
+    "additions": [
+      {
+        "statement": "CUDA 공식 가이드 인용은 NVIDIA 공식 CUDA 프로그래밍 가이드에 명시되어 있다고 소개되었으나, 이 요소에서는 가이드 원문의 정확한 문구·출처 위치가 확인되지 않는다고 명시되었다.",
+        "limits": "가이드 원문의 정확한 문구·출처 위치는 이 요소에서 확인되지 않는다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "NVIDIA 공식 CUDA 프로그래밍 가이드 인용"
+        ],
+        "observations": [
+          "NVIDIA 공식 CUDA 프로그래밍 가이드에 다음과 같은 내용이 명시되어 있다고 소개됨",
+          "가이드 원문의 정확한 문구·출처 위치는 이 요소에서 확인되지 않음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p78:e606",
+          "p78:e607"
+        ]
+      },
+      {
+        "statement": "No-Pin일 때 CPU가 1KB를 L1 캐시 복사로 스테이징 버퍼에 넣고 바로 다음 코드로 넘어가며, 드라이버 스테이징 버퍼가 GPU 메모리 매퍼에 영구 등록된 작은 고정 주소라서 GPU TLB 미스가 전혀 나지 않는다고 설명되었다.",
+        "limits": "이 설명은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "No-Pin",
+          "1KB",
+          "드라이버 스테이징 버퍼"
+        ],
+        "observations": [
+          "CPU는 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 휙 던져 넣고 바로 다음 코드로 넘어가 버림",
+          "드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 전혀 안 남"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p78:e608"
+        ]
+      },
+      {
+        "statement": "데이터가 수 MB~수백 MB일 때는 CPU 복사 속도가 감당이 안 되고 DMA의 고속 대역폭(1224GB/s)이 압도적이어서 Pinned Memory가 일반 메모리보다 23배 빠르다고 설명되었다.",
+        "limits": "1224GB/s, 23배는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "데이터가 수 MB~수백 MB"
+        ],
+        "observations": [
+          "데이터가 커지면 CPU 복사 속도가 감당이 안 됨",
+          "DMA의 고속 대역폭(1224GB/s)이 압도적이어서 Pinned Memory가 일반 메모리보다 23배 빠름"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "DMA 대역폭(설명값)",
+            "value": "1224",
+            "value_kind": "scalar",
+            "unit": "GB/s",
+            "condition": "Pinned Memory, 큰 데이터",
+            "element_ids": [
+              "p78:e611"
+            ]
+          },
+          {
+            "metric": "Pinned vs 일반 메모리 속도 배율(설명값)",
+            "value": "23",
+            "value_kind": "scalar",
+            "unit": "배",
+            "condition": "Pinned Memory, 큰 데이터",
+            "element_ids": [
+              "p78:e611"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p78:e611"
+        ]
+      },
+      {
+        "statement": "평균 속도에서는 No-Pin이 13초 빨랐지만, 실시간성(Real-Time)에서는 치명적인 약점이 있었다고 정리되었다.",
+        "limits": "이 정리는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "평균 속도에서는 No-Pin이 13초 빨랐지만, 실시간성(Real-Time)에서는 치명적인 약점이 있었음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p78:e615"
+        ]
+      },
+      {
+        "statement": "비교 표에서 평균 처리 속도는 No-Pin이 약 13초 빠름(CPU 캐시 복사 이득), Pinned Memory는 약간 느림(DMA 셋업 오버헤드)으로 정리되었다.",
+        "limits": "이 표는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "평균 처리 속도: No-Pin 약 13초 빠름(CPU 캐시 복사 이득), Pinned Memory 약간 느림(DMA 셋업 오버헤드)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p78:e616"
+        ]
+      },
+      {
+        "statement": "비교 표에서 최대 지연(Max Spike)은 No-Pin이 8.8 ms~11.6 ms(치명적), Pinned Memory가 1.64 ms(극도로 안정적)로 정리되었다.",
+        "limits": "이 표는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "최대 지연(Max Spike): No-Pin 8.8 ms~11.6 ms(치명적), Pinned Memory 1.64 ms(극도로 안정적)"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "최대 지연(Max Spike) No-Pin(설명값)",
+            "value": "8.8",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "No-Pin",
+            "element_ids": [
+              "p78:e616"
+            ]
+          },
+          {
+            "metric": "최대 지연(Max Spike) No-Pin(설명값)",
+            "value": "11.6",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "No-Pin",
+            "element_ids": [
+              "p78:e616"
+            ]
+          },
+          {
+            "metric": "최대 지연(Max Spike) Pinned(설명값)",
+            "value": "1.64",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "Pinned Memory",
+            "element_ids": [
+              "p78:e616"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p78:e616"
+        ]
+      },
+      {
+        "statement": "비교 표에서 지터(Jitter)는 No-Pin이 118 μs(불안정), Pinned Memory가 47 μs(안정)로 정리되었다.",
+        "limits": "이 표는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "지터(Jitter): No-Pin 118 μs(불안정), Pinned Memory 47 μs(안정)"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "지터(Jitter) No-Pin(설명값)",
+            "value": "118",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "No-Pin",
+            "element_ids": [
+              "p78:e616"
+            ]
+          },
+          {
+            "metric": "지터(Jitter) Pinned(설명값)",
+            "value": "47",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pinned Memory",
+            "element_ids": [
+              "p78:e616"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p78:e616"
+        ]
+      },
+      {
+        "statement": "No-Pin은 평소에는 CPU 캐시빨로 살짝 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 끼어들면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없고(1ms 무선 통신 데드라인 파괴), Pinned Memory는 매번 정직하게 DMA 셋업 비용(1~2 μs)을 치르기 때문에 평균 시간은 살짝 손해를 보지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 절대적인 안정성(결정론적 성능)을 보장한다고 설명되었다.",
+        "limits": "이 설명은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "No-Pin",
+          "Pinned Memory",
+          "윈도우 OS"
+        ],
+        "observations": [
+          "No-Pin: 평소에는 CPU 캐시빨로 살짝 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 끼어들면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없음(1ms 무선 통신 데드라인 파괴)",
+          "Pinned Memory: 매번 정직하게 DMA 셋업 비용(1~2 μs)을 치르기 때문에 평균 시간은 살짝 손해를 보지만, OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 절대적인 안정성(결정론적 성능)을 보장"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "No-Pin 최대 스파이크(설명값)",
+            "value": "11.6",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "No-Pin, 윈도우 OS 간섭",
+            "element_ids": [
+              "p78:e617"
+            ]
+          },
+          {
+            "metric": "Pinned Memory 최대 지연(설명값)",
+            "value": "1.64",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "Pinned Memory",
+            "element_ids": [
+              "p78:e617"
+            ]
+          },
+          {
+            "metric": "DMA 셋업 비용(설명값)",
+            "value": "1",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pinned Memory",
+            "element_ids": [
+              "p78:e617"
+            ]
+          },
+          {
+            "metric": "DMA 셋업 비용(설명값)",
+            "value": "2",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pinned Memory",
+            "element_ids": [
+              "p78:e617"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p78:e617"
+        ]
+      },
+      {
+        "statement": "논문/보고서에 쓸 수 있는 결론으로, 단일 채널 벡터(1 KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있으나, Pageable 메모리는 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라고 정리되었다.",
+        "limits": "1.4%, 60% 이상 안정화는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "단일 채널 벡터(1 KB)",
+          "초소형 실시간 데이터 환경"
+        ],
+        "observations": [
+          "Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있음",
+          "Pageable 메모리는 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발",
+          "Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화",
+          "실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Pinned 평균 전송 속도 차이(설명값)",
+            "value": "1.4",
+            "value_kind": "scalar",
+            "unit": "%",
+            "condition": "Pinned vs Pageable, 1 KB",
+            "element_ids": [
+              "p78:e619"
+            ]
+          },
+          {
+            "metric": "Pageable 최대 지연 스파이크(설명값)",
+            "value": "11.6",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "Pageable, OS 페이징 간섭",
+            "element_ids": [
+              "p78:e619"
+            ]
+          },
+          {
+            "metric": "Pinned WCET(설명값)",
+            "value": "1.64",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "Pinned Memory",
+            "element_ids": [
+              "p78:e619"
+            ]
+          },
+          {
+            "metric": "지터 안정화 비율(설명값)",
+            "value": "6E+1",
+            "value_kind": "scalar",
+            "unit": "%",
+            "condition": "Pinned Memory",
+            "element_ids": [
+              "p78:e619"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p78:e619"
+        ]
+      },
+      {
+        "statement": "작성자는 이 현상을 정확히 짚어내고 이유를 분석하면 하드웨어와 OS 동작 메커니즘을 완벽하게 이해하고 있음을 보여주는 매우 훌륭한 학술적 분석 내용이 된다고 평가했다.",
+        "limits": "이 평가는 외부 조언/해석이며 실측 결과가 아니다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "이 현상을 정확히 짚어내고 이유를 분석하면 하드웨어와 OS 동작 메커니즘을 완벽하게 이해하고 있음을 보여주는 매우 훌륭한 학술적 분석 내용이 됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p78:e620"
+        ]
+      },
+      {
+        "statement": "데이터가 1 KB일 때는 대역폭은 아무 의미가 없고 셋업 지연시간(Latency)이 지배한다고 설명되었다.",
+        "limits": "이 설명은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "데이터가 1 KB"
+        ],
+        "observations": [
+          "대역폭은 아무 의미가 없고 셋업 지연시간(Latency)이 지배함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p78:e613"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p78:e605": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "CUDA 공식 가이드 인용 도입부. 인용 내용 자체는 p78:e607에 있음.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p78:e606": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "NVIDIA 공식 CUDA 프로그래밍 가이드에 명시되어 있다고 소개.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p78:e607": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "가이드 인용문. 원문 문구·출처 위치는 미확인이라고 명시됨.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p78:e608": {
+        "state": "represented",
+        "fact_refs": [
+          1
+        ],
+        "note": "No-Pin 시 CPU L1 캐시 복사 및 스테이징 버퍼/TLB 미스 관련 설명.",
+        "addition_refs": [
+          1
+        ]
+      },
+      "p78:e609": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "소제목 '3. Pinned Memory는 언제 빛을 발하는가?'만 존재. 별도 사실 없음.",
+        "addition_refs": []
+      },
+      "p78:e610": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "소제목 하위 항목 '데이터가 수 MB ~ 수백 MB일 때'만 존재. 실측/수치 없음.",
+        "addition_refs": []
+      },
+      "p78:e611": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "큰 데이터에서 DMA 대역폭 1224GB/s, Pinned 23배 빠름 설명.",
+        "addition_refs": [
+          2
+        ]
+      },
+      "p78:e612": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "소제목 하위 항목 '우리 데이터처럼 1 KB일 때'만 존재. 별도 사실 없음.",
+        "addition_refs": []
+      },
+      "p78:e613": {
+        "state": "represented",
+        "fact_refs": [
+          12
+        ],
+        "note": "1KB에서는 대역폭 무의미, 셋업 지연시간 지배 설명.",
+        "addition_refs": [
+          12
+        ]
+      },
+      "p78:e614": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "소제목 '4. 그럼 Pinned Memory를 왜 쓸까요?'만 존재. 별도 사실 없음.",
+        "addition_refs": []
+      },
+      "p78:e615": {
+        "state": "represented",
+        "fact_refs": [
+          3
+        ],
+        "note": "평균 속도 No-Pin 13초 빠름, 실시간성 약점 정리.",
+        "addition_refs": [
+          3
+        ]
+      },
+      "p78:e616": {
+        "state": "represented",
+        "fact_refs": [
+          4,
+          5,
+          6
+        ],
+        "note": "비교 표: 평균 처리 속도, 최대 지연, 지터 값 정리.",
+        "addition_refs": [
+          4,
+          5,
+          6
+        ]
+      },
+      "p78:e617": {
+        "state": "represented",
+        "fact_refs": [
+          7
+        ],
+        "note": "No-Pin 스파이크/OS 간섭, Pinned DMA 셋업 비용/안정성 설명.",
+        "addition_refs": [
+          7
+        ]
+      },
+      "p78:e618": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "소제목 '논문/보고서에 쓸 수 있는 최고의 결론'만 존재. 별도 사실 없음.",
+        "addition_refs": []
+      },
+      "p78:e619": {
+        "state": "represented",
+        "fact_refs": [
+          8
+        ],
+        "note": "논문/보고서용 결론: 1.4% 느림, 11.6ms 스파이크, WCET 1.64ms, 지터 60% 이상 안정화.",
+        "addition_refs": [
+          8
+        ]
+      },
+      "p78:e620": {
+        "state": "represented",
+        "fact_refs": [
+          9
+        ],
+        "note": "현상 분석 시 훌륭한 학술적 분석 내용이 된다는 작성자 평가.",
+        "addition_refs": [
+          9
+        ]
+      }
+    }
+  }
+}

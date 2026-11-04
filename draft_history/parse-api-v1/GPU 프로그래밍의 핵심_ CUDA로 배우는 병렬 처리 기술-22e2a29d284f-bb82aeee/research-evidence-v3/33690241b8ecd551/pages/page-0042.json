@@ -1,0 +1,368 @@
+{
+  "initial": [
+    {
+      "statement": "미리 작성해둔 퓨전 함수가 있어서 사용했다고 기록함.",
+      "limits": "퓨전 함수 세부 사양은 원문에 없음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "미리 작성한 퓨전 함수 사용"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p42:e283",
+          "page": 42,
+          "quote": "미 리 작성해둔 퓨전 함수가 있어서 사용함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0042F0001"
+    },
+    {
+      "statement": "퓨전 함수 사용 후 CROWN Verification에서 Elapsed time 15.751000 ms가 나왔고, 0.2ms 정도 하한선이 낮아진 듯하다고 기록함.",
+      "limits": "하한선 비교 기준·측정 조건은 원문에 상세하지 않음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "eps = 1e-06",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "Elapsed time: 15.751000 ms",
+        "0.2ms 정도 하한선이 낮아진 듯함"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "15.751",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "eps = 1e-06, Output Dimension 16",
+          "element_ids": [
+            "p42:e284"
+          ],
+          "raw_value": "15.751",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p42:e284",
+          "page": 42,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 15.751000 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | inference (y) [ 0] 1] 2] 3] 4] 5] 6] 7] 8] [ 9] 10] [ 11] 12] [ 13] [ 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1,846574 -1.714750 -1,880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2.670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1,846723 -1,714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1.082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p42:e285",
+          "page": 42,
+          "quote": "흠.. 0.2ms 정도 하한선이 낮아진 듯?",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0042F0002"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "기존 backward_bound_gpu 방식은 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU -> CPU -> GPU -> CPU 복사가 발생했으며, 이를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선해 GPU -> CPU 복사로 최소화했다고 기록함.",
+        "limits": "개선 전후 정량 비교 수치는 이 페이지에 제시되지 않음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "기존 방식: GPU( backward_bound_gpu 계산결과) -> CPU, CPU에서 affine_min/max 수행 후 최종 결과 획득",
+          "affine_min/max도 GPU에서 계산이 돌아가기 때문에 GPU -> CPU -> GPU -> CPU 불필요한 복사 발생",
+          "개선: affine_min/max까지 backward_bound_gpu에서 실행되도록 하여 GPU -> CPU 복사로 최소화"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e276",
+          "p41:e277"
+        ]
+      },
+      {
+        "statement": "GPU 안에서 최종 정답을 계산하기 위해 affine_min_gpu와 affine_max_gpu 커널 호출 코드가 제시되었고, 이 부분을 커널 퓨전할 수 있을 것 같다고 기록함.",
+        "limits": "커널 퓨전 세부 구현은 이 페이지에서 확정되지 않음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "GPU 안에서 최종 정답 계산",
+          "커널 퓨전 가능할듯",
+          "affine_min_gpu<<<blocksPerGrid, 256>>>(lower_M, lower_p, d_xl, d_xu, d_final_lower);",
+          "affine_max_gpu<<<blocksPerGrid, 256>>>(upper_M, upper_p, d_xl, d_xu, d_final_upper);"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e281",
+          "p41:e282"
+        ]
+      },
+      {
+        "statement": "커널 퓨전 완료로 affine_min과 affine_max를 하나의 커널로 병합했고, affine_minmax_pair_gpu 커널 호출 코드가 제시됨.",
+        "limits": "커널 내부 구현 상세는 원문에 없음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "커널 퓨전 완료 (affine_min과 affine_max를 하나의 커널로 병합)",
+          "affine_minmax_pair_gpu<<blocksPerGrid, 256>>>(",
+          "lower_M, lower_p, upper_M, upper_p, d_xl, d_xu, d_final_lower, d_final_upper);"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p42:img0:e0",
+          "p42:img0:e1",
+          "p42:img0:e2"
+        ]
+      },
+      {
+        "statement": "퓨전 함수 사용 후 CROWN Verification 결과(eps = 1e-06, Output Dimension 16)에서 Elapsed time 15.751000 ms가 나왔고, 0.2ms 정도 하한선이 낮아진 듯하다고 기록함.",
+        "limits": "하한선 비교 기준·측정 조건은 원문에 상세하지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Elapsed time: 15.751000 ms",
+          "0.2ms 정도 하한선이 낮아진 듯함"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "15.751",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "eps = 1e-06, Output Dimension 16",
+            "element_ids": [
+              "p42:e284"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p42:e284",
+          "p42:e285"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p42:e283": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p42:e284": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p42:e285": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p42:img0:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p42:img0:e1": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p42:img0:e2": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      }
+    },
+    "ledger_validation_error": "대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+  },
+  "facts": [
+    {
+      "statement": "미리 작성해둔 퓨전 함수가 있어서 사용했다고 기록함.",
+      "limits": "퓨전 함수 세부 사양은 원문에 없음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "미리 작성한 퓨전 함수 사용"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p42:e283",
+          "page": 42,
+          "quote": "미 리 작성해둔 퓨전 함수가 있어서 사용함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0042F0001"
+    },
+    {
+      "statement": "퓨전 함수 사용 후 CROWN Verification에서 Elapsed time 15.751000 ms가 나왔고, 0.2ms 정도 하한선이 낮아진 듯하다고 기록함.",
+      "limits": "하한선 비교 기준·측정 조건은 원문에 상세하지 않음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "eps = 1e-06",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "Elapsed time: 15.751000 ms",
+        "0.2ms 정도 하한선이 낮아진 듯함"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "15.751",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "eps = 1e-06, Output Dimension 16",
+          "element_ids": [
+            "p42:e284"
+          ],
+          "raw_value": "15.751",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p42:e284",
+          "page": 42,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 15.751000 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | inference (y) [ 0] 1] 2] 3] 4] 5] 6] 7] 8] [ 9] 10] [ 11] 12] [ 13] [ 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1,846574 -1.714750 -1,880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2.670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1,846723 -1,714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1.082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p42:e285",
+          "page": 42,
+          "quote": "흠.. 0.2ms 정도 하한선이 낮아진 듯?",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0042F0002"
+    },
+    {
+      "statement": "커널 퓨전 완료로 affine_min과 affine_max를 하나의 커널로 병합했고, affine_minmax_pair_gpu 커널 호출 코드가 제시됨.",
+      "limits": "커널 내부 구현 상세는 원문에 없음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "커널 퓨전 완료 (affine_min과 affine_max를 하나의 커널로 병합)",
+        "affine_minmax_pair_gpu<<blocksPerGrid, 256>>>(",
+        "lower_M, lower_p, upper_M, upper_p, d_xl, d_xu, d_final_lower, d_final_upper);"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p42:img0:e0",
+          "page": 42,
+          "quote": "// 커널 퓨전 완료 (affine_min과 affine_max를 하나의 커널로 병합)",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p42:img0:e1",
+          "page": 42,
+          "quote": "affine_minmax_pair_gpu<<blocksPerGrid, 256>>>(",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p42:img0:e2",
+          "page": 42,
+          "quote": "lower_M, lower_p, upper_M, upper_p, d_xl, d_xu, d_final_lower, d_final_upper);",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0042F0003"
+    },
+    {
+      "statement": "퓨전 함수 사용 후 CROWN Verification 결과(eps = 1e-06, Output Dimension 16)에서 Elapsed time 15.751000 ms가 나왔고, 0.2ms 정도 하한선이 낮아진 듯하다고 기록함.",
+      "limits": "하한선 비교 기준·측정 조건은 원문에 상세하지 않음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "eps = 1e-06",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "Elapsed time: 15.751000 ms",
+        "0.2ms 정도 하한선이 낮아진 듯함"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "15.751",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "eps = 1e-06, Output Dimension 16",
+          "element_ids": [
+            "p42:e284"
+          ],
+          "raw_value": "15.751",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p42:e284",
+          "page": 42,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 15.751000 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | inference (y) [ 0] 1] 2] 3] 4] 5] 6] 7] 8] [ 9] 10] [ 11] 12] [ 13] [ 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1,846574 -1.714750 -1,880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2.670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1,846723 -1,714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1.082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p42:e285",
+          "page": 42,
+          "quote": "흠.. 0.2ms 정도 하한선이 낮아진 듯?",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0042F0004"
+    }
+  ]
+}

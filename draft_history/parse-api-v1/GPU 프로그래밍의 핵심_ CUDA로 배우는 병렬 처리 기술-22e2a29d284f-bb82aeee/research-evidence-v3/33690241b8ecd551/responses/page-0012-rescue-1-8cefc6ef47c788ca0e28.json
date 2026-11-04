@@ -1,0 +1,216 @@
+{
+  "request_fingerprint": "8cefc6ef47c788ca0e284a3661d8a88199493d4cb918b9b4670e167bb9e43c57",
+  "value": {
+    "facts": [
+      {
+        "statement": "v1-1-2는 가중치만 미리 업로드할 수 있게 한 버전으로 149~155ms 범위가 기록되었다.",
+        "limits": "구현 파일명은 my_lirpa_mempool_preload_on_gpu.cu로 기록되어 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p11:e96",
+          "p12:e103"
+        ]
+      },
+      {
+        "statement": "v1-1-2는 가중치만 미리 GPU에 업로드하도록 변경한 버전이며, 실행 결과 149~155ms 범위가 기록되었다.",
+        "limits": "구현 파일명은 my_lirpa_mempool_preload_on_gpu.cu로 기록되어 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "149~155",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "v1-1-2 실행 결과",
+            "element_ids": [
+              "p11:e96",
+              "p12:e103"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p11:e96",
+          "p12:e103"
+        ]
+      },
+      {
+        "statement": "pre_upload_weights_to_gpu 함수는 각 레이어마다 cudaMalloc로 MAX_DIM * MAX_DIM * sizeof(double) 크기의 메모리를 할당하고, cudaMemcpy2D로 호스트 가중치를 디바이스로 복사하는 방식으로 기록되어 있다.",
+        "limits": "이 코드는 가중치 사전 업로드 구현 예시이며, 실제 실행 측정값과는 별도로 제시되어 있다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p12:e100",
+          "p12:e101"
+        ]
+      },
+      {
+        "statement": "가중치 사전 업로드 후 측정 예시로 MEMPOOL + Weights PRELOAD ON GPU 모드에서 elapsed time 149.820400ms가 출력된 화면이 기록되어 있다.",
+        "limits": "이 값은 특정 실행 예시이며, 버전별 대표 성능으로 일반화하지는 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "MODE: MEMPOOL + Weights PRELOAD ON GPU"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "149.8204",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "MEMPOOL + Weights PRELOAD ON GPU 실행 예시",
+            "element_ids": [
+              "p12:e102"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p12:e102"
+        ]
+      },
+      {
+        "statement": "bias까지 미리 업로드해봤으나 성능 개선 의미가 크지 않았다고 평가되었다.",
+        "limits": "이유는 bias가 Vector이고 약 4KB 정도라 CPU 연산에도 크게 무리가 없는 수준으로 설명되었다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p12:e104"
+        ]
+      },
+      {
+        "statement": "pre_upload_weights_to_gpu 함수는 각 레이어마다 cudaMalloc으로 GPU 메모리를 할당하고 cudaMemcpy2D로 호스트 가중치를 디바이스로 복사한다.",
+        "limits": "할당 크기는 MAX_DIM * MAX_DIM * sizeof(double) 기준이다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaMalloc & cudaMemcpy2D 사용",
+          "double 정밀도 기준"
+        ],
+        "observations": [
+          "net->d_W[i]에 GPU 할당 메모리 저장",
+          "호스트→디바이스 복사 수행"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p12:e100",
+          "p12:e101"
+        ]
+      },
+      {
+        "statement": "bias까지 미리 업로드한 실험에서는 큰 성능 개선이 관찰되지 않았으며, 저자는 bias가 Vector이고 약 4KB 정도라서 CPU 연산에도 무리가 없는 수준이기 때문이라고 추정했다.",
+        "limits": "이는 저자의 추정이며 실제 측정된 bias preload 성능 수치는 원문에 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "bias Vector 크기 약 4KB",
+          "CPU 연산 부담 적음"
+        ],
+        "observations": [
+          "bias preload가 성능 개선에 의미 있는 영향을 미치지 않음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p12:e104"
+        ]
+      },
+      {
+        "statement": "bias까지 사전 업로드해도 성능 개선 의미가 크지 않다고 평가되었으며, 그 이유는 bias가 Vector이고 약 4KB 정도로 작아 CPU 연산에도 큰 무리가 없는 수준으로 설명되었다.",
+        "limits": "이 평가는 코드 크기와 연산 부담에 대한 저자의 판단을 바탕으로 하며, bias 사전 업로드의 효과를 정량적으로 비교한 별도 측정값은 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "bias는 Vector 형태",
+          "bias 크기가 약 4KB 정도"
+        ],
+        "observations": [
+          "bias 사전 업로드가 성능 개선에 큰 의미를 주지 못한다고 평가됨",
+          "CPU가 연산하기에도 크게 무리가 없는 수준으로 설명됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p12:e104"
+        ]
+      },
+      {
+        "statement": "MEMPOOL + Weights PRELOAD ON GPU 모드 실행 예시에서 Output Dimension은 16으로 출력되었다.",
+        "limits": "이 값은 특정 실행 화면의 출력값이며, 버전별 대표 출력 차원으로 일반화하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "MODE: MEMPOOL + Weights PRELOAD ON GPU"
+        ],
+        "observations": [
+          "Output Dimension: 16"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "output_dimension",
+            "value": "16",
+            "value_kind": "scalar",
+            "unit": "dimension",
+            "condition": "MEMPOOL + Weights PRELOAD ON GPU 실행 예시",
+            "element_ids": [
+              "p12:e102"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p12:e102"
+        ]
+      },
+      {
+        "statement": "MEMPOOL + Weights PRELOAD ON GPU 모드 실행 화면에서 Index 0~15에 대한 Lower Bound, Upper Bound, Normal Pred (y) 값 테이블이 출력되었다.",
+        "limits": "이는 특정 실행 예시의 출력값이며, 개별 인덱스별 상세 수치는 원시 출력값으로 별도 구조화하지 않고 테이블 존재와 범위만 기록한다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "MODE: MEMPOOL + Weights PRELOAD ON GPU",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Index 0~15까지 Lower Bound, Upper Bound, Normal Pred (y) 3열 테이블 출력",
+          "Lower Bound 범위: -3.404772 ~ 2.670552",
+          "Upper Bound 범위: -3.404355 ~ 2.670843",
+          "Normal Pred (y) 범위: -3.404563 ~ 2.670697"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p12:e102"
+        ]
+      }
+    ]
+  }
+}

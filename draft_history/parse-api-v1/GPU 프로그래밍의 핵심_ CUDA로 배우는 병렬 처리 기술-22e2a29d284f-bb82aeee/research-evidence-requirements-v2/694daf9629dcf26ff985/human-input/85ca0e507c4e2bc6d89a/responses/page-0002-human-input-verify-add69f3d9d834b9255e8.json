@@ -1,0 +1,77 @@
+{
+  "request_fingerprint": "add69f3d9d834b9255e845de855beea6c2bd76fcbe15cbe12ab36fe1c66c1730",
+  "value": {
+    "checks": {
+      "H85ca0e507c4e_11": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "evidence_limitations": [],
+        "note": "p11:e97의 구조체 정의와 진술이 완전히 일치한다. num_layers, layer_in_dim, layer_out_dim, W, b, act, d_W 모두 원문에 존재한다. observations의 포인터 배열 사전 할당, MAX_LAYERS 기준 공간 낭비 가능성(p11:e98), double 기준이라 float 전환 시 전체 구조 변경 필요(p11:e99)도 원문에 뒷받침된다."
+      },
+      "H85ca0e507c4e_12": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "evidence_limitations": [],
+        "note": "p12:e100의 pre_upload_weights_to_gpu 함수 코드에 cudaMalloc, cudaMemcpy2D 호출이 명시되어 있고, p12:e101에서 net->d_W[i]에 저장한다고 설명한다. 측정값 elapsed time 149~155ms는 p12:e102(149.820400ms 출력)와 p12:e103(149~155ms 결과)에 뒷받침된다. bias 4KB 판단은 p12:e104에 존재한다."
+      },
+      "H85ca0e507c4e_13": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "evidence_limitations": [],
+        "note": "p13:e106(heading), p13:e107, p13:e108, p13:e109의 설명이 진술과 정확히 일치한다. 50ms 단축이 preload 자체의 연산 활용이 아니라 GPU warmup 효과(CUDA 컨텍스트 초기화, 클럭 부스팅, JIT 컴파일) 때문이라는 분석이 p13:e108에 상세히 기술되어 있다. mempool 버전은 ensure_pool()→cudaMalloc이 t_start 안에 있고, preload 버전은 타이머 전에 호출되어 초기화 비용이 제외된다는 대조도 원문에 있다."
+      },
+      "H85ca0e507c4e_15": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "evidence_limitations": [],
+        "note": "p14:e120에 v1-1-1-1의 cuBlas 도입 내용이 명시되어 있다. p15:e121의 총 elapsed time 61796.584100ms, 평균 123.593168ms와 p15:e123의 총 78755.716600ms, 평균 157.511433ms가 원문에 존재한다. 두 평균의 차이는 약 33.9ms로 '약 30ms 차이'라는 진술과 부합한다. p15:e122에 '기존 v1-1-1 대비 평균 실행당 시간이 30ms 차이난다'고 직접 기록되어 있다. rejected_measurements에 '157.511433ms가 연결 원문에 없다'는 validation_error가 있으나, 실제 p15:e123에 해당 값이 존재하므로 이는 평가상의 오류로 보인다. warm up 미진행 상태라는 관찰(p15:e125)도 원문에 있다."
+      },
+      "H85ca0e507c4e_16": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "evidence_limitations": [],
+        "note": "p16:e126에 warm up 여부 차이가 별로 없다는 관찰, cuBlas 없는 my_lirpa_mempool이 120ms대로 나올 때도 있다는 내용이 있다. p16:e127에 처음 메모리풀 할당 비용이 500회 시행에 묻혀 차이가 크지 않을 수 있다는 해석이 있다. CPU ONLY 측정값(p16:e129: 총 39148.493900ms, 평균 78.296988ms)과 HYBRID V2 측정값(p17:e130: 총 49416.462000ms, 평균 98.832924ms)이 원문에 존재한다. hybrid_v2가 CPU보다 느려진 이유의 CPU 캐시 추정(p17:e131), cuBlas 영향 미미 판단(p17:e133), ensure_pool()의 큰 영향(p17:e134)도 원문에 뒷받침된다."
+      },
+      "H85ca0e507c4e_17": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "evidence_limitations": [],
+        "note": "p18:e135에 mempool + warmup 152.902900ms, mempool + cuBlas + warmup 174.978400ms가 명시되어 있다. p18:e136에 warmup이 각 버전에서 약 50ms 단축 효과가 있다는 관찰이 있다. p19:e137에 '메모리 풀 + warm up 조합은 매우 좋다 (두 개만으로 거의 200ms 단축함)'이라는 결론이 기록되어 있다. '거의 200ms 단축'은 이전 기준선(약 350ms대)에서 152.9ms로의 감소를 반영한 것으로 문맥상 뒷받침된다."
+      },
+      "H85ca0e507c4e_19": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "evidence_limitations": [],
+        "note": "p20:e145에 mempool + warmup 기준 단일 실행 elapsed time 115.469900ms가 명시되어 있다. p20:e144(앞문맥)에 결과를 담을 벡터 memcpy 제거로 10ms 정도 줄었다는 내용이 있어 memcpy 제거 적용의 맥락을 제공한다. p20:e147(caption)에 '가중치, positive_part/negative_part 거친 가중치 GPU 메모리에 미리 올려놓기 (matmul이나 matvec에서 memcpy 절반됨 / 양수, 음수부 가중치는 forward 돌때마다 계산 필요없어짐)'이 정확히 진술과 일치한다. 데이터 차원 256(p20:e145), 출력 차원 16(p20:e145)도 원문에 존재한다."
+      }
+    }
+  }
+}

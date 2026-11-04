@@ -1,0 +1,486 @@
+{
+  "request_fingerprint": "7d5cc301b6f5cc6abbe6f9209d0c7a948b5f90c69017a9e5d0a9200cb2bbae32",
+  "value": {
+    "facts": [
+      {
+        "statement": "코드는 N개 데이터에 대해 반복문을 수행하며 각 항목마다 추론, bound 계산, 검증 세 단계의 시간을 개별 측정한다",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "for (int i = 0; i < N; ++i) 반복문 구조",
+          "case 0: ForwardBoundResult, case 1: BackwardBoundResult 분기"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "반복 범위",
+            "value": "N개 데이터",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "추론 시간 누적 변수",
+            "value": "time_infer_total",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "bound 시간 누적 변수",
+            "value": "time_bound_total",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "검증 시간 누적 변수",
+            "value": "time_certify_total",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e392"
+        ]
+      },
+      {
+        "statement": "추론 시간은 std::chrono::high_resolution_clock::now()로 t0, t1 시점을 기록해 t1-t0 차이를 time_infer_total에 누적한다",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "network_forward(*net, dataset[i]) 호출 전후 측정"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "추론 시작 시점 변수",
+            "value": "t0",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "추론 종료 시점 변수",
+            "value": "t1",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e392"
+        ]
+      },
+      {
+        "statement": "bound 계산 시간은 추론 종료 시점(t1) 이후부터 bound 계산 종료 시점(t2)까지를 측정해 time_bound_total에 누적한다",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "case 0: lirpa_forward_bound_imp1, case 1: lirpa_backward_bound 호출"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "bound 계산 함수(case 0)",
+            "value": "lirpa_forward_bound_imp1(*net, dataset[i], eps_f, false, false, true)",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "bound 계산 함수(case 1)",
+            "value": "lirpa_backward_bound(*net, dataset[i], eps_f, false, false)",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "bound 시작 시점",
+            "value": "t1 (추론 종료 시점과 동일)",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "bound 종료 시점",
+            "value": "t2",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e392"
+        ]
+      },
+      {
+        "statement": "검증 시간은 bound 계산 종료 시점(t2) 이후부터 검증 종료 시점(t3)까지를 측정해 time_certify_total에 누적한다",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "certify_topk 판정 포함"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "검증 시작 시점",
+            "value": "t2 (bound 종료 시점과 동일)",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "검증 종료 시점",
+            "value": "t3",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "Top-k 인증 판정 함수",
+            "value": "certify_topk(y0, fwd.final_lower, fwd.final_upper, k) 또는 certify_topk(y0, bwd.final_lower, bwd.final_upper, k)",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e392"
+        ]
+      },
+      {
+        "statement": "case 0(ForwardBoundResult)에서는 NRVO를 적용해 4MB 이상 구조체 복사를 0회로 수행한다고 코드에 명시되어 있다",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "case 0 내부: ForwardBoundResult fwd = lirpa_forward_bound_imp1(...)"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "NRVO 적용 대상",
+            "value": "ForwardBoundResult 구조체",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "복사 횟수",
+            "value": "0회",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "구조체 크기",
+            "value": "4MB+",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e392"
+        ]
+      },
+      {
+        "statement": "인증 성공 시 t_count 증가, 실패 시 f_count 증가하는 카운터가 코드에 포함되어 있다",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "certify_topk 반환값에 따라 분기"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "인증 성공 카운터",
+            "value": "t_count",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "인증 실패 카운터",
+            "value": "f_count",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e392"
+        ]
+      },
+      {
+        "statement": "각 추론, bound 계산, 검증 종료 시점마다 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 코드를 구성하였다",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "추론·bound 계산·검증 각 단계 끝마다 시간 기록"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p54:e393"
+        ]
+      },
+      {
+        "statement": "측정 완료 후 elapsed 타임(92만 번 계산 시간)과 3개 누적 시간을 더한 값 사이에 미세한 오차가 존재함을 확인하였다",
+        "limits": "오차의 구체적 수치나 원인은 제시되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "92만 번 forward/backward 실행 기준",
+          "추론·bound·검증 각각 누적 시간 존재"
+        ],
+        "observations": [
+          "elapsed 타임과 3개 누적 시간 합 사이에 미세한 오차 존재"
+        ],
+        "parameters": [
+          {
+            "name": "비교 대상 1",
+            "value": "elapsed 타임(92만 번 계산 시간)",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e394"
+            ]
+          },
+          {
+            "name": "비교 대상 2",
+            "value": "3개 누적 시간의 합",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e394"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e394"
+        ]
+      },
+      {
+        "statement": "elapsed 타임과 3개 누적 시간 합 사이에 미세한 오차가 있어, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단하여 해당 값을 넣기로 결정하였다",
+        "limits": "오차의 구체적 수치나 원인은 제시되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "추론·bound·검증 각각 누적 시간을 합산한 값 사용 결정"
+        ],
+        "observations": [
+          "3개 누적 시간 합이 더 올바른 시간으로 간주됨"
+        ],
+        "parameters": [
+          {
+            "name": "사용하기로 한 시간 기준",
+            "value": "추론·bound·검증 3개 누적 시간의 합",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e394"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e394"
+        ]
+      },
+      {
+        "statement": "forward와 backward 각각 20번 측정을 완료하였다",
+        "limits": "",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "앞서 구성한 추론·bound·검증 개별 측정 코드 사용"
+        ],
+        "observations": [
+          "forward 20번, backward 20번 측정 완료"
+        ],
+        "parameters": [
+          {
+            "name": "forward 측정 횟수",
+            "value": "20번",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e395"
+            ]
+          },
+          {
+            "name": "backward 측정 횟수",
+            "value": "20번",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e395"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e395"
+        ]
+      },
+      {
+        "statement": "forward, backward 측정에서 튀는 값(outlier)이 존재함을 확인하였다",
+        "limits": "",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward 20번, backward 20번 측정 데이터"
+        ],
+        "observations": [
+          "튀는 값 존재"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p54:e395"
+        ]
+      },
+      {
+        "statement": "튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다",
+        "limits": "평균·분산 수치는 아직 슬라이드에 반영되지 않음(계획 단계)",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward 20번, backward 20번 측정 완료",
+          "튀는 값 존재"
+        ],
+        "observations": [
+          "평균과 분산을 구해 슬라이드에 넣을 예정"
+        ],
+        "parameters": [
+          {
+            "name": "통계 지표 계획",
+            "value": "평균, 분산",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e395"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e395"
+        ]
+      },
+      {
+        "statement": "p54:e396은 구분선(= ===========================================================)으로만 구성되어 연구 내용이 없다",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p54:e396"
+        ]
+      },
+      {
+        "statement": "b 과정은 단일 데이터 측정에 대해 검증하는 과정이다",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "단일 데이터(optimizing.exe) 대상"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "과정 구분",
+            "value": "b 과정",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e397"
+            ]
+          },
+          {
+            "name": "검증 대상",
+            "value": "단일 데이터 측정",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e397"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e397"
+        ]
+      },
+      {
+        "statement": "단일 데이터 측정 검증 과정에서 warm up 코드를 먼저 넣었다",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "b 과정: 단일 데이터 측정 검증"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "먼저 수행한 작업",
+            "value": "warm up 코드 삽입",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e398"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e398"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,487 @@
+{
+  "request_fingerprint": "ff48468fda0e29198c1a10c727ab3f0c739145b5ee4cd1647cb886a5931aa461",
+  "value": {
+    "additions": [
+      {
+        "statement": "SpMM 도입 후 calc 성공 Elapsed time이 38.580600 ms로 측정되었다.",
+        "limits": "단일 측정 결과이며, 비교 기준선(24 ms dense baseline)과의 대비는 별도 서술로 제시되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "SpMM 도입 후 측정",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "calc success",
+          "Elapsed time: 38.580600 ms",
+          "Output Dimension: 16"
+        ],
+        "parameters": [
+          {
+            "name": "Elapsed time",
+            "value": "38.580600",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p30:e202",
+              "p30:enh:e0"
+            ]
+          },
+          {
+            "name": "Output Dimension",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p30:e202",
+              "p30:enh:e0"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "38.580600",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "SpMM 도입 후 calc 성공 측정",
+            "element_ids": [
+              "p30:e202",
+              "p30:enh:e0"
+            ]
+          },
+          {
+            "metric": "Output Dimension",
+            "value": "16",
+            "value_kind": "scalar",
+            "unit": "dimension",
+            "condition": "SpMM 도입 후 calc 성공 측정",
+            "element_ids": [
+              "p30:e202",
+              "p30:enh:e0"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p30:e202",
+          "p30:enh:e0"
+        ]
+      },
+      {
+        "statement": "SpMM 도입 후 결과가 거의 40ms로 회귀하여 바람직하지 않다고 기록되었다.",
+        "limits": "정성적 평가이며, 회귀의 원인 정량 분해는 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "SpMM 도입 후 측정"
+        ],
+        "observations": [
+          "거의 40ms로 회귀",
+          "이러면 안된다"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e203",
+          "p30:enh:e1"
+        ]
+      },
+      {
+        "statement": "cuSPARSE가 느려진 이유는 최적화 부족이 아니라 현재 workload가 cuSPARSE에 불리하기 때문이라고 설명되었다.",
+        "limits": "해석/설명이며, 각 비용 항목의 정량 분리는 제시되지 않았다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "현재 workload가 cuSPARSE에 불리함"
+        ],
+        "observations": [
+          "행렬 크기가 작고 layer가 3개뿐임",
+          "SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼",
+          "매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함",
+          "network_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함",
+          "cuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e3",
+          "p29:enh:e4",
+          "p29:enh:e5"
+        ]
+      },
+      {
+        "statement": "network_forward()가 전체 타이머에 포함되지만 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다고 설명되었다.",
+        "limits": "설명/해석이며, pipeline 미완성 상태와 오버헤드 발생 구조를 서술한 것이다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "network_forward() 전체 타이머 포함",
+          "cuSPARSE pipeline 미완성"
+        ],
+        "observations": [
+          "SpMV / SpMM 호출마다 descriptor와 buffer 처리 비용이 추가됨",
+          "모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 큼",
+          "SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "SpMM 적용 후 Elapsed time",
+            "value": "38",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "오버헤드가 계산 이득보다 큰 상황 언급",
+            "element_ids": [
+              "p30:enh:e5"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p30:enh:e5"
+        ]
+      },
+      {
+        "statement": "공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다는 의견이 있었다.",
+        "limits": "의견/제안이며, 공식 결과 유지 방향과 별도 비교 방식을 제안한 것이다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "공식 결과 유지 제안",
+          "별도 benchmark 비교 제안"
+        ],
+        "observations": [
+          "24 ms dense baseline 유지",
+          "cuSPARSE는 별도 benchmark 옵션으로 비교"
+        ],
+        "parameters": [
+          {
+            "name": "공식 결과 기준선",
+            "value": "24 ms dense baseline",
+            "value_kind": "text",
+            "element_ids": [
+              "p30:enh:e6"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "공식 결과 기준선",
+            "value": "24",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "dense baseline 유지 제안",
+            "element_ids": [
+              "p30:enh:e6"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p30:enh:e6"
+        ]
+      },
+      {
+        "statement": "원인 분석으로 신경망의 크기가 매우 작고, cuBlas/cuSparse의 동작 방식에서 오버헤드가 발생했으며, 이 또한 신경망이 작기 때문이라고 기록되었다.",
+        "limits": "원인 분석 서술이며, 정량적 원인 분해는 제시되지 않았다.",
+        "kind": "limitation",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "신경망 크기가 매우 작음",
+          "cuBlas, cuSparse 동작 방식 오버헤드"
+        ],
+        "observations": [
+          "신경망의 크기가 매우 작다",
+          "cuBlas, cuSparse 의 동작 방식에서 오버헤드가 생겼다",
+          "이 또한 신경망이 작기 때문에"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e208",
+          "p31:e209",
+          "p31:review:e0",
+          "p31:review:e1"
+        ]
+      },
+      {
+        "statement": "cuBlas, cuSparse의 기본적인 행렬곱 연산 함수를 사용했으며, 행렬곱에도 변형 함수들이 매우 많아 sm 내 분석과 함께 사용해야 하는 함수들이라 Nsight compute 분석 시 같이 진행하면 될 것 같다고 기록되었다.",
+        "limits": "향후 분석/실험 방향에 대한 제안이며, 실제 변형 함수 적용 결과는 제시되지 않았다.",
+        "kind": "limitation",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuBlas, cuSparse 기본 행렬곱 함수 사용",
+          "sm 내 분석과 함께 사용 필요"
+        ],
+        "observations": [
+          "행렬곱에도 변형 함수들이 매우 많다",
+          "Nsight compute 분석때 같이 진행하면 될 듯?"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e210",
+          "p31:review:e2"
+        ]
+      },
+      {
+        "statement": "커널 퓨전을 진행했으며, 먼저 backward_bound_gpu()에만 진행했다고 기록되었다.",
+        "limits": "진행 범위와 대상 함수만 서술되었으며, 적용 결과는 별도 측정으로 제시되었다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 퓨전 진행",
+          "backward_bound_gpu()에만 진행"
+        ],
+        "observations": [
+          "커널 퓨전을 진행함",
+          "먼저 backward_bound_gpu()에만 진행했는데.."
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e212",
+          "p31:review:e3",
+          "p31:review:e4"
+        ]
+      },
+      {
+        "statement": "커널 퓨전 후 Starting CROWN Verification(eps = 1e-06, mempool + warmup) calc 성공 Elapsed time이 23.925200 ms로 측정되었고, Output Dimension은 16이었다.",
+        "limits": "단일 측정 결과이며, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있다고 함께 언급되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "커널 퓨전 후",
+          "Starting CROWN Verification (eps = 1e-06) mempool + warmup",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "calc success",
+          "Elapsed time: 23.925200 ms",
+          "Output Dimension: 16",
+          "컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만.. 중요한건 23ms 정도가 보인다는것"
+        ],
+        "parameters": [
+          {
+            "name": "Elapsed time",
+            "value": "23.925200",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p31:e214",
+              "p31:review:e6"
+            ]
+          },
+          {
+            "name": "Output Dimension",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p31:e214",
+              "p31:review:e6"
+            ]
+          },
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p31:e214",
+              "p31:review:e6"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "23.925200",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "커널 퓨전 후 Starting CROWN Verification (eps = 1e-06) mempool + warmup calc 성공",
+            "element_ids": [
+              "p31:e214",
+              "p31:review:e6"
+            ]
+          },
+          {
+            "metric": "Output Dimension",
+            "value": "16",
+            "value_kind": "scalar",
+            "unit": "dimension",
+            "condition": "커널 퓨전 후 Starting CROWN Verification 측정",
+            "element_ids": [
+              "p31:e214",
+              "p31:review:e6"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p31:e214",
+          "p31:e215",
+          "p31:review:e6",
+          "p31:review:e7"
+        ]
+      },
+      {
+        "statement": "cuSPARSE를 계속 확장하지 않는 편이 좋으며, 24 ms baseline으로 돌아가고 cuSPARSE는 별도 실험으로 두자는 의견이 있었다.",
+        "limits": "의견/조언이며, 현재 기준 유지 방향을 제안한 것이다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE 확장 보류 제안",
+          "24 ms baseline 유지"
+        ],
+        "observations": [
+          "cuSPARSE를 계속 확장하지 않는 편이 좋음",
+          "24 ms baseline으로 돌아가고, cuSPARSE는 별도 실험으로 둠"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e2"
+        ]
+      },
+      {
+        "statement": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가해야 한다고 기록되었다.",
+        "limits": "향후 재시도 시 고려사항에 대한 제안이며, 실제 재도입 결과는 제시되지 않았다.",
+        "kind": "limitation",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "descriptor와 buffer 미리 만들어 재사용",
+          "network_forward() 전체를 GPU 상주",
+          "SpMV 평가"
+        ],
+        "observations": [
+          "descriptor와 buffer를 미리 만들어 재사용",
+          "network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e6"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p30:e202": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "SpMM 도입 후 calc 성공 Elapsed time 38.580600 ms, Output Dimension 16 측정값을 additions와 measurements로 반영함.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p30:e203": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "SpMM 도입 후 거의 40ms로 회귀하여 바람직하지 않다는 정성적 평가를 additions로 반영함.",
+        "addition_refs": [
+          1
+        ]
+      },
+      "p30:e204": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "기존 facts에 포함되어 있음.",
+        "addition_refs": []
+      },
+      "p30:e205": {
+        "state": "represented",
+        "fact_refs": [
+          1
+        ],
+        "note": "기존 facts에 포함되어 있음.",
+        "addition_refs": []
+      },
+      "p30:e206": {
+        "state": "represented",
+        "fact_refs": [
+          2,
+          6
+        ],
+        "note": "기존 facts에 포함되어 있음.",
+        "addition_refs": []
+      },
+      "p30:enh:e0": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "SpMM 도입 후 calc 성공 Elapsed time 38.580600 ms, Output Dimension 16 측정값을 additions와 measurements로 반영함.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p30:enh:e1": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "SpMM 도입 후 거의 40ms로 회귀하여 바람직하지 않다는 정성적 평가를 additions로 반영함.",
+        "addition_refs": [
+          1
+        ]
+      },
+      "p30:enh:e2": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "기존 facts에 포함되어 있음.",
+        "addition_refs": []
+      },
+      "p30:enh:e3": {
+        "state": "represented",
+        "fact_refs": [
+          3
+        ],
+        "note": "기존 facts에 포함되어 있음.",
+        "addition_refs": []
+      },
+      "p30:enh:e4": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "목록형 서술로 별도 사실화하지 않음.",
+        "addition_refs": []
+      },
+      "p30:enh:e5": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "SpMV/SpMM 호출마다 descriptor/buffer 처리 비용 추가, setup/launch 비용이 더 크다는 설명과 SpMM 적용 후 38 ms 오버헤드 상황을 additions와 measurements로 반영함.",
+        "addition_refs": [
+          3
+        ]
+      },
+      "p30:enh:e6": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "공식 결과 24 ms dense baseline 유지 및 cuSPARSE 별도 benchmark 비교 제안을 additions와 measurements로 반영함.",
+        "addition_refs": [
+          4
+        ]
+      },
+      "p30:enh:e7": {
+        "state": "represented",
+        "fact_refs": [
+          1
+        ],
+        "note": "기존 facts에 포함되어 있음.",
+        "addition_refs": []
+      },
+      "p30:enh:e8": {
+        "state": "represented",
+        "fact_refs": [
+          2,
+          6
+        ],
+        "note": "기존 facts에 포함되어 있음.",
+        "addition_refs": []
+      }
+    }
+  }
+}

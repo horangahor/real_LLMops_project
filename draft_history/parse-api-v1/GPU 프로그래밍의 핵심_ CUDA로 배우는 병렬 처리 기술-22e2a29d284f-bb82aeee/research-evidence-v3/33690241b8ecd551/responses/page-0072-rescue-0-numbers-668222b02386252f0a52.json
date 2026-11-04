@@ -1,0 +1,759 @@
+{
+  "request_fingerprint": "668222b02386252f0a524a7c491ba6a629584b5520b8740ffccfd3e83e188a49",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "방법 B는 CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산)에 직접 blockIdx.z를 넣어 3차원 배칭 커널을 작성하는 Custom Implementation 방식이며, 방법 C는 CROWN 연산 시간의 80% 이상을 차지하는 행렬 곱셈만 cuBLAS(cublasSgemmBatched)에 맡기고 CROWN 전용 연산은 자체 3D 커널로 처리하는 하이브리드 방식이다.",
+          "limits": "방법 B와 C의 설명은 연구 노트 내 질의응답 과정에서 제시된 내용이며, 실제 구현 여부나 성능 비교 실험 결과는 이 요소에서 확인되지 않는다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "CROWN 연산",
+            "3차원 배칭 커널",
+            "CUDA"
+          ],
+          "observations": [
+            "방법 B: 모든 커널에 blockIdx.z를 넣어 3차원 배칭 커널을 직접 작성",
+            "방법 B 장점: 알고리즘과 메모리를 100% 통제 가능",
+            "방법 B 아쉬운 점: 엔비디아 엔지니어가 GPU 회로 레벨까지 튜닝한 텐서 코어 어셈블리 성능을 따라잡기 어려움",
+            "방법 C: 행렬 곱셈만 cuBLAS(cublasSgemmBatched)로 교체",
+            "CROWN 연산 시간의 80% 이상은 행렬 곱셈(A × W)",
+            "CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없어 자체 3D 커널로 처리",
+            "파이토치 내부 동작 방식과 100% 동일한 하이브리드 방식"
+          ],
+          "parameters": [
+            {
+              "name": "CROWN 연산 중 행렬 곱셈 비중",
+              "value": "80% 이상",
+              "value_kind": "text",
+              "element_ids": [
+                "p71:e557",
+                "p71:enh:e9"
+              ]
+            },
+            {
+              "name": "방법 B 커널 구성",
+              "value": "행렬 곱, ReLU 완화, 바운드 합산 모두 3차원 배칭 커널",
+              "value_kind": "text",
+              "element_ids": [
+                "p71:e555",
+                "p71:enh:e7"
+              ]
+            },
+            {
+              "name": "방법 C 사용 라이브러리",
+              "value": "cublasSgemmBatched",
+              "value_kind": "text",
+              "element_ids": [
+                "p71:e557",
+                "p71:enh:e9"
+              ]
+            }
+          ],
+          "measurements": [],
+          "element_ids": [
+            "p71:e548",
+            "p71:e551",
+            "p71:e552",
+            "p71:e554",
+            "p71:e555",
+            "p71:e556",
+            "p71:e557",
+            "p71:e558",
+            "p71:e559",
+            "p71:enh:e0",
+            "p71:enh:e1",
+            "p71:enh:e2",
+            "p71:enh:e3",
+            "p71:enh:e4",
+            "p71:enh:e5",
+            "p71:enh:e6",
+            "p71:enh:e7",
+            "p71:enh:e8",
+            "p71:enh:e9",
+            "p71:enh:e10",
+            "p71:enh:e11",
+            "p71:enh:e12"
+          ]
+        }
+      ],
+      "1": [
+        {
+          "statement": "backward_only 방식에서 final_affine까지 복사(true)로 인해 한 번의 bound 계산에서 memcpy가 10번 발생하여 평균이 2.5배 느려졌으며, memcpy를 6번으로 줄인 결과 2578.377초에서 1543.876초로 시간이 감소했다.",
+          "limits": "2578.377초→1543.876초, memcpy 10번→6번은 작성자가 제시한 수치이며, 실제 측정 조건·정밀도·구간 정보는 표에 명시된 범위 내에서 확인된다. 0.3ms 감소 및 2600초→약 2300초 추정은 별도 관측·추정으로 이 측정값과 구분된다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "backward_only",
+            "final_affine 복사(true)",
+            "memcpy 10번→6번 감소",
+            "N=40000",
+            "eps_count=23"
+          ],
+          "observations": [
+            "backward_only 평균이 2.5배 정도 느려짐",
+            "원인: final_affine까지 복사하느라고(true) 한 번의 bound 계산에서 10번 발생",
+            "false로 줘서 다시 측정 필요 (memcpy 6번)",
+            "memcpy 10번⇒6번 된 결과 + graph 적용한 결과 도출",
+            "2578초⇒1543초"
+          ],
+          "parameters": [
+            {
+              "name": "변경 전 소요 시간",
+              "value": "2578.377",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p72:e566",
+                "p72:img0:e0"
+              ]
+            },
+            {
+              "name": "변경 후 소요 시간",
+              "value": "1543.876",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p72:e566",
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "name": "변경 전 memcpy 횟수",
+              "value": "10",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p72:e561",
+                "p72:e565"
+              ]
+            },
+            {
+              "name": "변경 후 memcpy 횟수",
+              "value": "6",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p72:e562",
+                "p72:e565"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "총 소요 시간",
+              "value": "2578.377",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only, memcpy 10번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img0:e0"
+              ]
+            },
+            {
+              "metric": "총 소요 시간",
+              "value": "1543.876",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only, memcpy 6번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "추론 누적 시간",
+              "value": "158.7314",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only, memcpy 10번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img0:e0"
+              ]
+            },
+            {
+              "metric": "추론 누적 시간",
+              "value": "138.1242",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only, memcpy 6번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "바운드 누적 시간",
+              "value": "2415.455",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only, memcpy 10번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img0:e0"
+              ]
+            },
+            {
+              "metric": "바운드 누적 시간",
+              "value": "1402.504",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only, memcpy 6번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "인증 누적 시간",
+              "value": "2.6721",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only, memcpy 10번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img0:e0"
+              ]
+            },
+            {
+              "metric": "인증 누적 시간",
+              "value": "2.1028",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only, memcpy 6번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "평균 추론 시간",
+              "value": "0.1725",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "backward_only, memcpy 10번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img0:e0"
+              ]
+            },
+            {
+              "metric": "평균 추론 시간",
+              "value": "0.1501",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "backward_only, memcpy 6번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "평균 바운드 시간",
+              "value": "2.6255",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "backward_only, memcpy 10번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img0:e0"
+              ]
+            },
+            {
+              "metric": "평균 바운드 시간",
+              "value": "1.5245",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "backward_only, memcpy 6번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "평균 인증 시간",
+              "value": "0.0029",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "backward_only, memcpy 10번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img0:e0"
+              ]
+            },
+            {
+              "metric": "평균 인증 시간",
+              "value": "0.0023",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "backward_only, memcpy 6번, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p72:e561",
+            "p72:e562",
+            "p72:e564",
+            "p72:e565",
+            "p72:e566",
+            "p72:img0:e0",
+            "p72:img2:e0"
+          ]
+        },
+        {
+          "statement": "CUDA Graph를 적용한 backward_only_cuda_graph 방식이 787.8832초로 3가지 방법 중 가장 빠르며, avg 기준 forward 1029.827초, forward+backward 1138.49초이다.",
+          "limits": "787.8832초가 3가지 방법 중 가장 빠르다는 비교는 작성자의 관측이며, 비교 대상 방법들의 정확한 측정 조건과 정밀도 정보는 표에 명시된 범위 내에서 확인된다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "backward_only_cuda_graph",
+            "CUDA Graph Separate (graph_mode=1)",
+            "N=40000",
+            "eps_count=23"
+          ],
+          "observations": [
+            "그래프 적용 결과 787.8832s로 3가지 방법 중 가장 빠름",
+            "avg 기준 forward 1029s, forward+backward 1138s"
+          ],
+          "parameters": [
+            {
+              "name": "CUDA Graph 적용 시 총 소요 시간",
+              "value": "787.8832",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p72:e567",
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "name": "평균 forward 총 소요 시간",
+              "value": "1029.827",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p72:e567",
+                "p72:img0:e0"
+              ]
+            },
+            {
+              "name": "평균 forward+backward 총 소요 시간",
+              "value": "1138.49",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p72:e567",
+                "p72:img0:e0"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "총 소요 시간",
+              "value": "787.8832",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only_cuda_graph, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "추론 누적 시간",
+              "value": "127.1802",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only_cuda_graph, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "바운드 누적 시간",
+              "value": "658.7972",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only_cuda_graph, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "인증 누적 시간",
+              "value": "1.1998",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "backward_only_cuda_graph, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "평균 추론 시간",
+              "value": "0.1382",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "backward_only_cuda_graph, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "평균 바운드 시간",
+              "value": "0.7161",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "backward_only_cuda_graph, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            },
+            {
+              "metric": "평균 인증 시간",
+              "value": "0.0013",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "backward_only_cuda_graph, N=40000, eps_count=23",
+              "element_ids": [
+                "p72:img2:e0"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p72:e567",
+            "p72:img2:e0",
+            "p72:img0:e0"
+          ]
+        },
+        {
+          "statement": "3가지 메모리 방식 벤치마크 결과 No Pinning(Pageable)이 776.70초로 가장 빠르며, cudaHostAlloc(h_x0 복사)는 cudaHostRegister 대비 8.64초 더 느렸다. 입력 크기가 1KB(256차원 FP32)로 매우 작고 GPU 연산 시간이 전체 처리 시간의 85% 이상을 차지하여 메모리 전송 방식 간 차이가 크지 않다.",
+          "limits": "No Pinning이 가장 빠르다는 결과와 8.64초 차이는 작성자가 제시한 측정값이며, 측정 환경·정밀도·구간 정보는 표에 명시된 범위 내에서 확인된다. 순수 GPU 커널 시간 716μs 등 세부 수치는 표에 기반한다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "backward_only (method=2)",
+            "CUDA Graph Separate (graph_mode=1)",
+            "총 920,000회 연산",
+            "입력 벡터 256차원 FP32 (1,024 Byte)"
+          ],
+          "observations": [
+            "No Pinning이 가장 빠름",
+            "cudaHostAlloc이 8.64초 더 걸린 이유: CPU 루프 내 복사 오버헤드 (매 루프마다 *pinned_in = dataset[i]; 1,028바이트를 92만 번 수행, 회당 약 9.4μs)",
+            "입력 벡터는 256차원 FP32로 불과 1,024 Byte(1 KB)",
+            "단일 샘플 처리 시간(~840μs) 중 85% 이상(약 716μs)이 순수 GPU 커널 연산(CROWN 역전파 행렬 계산) 시간",
+            "전송 시간이 1~2μs 수준으로 전체 지연시간 영향이 미미"
+          ],
+          "parameters": [
+            {
+              "name": "입력 벡터 크기",
+              "value": "1,024 Byte (1 KB)",
+              "value_kind": "text",
+              "element_ids": [
+                "p73:e579"
+              ]
+            },
+            {
+              "name": "입력 차원",
+              "value": "256차원 FP32",
+              "value_kind": "text",
+              "element_ids": [
+                "p73:e579"
+              ]
+            },
+            {
+              "name": "총 연산 횟수",
+              "value": "920,000",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p73:img0:e1",
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "name": "단일 샘플 처리 시간",
+              "value": "~840",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p73:e580"
+              ]
+            },
+            {
+              "name": "GPU 커널 연산 시간 비중",
+              "value": "85% 이상 (약 716μs)",
+              "value_kind": "text",
+              "element_ids": [
+                "p73:e580"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "전체 실행 시간",
+              "value": "787.88",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "1. 기존 cudaHostRegister, backward_only, CUDA Graph Separate, 920,000회 연산",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "전체 실행 시간",
+              "value": "796.52",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "2. cudaHostAlloc (h_x0 복사), backward_only, CUDA Graph Separate, 920,000회 연산",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "전체 실행 시간",
+              "value": "776.70",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "3. No Pinning (Pageable), backward_only, CUDA Graph Separate, 920,000회 연산",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "추론 누적 시간",
+              "value": "127.18",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "1. 기존 cudaHostRegister",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "추론 누적 시간",
+              "value": "130.47",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "2. cudaHostAlloc (h_x0 복사)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "추론 누적 시간",
+              "value": "111.92",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "3. No Pinning (Pageable)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "바운드 누적 시간",
+              "value": "658.80",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "1. 기존 cudaHostRegister",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "바운드 누적 시간",
+              "value": "664.46",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "2. cudaHostAlloc (h_x0 복사)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "바운드 누적 시간",
+              "value": "663.17",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "3. No Pinning (Pageable)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "단일 샘플 평균 지연시간",
+              "value": "856",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "1. 기존 cudaHostRegister",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "단일 샘플 평균 지연시간",
+              "value": "867.43",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "2. cudaHostAlloc (h_x0 복사)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "단일 샘플 평균 지연시간",
+              "value": "843.81",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "3. No Pinning (Pageable)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "중위값 (P50 Latency)",
+              "value": "859.80",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "2. cudaHostAlloc (h_x0 복사)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "중위값 (P50 Latency)",
+              "value": "837.10",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "3. No Pinning (Pageable)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "95% 꼬리 지연 (P95)",
+              "value": "893.80",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "2. cudaHostAlloc (h_x0 복사)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "95% 꼬리 지연 (P95)",
+              "value": "867.20",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "3. No Pinning (Pageable)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "지터 (Jitter, StdDev)",
+              "value": "24.63",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "2. cudaHostAlloc (h_x0 복사)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "지터 (Jitter, StdDev)",
+              "value": "15.95",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "3. No Pinning (Pageable)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "순수 GPU 커널 시간",
+              "value": "716.10",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "1. 기존 cudaHostRegister",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "순수 GPU 커널 시간",
+              "value": "706.34",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "2. cudaHostAlloc (h_x0 복사)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "순수 GPU 커널 시간",
+              "value": "716.00",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "3. No Pinning (Pageable)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "초당 처리량 (Throughput)",
+              "value": "1168",
+              "value_kind": "scalar",
+              "unit": "samples/s",
+              "condition": "1. 기존 cudaHostRegister",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "초당 처리량 (Throughput)",
+              "value": "1152.8",
+              "value_kind": "scalar",
+              "unit": "samples/s",
+              "condition": "2. cudaHostAlloc (h_x0 복사)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "초당 처리량 (Throughput)",
+              "value": "1185.1",
+              "value_kind": "scalar",
+              "unit": "samples/s",
+              "condition": "3. No Pinning (Pageable)",
+              "element_ids": [
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "cudaHostAlloc 추가 소요 시간",
+              "value": "8.64",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "cudaHostAlloc vs cudaHostRegister 비교, 920,000회 연산",
+              "element_ids": [
+                "p73:e576",
+                "p73:img0:e2"
+              ]
+            },
+            {
+              "metric": "CPU 메모리 복사 지연 (회당)",
+              "value": "9.4",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "cudaHostAlloc, 매 루프마다 *pinned_in = dataset[i]; 1,028바이트 복사",
+              "element_ids": [
+                "p73:e576"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p73:e573",
+            "p73:e574",
+            "p73:e575",
+            "p73:e576",
+            "p73:e577",
+            "p73:e578",
+            "p73:e579",
+            "p73:e580",
+            "p73:e581",
+            "p73:img0:e0",
+            "p73:img0:e1",
+            "p73:img0:e2"
+          ]
+        }
+      ]
+    }
+  }
+}

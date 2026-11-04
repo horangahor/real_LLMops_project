@@ -1,0 +1,529 @@
+{
+  "request_fingerprint": "d106c4255fbbb1846e6feecc963d29ed992621c184d0d1346834b58409c4ad30",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "Forward에서는 graph 단일 적용이 추론, bound, 검증 전반에서 우수하며, 특히 infer_s에서 약 20초 차이가 난다. Backward에서는 total 시간이 비슷한데, 이는 infer에서 절감한 20초를 bound에서 graph보다 20초 빠르게 수행하기 때문이다.",
+          "limits": "텍스트 기반 관찰 기록이며, 실제 측정값과의 일치 여부는 별도 확인 필요",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "cudaGraph만 적용된 버전과 pinned Memory + cudaEvent 제어 + D2H memcpy + certify topk 스택화 버전 간 비교",
+            "N=40000, eps_count=23 조건"
+          ],
+          "observations": [
+            "Forward에서 graph 단일 적용이 전체적(추론, bound, 검증)으로 우수하다고 기록됨",
+            "Backward에서는 total 시간이 비슷하며, infer 절감분이 bound에서 상쇄된다고 설명됨"
+          ],
+          "parameters": [
+            {
+              "name": "N",
+              "value": "40000",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p62:img0:e1",
+                "p62:img0:e3"
+              ]
+            },
+            {
+              "name": "eps_count",
+              "value": "23",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p62:img0:e1",
+                "p62:img0:e3"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "forward_infer_s_avg_non_graph",
+              "value": "111.18044",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "pinned Memory + cudaEvent 버전 평균",
+              "element_ids": [
+                "p62:img0:e1"
+              ]
+            },
+            {
+              "metric": "forward_infer_s_avg_cudaGraph",
+              "value": "132.985",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "cudaGraph 버전 평균",
+              "element_ids": [
+                "p62:img0:e3"
+              ]
+            },
+            {
+              "metric": "forward_bound_s_avg_non_graph",
+              "value": "890.80258",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "pinned Memory + cudaEvent 버전 평균",
+              "element_ids": [
+                "p62:img0:e1"
+              ]
+            },
+            {
+              "metric": "forward_bound_s_avg_cudaGraph",
+              "value": "894.522",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "cudaGraph 버전 평균",
+              "element_ids": [
+                "p62:img0:e3"
+              ]
+            },
+            {
+              "metric": "backward_total_s_avg_non_graph",
+              "value": "1139.60662",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "pinned Memory + cudaEvent 버전 평균",
+              "element_ids": [
+                "p62:img0:e1"
+              ]
+            },
+            {
+              "metric": "backward_total_s_avg_cudaGraph",
+              "value": "1138.49",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "cudaGraph 버전 평균",
+              "element_ids": [
+                "p62:img0:e3"
+              ]
+            },
+            {
+              "metric": "backward_infer_s_avg_non_graph",
+              "value": "115.39256",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "pinned Memory + cudaEvent 버전 평균",
+              "element_ids": [
+                "p62:img0:e1"
+              ]
+            },
+            {
+              "metric": "backward_infer_s_avg_cudaGraph",
+              "value": "132.962",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "cudaGraph 버전 평균",
+              "element_ids": [
+                "p62:img0:e3"
+              ]
+            },
+            {
+              "metric": "backward_bound_s_avg_non_graph",
+              "value": "1023.05768",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "pinned Memory + cudaEvent 버전 평균",
+              "element_ids": [
+                "p62:img0:e1"
+              ]
+            },
+            {
+              "metric": "backward_bound_s_avg_cudaGraph",
+              "value": "1003.18",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "cudaGraph 버전 평균",
+              "element_ids": [
+                "p62:img0:e3"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p62:e485",
+            "p62:img0:e6",
+            "p62:img0:e7",
+            "p62:img0:e1",
+            "p62:img0:e3"
+          ]
+        },
+        {
+          "statement": "현재 구현(pined Memory + cudaEvent 제어 + D2H memcpy + certify topk 스택화)을 일단 유지하기로 결정했다.",
+          "limits": "향후 infer 크기 계산 주석 처리나 certify heap 복원 등 수정 가능성 열어둠",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "현재 버전 유지 결정",
+            "infer는 vector라서 크지 않아 계산이 필요 없을 수 있음",
+            "certify는 heap으로 다시 바꿔야 할지 불확실"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p62:e486",
+            "p62:img0:e8",
+            "p62:e487",
+            "p62:img0:e9",
+            "p62:img0:e10"
+          ]
+        },
+        {
+          "statement": "auto_LiRPA verification 결과, forward+backward 기준 eps=1e-06에서 T=39969, F=31, ratio=0.999, time=5.04s이며, eps 증가에 따라 T 감소, F 증가, ratio 감소 추세를 보인다.",
+          "limits": "auto_LiRPA 도구 출력 결과이며, 모델/데이터셋 구체적 정보는 별도 확인 필요",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "auto_LiRPA 검증 실행",
+            "forward + backward 모드"
+          ],
+          "observations": [
+            "eps=1e-06: T=39969, F=31, ratio=0.999, time=5.04s",
+            "eps=1e-05: T=39709, F=291, ratio=0.993, time=4.63s",
+            "eps=0.0001: T=37026, F=2974, ratio=0.926, time=4.65s",
+            "eps=0.001: T=18128, F=21872, ratio=0.453, time=4.62s",
+            "eps=0.01: T=0, F=40000, ratio=0.000, time=4.66s",
+            "EPS별 연산 시간 합산: 107.30s",
+            "전체 프로그램 총 소요 시간: 107.32s"
+          ],
+          "parameters": [
+            {
+              "name": "eps_values",
+              "value": "1e-06 ~ 1.0",
+              "value_kind": "range",
+              "element_ids": [
+                "p64:e505"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "auto_lirpa_forward_backward_eps_1e_6_T",
+              "value": "39969",
+              "value_kind": "scalar",
+              "unit": "count",
+              "condition": "eps=1e-06, forward+backward",
+              "element_ids": [
+                "p64:e505"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_backward_eps_1e_6_F",
+              "value": "31",
+              "value_kind": "scalar",
+              "unit": "count",
+              "condition": "eps=1e-06, forward+backward",
+              "element_ids": [
+                "p64:e505"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_backward_eps_1e_6_ratio",
+              "value": "0.999",
+              "value_kind": "scalar",
+              "unit": "ratio",
+              "condition": "eps=1e-06, forward+backward",
+              "element_ids": [
+                "p64:e505"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_backward_eps_1e_6_time",
+              "value": "5.04",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "eps=1e-06, forward+backward",
+              "element_ids": [
+                "p64:e505"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_backward_eps_0_001_T",
+              "value": "18128",
+              "value_kind": "scalar",
+              "unit": "count",
+              "condition": "eps=0.001, forward+backward",
+              "element_ids": [
+                "p64:e505"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_backward_eps_0_001_F",
+              "value": "21872",
+              "value_kind": "scalar",
+              "unit": "count",
+              "condition": "eps=0.001, forward+backward",
+              "element_ids": [
+                "p64:e505"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_backward_eps_0_001_ratio",
+              "value": "0.453",
+              "value_kind": "scalar",
+              "unit": "ratio",
+              "condition": "eps=0.001, forward+backward",
+              "element_ids": [
+                "p64:e505"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_backward_eps_0_001_time",
+              "value": "4.62",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "eps=0.001, forward+backward",
+              "element_ids": [
+                "p64:e505"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_backward_eps_0_01_T",
+              "value": "0",
+              "value_kind": "scalar",
+              "unit": "count",
+              "condition": "eps=0.01, forward+backward",
+              "element_ids": [
+                "p64:e505"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_backward_eps_0_01_F",
+              "value": "40000",
+              "value_kind": "scalar",
+              "unit": "count",
+              "condition": "eps=0.01, forward+backward",
+              "element_ids": [
+                "p64:e505"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_backward_sum_eps_times",
+              "value": "107.30",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "forward+backward 전체 eps 합산",
+              "element_ids": [
+                "p64:e507"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_backward_overall_elapsed",
+              "value": "107.32",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "forward+backward 전체 프로그램 소요 시간",
+              "element_ids": [
+                "p64:e507"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p64:e505",
+            "p64:e507"
+          ]
+        },
+        {
+          "statement": "auto_LiRPA forward-only 검증 결과, eps=1e-06에서 T=39969, F=31, ratio=0.999, time=5.32s이며, eps=0.0002에서 T=34349, F=5651, ratio=0.859, time=4.98s이다.",
+          "limits": "forward-only 모드 결과이며, backward 포함 결과와 별도 비교 필요",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "auto_LiRPA 검증 실행",
+            "forward-only 모드"
+          ],
+          "observations": [
+            "eps=1e-06: T=39969, F=31, ratio=0.999, time=5.32s",
+            "eps=1e-05: T=39709, F=291, ratio=0.993, time=5.03s",
+            "eps=0.0001: T=37026, F=2974, ratio=0.926, time=4.95s",
+            "eps=0.0002: T=34349, F=5651, ratio=0.859, time=4.98s"
+          ],
+          "parameters": [
+            {
+              "name": "mode",
+              "value": "forward-only",
+              "value_kind": "text",
+              "element_ids": [
+                "p64:e511"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "auto_lirpa_forward_only_eps_1e_6_T",
+              "value": "39969",
+              "value_kind": "scalar",
+              "unit": "count",
+              "condition": "eps=1e-06, forward-only",
+              "element_ids": [
+                "p64:e511"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_only_eps_1e_6_F",
+              "value": "31",
+              "value_kind": "scalar",
+              "unit": "count",
+              "condition": "eps=1e-06, forward-only",
+              "element_ids": [
+                "p64:e511"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_only_eps_1e_6_ratio",
+              "value": "0.999",
+              "value_kind": "scalar",
+              "unit": "ratio",
+              "condition": "eps=1e-06, forward-only",
+              "element_ids": [
+                "p64:e511"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_only_eps_1e_6_time",
+              "value": "5.32",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "eps=1e-06, forward-only",
+              "element_ids": [
+                "p64:e511"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_only_eps_0_0002_T",
+              "value": "34349",
+              "value_kind": "scalar",
+              "unit": "count",
+              "condition": "eps=0.0002, forward-only",
+              "element_ids": [
+                "p64:e511"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_only_eps_0_0002_F",
+              "value": "5651",
+              "value_kind": "scalar",
+              "unit": "count",
+              "condition": "eps=0.0002, forward-only",
+              "element_ids": [
+                "p64:e511"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_only_eps_0_0002_ratio",
+              "value": "0.859",
+              "value_kind": "scalar",
+              "unit": "ratio",
+              "condition": "eps=0.0002, forward-only",
+              "element_ids": [
+                "p64:e511"
+              ]
+            },
+            {
+              "metric": "auto_lirpa_forward_only_eps_0_0002_time",
+              "value": "4.98",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "eps=0.0002, forward-only",
+              "element_ids": [
+                "p64:e511"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p64:e511"
+          ]
+        }
+      ],
+      "1": [
+        {
+          "statement": "10주차 세미나 이후 검토 항목으로 backward_only CUDA 커널 구현 완료 및 최적화 적용 여부 탐색 중, cudaGraph 원리 학습, auto lirpa 모델 관련 찬희씨와 소통 및 repo 수령, 컴파일러 팀에 모델 공유 완료가 기록되었다.",
+          "limits": "세미나 이후 검토 항목 메모이며, 일부 항목은 진행 중 상태",
+          "kind": "setup",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "10주차 세미나 이후",
+            "2023년 9월 21일 기준"
+          ],
+          "observations": [
+            "backward_only CUDA 커널 구현 완료, 최적화 적용 여부 탐색 중",
+            "cudaGraph 원리 자세히 알아보기 검토",
+            "찬희씨와 auto lirpa 모델 얘기 완료, repo 수령, 데이터셋/모델 동일하다고 함",
+            "GPU 자원이 남는다는 것 확인, 단일 스트림과 단일 데이터 복사가 현재 큰 병목",
+            "컴파일러 팀에 모델 공유 완료"
+          ],
+          "parameters": [
+            {
+              "name": "meeting_date",
+              "value": "9월 21일 16시",
+              "value_kind": "text",
+              "element_ids": [
+                "p63:e490"
+              ]
+            },
+            {
+              "name": "repo_url",
+              "value": "https://github.com/horangahor/antenna_auto_lirpa",
+              "value_kind": "text",
+              "element_ids": [
+                "p63:e493"
+              ]
+            }
+          ],
+          "measurements": [],
+          "element_ids": [
+            "p63:e490",
+            "p63:e493"
+          ]
+        },
+        {
+          "statement": "적용해볼만한 최적화 기법으로 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수가 식별되었으며, 추가로 warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링이 고려 대상이다.",
+          "limits": "아직 명시적으로 시도하지 않은 기법들임",
+          "kind": "method",
+          "claim_status": "planned",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "공유 메모리 타일링: 글로벌 메모리 대역폭 병목 감소 목적",
+            "루프 언롤링: 분기 검사 비용 감소, ILP 증대",
+            "고속 내장 수학 함수: -use_fast_math 또는 __expf() 등 사용",
+            "추가 고려: warp divergence, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p63:e495",
+            "p63:e496",
+            "p63:e497",
+            "p63:e498",
+            "p63:e499",
+            "p63:e500",
+            "p63:e501"
+          ]
+        },
+        {
+          "statement": "발표 구성 관련 탑다운 방식 채택, 코드는 필요한 만큼만 사용, 핵심 문제 추상화 필요성이 기록되었다.",
+          "limits": "발표 준비 관련 계획/의견임",
+          "kind": "setup",
+          "claim_status": "planned",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "탑다운 구성",
+            "코드는 설명하려는 핵심에 필요할 경우에만 사용",
+            "핵심 문제에 대해 추상화 필요"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p63:e492"
+          ]
+        }
+      ]
+    }
+  }
+}

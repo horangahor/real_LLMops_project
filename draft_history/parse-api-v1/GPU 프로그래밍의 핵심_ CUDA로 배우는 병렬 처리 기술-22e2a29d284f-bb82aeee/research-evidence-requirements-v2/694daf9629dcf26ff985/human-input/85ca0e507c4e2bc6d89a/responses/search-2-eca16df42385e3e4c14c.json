@@ -1,0 +1,471 @@
+{
+  "request_fingerprint": "eca16df42385e3e4c14cfff79dbb7ecbd6f8e95167ec7fcab79613d6cbc10618",
+  "value": {
+    "title": "methods_Q5 재검토 결과",
+    "facts": [
+      {
+        "statement": "FullyConnectedNetwork 구조체는 층 수(num_layers), 각 층의 입출력 차원(layer_in_dim, layer_out_dim), 가중치 행렬(W), 편향 벡터(b), 활성화 타입(act), 그리고 GPU 사전 로드된 가중치 포인터 배열(d_W)을 저장한다.",
+        "limits": "p11:e97",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "GPU 메모리 주소를 저장할 포인터 배열을 신경망에 미리 만들어 둔다.",
+          "포인터 배열 크기는 MAX_LAYERS 기준이므로 신경망이 작으면 공간이 낭비될 수 있다.",
+          "행렬·벡터 구조체 등이 전부 double 기준이므로 float 포인터를 쓰려면 전체 구조를 바꿔야 한다."
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p11:e97",
+          "p11:e98",
+          "p11:e99"
+        ]
+      },
+      {
+        "statement": "pre_upload_weights_to_gpu 함수는 각 층의 가중치 행렬(net->W[i])을 cudaMalloc으로 GPU 메모리를 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하고, 할당된 GPU 메모리 주소를 net->d_W[i]에 저장한다.",
+        "limits": "p12:e100",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "GPU에서 할당한 메모리를 net->d_W[i]에 저장해 이후 가져다 쓸 수 있게 한다.",
+          "가중치만 미리 업로드하는 방식으로 시도했으며, 이때 elapsed time은 149~155ms 범위로 관측되었다.",
+          "bias까지 미리 업로드해도 큰 성능 개선은 없었고, bias는 Vector라 약 4KB 정도로 CPU 연산에도 무리가 없는 수준이라고 판단했다."
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed time",
+            "value": "149~155ms",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "MEMPOOL + Weights PRELOAD ON GPU 모드, 단일 실행",
+            "element_ids": [
+              "p12:e102",
+              "p12:e103"
+            ]
+          },
+          {
+            "metric": "bias 크기",
+            "value": "약 4KB",
+            "value_kind": "range",
+            "unit": "KB",
+            "condition": "bias Vector 기준",
+            "element_ids": [
+              "p12:e104"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p12:e100",
+          "p12:e101",
+          "p12:e102",
+          "p12:e103",
+          "p12:e104"
+        ]
+      },
+      {
+        "statement": "v1-1-2에서 관측된 50ms 단축은 가중치 사전 로드 자체의 연산 활용이 아니라, pre_upload_weights_to_gpu가 타이머 시작 전에 cudaMalloc/cudaMemcpy를 호출하면서 CUDA 컨텍스트 초기화·클럭 부스팅·JIT 컴파일 같은 초기화 비용이 타이머 구간 밖으로 빠져나간 GPU 웜업 효과 때문이었다.",
+        "limits": "p13:e106",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "mempool 버전은 ensure_pool() → 첫 cudaMalloc이 t_start 안에 들어 있어 초기화 비용이 측정에 포함된다.",
+          "preload 버전은 초기화 50ms가 타이머 밖으로 밀려난다.",
+          "d_W를 활용해서 빨라진 것이 아니라 의도치 않게 GPU 웜업 역할을 한 것이다.",
+          "first_try에서 warmup_cublas()를 명시적으로 둔 것도 같은 이유였다.",
+          "v1-1-2는 preload 때문이 아니라 GPU warmup 때문에 50ms가 줄어든 것으로 결론 내렸다."
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "단축 폭",
+            "value": "약 50ms",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "mempool 대비 preload 버전의 단일 실행 시간 차이",
+            "element_ids": [
+              "p13:e108",
+              "p13:e109"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p13:e105",
+          "p13:e106",
+          "p13:e107",
+          "p13:e108",
+          "p13:e109"
+        ]
+      },
+      {
+        "statement": "v1-1-3(crown_test_preload_fix)에서는 GPU 주소 저장 타입을 double*에서 Matrix*로 바꾸고, pre_upload_weights_to_gpu도 memcpy2D 대신 Matrix를 할당·복사하도록 변경해 미리 로드한 가중치를 실제로 활용하게 했으나, my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 거의 없었다.",
+        "limits": "p14:e110",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "변경점은 신경망에 GPU 주소를 저장하던 double* 타입을 Matrix* 타입으로 고친 것이다.",
+          "pre_upload_weights_to_gpu도 memcpy2D 사용이 아니라 Matrix를 할당·복사하도록 바꿨다.",
+          "실제로 주소를 활용하도록 바꾼 함수들이 적용되었다.",
+          "성능 차이가 없어서 100번씩 돌려 누적시간을 확인했으나 별로 차이가 나지 않았다.",
+          "500회 정도 돌리니 5~10ms 정도 우세했으나, 결국 가중치를 미리 로드해 memcpy를 줄이겠다는 접근은 크게 의미를 못 미친다고 판단했다.",
+          "다시 my_lirpa_mempool.cu로 롤백(v1-1-1)했다."
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "누적 시간 차이",
+            "value": "5~10ms 우세",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "500회 반복 기준, v1-1-3 대 기존 preload 버전",
+            "element_ids": [
+              "p14:e116"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p14:e110",
+          "p14:e111",
+          "p14:e112",
+          "p14:e113",
+          "p14:e114",
+          "p14:e115",
+          "p14:e116",
+          "p14:e117",
+          "p14:e118"
+        ]
+      },
+      {
+        "statement": "v1-1-1-1(my_lirpa_mempool_cuBlas.cu)은 메모리풀에 cuBlas를 도입해 matvec·matmul을 기존 자체 계산이 아닌 cuBlas로 수행하도록 변경했으며, 500회 반복 기준 평균 실행당 시간이 기존 v1-1-1 대비 약 30ms 차이났다.",
+        "limits": "p14:e120",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "my_lirpa_mempool_cuBlas.cu에서 cuBlas를 활용하도록 했다.",
+          "500회 반복 총 elapsed time은 61796.584100ms, 평균 123.593168ms로 관측되었다.",
+          "my_lirpa_mempool.cu 500회 평균은 157.511433ms로 관측되었다.",
+          "기존 v1-1-1 대비 평균 실행당 시간이 30ms 차이난다고 기록했다.",
+          "아직 메모리풀 warm up을 안 한 상태이며, 이후 warm up을 진행해 보기로 했다."
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "총 elapsed time",
+            "value": "61796.584100ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "my_lirpa_mempool_cuBlas.cu, 500회 반복",
+            "element_ids": [
+              "p15:e121"
+            ]
+          },
+          {
+            "metric": "평균 실행당 시간",
+            "value": "123.593168ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "my_lirpa_mempool_cuBlas.cu, 500회 반복",
+            "element_ids": [
+              "p15:e121"
+            ]
+          },
+          {
+            "metric": "총 elapsed time",
+            "value": "78755.716600ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "my_lirpa_mempool.cu, 500회 반복",
+            "element_ids": [
+              "p15:e123"
+            ]
+          },
+          {
+            "metric": "평균 실행당 시간",
+            "value": "157.511433ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "my_lirpa_mempool.cu, 500회 반복",
+            "element_ids": [
+              "p15:e124"
+            ]
+          },
+          {
+            "metric": "평균 실행당 시간 차이",
+            "value": "약 30ms",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "cuBlas 버전 대 기존 mempool 버전",
+            "element_ids": [
+              "p15:e122"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p14:e120",
+          "p15:e121",
+          "p15:e122",
+          "p15:e123",
+          "p15:e124",
+          "p15:e125"
+        ]
+      },
+      {
+        "statement": "메모리풀 warm up 여부는 큰 차이를 만들지 않았으며, 오히려 cuBlas가 없는 my_lirpa_mempool 버전이 잘 나올 때는 500회당 평균 120ms대로 나오기도 했다. 이는 처음 메모리풀 할당 비용이 500회 시행에 묻혀 차이가 크지 않을 수 있다고 해석했다.",
+        "limits": "p16:e126",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "warm up 한 것과 안 한 것의 차이가 별로 나지 않았다.",
+          "cuBlas 없는 my_lirpa_mempool 버전이 늦게 나온 것인지, 잘 나올 때는 500회당 평균 120ms대로 나올 때도 있었다.",
+          "처음 메모리풀 할당 비용이 500번 시행에 묻혀 큰 차이가 안 날 수 있다고 추정했다.",
+          "hybrid_v2(v4)를 500번 돌리니 CPU보다 실행 속도가 느려졌다.",
+          "CPU ONLY 모드는 500회 총 39148.493900ms, 평균 78.296988ms로 관측되었다.",
+          "HYBRID V2 모드는 500회 총 49416.462000ms, 평균 98.832924ms로 관측되었다.",
+          "CPU 대비 느린 이유로 CPU 캐시 때문이라는 말이 있다고 언급했다.",
+          "cuBlas도 그렇게 영향을 미치진 못하는 것 같다고 기록했다.",
+          "mempool(v1-1-1)에서 미리 ensure_pool()로 메모리 할당을 하는 것은 큰 영향을 미치지만, cuBlas 사용·warm up과 크게 차이나지 않았다."
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "CPU ONLY 총 elapsed time",
+            "value": "39148.493900ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CPU ONLY (no GPU), 500회 반복",
+            "element_ids": [
+              "p16:e129"
+            ]
+          },
+          {
+            "metric": "CPU ONLY 평균 실행당 시간",
+            "value": "78.296988ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CPU ONLY (no GPU), 500회 반복",
+            "element_ids": [
+              "p16:e129"
+            ]
+          },
+          {
+            "metric": "HYBRID V2 총 elapsed time",
+            "value": "49416.462000ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "HYBRID V2, 500회 반복",
+            "element_ids": [
+              "p17:e130"
+            ]
+          },
+          {
+            "metric": "HYBRID V2 평균 실행당 시간",
+            "value": "98.832924ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "HYBRID V2, 500회 반복",
+            "element_ids": [
+              "p17:e130"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p16:e126",
+          "p16:e127",
+          "p16:e128",
+          "p16:e129",
+          "p17:e130",
+          "p17:e131",
+          "p17:e132",
+          "p17:e133",
+          "p17:e134"
+        ]
+      },
+      {
+        "statement": "mempool + warmup 조합은 매우 효과적이어서 두 요소만으로 거의 200ms를 단축했으며, 단일 실행 기준 mempool + warmup은 152.902900ms, mempool + cuBlas + warmup은 174.978400ms로 관측되었다.",
+        "limits": "p18:e135",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "1회 시도에서는 cuBlas가 더 느린 모습이었다.",
+          "미리 메모리풀을 warm up하는 것은 확실히 효과가 있어 각 버전에서 약 50ms 정도 단축되었다.",
+          "메모리 풀 + warm up 조합만으로 거의 200ms 단축했다고 기록했다.",
+          "50ms만 더 단축하면 CPU를 따라잡을 수 있다고 언급했다.",
+          "지금 제일 중요한 병목은 memcpy라고 판단했다."
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "mempool + warmup elapsed time",
+            "value": "152.902900ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "단일 실행, mempool + warmup",
+            "element_ids": [
+              "p18:e135"
+            ]
+          },
+          {
+            "metric": "mempool + cuBlas + warmup elapsed time",
+            "value": "174.978400ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "단일 실행, mempool + cuBlas + warmup",
+            "element_ids": [
+              "p18:e135"
+            ]
+          },
+          {
+            "metric": "warmup 단축 폭",
+            "value": "약 50ms",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "각 버전에서 warmup 적용 시",
+            "element_ids": [
+              "p18:e136"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p18:e135",
+          "p18:e136",
+          "p19:e137"
+        ]
+      },
+      {
+        "statement": "make_zero_matrix·make_zero_vector를 다시 CPU 실행으로 회귀시키고, 결과를 담을 벡터의 memcpy를 멈추며, 쓸데없이 결과가 저장될 행렬·벡터까지 memcpy하던 것을 제거하니 각각 22~25ms, 10ms 정도 시간이 줄었다.",
+        "limits": "p19:e140",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "my_lirpa_mempool_warmup.cu의 make_zero_matrix, make_zero_vector를 다시 CPU 실행으로 회귀시켰다.",
+          "수식어를 optimizing으로 변경했다.",
+          "영벡터 만들기를 다시 GPU로 해보니 3~5ms 시간이 늘어나서 CPU로 두는 게 좋을 것이라고 판단했다.",
+          "결과를 담을 벡터를 memcpy하는 것을 멈췄다.",
+          "쓸데없이 결과가 저장될 행렬·벡터도 memcpy하던 것을 제거하니 10ms 정도 줄었다.",
+          "mempool + warmup 기준 단일 실행 시간이 128.894800ms로 관측되었다.",
+          "22~25ms 정도 줄었다고 기록했다."
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "mempool + warmup elapsed time",
+            "value": "128.894800ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "단일 실행, CPU 회귀 및 memcpy 제거 적용 후",
+            "element_ids": [
+              "p19:e141"
+            ]
+          },
+          {
+            "metric": "단축 폭",
+            "value": "22~25ms",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "make_zero 계열 CPU 회귀 후",
+            "element_ids": [
+              "p19:e142"
+            ]
+          },
+          {
+            "metric": "단축 폭",
+            "value": "약 10ms",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "결과 벡터·행렬 memcpy 제거 후",
+            "element_ids": [
+              "p20:e144"
+            ]
+          },
+          {
+            "metric": "영벡터 GPU 재시도 증가 폭",
+            "value": "3~5ms 증가",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "영벡터 만들기를 다시 GPU로 수행했을 때",
+            "element_ids": [
+              "p19:e143"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p19:e140",
+          "p19:e141",
+          "p19:e142",
+          "p19:e143",
+          "p20:e144"
+        ]
+      },
+      {
+        "statement": "mempool + warmup + memcpy 제거 적용 후 단일 실행 elapsed time은 115.469900ms로 관측되었으며, 가중치·positive_part/negative_part를 거친 가중치를 GPU 메모리에 미리 올려놓으면 matmul·matvec에서 memcpy가 절반으로 줄고 양수·음수부 가중치를 forward 때마다 계산할 필요가 없어진다.",
+        "limits": "p20:e145",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [
+          "mempool + warmup 기준 단일 실행 시간이 115.469900ms로 관측되었다.",
+          "데이터 읽기는 test_data_1.bin, dim=256으로 성공했다고 기록되었다.",
+          "출력 차원은 16이며, 각 인덱스별 Lower Bound·Upper Bound·Normal Pred(y) 값이 출력되었다.",
+          "가중치, positive_part/negative_part를 거친 가중치를 GPU 메모리에 미리 올려놓으면 matmul·matvec에서 memcpy가 절반으로 줄고, 양수·음수부 가중치는 forward 돌 때마다 계산할 필요가 없어진다.",
+          "이 내용은 차트 캡션으로 정리되어 있다."
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "mempool + warmup elapsed time",
+            "value": "115.469900ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "단일 실행, memcpy 제거까지 적용 후",
+            "element_ids": [
+              "p20:e145"
+            ]
+          },
+          {
+            "metric": "데이터 차원",
+            "value": "256",
+            "value_kind": "scalar",
+            "unit": "dimension",
+            "condition": "test_data_1.bin 읽기 성공",
+            "element_ids": [
+              "p20:e145"
+            ]
+          },
+          {
+            "metric": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "unit": "dimension",
+            "condition": "CROWN Verification 출력",
+            "element_ids": [
+              "p20:e145"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p20:e145",
+          "p20:e146",
+          "p20:e147"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

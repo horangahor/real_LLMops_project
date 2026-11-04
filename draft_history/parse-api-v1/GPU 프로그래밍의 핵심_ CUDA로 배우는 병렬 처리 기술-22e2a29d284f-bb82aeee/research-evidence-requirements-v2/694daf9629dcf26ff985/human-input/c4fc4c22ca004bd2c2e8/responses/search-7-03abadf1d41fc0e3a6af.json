@@ -1,0 +1,42 @@
+{
+  "request_fingerprint": "03abadf1d41fc0e3a6af87b3f9aa67ad4e4e641b1b677177cbaabac138f5ef49",
+  "value": {
+    "title": "전체 처리 파이프라인 단계별 부가 비용 분리 검토 여부",
+    "facts": [
+      {
+        "statement": "전체 처리 파이프라인의 단계를 구분하고 각 단계가 추가한 시간·자원·복잡도 비용을 별도로 측정한 직접 근거는 원문에서 확인되지 않는다.",
+        "limits": "원문은 forward_only, backward_only, forward+backward 등 실행 모드별 총 소요시간(114.78s, 55.78s, 787.88s 등)과 EPS별 연산 시간 합산, 메모리·클록·커널 런치 방식에 대한 논의를 포함하나, 처리 단계 각각이 추가한 비용을 분리 측정한 직접 기록은 없다.",
+        "kind": "limitation",
+        "claim_status": "unclear",
+        "source_origin": "unknown",
+        "conditions": [],
+        "observations": [
+          "forward_only 전체 프로그램 총 소요 시간 114.78s, EPS별 연산 시간 합산 114.77s (p65:e514)",
+          "backward_only 전체 프로그램 총 소요 시간 55.78s, EPS별 연산 시간 합산 55.77s (p66:e523)",
+          "그래프 적용 후 787.8832s로 3가지 방법 중 가장 빠르며 avg 기준 forward 1029s, forward+backward 1138s (p72:e567)",
+          "backward_only가 final_affine 복사(true)로 인해 1회 bound 계산에서 10번 memcpy가 발생하고, false 적용 후 memcpy 6번으로 줄어 2578초→1543초, 그래프 적용 후 787.88s로 감소 (p72:e561, p72:e562, p72:e565, p72:e566, p72:e567)",
+          "pinned memory 실험에서 cudaHostRegister 787.88s vs No Pinning 776.70s로 약 11초 차이, Bound 단계는 Register가 4.37초 빠르나 Infer 단계에서 15.26초 느려짐 (p74:e582)",
+          "GPU 클록 고정(2800MHz) 시도 및 클록 잠금 코드 기록 (p74:e584, p74:e585, p75:e586, p75:e587, p75:e588)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p65:e514",
+          "p66:e523",
+          "p72:e561",
+          "p72:e562",
+          "p72:e565",
+          "p72:e566",
+          "p72:e567",
+          "p74:e582",
+          "p74:e584",
+          "p74:e585",
+          "p75:e586",
+          "p75:e587",
+          "p75:e588"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

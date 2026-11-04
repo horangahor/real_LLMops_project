@@ -1,0 +1,34 @@
+{
+  "id": "3f4efbcb-dfa0-4ed1-8385-b74cc717e3ef",
+  "object": "chat.completion",
+  "created": 1793543353,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"repairs\": {\n    \"3\": []\n  }\n}",
+        "reasoning": "The user wants me to collect atomic facts from the research material. Let me analyze the elements provided and extract the key research facts.\n\nLooking at the elements:\n\n1. **p9:e78** - A table comparing only_GPU vs hybrid versions, listing functions moved from GPU to CPU\n2. **p9:e79** - Placeholder image\n3. **p9:e80** - \"한 줄 요약\" (one-line summary)\n4. **p9:e81** - Summary paragraph about hybrid version\n5. **p10:e82-e93** - Various paragraphs about v4, cuBLAS warmup, weight pre-upload, etc.\n6. **p11:e95** - Figure with CROWN verification output showing elapsed time 228.585200 ms\n7. **p11:e96-e99** - More paragraphs about weight pre-upload, GPU pointer arrays, float vs double\n8. **p10:enh:e0-e13** - Enhanced page image extractions\n9. **p10:review:e0-e13** - Review extractions\n10. **p10:img0:e0-e1** - PDF image gap OCR\n\nThe bad_facts entry #3 already captures the memory pool size rationale.\n\nLet me extract the key facts:\n\n**From p9:e78 (table):**\n- only_GPU had d_mat[4] + d_vec[2] (4 matrices, 2 vectors pre-allocated)\n- hybrid has only d_A, d_B, d_C (3 matrices, matmul only)\n- Functions moved from GPU to CPU in hybrid:\n  - make_zero_matrix: GPU (cudaMemset) → CPU (constructor initialization)\n  - make_zero_vector: GPU (cudaMemset) → CPU (constructor initialization)\n  - make_eye: GPU kernel → CPU for loop, O(n)\n  - mat_add: GPU kernel + memory pool → CPU for loop, O(n²)\n  - positive_part: GPU kernel + memory pool → CPU for loop, O(n²)\n  - negative_part: GPU kernel + memory pool → CPU for loop, O(n²)\n  - rowwise_scale: GPU kernel + memory pool → CPU for loop, O(n²)\n  - affine_min: GPU kernel → CPU for loop, O(n²)\n  - affine_max: GPU kernel → CPU for loop, O(n²)\n  - matmul: cuBLAS + memory pool → cuBLAS + memory pool (same), O(n³)\n\n**From p9:e81:**\n- hybrid keeps only matmul (cuBLAS) from only_GPU, moves all other GPU kernels to CPU for loops\n- Nothing new added; rather GPU code was deleted (reverted to CPU), and it became faster\n\n**From p10:e83 (v4):**\n- cuBLAS warmup: call cuBLAS before timing (dummy matmul call since matmul contains cuBLAS)\n\n**From p10:e84:**\n- cuBLAS definition: NVIDIA library for fast linear algebra on NVIDIA GPUs\n\n**From p10:e85:**\n- Weight (W) pre-upload to GPU: weights are fixed, so upload when loading network (eliminate per-call memcpy in matmul)\n\n**From p10:e86:**\n- For partial matrices like 16x491, copy only needed parts instead of full 512x512 (2MB) memcpy\n\n**From p10:e87:**\n- 85ms (appears to be a result time)\n\n**From p10:e88:**\n- // crown_test_op_hybrid_v2\n\n**From p10:e90 (v1-1):**\n- 3 vector operations (vec_add, sub, mat) moved to CPU, 300ms\n- Author's note: v1-1 was flawed because memory pool and cuBLAS weren't set up yet, so moving to CPU would just converge to v0 results, making accurate comparison impossible. Should initialize GPU to the extent possible before switching to CPU for comparison.\n\n**From p10:e92 (v1-1-1):**\n- Memory pool only introduced, result 205~250ms\n\n**From p11:e95 (figure):**\n- CROWN Verification with eps = 1e-06\n- Elapsed time: 228.585200 ms\n- Output Dimension: 16\n- Shows lower bound, upper bound, normal prediction values for 16 indices\n\n**From p11:e96 (v1-1-2):**\n- Weight pre-upload enabled, (149~155ms)\n\n**From p11:e97:**\n- struct FullyConnectedNetwork with d_W[MAX_LAYERS] for GPU pre-loaded weight pointers\n\n**From p11:e98:**\n- Pointer array sized by MAX_LAYERS, may waste space if network is smaller\n\n**From p11:e99:**\n- float has faster access than double, but matrices/vectors are all double-based, so switching to float pointers would require overall restructuring\n\nNow let me organize these into atomic facts. I need to be careful about:\n- Not combining independent experiments into one fact\n- Preserving conditions, versions, measurements\n- Distinguishing documented_method from interpretation from hypothesis\n- Not converting AI advice to measured results\n\nLet me create the facts array:\n\n1. Hybrid version comparison table - functions moved from GPU to CPU\n2. GPU pool structure reduction\n3. One-line summary of hybrid\n4. v4 cuBLAS warmup method\n5. cuBLAS definition\n6. Weight pre-upload to GPU\n7. Partial copy optimization\n8. 85ms result (context needed)\n9. v1-1 experiment: 3 vector ops to CPU, 300ms\n10. v1-1 author's self-critique\n11. v1-1-1 memory pool only: 205~250ms\n12. Memory pool size rationale (already in bad_facts, but I should include it properly)\n13. CROWN verification output: eps=1e-06, elapsed 228.585200ms, output dim 16\n14. v1-1-2 weight pre-upload: 149~155ms\n15. FullyConnectedNetwork struct with d_W pointers\n16. MAX_LAYERS pointer array waste concern\n17. float vs double consideration\n\nLet me structure these properly now."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 5713,
+    "completion_tokens": 1408,
+    "total_tokens": 7121,
+    "prompt_tokens_details": {
+      "cached_tokens": 5440,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 1391,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

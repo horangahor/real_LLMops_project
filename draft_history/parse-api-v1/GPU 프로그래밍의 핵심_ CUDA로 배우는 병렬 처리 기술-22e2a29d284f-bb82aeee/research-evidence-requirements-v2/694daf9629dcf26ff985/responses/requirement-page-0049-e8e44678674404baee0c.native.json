@@ -1,0 +1,33 @@
+{
+  "id": "45ad275d-89c6-4df0-94ab-00de2147adf5",
+  "object": "chat.completion",
+  "created": 1793695722,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"facts\": [{\"statement\": \"커맨드라인 실행 인자를 받아 forward 또는 backward를 실행하도록 코드를 변경한 후 실행 결과가 2164s로, 기존 backward 실행 결과 1560s보다 느려졌다.\", \"limits\": \"현재 페이지는 코드 변경 사실과 두 실행 결과의 수치만 기록하며, 느려진 원인에 대한 확정적 분석은 포함하지 않는다.\", \"kind\": \"result\", \"claim_status\": \"observed\", \"source_origin\": \"research_note\", \"conditions\": [\"커맨드라인 실행 인자에 따라 forward 또는 backward 실행하도록 코드 변경\", \"기존 backward 실행 결과 1560s\", \"변경 후 실행 결과 2164s\"], \"observations\": [\"변경 후 실행 결과가 기존보다 느려짐\"], \"parameters\": [], \"measurements\": [{\"metric\": \"기존 backward 실행 시간\", \"value\": \"1560\", \"value_kind\": \"scalar\", \"unit\": \"s\", \"condition\": \"기존 번거롭게 backward 할 때의 실행 결과, 40000개 데이터 테스트 기준 추정(eps_list 기반 sweep)\", \"element_ids\": [\"p48:e343\", \"p48:e342\"]}, {\"metric\": \"변경 후 실행 시간\", \"value\": \"2164\", \"value_kind\": \"scalar\", \"unit\": \"s\", \"condition\": \"커맨드라인 실행 인자로 forward/backward 선택하도록 코드 변경 후 실행 결과, 40000개 데이터 테스트 기준 추정(eps_list 기반 sweep)\", \"element_ids\": [\"p48:e344\", \"p48:img2:e1\"]}], \"element_ids\": [\"p48:e343\", \"p48:e344\", \"p48:e342\", \"p48:img2:e1\"], \"requirement_ids\": [\"introduction_Q5\", \"methods_Q7\", \"methods_Q9\", \"evaluation_Q5\", \"limitations_Q5\"], \"supplemental_reason\": \"코드 변경 전후 실행 시간 비교 결과로, 공정 비교 조건 및 비교 어려움 관련 근거로 보존한다.\"}, {\"statement\": \"eps_list 기반 sweep 실행 결과 eps=9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00에서 모두 T=0, F=40000, ratio=0.0000으로 기록되었고, total elapsed는 1560.37s이며 결과는 results_cuda.csv에 저장되었다.\", \"limits\": \"이 결과는 단일 실행 기록이며, 반복 측정 통계나 조건별 분리 해석은 포함하지 않는다.\", \"kind\": \"result\", \"claim_status\": \"observed\", \"source_origin\": \"research_note\", \"conditions\": [\"eps_list 기반 sweep 실행\", \"eps=9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00\", \"각 eps에서 T=0, F=40000, ratio=0.0000\", \"40000개 데이터 기준 추정\"], \"observations\": [\"모든 eps에서 인증 성공(T) 0건, 실패(F) 40000건, ratio 0.0000\"], \"parameters\": [{\"name\": \"eps 값\", \"value\": \"9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00\", \"value_kind\": \"text\", \"element_ids\": [\"p48:e342\"]}, {\"name\": \"데이터 규모\", \"value\": \"40000\", \"value_kind\": \"scalar\", \"element_ids\": [\"p48:e342\"]}], \"measurements\": [{\"metric\": \"total elapsed\", \"value\": \"1560.37\", \"value_kind\": \"scalar\", \"unit\": \"s\", \"condition\": \"eps_list 기반 sweep 실행, eps=9.0e-05/1.0e-02/1.0e-01/1.0e+00, 각 eps T=0 F=40000 ratio=0.0000\", \"element_ids\": [\"p48:e342\"]}, {\"metric\": \"eps=9.0e-05 결과\", \"value\": \"T=0, F=40000, ratio=0.0000\", \"value_kind\": \"scalar\", \"unit\": \"text\", \"condition\": \"eps_list 기반 sweep 실행\", \"element_ids\": [\"p48:e342\"]}, {\"metric\": \"eps=1.0e-02 결과\", \"value\": \"T=0, F=40000, ratio=0.0000\", \"value_kind\": \"scalar\", \"unit\": \"text\", \"condition\": \"eps_list 기반 sweep 실행\", \"element_ids\": [\"p48:e342\"]}, {\"metric\": \"eps=1.0e-01 결과\", \"value\": \"T=0, F=40000, ratio=0.0000\", \"value_kind\": \"scalar\", \"unit\": \"text\", \"condition\": \"eps_list 기반 sweep 실행\", \"element_ids\": [\"p48:e342\"]}, {\"metric\": \"eps=1.0e+00 결과\", \"value\": \"T=0, F=40000, ratio=0.0000\", \"value_kind\": \"scalar\", \"unit\": \"text\", \"condition\": \"eps_list 기반 sweep 실행\", \"element_ids\": [\"p48:e342\"]}], \"element_ids\": [\"p48:e342\"], \"requirement_ids\": [\"methods_Q3\", \"methods_Q14\", \"evaluation_Q1\", \"evaluation_Q9\"], \"supplemental_reason\": \"eps_list sweep 실행 결과와 데이터 규모·분할 조건을 함께 보존한다.\"}, {\"statement\": \"실행 코드에서 eps_list에 대해 이중 루프를 돌며 각 데이터 i에 대해 network_forward로 정방향 통과 후, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정(certify_topk) 결과에 따라 Ht_count 또는 f_count를 증가시킨다.\", \"limits\": \"현재 페이지는 코드 구조와 분기 조건만 기록하며, 실제 호출 횟수나 성능 수치는 포함하지 않는다.\", \"kind\": \"method\", \"claim_status\": \"documented_method\", \"source_origin\": \"research_note\", \"conditions\": [\"eps_list 기반 이중 루프\", \"network_forward 정방향 통과\", \"method=0: lirpa_forward_bound_impl 호출\", \"method=1: lirpa_backward_bound 호출\", \"certify_topk 판정 후 Ht_count/f_count 증가\"], \"observations\": [], \"parameters\": [{\"name\": \"method 분기\", \"value\": \"0: forward bound, 1: backward bound\", \"value_kind\": \"text\", \"element_ids\": [\"p48:e340\"]}], \"measurements\": [], \"element_ids\": [\"p48:e340\"], \"requirement_ids\": [\"methods_Q1\", \"methods_Q5\", \"methods_Q7\", \"methods_Q9\"], \"supplemental_reason\": \"실행 루프 구조와 method 분기 조건을 방법 근거로 보존한다.\"}, {\"statement\": \"실행 시간 측정 시작 지점을 total_start = std::chrono::high_resolution_clock::now()로 잡고, nvtxRangePushA(\\\"CROWN_SWEEP\\\")로 범위를 표시한 뒤 eps × 데이터 이중 루프를 수행한다.\", \"limits\": \"현재 페이지는 측정 시작 지점과 범위 표시 코드만 기록하며, 실제 측정 구간별 분리 수치는 포함하지 않는다.\", \"kind\": \"method\", \"claim_status\": \"documented_method\", \"source_origin\": \"research_note\", \"conditions\": [\"전체 시간 측정 시작 지점 설정\", \"nvtxRangePushA(\\\"CROWN_SWEEP\\\") 범위 표시\", \"eps × 데이터 이중 루프\"], \"observations\": [], \"parameters\": [], \"measurements\": [], \"element_ids\": [\"p48:e340\"], \"requirement_ids\": [\"methods_Q6\", \"methods_Q8\"], \"supplemental_reason\": \"전체 시간 측정 시작 지점과 nvtx 범위 표시 방식을 방법 근거로 보존한다.\"}, {\"statement\": \"거의 600초(10분) 느려진 현상에 대해, switch의 스코프 바깥에 CROWN 결과를 담을 구조체를 선언해두고 반복문 내부에서 CROWN을 돌려 결과를 담고 있는데, 이 부분이 값에 의한 복사라서 그 구조체를 전부 복사하느라고 느려졌으며, 92만 번 복사하면 꽤 크다고 기록되었다.\", \"limits\": \"현재 페이지는 느려진 원인에 대한 기록자의 해석과 복사 횟수 추정만 포함하며, 정량적 프로파일링 분리 측정 결과는 포함하지 않는다.\", \"kind\": \"result\", \"claim_status\": \"interpretation\", \"source_origin\": \"research_note\", \"conditions\": [\"커맨드라인 인자 방식 변경 후 약 600초 느려짐\", \"switch 스코프 바깥에 결과 구조체 선언\", \"반복문 내부에서 CROWN 결과 저장\", \"값에 의한 복사로 구조체 전체 복사 발생\", \"92만 번 복사 시 큰 비용\"], \"observations\": [\"구조체 복사가 느려진 원인으로 추정됨\"], \"parameters\": [], \"measurements\": [], \"element_ids\": [\"p49:e345\", \"p49:e346\", \"p49:e348\", \"p49:e349\", \"p49:e350\"], \"requirement_ids\": [\"introduction_Q5\", \"methods_Q7\", \"methods_Q13\", \"evaluation_Q5\", \"limitations_Q5\", \"limitations_Q6\"], \"supplemental_reason\": \"실행 시간 증가 원인과 복사 기반 해석, 요인 분리 해석 한계를 함께 보존한다.\"}], \"existing_links\": []}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 48765,
+    "completion_tokens": 2081,
+    "total_tokens": 50846,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

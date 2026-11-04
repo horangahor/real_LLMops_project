@@ -1,0 +1,163 @@
+{
+  "request_fingerprint": "060b54ce5f1b2f74b9f781ca1d8520852c2cf0b0fde9850df6449e8a8c0fc659",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "커널 퓨전 전 cuSPARSE를 제외한 dense baseline 측정에서 '거의 40ms로 회귀'했으며, 실제 측정값은 38.580600 ms로 확인되었다.",
+          "limits": "해당 측정은 cuSPARSE를 제외한 dense baseline 기준이며, network_forward가 아직 GPU 파이프라인이 아니라 최적화가 안 된 상태라는 점이 함께 언급되었다. cuSPARSE SpMV/SpMM은 descriptor와 buffer 처리 비용 때문에 현재 모델 크기와 호출 패턴에서는 계산 이득보다 setup/launch 오버헤드가 더 커서 제외되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "커널 퓨전 전",
+            "cuSPARSE 제외 dense baseline",
+            "CROWN Verification (eps = 1e-06)",
+            "mempool + warmup 포함"
+          ],
+          "observations": [
+            "거의 40ms로 회귀하여 문제 상황으로 인식됨",
+            "실제 측정값은 38.580600 ms",
+            "network_forward는 신경망의 일반 추론값을 출력하는데 아직 GPU 파이프라인이 아니라 최적화가 안 되어 있음",
+            "cuSPARSE SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가됨",
+            "모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 큼",
+            "SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황",
+            "공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 권장됨"
+          ],
+          "parameters": [
+            {
+              "name": "eps",
+              "value": "1e-06",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p30:e202"
+              ]
+            },
+            {
+              "name": "Output Dimension",
+              "value": "16",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p30:e202"
+              ]
+            },
+            {
+              "name": "mempool + warmup",
+              "value": "포함",
+              "value_kind": "text",
+              "element_ids": [
+                "p30:e202"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "Elapsed time (커널 퓨전 전 dense baseline)",
+              "value": "38.5806",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "커널 퓨전 전, cuSPARSE 제외 dense baseline",
+              "element_ids": [
+                "p30:e202",
+                "p30:enh:e0"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p30:e202",
+            "p30:e203",
+            "p30:e204",
+            "p30:e205",
+            "p30:e206",
+            "p30:enh:e0",
+            "p30:enh:e1",
+            "p30:enh:e2",
+            "p30:enh:e3",
+            "p30:enh:e4",
+            "p30:enh:e5",
+            "p30:enh:e6",
+            "p30:enh:e7",
+            "p30:enh:e8"
+          ]
+        }
+      ],
+      "1": [
+        {
+          "statement": "커널 퓨전 적용 대상에서 backward_bound_gpu()에만 먼저 진행한 후 23.925200 ms가 측정되었으며, 작성자는 이를 '23ms 후반대'로 표현하고 컴퓨터 사정에 따라 26ms까지 뛰는 경우도 있다고 부연했다.",
+          "limits": "정확한 단일 측정값이 아니라 '23ms 후반대'라는 범위로 표현되었으며, 컴퓨터 사정에 따라 26ms까지 뛰는 경우도 있다고 언급되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "커널 퓨전 적용",
+            "backward_bound_gpu()에만 우선 진행",
+            "CROWN Verification (eps = 1e-06)",
+            "mempool + warmup 포함"
+          ],
+          "observations": [
+            "커널 퓨전 전 baseline은 거의 40ms로 회귀한 상태였음 (38.580600 ms)",
+            "backward_bound_gpu()에만 커널 퓨전 진행 후 23.925200 ms 측정",
+            "컴퓨터 사정에 따라 26ms까지 뛰는 경우도 있으나 중요한건 23ms 정도가 보인다는 점"
+          ],
+          "parameters": [
+            {
+              "name": "eps",
+              "value": "1e-06",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p31:e214"
+              ]
+            },
+            {
+              "name": "Output Dimension",
+              "value": "16",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p31:e214"
+              ]
+            },
+            {
+              "name": "mempool + warmup",
+              "value": "포함",
+              "value_kind": "text",
+              "element_ids": [
+                "p31:e214"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "Elapsed time (backward_bound_gpu 커널 퓨전 후)",
+              "value": "23.9252",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "커널 퓨전 backward_bound_gpu()에만 진행, CROWN Verification eps=1e-06",
+              "element_ids": [
+                "p31:e214",
+                "p31:review:e6"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p31:e208",
+            "p31:e209",
+            "p31:e210",
+            "p31:e211",
+            "p31:e212",
+            "p31:e213",
+            "p31:e214",
+            "p31:e215",
+            "p31:review:e0",
+            "p31:review:e1",
+            "p31:review:e2",
+            "p31:review:e3",
+            "p31:review:e4",
+            "p31:review:e5",
+            "p31:review:e6",
+            "p31:review:e7"
+          ]
+        }
+      ]
+    }
+  }
+}

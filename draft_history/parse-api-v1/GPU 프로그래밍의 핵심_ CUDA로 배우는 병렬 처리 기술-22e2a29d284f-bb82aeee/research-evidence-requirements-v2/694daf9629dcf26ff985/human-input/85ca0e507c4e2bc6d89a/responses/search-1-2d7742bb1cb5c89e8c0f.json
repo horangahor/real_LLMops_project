@@ -1,0 +1,624 @@
+{
+  "request_fingerprint": "2d7742bb1cb5c89e8c0f89391c220f96f51b0b95aa0dca24141097de4486bb0a",
+  "value": {
+    "title": "CUDA 기반 CROWN 검증 구현의 구성 요소 역할과 결합 방식",
+    "facts": [
+      {
+        "statement": "CUDA는 C/C++ 언어에서 GPU 동작을 가능하게 하는 컴파일러(nvcc) 기반 환경이며, CUDA 동작이 필요한 코드만 따로 바꾸어 nvcc로 컴파일할 수 있다.",
+        "limits": "CUDA 버전 13.3(V13.3.73) 기준",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CUDA 툴킷 설치 환경",
+          "nvcc 컴파일러 사용"
+        ],
+        "observations": [
+          "nvcc --version 결과: Cuda compilation tools, release 13.3, V13.3.73",
+          "CUDA 동작이 필요한 코드만 별도 수정해도 nvcc 컴파일 가능"
+        ],
+        "parameters": [
+          {
+            "name": "CUDA 버전",
+            "value": "13.3.73",
+            "value_kind": "version",
+            "element_ids": [
+              "p1:e1"
+            ]
+          },
+          {
+            "name": "컴파일러",
+            "value": "nvcc (NVIDIA C Compiler)",
+            "value_kind": "text",
+            "element_ids": [
+              "p1:e4"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p1:e0",
+          "p1:e1",
+          "p1:e4"
+        ]
+      },
+      {
+        "statement": "lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 kernel 함수(device, 즉 GPU에서 동작하는 코드)로 바꾸는 방식으로 CUDA 포팅을 시도했다.",
+        "limits": "포팅 초기 접근 방식에 대한 기술",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "기존 cpp 코드 기반",
+          "병렬 연산이 필요한 부분만 kernel로 변경"
+        ],
+        "observations": [
+          "mat_add부터 배열 연산을 CUDA로 포팅 시도",
+          "kernel 함수는 GPU에서 동작하는 코드로 정의"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e2",
+          "p1:e3",
+          "p1:e5",
+          "p1:e16"
+        ]
+      },
+      {
+        "statement": "main 함수는 epsilon을 입력받고 시스템 호출 인자로 eps 값을 변경할 수 있으며, self_test_relaxations와 run_xor_demo를 호출한다.",
+        "limits": "진입점 함수 분석 내용",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "main 함수 분석 기준"
+        ],
+        "observations": [
+          "epsilon 입력 및 시스템 호출 인자로 eps 변경 가능",
+          "self_test_relaxations는 안정성 테스트용 코드로 흐름에 큰 영향 없음",
+          "중요한 건 run_xor_demo"
+        ],
+        "parameters": [
+          {
+            "name": "epsilon",
+            "value": "입력 파라미터 (시스템 호출 인자로 변경 가능)",
+            "value_kind": "text",
+            "element_ids": [
+              "p1:e8"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p1:e6",
+          "p1:e7",
+          "p1:e8",
+          "p1:e10",
+          "p1:e11",
+          "p1:e12",
+          "p1:e13"
+        ]
+      },
+      {
+        "statement": "최종 포팅, 컴파일, 실행 검증이 완료되었으며 동일하게 동작함을 확인했다.",
+        "limits": "포팅 완료 및 검증 결과",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CUDA 포팅 완료 후"
+        ],
+        "observations": [
+          "최종 포팅, 컴파일, 실행 검증 완료",
+          "동일하게 동작함 확인"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "동작 검증",
+            "value": "동일하게 동작함",
+            "value_kind": "scalar",
+            "unit": "확인",
+            "condition": "최종 포팅 후",
+            "element_ids": [
+              "p2:e18"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p2:e18"
+        ]
+      },
+      {
+        "statement": "CROWN 검증은 신경망 정방향 통과(forward) 및 CROWN 알고리즘(backward) 계산으로 구성되며, CPU ONLY 버전과 GPU 버전을 만들어 계산 시간을 측정했다.",
+        "limits": "측정 대상 및 조건",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CPU ONLY 계산 버전과 GPU 버전 비교",
+          "신경망 정방향 통과 & CROWN 알고리즘(backward) 계산 시간 측정"
+        ],
+        "observations": [
+          "CPU ONLY 버전: Elapsed time 101.237800 ms",
+          "GPU 버전(my_lirpa.cu): Elapsed time 353.057200 ms",
+          "GPU OPTIMIZED 버전(cuBLAS + Pool): Elapsed time 229.691800 ms",
+          "HYBRID 버전(matmul=GPU, rest=CPU): Elapsed time 201.670100 ms",
+          "HYBRID V2 버전: Elapsed time 85.785300 ms"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p3:e35",
+              "p4:e37",
+              "p5:e43",
+              "p6:e48",
+              "p7:e54"
+            ]
+          },
+          {
+            "name": "Output Dimension",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p3:e35",
+              "p4:e37",
+              "p5:e43",
+              "p6:e48",
+              "p7:e54"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "CPU ONLY elapsed time",
+            "value": "101.237800",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "eps=1e-06, Output Dimension=16",
+            "element_ids": [
+              "p3:e35"
+            ]
+          },
+          {
+            "metric": "GPU only (my_lirpa.cu) elapsed time",
+            "value": "353.057200",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "eps=1e-06, Output Dimension=16",
+            "element_ids": [
+              "p4:e37"
+            ]
+          },
+          {
+            "metric": "GPU OPTIMIZED (cuBLAS + Pool) elapsed time",
+            "value": "229.691800",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "eps=1e-06, Output Dimension=16",
+            "element_ids": [
+              "p5:e43"
+            ]
+          },
+          {
+            "metric": "HYBRID (matmul=GPU, rest=CPU) elapsed time",
+            "value": "201.670100",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "eps=1e-06, Output Dimension=16",
+            "element_ids": [
+              "p6:e48"
+            ]
+          },
+          {
+            "metric": "HYBRID V2 elapsed time",
+            "value": "85.785300",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "eps=1e-06, Output Dimension=16",
+            "element_ids": [
+              "p7:e54"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p3:e33",
+          "p3:e34",
+          "p3:e35",
+          "p4:e37",
+          "p5:e43",
+          "p6:e48",
+          "p7:e54"
+        ]
+      },
+      {
+        "statement": "GPU OPTIMIZED 버전에서는 cuBLAS로 matmul 대체, 메모리 풀 사용(함수 호출마다 메모리 할당/해제 제거), 벡터 연산을 CPU로 바꾸는 최적화가 적용되었다.",
+        "limits": "최적화 적용 내용",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "GPU OPTIMIZED 버전(crown_test_op_only_GPU.cu) 기준",
+          "컴파일 옵션에 -lcublas 포함"
+        ],
+        "observations": [
+          "cuBLAS로 matmul 대체",
+          "메모리 풀 사용: 미리 큰 공간 할당, 함수 호출마다 메모리 할당/해제 없음",
+          "벡터 연산을 CPU로 변경",
+          "229.691ms로 100ms 정도 줄었지만 여전히 CPU보다 느림"
+        ],
+        "parameters": [
+          {
+            "name": "컴파일 옵션",
+            "value": "-lcublas",
+            "value_kind": "text",
+            "element_ids": [
+              "p4:e41"
+            ]
+          },
+          {
+            "name": "사용 라이브러리",
+            "value": "cuBLAS (NVIDIA GPU 선형대수 가속 라이브러리)",
+            "value_kind": "text",
+            "element_ids": [
+              "p4:e42",
+              "p6:e52"
+            ]
+          },
+          {
+            "name": "최적화 적용 후 elapsed time",
+            "value": "229.691800 ms",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p5:e43"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "GPU OPTIMIZED elapsed time",
+            "value": "229.691800",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuBLAS + Pool 적용, eps=1e-06",
+            "element_ids": [
+              "p5:e43"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p4:e41",
+          "p4:e42",
+          "p5:e44",
+          "p5:e45",
+          "p5:e46"
+        ]
+      },
+      {
+        "statement": "HYBRID 버전은 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스이다.",
+        "limits": "HYBRID 버전 구성 및 변경점",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "only_GPU와 hybrid 비교 기준",
+          "GPU 풀 구조체 축소"
+        ],
+        "observations": [
+          "only_GPU에서 GPU로 돌리던 함수들 중 hybrid에서 CPU로 되돌린 함수들: make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max",
+          "matmul은 cuBLAS + 메모리풀로 동일 유지",
+          "GPU 풀 구조체 축소: only_GPU는 d_mat[4]+d_vec[2], hybrid는 d_A, d_B, d_C 3개만(matmul 전용)",
+          "201.670ms로 조금 줄었으나 여전히 CPU보다 느림"
+        ],
+        "parameters": [
+          {
+            "name": "HYBRID elapsed time",
+            "value": "201.670100 ms",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p6:e48"
+            ]
+          },
+          {
+            "name": "GPU 풀 구조체 only_GPU",
+            "value": "d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당)",
+            "value_kind": "text",
+            "element_ids": [
+              "p9:e78"
+            ]
+          },
+          {
+            "name": "GPU 풀 구조체 hybrid",
+            "value": "d_A, d_B, d_C 딱 3개 (matmul 전용)",
+            "value_kind": "text",
+            "element_ids": [
+              "p9:e78"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "HYBRID elapsed time",
+            "value": "201.670100",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "matmul=GPU, rest=CPU, eps=1e-06",
+            "element_ids": [
+              "p6:e48"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p6:e48",
+          "p9:e78",
+          "p9:e81"
+        ]
+      },
+      {
+        "statement": "HYBRID V2에서는 cuBLAS 미리 예열(더미 matmul 호출), 가중치(W) GPU에 사전 업로드(네트워크 로드 시 미리 업로드, matmul 호출마다 memcpy 삭제), 필요한 부분만 복사(16x491 행렬 등)하는 방안이 적용되었다.",
+        "limits": "HYBRID V2 적용 방안",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "HYBRID V2 버전 기준",
+          " crown_test_op_hybrid_v2"
+        ],
+        "observations": [
+          "cuBLAS 예열: 계산 전 더미 matmul 호출",
+          "가중치 사전 업로드: 고정 가중치 네트워크 로드 시 GPU 업로드, 호출마다 복사 과정 삭제",
+          "필요한 부분만 복사: 16x491 행렬 등 부분 복사",
+          "85ms로 드디어 CPU보다 빨라짐"
+        ],
+        "parameters": [
+          {
+            "name": "HYBRID V2 elapsed time",
+            "value": "85.785300 ms",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p7:e54"
+            ]
+          },
+          {
+            "name": "적용 버전",
+            "value": "crown_test_op_hybrid_v2",
+            "value_kind": "text",
+            "element_ids": [
+              "p10:e88"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "HYBRID V2 elapsed time",
+            "value": "85.785300",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuBLAS 예열 + 가중치 사전 업로드 + 부분 복사, eps=1e-06",
+            "element_ids": [
+              "p7:e54"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p6:e51",
+          "p6:e52",
+          "p6:e53",
+          "p7:e54",
+          "p7:e55",
+          "p10:e83",
+          "p10:e84",
+          "p10:e85",
+          "p10:e86"
+        ]
+      },
+      {
+        "statement": "미적용 방안으로는 cuSPARSE 대체(희소행렬 계산), memcpy 제거 및 GPU 내 커널 퓨전, CUDA stream을 통한 Memcpy와 커널 실행 겹치기 실행이 검토되었으나 일부는 보류되었다.",
+        "limits": "검토되었으나 미적용/보류된 방안",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE는 적용해보았으나 cuBlas가 더 빠름",
+          "커널 퓨전 및 CUDA stream은 보류"
+        ],
+        "observations": [
+          "cuSPARSE: 희소행렬 계산에서 cuBLAS보다 효과적일 수 있으나 CSR 변환 오버헤드로 cuBlas가 더 빠름 (crown_test_op_hybrid_v2_Sparse)",
+          "memcpy 제거 및 GPU 내 커널 퓨전: 코드 갈아엎어야 하므로 보류",
+          "CUDA stream: Memcpy와 커널 실행 겹치기 가능하나 아직 몰라서 보류"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p7:e57"
+        ]
+      },
+      {
+        "statement": "버전별 elapsed time 정리: v0(CPU 단독) 96ms, v1(모든 병렬처리 함수를 커널 함수로 변경) 355ms, v2(벡터 연산 CPU 처리, 메모리풀, cuBlas 도입) 229ms, v3(CPU/GPU 하이브리드, 풀 구조체 축소) 200ms, v4(HYBRID V2) 85ms.",
+        "limits": "버전별 성능 요약",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "각 버전별 측정 기준",
+          "eps=1e-06"
+        ],
+        "observations": [
+          "v0: 단독 CPU 처리, 96ms",
+          "v1: 모든 병렬처리 함수를 커널 함수로 바꿈, 355ms (my_lirpa.cu)",
+          "v2: 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입, 229ms (crown_test_op_only_GPU.cu)",
+          "v3: CPU, GPU 하이브리드, 풀 구조체 축소, 200ms (crown_test_op_hybrid.cu)",
+          "v4: HYBRID V2, 85ms (crown_test_op_hybrid_v2)"
+        ],
+        "parameters": [
+          {
+            "name": "v0 elapsed time",
+            "value": "96 ms",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p8:e73"
+            ]
+          },
+          {
+            "name": "v1 elapsed time",
+            "value": "355 ms",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p8:e75"
+            ]
+          },
+          {
+            "name": "v2 elapsed time",
+            "value": "229 ms",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p8:e76"
+            ]
+          },
+          {
+            "name": "v3 elapsed time",
+            "value": "200 ms",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p8:e77"
+            ]
+          },
+          {
+            "name": "v4 elapsed time",
+            "value": "85 ms",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p10:e87"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "v0 elapsed time",
+            "value": "96",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "단독 CPU 처리, eps=1e-06",
+            "element_ids": [
+              "p8:e73"
+            ]
+          },
+          {
+            "metric": "v1 elapsed time",
+            "value": "355",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "모든 병렬처리 함수를 커널 함수로 변경, eps=1e-06",
+            "element_ids": [
+              "p8:e75"
+            ]
+          },
+          {
+            "metric": "v2 elapsed time",
+            "value": "229",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "벡터 연산 CPU 처리, 메모리풀, cuBlas 도입, eps=1e-06",
+            "element_ids": [
+              "p8:e76"
+            ]
+          },
+          {
+            "metric": "v3 elapsed time",
+            "value": "200",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CPU/GPU 하이브리드, 풀 구조체 축소, eps=1e-06",
+            "element_ids": [
+              "p8:e77"
+            ]
+          },
+          {
+            "metric": "v4 elapsed time",
+            "value": "85",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "HYBRID V2, eps=1e-06",
+            "element_ids": [
+              "p10:e87"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p8:e73",
+          "p8:e75",
+          "p8:e76",
+          "p8:e77",
+          "p10:e87"
+        ]
+      },
+      {
+        "statement": "메모리 풀 크기 산정 근거가 있으며, v1-1(벡터연산 중 3가지 vec_add, sub, mat을 CPU로 돌림) 300ms, v1-1-1(메모리풀만 도입) 205~250ms의 중간 실험 결과가 있다.",
+        "limits": "중간 실험 버전 결과",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "v1-1: my_lirpa_vector_CPU",
+          "v1-1-1: my_lirpa_mempool.cu"
+        ],
+        "observations": [
+          "v1-1: 벡터연산 중 3가지(vec_add, sub, mat) CPU로 돌림, 300ms",
+          "v1-1-1: 메모리풀만 도입, 결과 205~250ms",
+          "v1-1은 메모리풀도 안했고 cuBlas도 안해서 CPU로 함수 돌리다 보면 결국 v0 결과와 같아짐"
+        ],
+        "parameters": [
+          {
+            "name": "v1-1 elapsed time",
+            "value": "300 ms",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p10:e90"
+            ]
+          },
+          {
+            "name": "v1-1-1 elapsed time",
+            "value": "205~250 ms",
+            "value_kind": "range",
+            "element_ids": [
+              "p10:e92"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "v1-1 elapsed time",
+            "value": "300",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "벡터연산 중 3가지 CPU로 돌림, eps=1e-06",
+            "element_ids": [
+              "p10:e90"
+            ]
+          },
+          {
+            "metric": "v1-1-1 elapsed time",
+            "value": "205~250",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "메모리풀만 도입, eps=1e-06",
+            "element_ids": [
+              "p10:e92"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p10:e90",
+          "p10:e91",
+          "p10:e92",
+          "p10:e93"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

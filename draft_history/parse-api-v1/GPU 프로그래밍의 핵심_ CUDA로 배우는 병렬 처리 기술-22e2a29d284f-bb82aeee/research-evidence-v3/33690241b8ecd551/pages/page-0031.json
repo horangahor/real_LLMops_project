@@ -1,0 +1,750 @@
+{
+  "initial": [
+    {
+      "statement": "원인 분석으로 신경망 크기가 매우 작고, cuBlas/cuSparse의 동작 방식에서 오버헤드가 생겼으며 이 또한 신경망이 작기 때문이라고 정리했다.",
+      "limits": "원인 분석은 연구 노트 내 정리이며, 각 요인의 기여도는 정량적으로 분리되지 않았다.",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e208",
+          "page": 31,
+          "quote": "원인 분석",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p31:e209",
+          "page": 31,
+          "quote": "1. 신경망의 크기가 매우 작다.\n2. cuBlas, cuSparse 의 동작 방식에서 오버헤드가 생겼다. (이 또한 신경망이 작기\n때문에)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0001"
+    },
+    {
+      "statement": "현재까지 cuBlas, cuSparse의 기본적인 형태의 행렬곱 연산 함수를 사용했으며, 행렬곱에도 변형 함수들이 매우 많아 sm 내 분석과 함께 사용해야 하는 함수들이라 Nsight compute 분석 때 같이 진행하면 될 것 같다고 남겼다.",
+      "limits": "향후 진행 제안이며 실제 Nsight compute 분석 수행 결과는 아니다.",
+      "kind": "method",
+      "claim_status": "planned",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e210",
+          "page": 31,
+          "quote": "아 직 실험해볼 여지는 많다. 현재까지는 cuBlas, cuSparse에 있는 기본적인 형태의 행렬곱\n연산 함수를 사용했는데, 행렬곱에도 변형 함수들이 매우 많다. ⇐ sm 내의 분석과 함께\n사용해야 하는 함수들이라 Nsight compute 분석때 같이 진행하면 될 듯?",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0002"
+    },
+    {
+      "statement": "커널 퓨전을 진행했으며, 먼저 backward_bound_gpu()에만 진행했다.",
+      "limits": "적용 대상이 backward_bound_gpu()로 한정됨.",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [
+        "커널 퓨전",
+        "backward_bound_gpu()에만 진행"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e212",
+          "page": 31,
+          "quote": "그 다음으로는 커널 퓨전을 진행함\n먼저 backward_bound_gpu()에만 진행했는데..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0003"
+    },
+    {
+      "statement": "컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 건 23ms 정도가 보인다는 것이라고 부연했다.",
+      "limits": "변동 범위가 언급되며 기준 관찰값은 23ms 정도로 기술됨.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time (변동 언급)",
+          "value": "26",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "컴퓨터 사정에 따라 뛰는 경우",
+          "element_ids": [
+            "p31:e215"
+          ],
+          "raw_value": "26",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "Elapsed time (기준 관찰)",
+          "value": "23",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "커널 퓨전 후 관찰",
+          "element_ids": [
+            "p31:e215"
+          ],
+          "raw_value": "23",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e215",
+          "page": 31,
+          "quote": "( 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만.. 중요한건 23ms 정도가 보인다는것)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": []
+    },
+    {
+      "statement": "커널 퓨전을 backward_bound_gpu()에만 진행한 후 23ms 후반대까지 나오는 듯하다고 기록했다.",
+      "limits": "정확한 단일 측정값이 아니라 '23ms 후반대'라는 범위로 표현됨.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "커널 퓨전",
+        "backward_bound_gpu()에만 진행"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e213",
+          "page": 31,
+          "quote": "2 3ms 후반대까지는 나오는 듯 ?",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 23",
+        "limits의 원문 미확인 수치: 23"
+      ],
+      "repair_unresolved": true,
+      "id": "P0031F0004"
+    },
+    {
+      "statement": "원인 분석으로 신경망 크기가 매우 작고, cuBlas/cuSparse 동작 방식에서 오버헤드가 생겼으며 이 또한 신경망이 작기 때문이라고 기록했다.",
+      "limits": "원인 분석은 작성자 해석이며, 정량적 인과 검증은 별도로 제시되지 않았다.",
+      "kind": "problem",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "신경망 크기가 매우 작음",
+        "cuBlas, cuSparse 동작 방식"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e208",
+          "page": 31,
+          "quote": "원인 분석",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p31:e209",
+          "page": 31,
+          "quote": "1. 신경망의 크기가 매우 작다.\n2. cuBlas, cuSparse 의 동작 방식에서 오버헤드가 생겼다. (이 또한 신경망이 작기\n때문에)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0005"
+    },
+    {
+      "statement": "현재까지 cuBlas, cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 많아 sm 내 분석과 함께 사용해야 하므로 Nsight compute 분석 때 같이 진행하면 될 것이라고 기록했다.",
+      "limits": "변형 함수 활용은 향후 분석/진행 제안이며, 실제 적용 결과는 아님.",
+      "kind": "method",
+      "claim_status": "planned",
+      "source_origin": "research_note",
+      "conditions": [
+        "cuBlas, cuSparse 기본 행렬곱 함수 사용",
+        "sm 내 분석 연계"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e210",
+          "page": 31,
+          "quote": "아 직 실험해볼 여지는 많다. 현재까지는 cuBlas, cuSparse에 있는 기본적인 형태의 행렬곱\n연산 함수를 사용했는데, 행렬곱에도 변형 함수들이 매우 많다. ⇐ sm 내의 분석과 함께\n사용해야 하는 함수들이라 Nsight compute 분석때 같이 진행하면 될 듯?",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0006"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "커널 퓨전 적용 후 backward_bound_gpu()에서 23ms 후반대까지 나오는 듯하다고 기록했으며, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 건 23ms 정도가 보인다는 것이라고 부연했다.",
+        "limits": "정확한 단일 측정값이 아니라 '23ms 후반대'라는 범위로 표현되었고, 컴퓨터 사정에 따라 26ms까지 뛰는 변동도 함께 언급되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 퓨전",
+          "backward_bound_gpu()에만 진행"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time (기준 관찰)",
+            "value": "23",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "커널 퓨전 후 backward_bound_gpu() 관찰",
+            "element_ids": [
+              "p31:e213",
+              "p31:e215"
+            ]
+          },
+          {
+            "metric": "Elapsed time (변동 언급)",
+            "value": "26",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "컴퓨터 사정에 따라 뛰는 경우",
+            "element_ids": [
+              "p31:e215"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p31:e213",
+          "p31:e215"
+        ]
+      },
+      {
+        "statement": "커널 퓨전 적용 후 backward_bound_gpu()에서 23.925200 ms가 측정되었으며, 이는 Starting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time으로 출력되었다.",
+        "limits": "해당 수치는 특정 실행 시점의 출력값이며, 변동 범위(23ms 후반대, 최대 26ms)와 함께 언급되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 퓨전",
+          "backward_bound_gpu()에만 진행"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "23.925200",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "커널 퓨전 후 backward_bound_gpu() 측정 출력",
+            "element_ids": [
+              "p31:e214",
+              "p31:review:e6"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p31:e214",
+          "p31:review:e6"
+        ]
+      },
+      {
+        "statement": "커널 퓨전 적용 후 backward_bound_gpu()에서 23ms 후반대까지 나오는 듯하다고 기록했으며, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 건 23ms 정도가 보인다는 것이라고 부연했다.",
+        "limits": "정확한 단일 측정값이 아니라 '23ms 후반대'라는 범위로 표현되었고, 컴퓨터 사정에 따라 26ms까지 뛰는 변동도 함께 언급되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 퓨전",
+          "backward_bound_gpu()에만 진행"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time (기준 관찰)",
+            "value": "23",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "커널 퓨전 후 backward_bound_gpu() 관찰",
+            "element_ids": [
+              "p31:e213",
+              "p31:e215"
+            ]
+          },
+          {
+            "metric": "Elapsed time (변동 언급)",
+            "value": "26",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "컴퓨터 사정에 따라 뛰는 경우",
+            "element_ids": [
+              "p31:e215"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p31:e213",
+          "p31:e215"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [
+      3
+    ],
+    "ledger": {
+      "p31:e208": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:e209": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:e210": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:e211": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:e212": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:e213": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:e214": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:e215": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:review:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:review:e1": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:review:e2": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:review:e3": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:review:e4": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:review:e5": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:review:e6": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p31:review:e7": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      }
+    },
+    "ledger_validation_error": "대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+  },
+  "facts": [
+    {
+      "statement": "원인 분석으로 신경망 크기가 매우 작고, cuBlas/cuSparse의 동작 방식에서 오버헤드가 생겼으며 이 또한 신경망이 작기 때문이라고 정리했다.",
+      "limits": "원인 분석은 연구 노트 내 정리이며, 각 요인의 기여도는 정량적으로 분리되지 않았다.",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e208",
+          "page": 31,
+          "quote": "원인 분석",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p31:e209",
+          "page": 31,
+          "quote": "1. 신경망의 크기가 매우 작다.\n2. cuBlas, cuSparse 의 동작 방식에서 오버헤드가 생겼다. (이 또한 신경망이 작기\n때문에)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0001"
+    },
+    {
+      "statement": "현재까지 cuBlas, cuSparse의 기본적인 형태의 행렬곱 연산 함수를 사용했으며, 행렬곱에도 변형 함수들이 매우 많아 sm 내 분석과 함께 사용해야 하는 함수들이라 Nsight compute 분석 때 같이 진행하면 될 것 같다고 남겼다.",
+      "limits": "향후 진행 제안이며 실제 Nsight compute 분석 수행 결과는 아니다.",
+      "kind": "method",
+      "claim_status": "planned",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e210",
+          "page": 31,
+          "quote": "아 직 실험해볼 여지는 많다. 현재까지는 cuBlas, cuSparse에 있는 기본적인 형태의 행렬곱\n연산 함수를 사용했는데, 행렬곱에도 변형 함수들이 매우 많다. ⇐ sm 내의 분석과 함께\n사용해야 하는 함수들이라 Nsight compute 분석때 같이 진행하면 될 듯?",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0002"
+    },
+    {
+      "statement": "커널 퓨전을 진행했으며, 먼저 backward_bound_gpu()에만 진행했다.",
+      "limits": "적용 대상이 backward_bound_gpu()로 한정됨.",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [
+        "커널 퓨전",
+        "backward_bound_gpu()에만 진행"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e212",
+          "page": 31,
+          "quote": "그 다음으로는 커널 퓨전을 진행함\n먼저 backward_bound_gpu()에만 진행했는데..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0003"
+    },
+    {
+      "statement": "커널 퓨전을 backward_bound_gpu()에만 진행한 후 23ms 후반대까지 나오는 듯하다고 기록했다.",
+      "limits": "정확한 단일 측정값이 아니라 '23ms 후반대'라는 범위로 표현됨.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "커널 퓨전",
+        "backward_bound_gpu()에만 진행"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e213",
+          "page": 31,
+          "quote": "2 3ms 후반대까지는 나오는 듯 ?",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 23",
+        "limits의 원문 미확인 수치: 23"
+      ],
+      "repair_unresolved": true,
+      "id": "P0031F0004"
+    },
+    {
+      "statement": "원인 분석으로 신경망 크기가 매우 작고, cuBlas/cuSparse 동작 방식에서 오버헤드가 생겼으며 이 또한 신경망이 작기 때문이라고 기록했다.",
+      "limits": "원인 분석은 작성자 해석이며, 정량적 인과 검증은 별도로 제시되지 않았다.",
+      "kind": "problem",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "신경망 크기가 매우 작음",
+        "cuBlas, cuSparse 동작 방식"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e208",
+          "page": 31,
+          "quote": "원인 분석",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p31:e209",
+          "page": 31,
+          "quote": "1. 신경망의 크기가 매우 작다.\n2. cuBlas, cuSparse 의 동작 방식에서 오버헤드가 생겼다. (이 또한 신경망이 작기\n때문에)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0005"
+    },
+    {
+      "statement": "현재까지 cuBlas, cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 많아 sm 내 분석과 함께 사용해야 하므로 Nsight compute 분석 때 같이 진행하면 될 것이라고 기록했다.",
+      "limits": "변형 함수 활용은 향후 분석/진행 제안이며, 실제 적용 결과는 아님.",
+      "kind": "method",
+      "claim_status": "planned",
+      "source_origin": "research_note",
+      "conditions": [
+        "cuBlas, cuSparse 기본 행렬곱 함수 사용",
+        "sm 내 분석 연계"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e210",
+          "page": 31,
+          "quote": "아 직 실험해볼 여지는 많다. 현재까지는 cuBlas, cuSparse에 있는 기본적인 형태의 행렬곱\n연산 함수를 사용했는데, 행렬곱에도 변형 함수들이 매우 많다. ⇐ sm 내의 분석과 함께\n사용해야 하는 함수들이라 Nsight compute 분석때 같이 진행하면 될 듯?",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0006"
+    },
+    {
+      "statement": "커널 퓨전 적용 후 backward_bound_gpu()에서 23ms 후반대까지 나오는 듯하다고 기록했으며, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 건 23ms 정도가 보인다는 것이라고 부연했다.",
+      "limits": "정확한 단일 측정값이 아니라 '23ms 후반대'라는 범위로 표현되었고, 컴퓨터 사정에 따라 26ms까지 뛰는 변동도 함께 언급되었다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "커널 퓨전",
+        "backward_bound_gpu()에만 진행"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time (기준 관찰)",
+          "value": "23",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "커널 퓨전 후 backward_bound_gpu() 관찰",
+          "element_ids": [
+            "p31:e213",
+            "p31:e215"
+          ],
+          "raw_value": "23",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "Elapsed time (변동 언급)",
+          "value": "26",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "컴퓨터 사정에 따라 뛰는 경우",
+          "element_ids": [
+            "p31:e215"
+          ],
+          "raw_value": "26",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e213",
+          "page": 31,
+          "quote": "2 3ms 후반대까지는 나오는 듯 ?",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p31:e215",
+          "page": 31,
+          "quote": "( 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만.. 중요한건 23ms 정도가 보인다는것)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0007"
+    },
+    {
+      "statement": "커널 퓨전 적용 후 backward_bound_gpu()에서 23.925200 ms가 측정되었으며, 이는 Starting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time으로 출력되었다.",
+      "limits": "해당 수치는 특정 실행 시점의 출력값이며, 변동 범위(23ms 후반대, 최대 26ms)와 함께 언급되었다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "커널 퓨전",
+        "backward_bound_gpu()에만 진행"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "23.9252",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "커널 퓨전 후 backward_bound_gpu() 측정 출력",
+          "element_ids": [
+            "p31:e214",
+            "p31:review:e6"
+          ],
+          "raw_value": "23.925200",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e214",
+          "page": 31,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 23,925200 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) [ 0] [ 1] [ 2] 3] 4] 5] 6] 7] [ 8] [ 9] [ 10] [ 11] [ 12] [ 13] [ 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1,310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2.670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1,082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2,049689 -1.025760 1.082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p31:review:e6",
+          "page": 31,
+          "quote": "Starting CROWN Verification (eps = 1e-06) mempool + warmup\n\ncalc success\nElapsed time: 23.925200 ms\nOutput Dimension: 16\n\n[Index] | Lower Bound | Upper Bound | Normal Pred (y)\n\n[0] | 0.081772 | 0.082159 | 0.081966\n[1] | 0.273538 | 0.273823 | 0.273680\n[2] | 0.102147 | 0.102482 | 0.102314\n[3] | 0.114244 | 0.114541 | 0.114393\n[4] | 2.670552 | 2.670843 | 2.670697\n[5] | 1.846574 | 1.846872 | 1.846723\n[6] | -1.714750 | -1.714490 | -1.714620\n[7] | -1.880139 | -1.879695 | -1.879916\n[8] | 0.706986 | 0.707275 | 0.707131\n[9] | -2.612086 | -2.611722 | -2.611904\n[10] | 0.003713 | 0.003976 | 0.003845\n[11] | 1.310476 | 1.310817 | 1.310646\n[12] | 2.049539 | 2.049839 | 2.049689\n[13] | -1.025923 | -1.025597 | -1.025760\n[14] | 1.082576 | 1.082852 | 1.082714\n[15] | -3.404772 | -3.404355 | -3.404563",
+          "origin": "enhanced_numeric_ocr_review"
+        }
+      ],
+      "numeric_issues": [
+        "limits의 원문 미확인 수치: 23, 26"
+      ],
+      "repair_unresolved": true,
+      "id": "P0031F0008"
+    },
+    {
+      "statement": "커널 퓨전 적용 후 backward_bound_gpu()에서 23ms 후반대까지 나오는 듯하다고 기록했으며, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 건 23ms 정도가 보인다는 것이라고 부연했다.",
+      "limits": "정확한 단일 측정값이 아니라 '23ms 후반대'라는 범위로 표현되었고, 컴퓨터 사정에 따라 26ms까지 뛰는 변동도 함께 언급되었다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "커널 퓨전",
+        "backward_bound_gpu()에만 진행"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time (기준 관찰)",
+          "value": "23",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "커널 퓨전 후 backward_bound_gpu() 관찰",
+          "element_ids": [
+            "p31:e213",
+            "p31:e215"
+          ],
+          "raw_value": "23",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "Elapsed time (변동 언급)",
+          "value": "26",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "컴퓨터 사정에 따라 뛰는 경우",
+          "element_ids": [
+            "p31:e215"
+          ],
+          "raw_value": "26",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p31:e213",
+          "page": 31,
+          "quote": "2 3ms 후반대까지는 나오는 듯 ?",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p31:e215",
+          "page": 31,
+          "quote": "( 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만.. 중요한건 23ms 정도가 보인다는것)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0031F0009"
+    }
+  ]
+}

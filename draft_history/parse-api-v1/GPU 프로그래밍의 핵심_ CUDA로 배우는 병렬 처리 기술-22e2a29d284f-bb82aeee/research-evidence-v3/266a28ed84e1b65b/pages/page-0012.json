@@ -1,0 +1,421 @@
+{
+  "initial": [
+    {
+      "statement": "pre_upload_weights_to_gpu 함수는 각 레이어마다 cudaMalloc로 MAX_DIM * MAX_DIM * sizeof(double) 크기의 메모리를 할당하고, cudaMemcpy2D로 호스트 가중치를 디바이스로 복사하는 방식으로 기록되어 있다.",
+      "limits": "이 코드는 가중치 사전 업로드 구현 예시이며, 실제 실행 측정값과는 별도로 제시되어 있다.",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "implementation_code",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p12:e100",
+          "page": 12,
+          "quote": "![image](/image/placeholder)\n// 가중치를 GPU에 사전 로드 void pre_upload_weights_to_gpu(FullyConnectedNetwork net) { for (int i = 0; i < net->num_layers; ++i) { cudaMalloc(&net->d_W[i], MAX_DIM * MAX_DIM * sizeof(double)); cudaMemcpy2D(net->d_W[i], MAX_DIM * sizeof(double), net->W[i].a, MAX_DIM * sizeof(double), net->W[i].cols * sizeof(double), net->W[i].rows, cudaMemcpyHostToDevice); }",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p12:e101",
+          "page": 12,
+          "quote": "G PU에서 할당한 메모리를 net -> d_W[i] 에 저장 (저장된 메모리를 갖다 쓸 수 있어야\n하니까)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0012F0001"
+    },
+    {
+      "statement": "가중치 사전 업로드 후 측정 예시로 MEMPOOL + Weights PRELOAD ON GPU 모드에서 elapsed time 149.820400ms가 출력된 화면이 기록되어 있다.",
+      "limits": "이 값은 특정 실행 예시이며, 버전별 대표 성능으로 일반화하지는 않는다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "measurement_log",
+      "conditions": [
+        "MODE: MEMPOOL + Weights PRELOAD ON GPU"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "elapsed_time",
+          "value": "149.8204",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "MEMPOOL + Weights PRELOAD ON GPU 실행 예시",
+          "element_ids": [
+            "p12:e102"
+          ],
+          "raw_value": "149.8204",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p12:e102",
+          "page": 12,
+          "quote": "![image](/image/placeholder)\nnetwork read succe33 data read start: test_data_1.bin data read success (dim=256) Starting CROWN Verification (eps = 1e-06) ** MODE: MEMPOOL + Weights PRELOAD ON GPU ** clear Iirpa_forward! calc success Elapsed time: 149,820400 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] [ 1] 2] 3] 4] [ 5] [ 6] [ 7] 8] 9] 10] 11] [ 12] [ 13] [ 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1,846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2,670843 1,846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1,310817 2,049839 -1.025597 1.082852 -3,404355 C:#Users#user#Desktop#cuoattlcrown> 0.081966 0.273680 0.102314 0.114393 2,670697 1,846723 -1,714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0012F0002"
+    },
+    {
+      "statement": "bias까지 미리 업로드해봤으나 성능 개선 의미가 크지 않았다고 평가되었다.",
+      "limits": "이유는 bias가 Vector이고 약 4KB 정도라 CPU 연산에도 크게 무리가 없는 수준으로 설명되었다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p12:e104",
+          "page": 12,
+          "quote": "+ bias까지 미리 업로드 해봤는데 크게 성능개선에 의미를 미치지 못하는듯 (왜냐하면\n이게 bias는 Vector인데 코드를 봤을 때 4KB정도 밖에 안돼서 그렇다, 즉 cpu가",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p13:e105",
+          "page": 13,
+          "quote": "연산하기에도 크게 무리가 없는 수준이라서..) //\ncrown_test_mempool_preload_on_gpu_plus_bias.cu\n잠깐.. 근데 내가 저걸 미리 로드해놓고 정작 matmul 함수에서 활용을 안했는데 어떻게\n시간이 줄어든거지..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0012F0003"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "가중치 사전 업로드(preload) 버전에서 측정된 149~155ms는 가중치 활용 자체보다 pre_upload_weights_to_gpu가 호출하는 cudaMalloc/cudaMemcpy가 타이머 시작 전에 GPU 웜업을 유발해 초기화 비용이 측정 구간 밖으로 빠진 결과로 해석되었다.",
+        "limits": "이 해석은 mempool 버전과 preload 버전의 측정 구간 차이를 근거로 한 저자의 추론이며, 실제 연산 성능 향상과는 별개로 설명된다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "pre_upload_weights_to_gpu가 t_start 이전에 cudaMalloc과 cudaMemcpy를 호출함",
+          "mempool 버전에서는 ensure_pool()의 첫 cudaMalloc이 측정 구간 안에 포함됨"
+        ],
+        "observations": [
+          "preload 버전에서 149~155ms가 기록됨",
+          "mempool 버전 대비 약 50ms 감소가 관찰됨",
+          "저자는 d_W를 matmul에서 실제로 활용하지 않았는데도 시간이 줄어든 점을 의문으로 제시함"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "149.8204",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "MEMPOOL + Weights PRELOAD ON GPU 실행 예시",
+            "element_ids": [
+              "p12:e102"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p12:e102",
+          "p13:e105",
+          "p13:e106",
+          "p13:e107",
+          "p13:e108",
+          "p13:e109"
+        ]
+      },
+      {
+        "statement": "preload 버전에서 줄어든 약 50ms의 원인은 GPU 컨텍스트 초기화, 클럭 부스팅, JIT 컴파일 같은 초기화 비용이 타이머 구간 밖으로 이동한 CUDA 웜업 효과로 설명되었다.",
+        "limits": "이 설명은 mempool 버전과 preload 버전의 측정 구간 차이에 기반한 해석이며, 초기화 비용의 정확한 수치는 별도로 계측된 값이 아니라 대략적 차이로 제시된다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "pre_upload_weights_to_gpu가 t_start 앞에서 cudaMalloc과 cudaMemcpy를 호출함",
+          "mempool 버전에서는 첫 cudaMalloc이 t_start 안에 들어있음"
+        ],
+        "observations": [
+          "mempool 버전: [초기화 50ms] + [실제 연산]이 측정됨",
+          "preload 버전: [초기화 50ms] + [실제 연산]에서 초기화가 타이머 밖으로 빠짐",
+          "first_try에서 warmup_cublas()를 명시적으로 둔 이유도 같은 맥락으로 설명됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p13:e107",
+          "p13:e108",
+          "p13:e109"
+        ]
+      },
+      {
+        "statement": "bias까지 사전 업로드해도 성능 개선 의미가 크지 않다고 평가되었으며, 그 이유는 bias가 Vector이고 약 4KB 정도로 작아 CPU 연산에도 큰 무리가 없는 수준으로 설명되었다.",
+        "limits": "이 평가는 코드 크기와 연산 부담에 대한 저자의 판단을 바탕으로 하며, bias 사전 업로드의 효과를 정량적으로 비교한 별도 측정값은 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "bias는 Vector 형태",
+          "bias 크기가 약 4KB 정도"
+        ],
+        "observations": [
+          "bias 사전 업로드가 성능 개선에 큰 의미를 주지 못한다고 평가됨",
+          "CPU가 연산하기에도 크게 무리가 없는 수준으로 설명됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p12:e104",
+          "p13:e105"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p12:e100": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p12:e101": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p12:e102": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p12:e103": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p12:e104": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      }
+    },
+    "ledger_validation_error": "대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+  },
+  "facts": [
+    {
+      "statement": "pre_upload_weights_to_gpu 함수는 각 레이어마다 cudaMalloc로 MAX_DIM * MAX_DIM * sizeof(double) 크기의 메모리를 할당하고, cudaMemcpy2D로 호스트 가중치를 디바이스로 복사하는 방식으로 기록되어 있다.",
+      "limits": "이 코드는 가중치 사전 업로드 구현 예시이며, 실제 실행 측정값과는 별도로 제시되어 있다.",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "implementation_code",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p12:e100",
+          "page": 12,
+          "quote": "![image](/image/placeholder)\n// 가중치를 GPU에 사전 로드 void pre_upload_weights_to_gpu(FullyConnectedNetwork net) { for (int i = 0; i < net->num_layers; ++i) { cudaMalloc(&net->d_W[i], MAX_DIM * MAX_DIM * sizeof(double)); cudaMemcpy2D(net->d_W[i], MAX_DIM * sizeof(double), net->W[i].a, MAX_DIM * sizeof(double), net->W[i].cols * sizeof(double), net->W[i].rows, cudaMemcpyHostToDevice); }",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p12:e101",
+          "page": 12,
+          "quote": "G PU에서 할당한 메모리를 net -> d_W[i] 에 저장 (저장된 메모리를 갖다 쓸 수 있어야\n하니까)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0012F0001"
+    },
+    {
+      "statement": "가중치 사전 업로드 후 측정 예시로 MEMPOOL + Weights PRELOAD ON GPU 모드에서 elapsed time 149.820400ms가 출력된 화면이 기록되어 있다.",
+      "limits": "이 값은 특정 실행 예시이며, 버전별 대표 성능으로 일반화하지는 않는다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "measurement_log",
+      "conditions": [
+        "MODE: MEMPOOL + Weights PRELOAD ON GPU"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "elapsed_time",
+          "value": "149.8204",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "MEMPOOL + Weights PRELOAD ON GPU 실행 예시",
+          "element_ids": [
+            "p12:e102"
+          ],
+          "raw_value": "149.8204",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p12:e102",
+          "page": 12,
+          "quote": "![image](/image/placeholder)\nnetwork read succe33 data read start: test_data_1.bin data read success (dim=256) Starting CROWN Verification (eps = 1e-06) ** MODE: MEMPOOL + Weights PRELOAD ON GPU ** clear Iirpa_forward! calc success Elapsed time: 149,820400 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] [ 1] 2] 3] 4] [ 5] [ 6] [ 7] 8] 9] 10] 11] [ 12] [ 13] [ 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1,846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2,670843 1,846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1,310817 2,049839 -1.025597 1.082852 -3,404355 C:#Users#user#Desktop#cuoattlcrown> 0.081966 0.273680 0.102314 0.114393 2,670697 1,846723 -1,714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0012F0002"
+    },
+    {
+      "statement": "bias까지 미리 업로드해봤으나 성능 개선 의미가 크지 않았다고 평가되었다.",
+      "limits": "이유는 bias가 Vector이고 약 4KB 정도라 CPU 연산에도 크게 무리가 없는 수준으로 설명되었다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p12:e104",
+          "page": 12,
+          "quote": "+ bias까지 미리 업로드 해봤는데 크게 성능개선에 의미를 미치지 못하는듯 (왜냐하면\n이게 bias는 Vector인데 코드를 봤을 때 4KB정도 밖에 안돼서 그렇다, 즉 cpu가",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p13:e105",
+          "page": 13,
+          "quote": "연산하기에도 크게 무리가 없는 수준이라서..) //\ncrown_test_mempool_preload_on_gpu_plus_bias.cu\n잠깐.. 근데 내가 저걸 미리 로드해놓고 정작 matmul 함수에서 활용을 안했는데 어떻게\n시간이 줄어든거지..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0012F0003"
+    },
+    {
+      "statement": "가중치 사전 업로드(preload) 버전에서 측정된 149~155ms는 가중치 활용 자체보다 pre_upload_weights_to_gpu가 호출하는 cudaMalloc/cudaMemcpy가 타이머 시작 전에 GPU 웜업을 유발해 초기화 비용이 측정 구간 밖으로 빠진 결과로 해석되었다.",
+      "limits": "이 해석은 mempool 버전과 preload 버전의 측정 구간 차이를 근거로 한 저자의 추론이며, 실제 연산 성능 향상과는 별개로 설명된다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "pre_upload_weights_to_gpu가 t_start 이전에 cudaMalloc과 cudaMemcpy를 호출함",
+        "mempool 버전에서는 ensure_pool()의 첫 cudaMalloc이 측정 구간 안에 포함됨"
+      ],
+      "observations": [
+        "preload 버전에서 149~155ms가 기록됨",
+        "mempool 버전 대비 약 50ms 감소가 관찰됨",
+        "저자는 d_W를 matmul에서 실제로 활용하지 않았는데도 시간이 줄어든 점을 의문으로 제시함"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "elapsed_time",
+          "value": "149.8204",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "MEMPOOL + Weights PRELOAD ON GPU 실행 예시",
+          "element_ids": [
+            "p12:e102"
+          ],
+          "raw_value": "149.8204",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p12:e102",
+          "page": 12,
+          "quote": "![image](/image/placeholder)\nnetwork read succe33 data read start: test_data_1.bin data read success (dim=256) Starting CROWN Verification (eps = 1e-06) ** MODE: MEMPOOL + Weights PRELOAD ON GPU ** clear Iirpa_forward! calc success Elapsed time: 149,820400 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] [ 1] 2] 3] 4] [ 5] [ 6] [ 7] 8] 9] 10] 11] [ 12] [ 13] [ 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1,846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2,670843 1,846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1,310817 2,049839 -1.025597 1.082852 -3,404355 C:#Users#user#Desktop#cuoattlcrown> 0.081966 0.273680 0.102314 0.114393 2,670697 1,846723 -1,714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p13:e105",
+          "page": 13,
+          "quote": "연산하기에도 크게 무리가 없는 수준이라서..) //\ncrown_test_mempool_preload_on_gpu_plus_bias.cu\n잠깐.. 근데 내가 저걸 미리 로드해놓고 정작 matmul 함수에서 활용을 안했는데 어떻게\n시간이 줄어든거지..",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p13:e106",
+          "page": 13,
+          "quote": "아 .. preload를 하면서 GPU가 웜업 되는 것이 원인이었다..",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p13:e107",
+          "page": 13,
+          "quote": "( mempool 버전은 GPU 메모리풀 할당까지 시간에 계산됨, mempool_preload 버전은\n가중치를 시간 측정 전에 미리 로드해서 해당 시간이 제외됨)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p13:e108",
+          "page": 13,
+          "quote": "![image](/image/placeholder)\n50ms가 줄어든 진짜 이유: CUDA 컨텍스 트 초기화 웜업 효과 pre_upload_weights_to_gpu 가 t_start 앞에서 cudaMalloc 과 cudaMemcpy 를 호출 하면, 이 시점에 CUDA 드라이버가 처음 깨어 나면서: 1. GPU 컨텍스트 초기화 (CUDA 드라이버 로드) 2. GPU 클럭 부스팅 (저전력 → 최대 성능 주 파수로 전환) 3. JIT 컴파일 (커널 코드 첫 번째 컴파일) 이 세 가지 초기화 비용이 전부 타이머 구간 밖으로 빠져나가게 됩니다. 반면 mempool 버전에서는 ensure_pool() → 첫 번째 cudaMalloc 이 t_start 안에 들어있어서, 저 초기화 비용 이 전부 측정에 포함됩니다. mempool 버전: [초기화 50ms] + [실 제 연산] = 측정됨 preload 버전: [초기화 50ms] + [실제 연산] = 초기화는 타이머 밖! 즉, d_W 를 활용해서 빨라진 게 아니라, pre_upload_weights_to_gpu 가 의도치 않 게 GPU 웜업 역할을 하면서 초기화 비용을 타이머 밖으로 밀어낸 것입니다. first_try 에서 warmup_cublas() 를 명시적으로 두었 던 것도 이 이유 때문이었습니다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p13:e109",
+          "page": 13,
+          "quote": "즉 .. 그냥 v1-1-2는 GPU warmup때문에 50ms가 줄어든 것. (preload 때문 아님)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 149, 155",
+        "조건·관찰의 원문 미확인 수치: 149, 155"
+      ],
+      "repair_unresolved": true,
+      "id": "P0012F0004"
+    },
+    {
+      "statement": "bias까지 사전 업로드해도 성능 개선 의미가 크지 않다고 평가되었으며, 그 이유는 bias가 Vector이고 약 4KB 정도로 작아 CPU 연산에도 큰 무리가 없는 수준으로 설명되었다.",
+      "limits": "이 평가는 코드 크기와 연산 부담에 대한 저자의 판단을 바탕으로 하며, bias 사전 업로드의 효과를 정량적으로 비교한 별도 측정값은 제시되지 않았다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "bias는 Vector 형태",
+        "bias 크기가 약 4KB 정도"
+      ],
+      "observations": [
+        "bias 사전 업로드가 성능 개선에 큰 의미를 주지 못한다고 평가됨",
+        "CPU가 연산하기에도 크게 무리가 없는 수준으로 설명됨"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p12:e104",
+          "page": 12,
+          "quote": "+ bias까지 미리 업로드 해봤는데 크게 성능개선에 의미를 미치지 못하는듯 (왜냐하면\n이게 bias는 Vector인데 코드를 봤을 때 4KB정도 밖에 안돼서 그렇다, 즉 cpu가",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p13:e105",
+          "page": 13,
+          "quote": "연산하기에도 크게 무리가 없는 수준이라서..) //\ncrown_test_mempool_preload_on_gpu_plus_bias.cu\n잠깐.. 근데 내가 저걸 미리 로드해놓고 정작 matmul 함수에서 활용을 안했는데 어떻게\n시간이 줄어든거지..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0012F0005"
+    }
+  ]
+}

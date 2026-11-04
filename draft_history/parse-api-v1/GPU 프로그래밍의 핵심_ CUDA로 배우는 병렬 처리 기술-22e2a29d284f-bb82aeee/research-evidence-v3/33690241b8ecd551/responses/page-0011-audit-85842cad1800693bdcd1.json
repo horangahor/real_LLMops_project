@@ -1,0 +1,146 @@
+{
+  "request_fingerprint": "85842cad1800693bdcd1cf7a57148450485c6804e152b6159cf150851a39a5ec",
+  "value": {
+    "additions": [
+      {
+        "statement": "v1-1-2는 가중치만 미리 GPU에 업로드하도록 변경한 버전이며, 실행 결과 149~155ms 범위가 기록되었다.",
+        "limits": "구현 파일명은 my_lirpa_mempool_preload_on_gpu.cu로 기록되어 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "149~155",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "v1-1-2 실행 결과",
+            "element_ids": [
+              "p11:e96",
+              "p12:e103"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p11:e96",
+          "p12:e103"
+        ]
+      },
+      {
+        "statement": "v1-1-2에서는 GPU 메모리 주소를 저장할 포인터 배열을 신경망에 미리 만들고, 포인터 배열 크기는 MAX_LAYERS 기준이므로 신경망이 작으면 낭비될 수 있다고 지적되었다.",
+        "limits": "이 구조는 double 기준 설계이며, float 포인터로 바꾸려면 전체 구조 변경이 필요하다고 적혀 있다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p11:e97",
+          "p11:e98",
+          "p11:e99"
+        ]
+      },
+      {
+        "statement": "v1-1-2에서 가중치 사전 업로드를 위해 pre_upload_weights_to_gpu 함수가 사용되었으며, 각 레이어별로 cudaMalloc과 cudaMemcpy2D를 통해 호스트에서 디바이스로 가중치를 복사한다.",
+        "limits": "코드 예시는 MAX_DIM * MAX_DIM 크기의 double 메모리 할당과 2D 복사를 가정하고 있다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "MAX_DIM",
+            "value": "MAX_DIM",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p12:e100"
+            ]
+          },
+          {
+            "name": "sizeof(double)",
+            "value": "sizeof(double)",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p12:e100"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p12:e100"
+        ]
+      },
+      {
+        "statement": "v1-1-2에서 bias까지 미리 업로드해 보았으나 성능 개선에 큰 의미가 없는 것으로 판단되었다. 그 이유는 bias가 Vector이고 코드상 약 4KB 정도밖에 되지 않기 때문이라고 적혀 있다.",
+        "limits": "bias의 크기 추정치는 코드 관찰에 기반한 4KB 정도이며, 정확한 수치는 별도 측정값으로 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p12:e104"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p11:e95": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "CROWN 검증 실행 예시 화면(eps=1e-06, 출력 차원 16, lower/upper bound 및 정상 예측 y 값)이 기록되어 있으며, facts에 이미 반영되어 있다.",
+        "addition_refs": []
+      },
+      "p11:e96": {
+        "state": "represented",
+        "fact_refs": [
+          1
+        ],
+        "note": "v1-1-2의 가중치 사전 업로드 버전과 149~155ms 범위가 기록되어 있으며, additions에서 실행 결과 범위를 보완했다.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p11:e97": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "FullyConnectedNetwork 구조체와 GPU 사전 로드된 가중치 포인터(d_W) 선언이 기록되어 있으며, facts와 additions에서 방법 서술로 반영했다.",
+        "addition_refs": [
+          1
+        ]
+      },
+      "p11:e98": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "포인터 배열 크기가 MAX_LAYERS 기준이라 신경망이 작으면 낭비될 수 있다는 지적이 기록되어 있으며, facts와 additions에서 함께 반영했다.",
+        "addition_refs": [
+          1
+        ]
+      },
+      "p11:e99": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "double 기준 설계이며 float 포인터로 바꾸려면 전체 구조 변경이 필요하다는 의견이 기록되어 있으며, facts와 additions에서 방법 한계로 반영했다.",
+        "addition_refs": [
+          1
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,3629 @@
+{
+  "raw_review": {
+    "checks": [
+      {
+        "item_id": "RI_eval_1",
+        "verdict": "met",
+        "paragraph_ids": [
+          "S_evaluation_p1",
+          "S_evaluation_p20",
+          "S_evaluation_p25",
+          "S_evaluation_p38",
+          "S_evaluation_p39",
+          "S_evaluation_p40",
+          "S_evaluation_p9",
+          "S_evaluation_p10",
+          "S_evaluation_p27"
+        ],
+        "evidence_ids": [
+          "E00018",
+          "E00020",
+          "E00021",
+          "E00022",
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00031",
+          "E00035",
+          "E00064",
+          "E00068",
+          "E00069",
+          "E00070",
+          "E00071",
+          "E00072",
+          "E00075",
+          "E00076",
+          "E00077",
+          "E00078",
+          "E00081",
+          "E00083",
+          "E00096",
+          "E00097",
+          "E00102",
+          "E00106",
+          "E00109",
+          "E00111",
+          "E00119",
+          "E00120",
+          "E00125",
+          "E00131",
+          "E00132",
+          "E00139",
+          "E00140",
+          "E00144",
+          "E00145",
+          "E00158",
+          "E00169",
+          "E00171",
+          "E00238",
+          "E00358",
+          "E00361",
+          "E00375",
+          "H40849fcc17fe_1",
+          "H40849fcc17fe_3",
+          "H40849fcc17fe_4",
+          "H40849fcc17fe_6",
+          "H40849fcc17fe_7",
+          "H40849fcc17fe_8",
+          "H40849fcc17fe_9",
+          "H40849fcc17fe_10",
+          "H85ca0e507c4e_4",
+          "H85ca0e507c4e_30",
+          "H85ca0e507c4e_31",
+          "H85ca0e507c4e_32",
+          "H85ca0e507c4e_33",
+          "H85ca0e507c4e_34",
+          "H85ca0e507c4e_43",
+          "H85ca0e507c4e_44",
+          "H85ca0e507c4e_45",
+          "H85ca0e507c4e_46",
+          "H85ca0e507c4e_47",
+          "H85ca0e507c4e_48",
+          "H85ca0e507c4e_49",
+          "Hcdbfb7147ce4_1",
+          "Hcdbfb7147ce4_2",
+          "Hcdbfb7147ce4_3",
+          "Hcdbfb7147ce4_4",
+          "Hcdbfb7147ce4_7",
+          "Hcdbfb7147ce4_8",
+          "Hcdbfb7147ce4_9"
+        ]
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "S_evaluation",
+        "reference_id": "ref1_evaluation",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "S_evaluation_p1",
+          "S_evaluation_p20",
+          "S_evaluation_p25",
+          "S_evaluation_p38",
+          "S_evaluation_p39",
+          "S_evaluation_p40"
+        ],
+        "reason": "제안 설계와 변형 방법별 정량 성능 비교는 CPU/GPU/최적화 버전 간 실행 시간 수치와 일부 버전별 수치(v0~v3, forward/forward+backward/backward_only 등)로 부분적으로 정리되어 있다. 다만 원문에 전체 처리 성능의 명시적 순위나 구성 요소 단위 순위와 전체 처리 성능 순위 간 차이·불일치 비교가 직접 제시되지 않아, 비교 우위·기여도 해석까지 충분히 뒷받침되지는 않는다. 또한 cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않다는 점이 일부 근거에서 확인되며, 발표자료·슬라이드 구성·대본 작성 피드백(E00181, E00182 등)은 GPU/CUDA 실험의 비교 조건을 직접 말하지 않으므로 제외된다. 계획·제안·AI 조언 성격의 근거는 수행된 비교 결과나 공정성 조건으로 바꾸지 않는다."
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p2",
+        "reason": "E00166의 관측은 'Forward 전체 실행 시간 약 64s, Backward 전체 실행 시간 약 98s'이며, '동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 많이 잡히는 점이 눈에 띈다'는 관측은 E00166의 observations에 포함되어 있다. 그러나 본문은 이를 '동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 상대적으로 많이 잡히는 점이 눈에 띄었다'로 서술하여, E00166의 관측 내용(forward의 cudaMemcpy 시간이 많이 잡힘)과 일치하지만, E00166의 limits에 따르면 반복 측정 통계나 조건별 분리 측정은 제시되지 않았으므로, '상대적으로 많이 잡히는 점'이라는 비교·판단이 단일 관측에서 직접 도출된 것처럼 읽힐 여지가 있다. 또한 E00159의 '단일 테스트 결과로 비교하면 다중 데이터셋 테스트 시 forward와 backward 간 3배 차이가 나야 하는데, 실제 관측에서는 그 차이가 나타나지 않아 Nsight System 분석을 사용하기로 했다'는 내용과 본문의 '단일 테스트 결과만으로는 다중 데이터셋 테스트에서 기대되는 forward와 backward 간 3배 차이가 나타나지 않았기 때문에, 분석 도구를 Nsight System으로 전환하게 된 맥락과도 연결된다'는 서술은 대체로 대응하나, E00159의 limits에 따르면 Nsight 분석 결과 수치는 이 요소만으로는 제시되지 않으므로, 본문에서 Nsight System 분석 결과(E00170)를 이 맥락과 직접 연결하여 서술하는 것은 E00159의 한계를 넘어서는 확장으로 볼 수 있다.",
+        "evidence_ids": [
+          "E00159",
+          "E00166"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p2-0",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p2",
+        "reason": "E00170의 실행 통계는 특정 실행 조건의 단일 통계이며, 다른 조건과의 비교 해석이나 반복 측정 통계는 제시되지 않았다. 본문은 E00170의 수치를 그대로 인용하고 있으나, 이 수치를 forward/backward 전체 실행 시간(E00166)이나 3배 차이 기대(E00159)와 같은 비교·해석 맥락과 연결하여 서술하고 있어, E00170의 limits에 명시된 '다른 조건과의 비교 해석이나 반복 측정 통계는 제시되지 않았다'는 한계를 넘어서는 확장으로 볼 수 있다. 또한 E00170의 limits에 따르면 각 항목의 Avg/Med/Min/Max/StdDev 등 분포 정보는 원표(p47:img2:e0)에 있으나 진술에는 총 시간과 호출 수만 포함되었으므로, 본문에서 총 시간과 호출 수만 인용한 것은 E00170의 진술 범위와 일치한다.",
+        "evidence_ids": [
+          "E00170"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p2-0",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p5",
+        "reason": "근거 E00202의 관측 조건(초기화 이후)과 본문 표현(초기화만 한 상태)이 불일치한다. E00202의 evidence_limitations는 초기화 비용 포함 여부나 반복 측정 통계가 이 사실만으로 제시되지 않는다고 명시하는데, 본문은 이를 '초기화만 한 상태'로 단정해 관측 범위를 좁게 서술했다.",
+        "evidence_ids": [
+          "E00202"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p5-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p5",
+        "reason": "근거 E00202의 evidence_limitations가 출처 p58:e435의 '5.3배 정도 차이나는 것을 확인했고'를 언급하며, 이는 초기화 이후 0.2ms 차이 주장과 다른 측정 맥락일 수 있어 동일 사실로 혼합 해석하지 않도록 주의하라고 명시한다. 본문은 이 주의 없이 두 관측을 같은 문단 안에서 함께 서술해 혼합 해석 위험을 남겼다.",
+        "evidence_ids": [
+          "E00202"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p5-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p5",
+        "reason": "근거 E00208의 관측은 정성적 기록이며 변동 계수가 낮다는 느낌은 기록자의 주관적 인상으로, 정량적 변동 계수 값은 원문에 없다고 evidence_limitations에 명시된다. 본문은 '변동 계수가 좀 더 낮은 느낌'을 사실적 관찰처럼 그대로 옮겨 서술해, 주관적 인상을 정량적 안정성 지표처럼 읽히게 할 여지가 있다.",
+        "evidence_ids": [
+          "E00208"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p5-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p10",
+        "reason": "본문은 포워드+백워드 결과와 포워드 단독 결과가 각각 출력되었다고 서술했으나, 근거 E00245는 포워드+백워드와 백워드_only 두 가지 모드의 검증 결과가 각각 표로 제시되었다고 기록한다. 포워드 단독 결과 표가 출력되었다는 주장은 현재 근거 범위에 없다.",
+        "evidence_ids": [
+          "E00245"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p10-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p10",
+        "reason": "본문은 포워드 단독 실행의 EPS별 연산 시간 합산 114.77s와 전체 소요 시간 114.78s를 제시했으나, 이 수치는 근거 E00240의 포워드 단독 측정값(합산 114.77s, 총 소요 114.78s)과 일치한다. 다만 해당 포워드 단독 결과 표가 출력되었다는 서술은 E00245와 충돌하므로 함께 오류로 본다.",
+        "evidence_ids": [
+          "E00240",
+          "E00245"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p10-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p10",
+        "reason": "본문은 백워드_only 결과 표가 [auto_LiRPA Verification Results] 표로 제시되었다고 서술했으나, 근거 E00245는 백워드_only 결과 섹션이 '백 워드_only 결과' 제목으로 시작된다고만 기록한다. 표 제목이 동일하게 사용되었는지는 현재 근거만으로 확인되지 않는다.",
+        "evidence_ids": [
+          "E00245"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p10-0",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p10",
+        "reason": "본문은 실행 시 배치 사이즈가 1024로 설정되었다고 서술했으나, 근거 E00249는 배치 사이즈 1024를 기록하면서도 싱글 스트림 여부는 '인듯'이라는 추정 표현으로만 제시한다. 배치 사이즈 설정 자체는 지지되지만, 실행 방식에 대한 추가 단정 가능성은 제한적이다.",
+        "evidence_ids": [
+          "E00249"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p10-0",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p11",
+        "reason": "E00279는 figure 캡션(p74:e582)에 기록된 '3가지 기술적 이유가 있다'는 존재 언급만 보존하며, 구체적 이유의 내용은 포함하지 않는다. 본문은 '컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록했다'고만 서술해 E00279의 한계와 부합한다. 다만 E00279의 limits는 '3가지 이유의 구체적 내용은 이 요소만으로는 제시되지 않는다'고 명시하므로, 본문에서 '기록했다'는 표현을 존재 언급 범위를 넘어 구체적 원인 제시로 읽히게 쓰면 안 된다. 현재 문장은 그 경계를 넘지 않아 허용 범위 내이나, '3가지 기술적 이유'의 귀속을 E00279의 figure 캡션 존재 언급으로만 제한한 점은 정확하다.",
+        "evidence_ids": [
+          "E00279"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p11-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p11",
+        "reason": "E00280은 heading 텍스트의 정성적 관찰 문장('일단 추론에서 좀 시간이 느려지긴 했다..')만 포함하며, 정량 수치나 원인 분석은 포함하지 않는다. 본문은 '기록자는 추론 단계에서 시간이 느려졌다고 관찰했으며'라고 서술해 E00280의 정성적 관찰 범위를 넘지 않는다. 다만 E00280의 limits는 '정량 수치나 원인 분석은 이 요소만으로는 제시되지 않는다'고 명시하므로, 본문에서 이 관찰을 Infer 단계 역전(E00278)의 정량적 원인처럼 연결하면 안 된다. 현재 문장은 E00278의 정량 서술과 E00280의 정성적 관찰을 별도 문장으로 분리해 귀속을 혼동하지 않았으므로 허용 범위 내이다.",
+        "evidence_ids": [
+          "E00280"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p11-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p11",
+        "reason": "E00277의 measurements는 cudaHostRegister 787.88s, No Pinning 776.70s, 차이 11초, 1회당 약 12μs를 명시하고, observations는 '약 1.4%(약 11초) 차이', '92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이'로 기록한다. 본문은 '787.88초 대 776.70초로 약 1.4%(약 11초) 차이이며, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다'고 서술해 수치·조건·해석을 E00277과 일치시킨다. 다만 E00277의 limits는 '반복 측정 통계나 조건별 분리 측정은 포함하지 않는다'고 명시하므로, 본문에서 이 수치를 반복 측정 통계나 조건별 분리 결과로 확장하면 안 된다. 현재 문장은 그 확장을 하지 않아 허용 범위 내이다.",
+        "evidence_ids": [
+          "E00277"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p11-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p11",
+        "reason": "E00278의 measurements는 Bound 단계 cudaHostRegister 658.80s vs No Pinning 663.17s(차이 4.37초), Infer 단계 cudaHostRegister 127.18s vs No Pinning 111.92s(차이 15.26초)를 명시하고, observations는 'Register가 4.37초 더 빠름', 'Register가 15.26초 더 느림', '데이터 전송 직후 바로 동기화가 일어나는 Infer 단계에서 15초가 역전됨'으로 기록한다. 본문은 'Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다'고 서술해 수치·조건·해석을 E00278과 일치시킨다. 다만 E00278의 limits는 '반복 측정 통계나 조건별 분리 측정은 포함하지 않는다'고 명시하므로, 본문에서 이 단계별 수치를 반복 측정 통계나 조건별 분리 결과로 확장하면 안 된다. 현재 문장은 그 확장을 하지 않아 허용 범위 내이다.",
+        "evidence_ids": [
+          "E00278"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p11-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p13",
+        "reason": "근거 E00284의 명령어(nvidia-smi -lgc 1410)와 본문(그래픽 클록 잠금 sodo nvidia-smi -lgc 1410)은 일치하지만, E00281의 ScopedGpuClockLock 기본 생성자는 2475 MHz를 목표로 하고 실제 실험은 2800 MHz를 사용했다는 귀속·조건 차이가 있다. 본문은 '클록을 2800MHz로 고정한 상태에서 기존 HostRegister 방식으로 실험을 진행했다'고 서술해 E00282의 조건(클록 2800MHz 고정, 기존 HostRegister)과 부합하나, E00281의 기본 목표값 2475 MHz와의 관계를 설명하지 않아 귀속이 불명확하다.",
+        "evidence_ids": [
+          "E00281",
+          "E00282",
+          "E00284"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p13-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p13",
+        "reason": "근거 E00282는 '클록을 2800MHz로 고정하고 돌린 결과(기존 HostRegister)'라는 실험 재시도 사실과 조건만 포함하며 실제 측정 결과 수치는 이 요소만으로 제시되지 않는다는 한계가 명시되어 있다. 본문은 '기존 HostRegister 방식으로 실험을 진행했다'고 서술해 실험 진행 사실까지는 부합하지만, 측정 결과 수치를 제시하지 않은 점은 근거 한계와 충돌하지 않으나, E00282의 한계를 반영하지 않고 실험 진행 사실만 인용한 점이 귀속상 불명확하다.",
+        "evidence_ids": [
+          "E00282"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p13-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p13",
+        "reason": "근거 E00286은 Persistence mode 설정(sudo nvidia-smi -pm 1)이 초기화 지연 제거 목적이라는 점을 포함하나, 실제 적용 결과나 측정 수치는 이 요소만으로 제시되지 않는다는 한계가 있다. 본문은 'Persistence mode는 초기화 지연 제거 목적으로 적용되었다'고 서술해 E00286의 목적과 일치하나, 적용 결과나 측정 수치가 없음을 반영하지 않았다.",
+        "evidence_ids": [
+          "E00286"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p13-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p14",
+        "reason": "문단이 E00279의 '3가지 기술적 이유 존재' 진술을 '기록자는 추론 단계에서 시간이 느려졌다고 관찰했으며, 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록했다'로 결합하여 서술했으나, E00279는 figure 캡션에 기록된 원인 제시 문장만 포함하며 3가지 이유의 구체적 내용은 이 요소만으로 제시되지 않는다는 한계가 명시되어 있다. 또한 E00280은 '일단 추론에서 좀 시간이 느려지긴 했다..'라는 정성적 관찰 기록만 포함하며 정량 수치나 원인 분석은 이 요소만으로 제시되지 않는다는 한계가 명시되어 있다. 문단은 이 두 근거를 결합하여 '기록자가 추론 단계 시간 느려짐을 관찰했고 3가지 기술적 이유가 있다고 기록했다'는 하나의 인과적 서술로 만들었으나, 각 근거의 한계(정성 관찰만/원인 제시 문장만, 구체적 내용 미제시)를 함께 명시하지 않아 근거 범위를 넘어선 결합 서술로 볼 수 있다.",
+        "evidence_ids": [
+          "E00279",
+          "E00280"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p14-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p15",
+        "reason": "근거 범위를 벗어난 단정적 서술이 포함됨",
+        "evidence_ids": [
+          "E00294"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p15-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p16",
+        "reason": "E00297의 limits는 '문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다'이며 claim_status도 interpretation/context_only다. 본문은 이를 관측된 측정 결과처럼 단정 서술했고, E00297의 measurements는 p80:img0:e1에 귀속된 값인데 본문은 이를 드라이버 내부 동작 해석으로 제시하면서 관측 결과로 처리했다.",
+        "evidence_ids": [
+          "E00297"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p16-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p16",
+        "reason": "본문은 '이에 따라 1회 전송 오버헤드는 No-Pin이 약 0.03μs, Pinned가 약 1.50μs이며, 920,000회 누적 오버헤드는 No-Pin이 약 0.03초, Pinned가 약 1.38초로 제시되었다'라고 서술했으나, E00297의 measurements에서 920,000회 누적 오버헤드는 No-Pin 0.03초, Pinned 1.38초로 귀속되어 있고 1회 전송 오버헤드도 No-Pin 0.03μs, Pinned 1.5μs로 귀속된다. 본문은 이 귀속 관계를 유지했지만, E00297의 limits와 claim_status가 관측 결과 사용을 금지하므로 관측 결과처럼 제시한 점이 문제다.",
+        "evidence_ids": [
+          "E00297"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p16-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p16",
+        "reason": "본문은 '이는 드라이버 내부 동작에 대한 해석이며'라고 명시했으나, 이어지는 지터/WCET 비교 문장(No-Pin 최대 8.80ms~11.6ms, 지터 118.94μs, Pinned 최대 1.64ms, 지터 47.28μs, 약 7배 안정, 약 60% 감소)은 E00299의 관측 수치로 귀속된다. E00297의 해석 문맥과 E00299의 관측 수치를 한 문장군 안에서 섞어 서술해, E00297의 해석 한계를 E00299의 관측 결과에까지 확장하는 인상을 준다.",
+        "evidence_ids": [
+          "E00297",
+          "E00299"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p16-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p17",
+        "reason": "근거 E00297의 limits는 '문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다'로 명시되어 있으나, 본문은 해당 설명을 관측된 측정 결과처럼 단정적으로 서술했다.",
+        "evidence_ids": [
+          "E00297"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p17-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p17",
+        "reason": "근거 E00297의 limits는 '실제 측정값은 표와 후속 측정 결과로 제시된다'고 명시하며, 1회 전송 오버헤드 0.03μs/1.5μs 및 920,000회 누적 0.03초/1.38초는 p80:img0:e1의 표 기반 값이다. 본문은 이 수치를 E00297의 해석 문장에 귀속시켜 근거 범위를 혼동했다.",
+        "evidence_ids": [
+          "E00297"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p17-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p17",
+        "reason": "근거 E00299의 limits는 '실제 측정 조건이나 반복 측정 통계는 별도 요소에서 다룬다'고 명시한다. 본문은 E00299의 수치를 인용하면서 측정 조건·반복 측정 통계의 한계를 함께 제시하지 않아 근거의 한계를 반영하지 않았다.",
+        "evidence_ids": [
+          "E00299"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p17-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p33",
+        "reason": "근거 H85ca0e507c4e_83의 관찰(observations)에는 'warmup 후 걸리는 시간 및 각 평균 시간이 더 늘어남', 'forward가 warm up 이전 backward 급 속도가 나옴', 'warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않음', '스파이크가 안 뜰 때의 시간은 오히려 더 안정적(변동 계수 더 낮은 느낌)'이 포함되어 있다. 그러나 본문은 이러한 관찰 결과를 반영하지 않고, warm up을 한 번 하며 CV를 통해 스파이크·분산을 규명하기로 했다는 계획·의도만 서술하고 있어 근거가 실제로 관찰한 내용과 대응하지 않는다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_83"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p33-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p33",
+        "reason": "근거 H85ca0e507c4e_84의 관찰에는 'cpu 계산 오버헤드가 더 큰 것 같기도 하고 시간이 늘었음'이 포함되어 있다. 본문은 cudaHostRegister 적용 및 memcpy 크기 축소만 서술하고, 해당 적용 이후 관찰된 시간 증가나 CPU 계산 오버헤드 관련 관찰을 반영하지 않아 근거의 관찰 내용과 대응하지 않는다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_84"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p33-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p33",
+        "reason": "근거 H85ca0e507c4e_85의 관찰에는 'graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회'가 포함되어 있다. 본문은 graph mode=1에서 샘플 1개 전체 기준 커널 발사 횟수 감소만 정리하고, cudaGraphLaunch가 infer 1회 + bound 1회로 유지된다는 관찰을 반영하지 않아 근거가 실제로 관찰한 내용과 대응하지 않는다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_85"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p33-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p35",
+        "reason": "H85ca0e507c4e_88의 limits/evidence_limitations에는 '가중치 사전 업로드'의 실제 효과가 p14:review:e9에서 '크게 의미를 못미친다'로 기록되어 역할 대비 성과가 제한적임이 함께 확인된다고 명시되어 있으나, 본문에는 이 제한적 성과/한계가 반영되지 않았다. 근거의 한계까지 함께 사용해야 하는 사실 서술에서 성과 제한 정보가 누락되었다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_88"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p35-0",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p38",
+        "reason": "H40849fcc17fe_3의 근거 한계를 반영하지 않고 '기준 모델(forward bound)'과 '변형 모델(backward bound)'이라는 명시적 라벨을 사실처럼 서술함. 원문에는 forward/backward를 '기준/변형'으로 지칭한 명시적 라벨이 없으며, 동일 코드 구조에서 switch(case 0/1)로 두 bound 방식을 선택할 수 있다고 기술되어 있음. 또한 0.2ms 차이는 warmup 이후 전체 평균 기준과 단일 샘플 기준이 혼재되어 있고, 단일 샘플에서는 backward가 약 0.2ms 더 느리다는 관찰이 함께 기록되어 있어 '비슷하게 나타났다'는 서술만으로는 이 차이를 충분히 반영하지 못함.",
+        "evidence_ids": [
+          "H40849fcc17fe_3"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p38-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p38",
+        "reason": "H40849fcc17fe_4의 근거 한계를 반영하지 않고 '준비된 실험 환경에서 단일 스트림 대비 약 3배 시간 단축(25분 → 8분)'을 일반화된 성능 결과로 서술함. 해당 수치는 '기존 데이터셋이 준비된 실험 환경' 기준이며, 실시간 환경에서는 데이터셋을 꽉 채우기 어렵다고 명시되어 있음. 또한 cudaGraph로 약 400초 감소는 추론과 bound를 '따로 캡처'했을 때 기준이고, 한번에 캡처한 경우의 수치는 별도로 제시되지 않았음에도 이를 구분하지 않음.",
+        "evidence_ids": [
+          "H40849fcc17fe_4"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p38-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p38",
+        "reason": "H40849fcc17fe_6의 근거 한계를 반영하지 않고 기준 모델의 8개 출력 노드 선택 구조를 확정된 사실처럼 서술함. 원문에는 '아마 최댓값을 따라가는 듯?', '아마 간격을 기준으로 따라감' 등 추측성 표현이 포함되어 있으며, 실제 구현 확정 여부는 교수 제공 답지에 의존한다고 기록되어 있음.",
+        "evidence_ids": [
+          "H40849fcc17fe_6"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p38-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p38",
+        "reason": "H40849fcc17fe_8의 근거 한계를 반영하지 않고 cuSparse 도입을 확정된 변경 사항처럼 서술함. 원문에서 cuSparse는 '혹시 cuSparse는 잘 되나 하고 도입해봤다' 수준의 실험적 시도이며, 실제 적용 결과나 성능 기여는 명확하지 않다고 기록되어 있음.",
+        "evidence_ids": [
+          "H40849fcc17fe_8"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p38-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p40",
+        "reason": "근거 Hcdbfb7147ce4_3과 Hcdbfb7147ce4_4는 backward_only가 가장 빠르다는 비교·순위가 그래프 적용 후 avg 기준으로 확인된다고 명시하지만, 본문은 이를 '구성 요소 단위 성능(forward, forward+backward, backward_only)'의 순위로 서술하고 있다. 근거의 측정 조건(그래프 적용 후, avg 기준)과 구성 요소 범위(backward_only 포함 3가지 방법)를 본문에서 구성 요소 단위 순위 일반으로 확대·변경한 주장이므로 오류다.",
+        "evidence_ids": [
+          "Hcdbfb7147ce4_3",
+          "Hcdbfb7147ce4_4"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p40-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p40",
+        "reason": "근거 Hcdbfb7147ce4_7과 Hcdbfb7147ce4_9는 구성 요소 단위 성능 순위와 전체 처리 성능 순위 간 차이·불일치 비교가 원문에서 확인되지 않는다고 명시하지만, 본문은 구성 요소 단위 성능 수치를 제시한 뒤 '구성 요소 단위 성능만의 명시적 순위 비교나, 구성 요소 단위 순위와 전체 처리 성능 순위 사이의 차이·불일치를 비교한 내용은 원문에서 확인되지 않는다'고 서술한다. 이는 근거의 '확인되지 않는다'는 부정적 관찰을 본문의 중심 비교 서술로 사용하여, 근거가 지정한 문맥 전용 성격(계획·질문·가설·해석·AI 조언 유지, 관측 결과로 쓰지 않음)을 관측 결과처럼 바꾼 오류다.",
+        "evidence_ids": [
+          "Hcdbfb7147ce4_7",
+          "Hcdbfb7147ce4_9"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p40-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p41",
+        "reason": "근거 Hefd7e87bb735_58의 limits·observations에 따르면 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 같은 측정 조건은 원문에 직접 명시되어 있지 않다는 부정적 관찰이며, writing_role은 context_only로 관측 결과로 쓰지 않도록 되어 있다. 그러나 본문은 이를 '반면 ~ 원문에 직접 명시되어 있지 않다'라는 관측 결과 서술로 전환하여, 근거의 성격(계획·질문·가설·해석·AI 조언)과 사용 한계를 벗어난다.",
+        "evidence_ids": [
+          "Hefd7e87bb735_58"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p41-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p41",
+        "reason": "근거 Hefd7e87bb735_62의 limits는 warmup 코드 주석, '평균으로 측정을 해봤다'는 캡션, cudaGraph만 적용된 버전 heading, sparse.py와 CUDA의 평균 bound 계산 시간 비교 표가 포함되어 있다고만 서술한다. 본문은 이 중 'sparse.py와 CUDA의 평균 bound 계산 시간 비교 표에서는 forward와 backward 방법에서 bound 계산 성능과 추론+bound+검증 성능이 함께 제시된다'고 구체화했는데, 이는 Hefd7e87bb735_62에 귀속된 범위를 넘어 source_table_0024(p58)의 내용을 근거로 끌어온 것으로 보인다. Hefd7e87bb735_62 단독으로는 해당 표의 세부 제시 내용까지 직접 뒷받침하지 않으므로, 지정된 근거만으로 보면 과도한 구체화가 된다.",
+        "evidence_ids": [
+          "Hefd7e87bb735_62"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p41-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p40",
+        "reason": "전체 처리 성능의 명시적 순위와 구성 요소 단위 순위 간 차이·불일치 비교가 원문에 직접 제시되지 않아, 제안 설계와 변형 방법별 정량 성능 비교의 비교 우위 해석이 부분적으로만 뒷받침된다.",
+        "evidence_ids": [
+          "Hcdbfb7147ce4_1",
+          "Hcdbfb7147ce4_2",
+          "Hcdbfb7147ce4_3",
+          "Hcdbfb7147ce4_4",
+          "Hcdbfb7147ce4_7",
+          "Hcdbfb7147ce4_8",
+          "Hcdbfb7147ce4_9"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p41",
+        "reason": "cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않다는 점이 확인되며, 발표자료·슬라이드 구성·대본 작성 피드백(E00181, E00182 등)은 GPU/CUDA 실험의 비교 조건을 직접 말하지 않으므로 제외된다.",
+        "evidence_ids": [
+          "Hefd7e87bb735_58",
+          "Hefd7e87bb735_62"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none"
+      }
+    ],
+    "evidence_usage_review": {
+      "batches": [
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p1-0",
+          "paragraph_id": "S_evaluation_p1",
+          "target_evidence_ids": [
+            "E00018",
+            "E00020",
+            "E00021",
+            "E00022",
+            "E00027",
+            "E00029",
+            "E00030",
+            "E00031",
+            "E00035",
+            "E00064",
+            "E00068",
+            "E00069",
+            "E00070",
+            "E00071",
+            "E00072",
+            "E00075",
+            "E00076",
+            "E00077",
+            "E00078",
+            "E00081",
+            "E00083",
+            "E00096",
+            "E00097",
+            "E00102",
+            "E00106",
+            "E00109",
+            "E00111",
+            "E00119",
+            "E00120",
+            "E00125",
+            "E00131",
+            "E00132",
+            "E00139",
+            "E00140",
+            "E00144",
+            "E00145"
+          ],
+          "context_evidence_ids": [
+            "E00018",
+            "E00020",
+            "E00021",
+            "E00022",
+            "E00027",
+            "E00029",
+            "E00030",
+            "E00031",
+            "E00035",
+            "E00064",
+            "E00068",
+            "E00069",
+            "E00070",
+            "E00071",
+            "E00072",
+            "E00075",
+            "E00076",
+            "E00077",
+            "E00078",
+            "E00081",
+            "E00083",
+            "E00096",
+            "E00097",
+            "E00102",
+            "E00106",
+            "E00109",
+            "E00111",
+            "E00119",
+            "E00120",
+            "E00125",
+            "E00131",
+            "E00132",
+            "E00139",
+            "E00140",
+            "E00144",
+            "E00145"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p2-0",
+          "paragraph_id": "S_evaluation_p2",
+          "target_evidence_ids": [
+            "E00159",
+            "E00166",
+            "E00170"
+          ],
+          "context_evidence_ids": [
+            "E00159",
+            "E00166",
+            "E00170"
+          ],
+          "issue_count": 2
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p3-0",
+          "paragraph_id": "S_evaluation_p3",
+          "target_evidence_ids": [
+            "E00176",
+            "E00178",
+            "E00180"
+          ],
+          "context_evidence_ids": [
+            "E00176",
+            "E00178",
+            "E00180"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p4-0",
+          "paragraph_id": "S_evaluation_p4",
+          "target_evidence_ids": [
+            "E00187",
+            "E00188",
+            "E00189",
+            "E00190",
+            "E00191"
+          ],
+          "context_evidence_ids": [
+            "E00187",
+            "E00188",
+            "E00189",
+            "E00190",
+            "E00191"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p5-0",
+          "paragraph_id": "S_evaluation_p5",
+          "target_evidence_ids": [
+            "E00202",
+            "E00203",
+            "E00206",
+            "E00207",
+            "E00208"
+          ],
+          "context_evidence_ids": [
+            "E00202",
+            "E00203",
+            "E00206",
+            "E00207",
+            "E00208"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p6-0",
+          "paragraph_id": "S_evaluation_p6",
+          "target_evidence_ids": [
+            "E00211",
+            "E00212",
+            "E00213"
+          ],
+          "context_evidence_ids": [
+            "E00211",
+            "E00212",
+            "E00213"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p7-0",
+          "paragraph_id": "S_evaluation_p7",
+          "target_evidence_ids": [
+            "E00214",
+            "E00215",
+            "E00216"
+          ],
+          "context_evidence_ids": [
+            "E00214",
+            "E00215",
+            "E00216"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p8-0",
+          "paragraph_id": "S_evaluation_p8",
+          "target_evidence_ids": [
+            "E00223",
+            "E00224",
+            "E00227",
+            "E00228"
+          ],
+          "context_evidence_ids": [
+            "E00223",
+            "E00224",
+            "E00227",
+            "E00228"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p9-0",
+          "paragraph_id": "S_evaluation_p9",
+          "target_evidence_ids": [
+            "E00158",
+            "E00169",
+            "E00171",
+            "E00238"
+          ],
+          "context_evidence_ids": [
+            "E00158",
+            "E00169",
+            "E00171",
+            "E00238"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p10-0",
+          "paragraph_id": "S_evaluation_p10",
+          "target_evidence_ids": [
+            "E00239",
+            "E00240",
+            "E00243",
+            "E00245",
+            "E00246",
+            "E00247",
+            "E00249",
+            "E00250",
+            "E00251",
+            "H85ca0e507c4e_43"
+          ],
+          "context_evidence_ids": [
+            "E00239",
+            "E00240",
+            "E00245",
+            "E00246",
+            "E00247",
+            "E00249",
+            "H85ca0e507c4e_43",
+            "E00243",
+            "E00250",
+            "E00251"
+          ],
+          "issue_count": 4
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p11-0",
+          "paragraph_id": "S_evaluation_p11",
+          "target_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 4
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p12-0",
+          "paragraph_id": "S_evaluation_p12",
+          "target_evidence_ids": [
+            "E00297",
+            "E00299"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p13-0",
+          "paragraph_id": "S_evaluation_p13",
+          "target_evidence_ids": [
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p14-0",
+          "paragraph_id": "S_evaluation_p14",
+          "target_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p15-0",
+          "paragraph_id": "S_evaluation_p15",
+          "target_evidence_ids": [
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00296"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12",
+            "E00294",
+            "E00296"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p16-0",
+          "paragraph_id": "S_evaluation_p16",
+          "target_evidence_ids": [
+            "E00297",
+            "E00299"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p17-0",
+          "paragraph_id": "S_evaluation_p17",
+          "target_evidence_ids": [
+            "E00297",
+            "E00299"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p18-0",
+          "paragraph_id": "S_evaluation_p18",
+          "target_evidence_ids": [
+            "E00301",
+            "E00304",
+            "E00305",
+            "E00306",
+            "E00307",
+            "E00308"
+          ],
+          "context_evidence_ids": [
+            "E00301",
+            "E00304",
+            "E00305",
+            "E00306",
+            "E00307",
+            "E00308"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p19-0",
+          "paragraph_id": "S_evaluation_p19",
+          "target_evidence_ids": [
+            "E00303"
+          ],
+          "context_evidence_ids": [
+            "E00303"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p20-0",
+          "paragraph_id": "S_evaluation_p20",
+          "target_evidence_ids": [
+            "E00358",
+            "E00361",
+            "E00375",
+            "H85ca0e507c4e_4"
+          ],
+          "context_evidence_ids": [
+            "E00358",
+            "E00361",
+            "E00375",
+            "H85ca0e507c4e_4"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p21-0",
+          "paragraph_id": "S_evaluation_p21",
+          "target_evidence_ids": [
+            "E00309",
+            "Hefd7e87bb735_34",
+            "Hefd7e87bb735_67"
+          ],
+          "context_evidence_ids": [
+            "E00309",
+            "Hefd7e87bb735_67",
+            "Hefd7e87bb735_34"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p22-0",
+          "paragraph_id": "S_evaluation_p22",
+          "target_evidence_ids": [
+            "E00313",
+            "E00314",
+            "E00315"
+          ],
+          "context_evidence_ids": [
+            "E00313",
+            "E00314",
+            "E00315"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p23-0",
+          "paragraph_id": "S_evaluation_p23",
+          "target_evidence_ids": [
+            "E00318",
+            "E00319",
+            "E00320"
+          ],
+          "context_evidence_ids": [
+            "E00318",
+            "E00319",
+            "E00320"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p24-0",
+          "paragraph_id": "S_evaluation_p24",
+          "target_evidence_ids": [
+            "E00339",
+            "E00341",
+            "E00343",
+            "E00344",
+            "Hefd7e87bb735_53"
+          ],
+          "context_evidence_ids": [
+            "E00339",
+            "E00341",
+            "E00343",
+            "E00344",
+            "Hefd7e87bb735_53"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p25-0",
+          "paragraph_id": "S_evaluation_p25",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_30",
+            "H85ca0e507c4e_31",
+            "H85ca0e507c4e_32",
+            "H85ca0e507c4e_33",
+            "H85ca0e507c4e_34"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_30",
+            "H85ca0e507c4e_31",
+            "H85ca0e507c4e_32",
+            "H85ca0e507c4e_33",
+            "H85ca0e507c4e_34"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p26-0",
+          "paragraph_id": "S_evaluation_p26",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_35",
+            "H85ca0e507c4e_36",
+            "H85ca0e507c4e_38"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_35",
+            "H85ca0e507c4e_36",
+            "H85ca0e507c4e_38"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p27-0",
+          "paragraph_id": "S_evaluation_p27",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_44",
+            "H85ca0e507c4e_45",
+            "H85ca0e507c4e_46",
+            "H85ca0e507c4e_47",
+            "H85ca0e507c4e_48",
+            "H85ca0e507c4e_49"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_44",
+            "H85ca0e507c4e_45",
+            "H85ca0e507c4e_46",
+            "H85ca0e507c4e_47",
+            "H85ca0e507c4e_48",
+            "H85ca0e507c4e_49"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p28-0",
+          "paragraph_id": "S_evaluation_p28",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_51",
+            "H85ca0e507c4e_52",
+            "H85ca0e507c4e_53",
+            "H85ca0e507c4e_54",
+            "H85ca0e507c4e_56"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_51",
+            "H85ca0e507c4e_52",
+            "H85ca0e507c4e_53",
+            "H85ca0e507c4e_54",
+            "H85ca0e507c4e_56"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p29-0",
+          "paragraph_id": "S_evaluation_p29",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_57",
+            "H85ca0e507c4e_58",
+            "H85ca0e507c4e_59",
+            "H85ca0e507c4e_60",
+            "H85ca0e507c4e_62",
+            "H85ca0e507c4e_63"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_57",
+            "H85ca0e507c4e_58",
+            "H85ca0e507c4e_59",
+            "H85ca0e507c4e_60",
+            "H85ca0e507c4e_62",
+            "H85ca0e507c4e_63"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p30-0",
+          "paragraph_id": "S_evaluation_p30",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_64",
+            "H85ca0e507c4e_66",
+            "H85ca0e507c4e_67",
+            "H85ca0e507c4e_68",
+            "H85ca0e507c4e_69",
+            "H85ca0e507c4e_70",
+            "H85ca0e507c4e_71"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_64",
+            "H85ca0e507c4e_66",
+            "H85ca0e507c4e_67",
+            "H85ca0e507c4e_68",
+            "H85ca0e507c4e_69",
+            "H85ca0e507c4e_70",
+            "H85ca0e507c4e_71"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p31-0",
+          "paragraph_id": "S_evaluation_p31",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_72",
+            "H85ca0e507c4e_74",
+            "H85ca0e507c4e_75",
+            "H85ca0e507c4e_78"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_72",
+            "H85ca0e507c4e_74",
+            "H85ca0e507c4e_75",
+            "H85ca0e507c4e_78"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p32-0",
+          "paragraph_id": "S_evaluation_p32",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_79",
+            "H85ca0e507c4e_80",
+            "H85ca0e507c4e_81"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_79",
+            "H85ca0e507c4e_80",
+            "H85ca0e507c4e_81"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p33-0",
+          "paragraph_id": "S_evaluation_p33",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_83",
+            "H85ca0e507c4e_84",
+            "H85ca0e507c4e_85"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_83",
+            "H85ca0e507c4e_84",
+            "H85ca0e507c4e_85"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p34-0",
+          "paragraph_id": "S_evaluation_p34",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_86",
+            "H85ca0e507c4e_87"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_86",
+            "H85ca0e507c4e_87"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p35-0",
+          "paragraph_id": "S_evaluation_p35",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_89",
+            "H85ca0e507c4e_92"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_89",
+            "H85ca0e507c4e_92"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p36-0",
+          "paragraph_id": "S_evaluation_p36",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_93",
+            "H85ca0e507c4e_94",
+            "H85ca0e507c4e_95"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_93",
+            "H85ca0e507c4e_94",
+            "H85ca0e507c4e_95"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p37-0",
+          "paragraph_id": "S_evaluation_p37",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_97",
+            "H85ca0e507c4e_98"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_97",
+            "H85ca0e507c4e_98"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p38-0",
+          "paragraph_id": "S_evaluation_p38",
+          "target_evidence_ids": [
+            "H40849fcc17fe_1",
+            "H40849fcc17fe_3",
+            "H40849fcc17fe_4",
+            "H40849fcc17fe_6",
+            "H40849fcc17fe_7",
+            "H40849fcc17fe_8"
+          ],
+          "context_evidence_ids": [
+            "H40849fcc17fe_1",
+            "H40849fcc17fe_3",
+            "H40849fcc17fe_4",
+            "H40849fcc17fe_6",
+            "H40849fcc17fe_7",
+            "H40849fcc17fe_8"
+          ],
+          "issue_count": 4
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p39-0",
+          "paragraph_id": "S_evaluation_p39",
+          "target_evidence_ids": [
+            "H40849fcc17fe_10",
+            "H40849fcc17fe_9"
+          ],
+          "context_evidence_ids": [
+            "H40849fcc17fe_9",
+            "H40849fcc17fe_10"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p40-0",
+          "paragraph_id": "S_evaluation_p40",
+          "target_evidence_ids": [
+            "Hcdbfb7147ce4_1",
+            "Hcdbfb7147ce4_2",
+            "Hcdbfb7147ce4_3",
+            "Hcdbfb7147ce4_4",
+            "Hcdbfb7147ce4_7",
+            "Hcdbfb7147ce4_8",
+            "Hcdbfb7147ce4_9"
+          ],
+          "context_evidence_ids": [
+            "Hefd7e87bb735_58",
+            "Hefd7e87bb735_62",
+            "Hcdbfb7147ce4_7",
+            "Hcdbfb7147ce4_9",
+            "Hcdbfb7147ce4_1",
+            "Hcdbfb7147ce4_2",
+            "Hcdbfb7147ce4_3",
+            "Hcdbfb7147ce4_4",
+            "Hcdbfb7147ce4_8"
+          ],
+          "issue_count": 2
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p41-0",
+          "paragraph_id": "S_evaluation_p41",
+          "target_evidence_ids": [
+            "Hefd7e87bb735_58",
+            "Hefd7e87bb735_62"
+          ],
+          "context_evidence_ids": [
+            "Hefd7e87bb735_58",
+            "Hefd7e87bb735_62",
+            "Hcdbfb7147ce4_7",
+            "Hcdbfb7147ce4_9"
+          ],
+          "issue_count": 2
+        }
+      ],
+      "summary": {
+        "checked_paragraph_ids": [
+          "S_evaluation_p1",
+          "S_evaluation_p2",
+          "S_evaluation_p3",
+          "S_evaluation_p4",
+          "S_evaluation_p5",
+          "S_evaluation_p6",
+          "S_evaluation_p7",
+          "S_evaluation_p8",
+          "S_evaluation_p9",
+          "S_evaluation_p10",
+          "S_evaluation_p11",
+          "S_evaluation_p12",
+          "S_evaluation_p13",
+          "S_evaluation_p14",
+          "S_evaluation_p15",
+          "S_evaluation_p16",
+          "S_evaluation_p17",
+          "S_evaluation_p18",
+          "S_evaluation_p19",
+          "S_evaluation_p20",
+          "S_evaluation_p21",
+          "S_evaluation_p22",
+          "S_evaluation_p23",
+          "S_evaluation_p24",
+          "S_evaluation_p25",
+          "S_evaluation_p26",
+          "S_evaluation_p27",
+          "S_evaluation_p28",
+          "S_evaluation_p29",
+          "S_evaluation_p30",
+          "S_evaluation_p31",
+          "S_evaluation_p32",
+          "S_evaluation_p33",
+          "S_evaluation_p34",
+          "S_evaluation_p35",
+          "S_evaluation_p36",
+          "S_evaluation_p37",
+          "S_evaluation_p38",
+          "S_evaluation_p39",
+          "S_evaluation_p40",
+          "S_evaluation_p41"
+        ],
+        "checked_evidence_ids": [
+          "E00018",
+          "E00020",
+          "E00021",
+          "E00022",
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00031",
+          "E00035",
+          "E00064",
+          "E00068",
+          "E00069",
+          "E00070",
+          "E00071",
+          "E00072",
+          "E00075",
+          "E00076",
+          "E00077",
+          "E00078",
+          "E00081",
+          "E00083",
+          "E00096",
+          "E00097",
+          "E00102",
+          "E00106",
+          "E00109",
+          "E00111",
+          "E00119",
+          "E00120",
+          "E00125",
+          "E00131",
+          "E00132",
+          "E00139",
+          "E00140",
+          "E00144",
+          "E00145",
+          "E00158",
+          "E00159",
+          "E00166",
+          "E00169",
+          "E00170",
+          "E00171",
+          "E00176",
+          "E00178",
+          "E00180",
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00202",
+          "E00203",
+          "E00206",
+          "E00207",
+          "E00208",
+          "E00211",
+          "E00212",
+          "E00213",
+          "E00214",
+          "E00215",
+          "E00216",
+          "E00223",
+          "E00224",
+          "E00227",
+          "E00228",
+          "E00238",
+          "E00239",
+          "E00240",
+          "E00243",
+          "E00245",
+          "E00246",
+          "E00247",
+          "E00249",
+          "E00250",
+          "E00251",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00301",
+          "E00303",
+          "E00304",
+          "E00305",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00309",
+          "E00313",
+          "E00314",
+          "E00315",
+          "E00318",
+          "E00319",
+          "E00320",
+          "E00339",
+          "E00341",
+          "E00343",
+          "E00344",
+          "E00358",
+          "E00361",
+          "E00375",
+          "H40849fcc17fe_1",
+          "H40849fcc17fe_10",
+          "H40849fcc17fe_3",
+          "H40849fcc17fe_4",
+          "H40849fcc17fe_6",
+          "H40849fcc17fe_7",
+          "H40849fcc17fe_8",
+          "H40849fcc17fe_9",
+          "H85ca0e507c4e_30",
+          "H85ca0e507c4e_31",
+          "H85ca0e507c4e_32",
+          "H85ca0e507c4e_33",
+          "H85ca0e507c4e_34",
+          "H85ca0e507c4e_35",
+          "H85ca0e507c4e_36",
+          "H85ca0e507c4e_38",
+          "H85ca0e507c4e_4",
+          "H85ca0e507c4e_43",
+          "H85ca0e507c4e_44",
+          "H85ca0e507c4e_45",
+          "H85ca0e507c4e_46",
+          "H85ca0e507c4e_47",
+          "H85ca0e507c4e_48",
+          "H85ca0e507c4e_49",
+          "H85ca0e507c4e_51",
+          "H85ca0e507c4e_52",
+          "H85ca0e507c4e_53",
+          "H85ca0e507c4e_54",
+          "H85ca0e507c4e_56",
+          "H85ca0e507c4e_57",
+          "H85ca0e507c4e_58",
+          "H85ca0e507c4e_59",
+          "H85ca0e507c4e_60",
+          "H85ca0e507c4e_62",
+          "H85ca0e507c4e_63",
+          "H85ca0e507c4e_64",
+          "H85ca0e507c4e_66",
+          "H85ca0e507c4e_67",
+          "H85ca0e507c4e_68",
+          "H85ca0e507c4e_69",
+          "H85ca0e507c4e_70",
+          "H85ca0e507c4e_71",
+          "H85ca0e507c4e_72",
+          "H85ca0e507c4e_74",
+          "H85ca0e507c4e_75",
+          "H85ca0e507c4e_78",
+          "H85ca0e507c4e_79",
+          "H85ca0e507c4e_80",
+          "H85ca0e507c4e_81",
+          "H85ca0e507c4e_83",
+          "H85ca0e507c4e_84",
+          "H85ca0e507c4e_85",
+          "H85ca0e507c4e_86",
+          "H85ca0e507c4e_87",
+          "H85ca0e507c4e_88",
+          "H85ca0e507c4e_89",
+          "H85ca0e507c4e_92",
+          "H85ca0e507c4e_93",
+          "H85ca0e507c4e_94",
+          "H85ca0e507c4e_95",
+          "H85ca0e507c4e_97",
+          "H85ca0e507c4e_98",
+          "Hcdbfb7147ce4_1",
+          "Hcdbfb7147ce4_2",
+          "Hcdbfb7147ce4_3",
+          "Hcdbfb7147ce4_4",
+          "Hcdbfb7147ce4_7",
+          "Hcdbfb7147ce4_8",
+          "Hcdbfb7147ce4_9",
+          "Hefd7e87bb735_34",
+          "Hefd7e87bb735_53",
+          "Hefd7e87bb735_58",
+          "Hefd7e87bb735_62",
+          "Hefd7e87bb735_67"
+        ],
+        "issue_count": 36,
+        "blocking_paragraph_ids": [
+          "S_evaluation_p5",
+          "S_evaluation_p10",
+          "S_evaluation_p11",
+          "S_evaluation_p13",
+          "S_evaluation_p14",
+          "S_evaluation_p15",
+          "S_evaluation_p16",
+          "S_evaluation_p17",
+          "S_evaluation_p33",
+          "S_evaluation_p38",
+          "S_evaluation_p40",
+          "S_evaluation_p41"
+        ]
+      },
+      "coverage_batches": [
+        "all"
+      ]
+    },
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [
+      {
+        "item_id": "RI_eval_1",
+        "added_paragraph_ids": [
+          "S_evaluation_p9",
+          "S_evaluation_p10",
+          "S_evaluation_p27"
+        ]
+      }
+    ]
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "RI_eval_1",
+        "verdict": "met",
+        "paragraph_ids": [
+          "S_evaluation_p1",
+          "S_evaluation_p20",
+          "S_evaluation_p25",
+          "S_evaluation_p38",
+          "S_evaluation_p39",
+          "S_evaluation_p40",
+          "S_evaluation_p9",
+          "S_evaluation_p10",
+          "S_evaluation_p27"
+        ],
+        "evidence_ids": [
+          "E00018",
+          "E00020",
+          "E00021",
+          "E00022",
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00031",
+          "E00035",
+          "E00064",
+          "E00068",
+          "E00069",
+          "E00070",
+          "E00071",
+          "E00072",
+          "E00075",
+          "E00076",
+          "E00077",
+          "E00078",
+          "E00081",
+          "E00083",
+          "E00096",
+          "E00097",
+          "E00102",
+          "E00106",
+          "E00109",
+          "E00111",
+          "E00119",
+          "E00120",
+          "E00125",
+          "E00131",
+          "E00132",
+          "E00139",
+          "E00140",
+          "E00144",
+          "E00145",
+          "E00158",
+          "E00169",
+          "E00171",
+          "E00238",
+          "E00358",
+          "E00361",
+          "E00375",
+          "H40849fcc17fe_1",
+          "H40849fcc17fe_3",
+          "H40849fcc17fe_4",
+          "H40849fcc17fe_6",
+          "H40849fcc17fe_7",
+          "H40849fcc17fe_8",
+          "H40849fcc17fe_9",
+          "H40849fcc17fe_10",
+          "H85ca0e507c4e_4",
+          "H85ca0e507c4e_30",
+          "H85ca0e507c4e_31",
+          "H85ca0e507c4e_32",
+          "H85ca0e507c4e_33",
+          "H85ca0e507c4e_34",
+          "H85ca0e507c4e_43",
+          "H85ca0e507c4e_44",
+          "H85ca0e507c4e_45",
+          "H85ca0e507c4e_46",
+          "H85ca0e507c4e_47",
+          "H85ca0e507c4e_48",
+          "H85ca0e507c4e_49",
+          "Hcdbfb7147ce4_1",
+          "Hcdbfb7147ce4_2",
+          "Hcdbfb7147ce4_3",
+          "Hcdbfb7147ce4_4",
+          "Hcdbfb7147ce4_7",
+          "Hcdbfb7147ce4_8",
+          "Hcdbfb7147ce4_9"
+        ],
+        "quote": "CROWN 검증의 실행 시간을 CPU 전용, GPU 전용, GPU 최적화, 하이브리드, 그리고 메모리 풀·웜업·커널 퓨전 등 최적화 단계별로 측정하였다. CPU 전용(CPU ONLY) 모드에서는 단일 실행 기준 101.237800 ms가 기록되었고, 이를 약 101ms로 요약하여 GPU 버전과 나란히 표기하였다. GPU 전용(GPU) 모드에서는 353.057200 ms가 기록되었으며, 약 353ms로 요약 표기되었다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서는 229.691800 ms가 기록되어 약 100ms 정도 줄었지만, 기록자는 여전히 CPU보다 느리다고 평가하였다. 이후 matmul만 GPU로 실행하는 HYBRID(matmul=GPU, rest=CPU) 모드를 시도하였고, 그 결과 201.670100 ms가 기록되어 조금 줄었으나 여전히 CPU보다 느리다고 적혔다. HYBRID V2 모드에서는 85.785300 ms가 기록되어 CPU보다 빨라졌다고 평가되었다. 이후 메모리 풀과 웜업 조합, memcpy 제거, 커널 퓨전 등을 단계적으로 적용하면서 실행 시간이 점차 감소하였고, 최종적으로는 커널 퓨전 완료 후 15.751000 ms까지 낮아지는 흐름이 관측되었다. 다만 이 수치들은 대부분 단일 실행 결과 또는 기록자의 요약·정성 평가에 기반하므로, 반복 측정 통계나 CPU 대비 우위의 통계적 해석은 현재 페이지에 제시되지 않았다. [근거:E00018,E00020,E00021,E00022,E00027,E00029,E00030,E00031,E00035,E00064,E00068,E00069,E00070,E00071,E00072,E00075,E00076,E00077,E00078,E00081,E00083,E00096,E00097,E00102,E00106,E00109,E00111,E00119,E00120,E00125,E00131,E00132,E00139,E00140,E00144,E00145]",
+        "paragraph_quotes": [
+          "CROWN 검증의 실행 시간을 CPU 전용, GPU 전용, GPU 최적화, 하이브리드, 그리고 메모리 풀·웜업·커널 퓨전 등 최적화 단계별로 측정하였다. CPU 전용(CPU ONLY) 모드에서는 단일 실행 기준 101.237800 ms가 기록되었고, 이를 약 101ms로 요약하여 GPU 버전과 나란히 표기하였다. GPU 전용(GPU) 모드에서는 353.057200 ms가 기록되었으며, 약 353ms로 요약 표기되었다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서는 229.691800 ms가 기록되어 약 100ms 정도 줄었지만, 기록자는 여전히 CPU보다 느리다고 평가하였다. 이후 matmul만 GPU로 실행하는 HYBRID(matmul=GPU, rest=CPU) 모드를 시도하였고, 그 결과 201.670100 ms가 기록되어 조금 줄었으나 여전히 CPU보다 느리다고 적혔다. HYBRID V2 모드에서는 85.785300 ms가 기록되어 CPU보다 빨라졌다고 평가되었다. 이후 메모리 풀과 웜업 조합, memcpy 제거, 커널 퓨전 등을 단계적으로 적용하면서 실행 시간이 점차 감소하였고, 최종적으로는 커널 퓨전 완료 후 15.751000 ms까지 낮아지는 흐름이 관측되었다. 다만 이 수치들은 대부분 단일 실행 결과 또는 기록자의 요약·정성 평가에 기반하므로, 반복 측정 통계나 CPU 대비 우위의 통계적 해석은 현재 페이지에 제시되지 않았다. [근거:E00018,E00020,E00021,E00022,E00027,E00029,E00030,E00031,E00035,E00064,E00068,E00069,E00070,E00071,E00072,E00075,E00076,E00077,E00078,E00081,E00083,E00096,E00097,E00102,E00106,E00109,E00111,E00119,E00120,E00125,E00131,E00132,E00139,E00140,E00144,E00145]",
+          "실행 시간 비교는 CPU 전용 버전과 GPU 포팅·최적화 버전, 그리고 메모리 방식과 커널 축소 적용 여부에 따른 차이를 중심으로 정리한다. 초기 비교에서는 CPU ONLY 계산 버전과 GPU 버전을 만들어 신경망 정방향 통과 및 CROWN 알고리즘(backward) 계산 시간을 측정했으며, eps=1e-06, Output Dimension=16 조건에서 CPU ONLY는 101.237800 ms, GPU 버전(my_lirpa.cu)은 353.057200 ms, GPU OPTIMIZED(cuBLAS + Pool)는 229.691800 ms, HYBRID(matmul=GPU, rest=CPU)는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었다. 이후 그래프 적용 전후 비교에서 forward 방식은 1029s에서 668s로, backward_only_cuda_graph 방식은 787s에서 630s로 감소하여 각각 약 361초, 약 157초 정도 줄어든 것으로 나타났다. 다만 이 감소 결과는 요약된 값이며 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다. 실시간 멀티스트림 구성에서는 forward_cuda_graph의 전체 시간이 1055.282초, infer가 131.7986초, bound가 920.8438초로 측정되어, 그래프 적용 버전 간에도 구성 방식에 따라 시간 차이가 나타났다. [근거:H85ca0e507c4e_4,E00361,E00358,E00375]",
+          "실행 시간 비교는 CPU 전용 반복 버전, mempool 및 warmup을 적용한 GPU 버전, 그리고 이후 backward GPU 파이프라인 완성 버전을 중심으로 정리하였다. mempool과 warmup을 함께 적용한 경우 Elapsed time이 약 103.74 ms로 관찰되어, 연구 기록상 “이제 거의 CPU와 비슷해졌다”는 수준으로 접근한 것으로 서술된다. 반면 CPU ONLY iteration ver에서는 약 193.67 ms가 측정되었고, 이는 기존 backward 대비 약 93 ms 정도 느린 결과로 기록되었다. 이 CPU 버전은 backward_only 구조체를 새로 도입해야 했고, lirpa_backward_only_iteration_array의 구조가 기존 lirpa_forward_backward_fc_array와 달라 새로운 함수와 기본 자료구조 등이 필요했다는 구현 맥락과 함께 언급된다. 이후 backward GPU 파이프라인이 완성되어 실행 결과가 확인되었으며, 실시간성 확인을 위해서는 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 요구가 함께 제시되었다. [근거:H85ca0e507c4e_30,H85ca0e507c4e_31,H85ca0e507c4e_32,H85ca0e507c4e_33,H85ca0e507c4e_34]",
+          "구조 차이는 함수별 실행 위치(GPU 커널 vs CPU for 문)와 GPU 메모리 풀 구조에서 나타난다고 기록된다. 기준 모델(forward bound)과 변형 모델(backward bound)은 bound 계산 방식(forward/backward)에서 차이가 있으며, 측정 결과 두 bound 계산 시간은 warmup 이후 약 0.2 ms 차이로 비슷하게 나타났다고 서술된다. 변형 모델에서는 배칭(batching) 및 cudaGraph 캡처 등 실행 구조 변경이 적용되었고, 준비된 실험 환경에서 단일 스트림 대비 약 3배 시간 단축(25분 → 8분)이 보고되었다고 기록된다. 기준 모델은 CROWN 알고리즘에서 출력한 16개 값에 대해 신경망 기준 또는 lower_bound/upper_bound 기준으로 8개 출력 노드를 선택하는 구조를 사용한다고 설명된다. 변형 모델 중 하나는 메모리 풀(할당/해제 제거)과 memcpy 비용 제거를 적용한 버전으로, 고정된 가중치(W)와 편향(B) 값을 사용한다고 기록된다. 또 다른 변형 모델은 cuBlas, cuSparse 라이브러리를 도입하고 메모리 풀을 사용하며, matvec/matmul 연산을 cuBlas로 수행하도록 변경되었다고 서술된다. [근거:H40849fcc17fe_1,H40849fcc17fe_3,H40849fcc17fe_4,H40849fcc17fe_6,H40849fcc17fe_7,H40849fcc17fe_8]",
+          "기준 모델(v0)은 단독 CPU 처리로 96ms를 기록했으며, 이후 GPU 병렬처리·메모리 풀·cuBlas 도입 등을 거친 변형 모델들은 실행 시간이 달라졌다. v1은 모든 병렬처리 함수를 커널 함수로 바꾸어 355ms, v2는 벡터 연산을 다시 CPU로 처리하고 메모리 풀과 cuBlas를 도입해 229ms, v3은 CPU·GPU 하이브리드 구성과 풀 구조체 축소로 200ms를 보였다. 이후 85ms 수준의 결과가 확인되면서 CPU보다 빠른 실행이 처음으로 나타났다. 다만 각 버전의 구조 차이와 성능 개선 원인 사이의 인과 관계는 문서에 부분적으로만 기술되어 있고, 일부 버전은 실험적 시도 수준에 머문다. 또한 memcpy 감소처럼 특정 최적화의 효과는 제한적이거나 수 ms 수준의 차이에 그쳐, 구조 변화가 성능에 미치는 영향을 체계적으로 해석하기에는 기록이 충분하지 않다. [근거:H40849fcc17fe_9,H40849fcc17fe_10]",
+          "전체 처리 성능의 명시적 순위는 원문에 제시되어 있지 않으며, 여러 실행의 총 소요 시간이 산발적으로 기록되어 있을 뿐 이를 순위 형태로 정리하거나 비교한 서술은 확인되지 않는다. 구성 요소 단위 성능(forward, forward+backward, backward_only)과 관련해서는 avg 기준, 그래프 적용 후 측정 조건에서 forward 1029s, forward+backward 1138s, backward_only 787.8832s가 함께 제시되었고, backward_only가 3가지 방법 중 가장 빠르다고 명시되었다. 다만 구성 요소 단위 성능만의 명시적 순위 비교나, 구성 요소 단위 순위와 전체 처리 성능 순위 사이의 차이·불일치를 비교한 내용은 원문에서 확인되지 않는다. [근거:Hcdbfb7147ce4_1,Hcdbfb7147ce4_2,Hcdbfb7147ce4_3,Hcdbfb7147ce4_4,Hcdbfb7147ce4_7,Hcdbfb7147ce4_8,Hcdbfb7147ce4_9]",
+          "forward 최적화를 통해 backward보다 forward가 느린 문제는 해결된 것으로 기록되었다. 다만 이 해결 선언은 기록자의 판단이며, 정량 성능 수치나 반복 측정 기반 통계는 이 요소만으로 제시되지 않는다. CROWN_SWEEP 실행 시간은 64.064초와 98.995초로 각각 관측되었으나, 두 수치는 특정 실행 조건에서의 단일 측정값이며 두 조건이 어떻게 다른지 또는 어떤 조건인지에 대한 상세 맥락은 원문에 별도로 명시되지 않았다. 또한 auto_lirpa 결과가 도출되었고, 포워드+백워드 결과로 [auto_LiRPA Verification Results] 표가 제시되었다. [근거:E00158,E00169,E00171,E00238]",
+          "auto_LiRPA 검증 결과는 eps 값에 따라 인증 성공(T), 실패(F), ratio, 연산 시간(time)을 표로 제시하며, 포워드+백워드 결과와 포워드 단독 결과가 각각 출력되었다. 포워드+백워드 실행에서는 EPS별 연산 시간 합산이 107.30s, 전체 프로그램 총 소요 시간이 107.32s로 기록되었고, 포워드 단독 실행에서는 각각 114.77s와 114.78s로 나타났다. 백워드_only 실행에서는 EPS별 연산 시간 합산 55.77s, 전체 소요 시간 55.78s가 기록되었으며, 백워드_only 결과 역시 [auto_LiRPA Verification Results] 표로 제시되었다. 포워드+백워드 결과는 autolirpa_results_forward.csv에, 백워드_only 결과는 autolirpa_results_backward_only.csv에 저장되었다. 실행은 python autolirpa_topk_robustness.py --data-path \"경로/데이터.pickle\" --device cuda --batch-size 1024 방식으로 진행되었고, 배치 사이즈는 1024로 설정되었다. 기록자의 관측으로는 백워드_only가 가장 빠르고 포워드가 가장 느리다는 점이 특이하게 언급되었으며, 이는 일반적으로 기대하는 forward < forward + backward < backward_only 순서와 다른 결과였다. [근거:E00239,E00240,E00245,E00246,E00247,E00249,E00243,H85ca0e507c4e_43,E00250,E00251]",
+          "구성 요소별 역할 관점에서는 backward_only가 아직 그래프로 만들지 않은 상태에서도 bound 평균이 forward 대비 약 2.5배 수준으로 측정되었다는 관찰이 있다. backward_only에서 final_affine까지 복사(true)로 인해 한 번의 bound 계산에서 memcpy가 10회 발생했고, 이를 false로 바꾸면 6회로 줄었다는 비교도 함께 기록되었다. 그래프를 적용한 뒤에는 backward_only가 787.8832 s로 측정되어, 평균 기준 forward 1029 s, forward+backward 1138 s보다 빨랐다고 서술된다. 배치 사이즈 64일 때 약 424초가 소요되었고, 배치 사이즈만큼 동일한 수의 독립 스트림을 만드는 방식은 각 스트림이 GPU 메모리를 차지하여 배치 사이즈 1024에서는 GPU 메모리 초과로 이어질 수 있다고 설명된다. 현재 C++ 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들고 각 스트림이 GPU 메모리를 점유하는 방식이며, 단일 샘플 연산 커널을 64개 스트림에 각각 런치하고 일반 CUDA 코어(FP32 연산기)만 사용하므로 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다고 기록되었다. [근거:H85ca0e507c4e_44,H85ca0e507c4e_45,H85ca0e507c4e_46,H85ca0e507c4e_47,H85ca0e507c4e_48,H85ca0e507c4e_49]"
+        ],
+        "guideline_ids": [
+          "ref1_evaluation_required_1"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [
+          "E00039",
+          "E00040",
+          "E00043",
+          "E00044",
+          "E00046",
+          "E00055",
+          "E00056",
+          "E00057",
+          "E00058",
+          "E00164",
+          "E00174",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00205",
+          "E00252",
+          "E00253",
+          "E00254",
+          "E00255",
+          "E00256",
+          "E00257",
+          "E00259",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00274",
+          "E00295",
+          "E00298",
+          "E00300",
+          "E00311",
+          "E00322",
+          "E00326",
+          "E00329",
+          "E00330",
+          "E00331",
+          "E00363",
+          "E00364",
+          "E00365",
+          "E00366",
+          "E00367",
+          "E00368",
+          "E00370",
+          "E00374",
+          "Hefd7e87bb735_49",
+          "Hefd7e87bb735_54",
+          "Hefd7e87bb735_55",
+          "Hefd7e87bb735_56",
+          "Hefd7e87bb735_57",
+          "Hefd7e87bb735_63",
+          "Hefd7e87bb735_65",
+          "Hefd7e87bb735_66",
+          "H85ca0e507c4e_10",
+          "H85ca0e507c4e_15",
+          "H85ca0e507c4e_16",
+          "H85ca0e507c4e_22",
+          "H85ca0e507c4e_23",
+          "H85ca0e507c4e_24",
+          "H85ca0e507c4e_25",
+          "H85ca0e507c4e_26",
+          "H85ca0e507c4e_27",
+          "H85ca0e507c4e_28",
+          "H85ca0e507c4e_76",
+          "H85ca0e507c4e_96",
+          "Hcdbfb7147ce4_6",
+          "Hcdbfb7147ce4_10",
+          "Hcdbfb7147ce4_11",
+          "Hcdbfb7147ce4_12"
+        ]
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "S_evaluation",
+        "reference_id": "ref1_evaluation",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "S_evaluation_p1",
+          "S_evaluation_p20",
+          "S_evaluation_p25",
+          "S_evaluation_p38",
+          "S_evaluation_p39",
+          "S_evaluation_p40"
+        ],
+        "reason": "제안 설계와 변형 방법별 정량 성능 비교는 CPU/GPU/최적화 버전 간 실행 시간 수치와 일부 버전별 수치(v0~v3, forward/forward+backward/backward_only 등)로 부분적으로 정리되어 있다. 다만 원문에 전체 처리 성능의 명시적 순위나 구성 요소 단위 순위와 전체 처리 성능 순위 간 차이·불일치 비교가 직접 제시되지 않아, 비교 우위·기여도 해석까지 충분히 뒷받침되지는 않는다. 또한 cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않다는 점이 일부 근거에서 확인되며, 발표자료·슬라이드 구성·대본 작성 피드백(E00181, E00182 등)은 GPU/CUDA 실험의 비교 조건을 직접 말하지 않으므로 제외된다. 계획·제안·AI 조언 성격의 근거는 수행된 비교 결과나 공정성 조건으로 바꾸지 않는다.",
+        "quote": "CROWN 검증의 실행 시간을 CPU 전용, GPU 전용, GPU 최적화, 하이브리드, 그리고 메모리 풀·웜업·커널 퓨전 등 최적화 단계별로 측정하였다. CPU 전용(CPU ONLY) 모드에서는 단일 실행 기준 101.237800 ms가 기록되었고, 이를 약 101ms로 요약하여 GPU 버전과 나란히 표기하였다. GPU 전용(GPU) 모드에서는 353.057200 ms가 기록되었으며, 약 353ms로 요약 표기되었다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서는 229.691800 ms가 기록되어 약 100ms 정도 줄었지만, 기록자는 여전히 CPU보다 느리다고 평가하였다. 이후 matmul만 GPU로 실행하는 HYBRID(matmul=GPU, rest=CPU) 모드를 시도하였고, 그 결과 201.670100 ms가 기록되어 조금 줄었으나 여전히 CPU보다 느리다고 적혔다. HYBRID V2 모드에서는 85.785300 ms가 기록되어 CPU보다 빨라졌다고 평가되었다. 이후 메모리 풀과 웜업 조합, memcpy 제거, 커널 퓨전 등을 단계적으로 적용하면서 실행 시간이 점차 감소하였고, 최종적으로는 커널 퓨전 완료 후 15.751000 ms까지 낮아지는 흐름이 관측되었다. 다만 이 수치들은 대부분 단일 실행 결과 또는 기록자의 요약·정성 평가에 기반하므로, 반복 측정 통계나 CPU 대비 우위의 통계적 해석은 현재 페이지에 제시되지 않았다. [근거:E00018,E00020,E00021,E00022,E00027,E00029,E00030,E00031,E00035,E00064,E00068,E00069,E00070,E00071,E00072,E00075,E00076,E00077,E00078,E00081,E00083,E00096,E00097,E00102,E00106,E00109,E00111,E00119,E00120,E00125,E00131,E00132,E00139,E00140,E00144,E00145]",
+        "paragraph_quotes": [
+          "CROWN 검증의 실행 시간을 CPU 전용, GPU 전용, GPU 최적화, 하이브리드, 그리고 메모리 풀·웜업·커널 퓨전 등 최적화 단계별로 측정하였다. CPU 전용(CPU ONLY) 모드에서는 단일 실행 기준 101.237800 ms가 기록되었고, 이를 약 101ms로 요약하여 GPU 버전과 나란히 표기하였다. GPU 전용(GPU) 모드에서는 353.057200 ms가 기록되었으며, 약 353ms로 요약 표기되었다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서는 229.691800 ms가 기록되어 약 100ms 정도 줄었지만, 기록자는 여전히 CPU보다 느리다고 평가하였다. 이후 matmul만 GPU로 실행하는 HYBRID(matmul=GPU, rest=CPU) 모드를 시도하였고, 그 결과 201.670100 ms가 기록되어 조금 줄었으나 여전히 CPU보다 느리다고 적혔다. HYBRID V2 모드에서는 85.785300 ms가 기록되어 CPU보다 빨라졌다고 평가되었다. 이후 메모리 풀과 웜업 조합, memcpy 제거, 커널 퓨전 등을 단계적으로 적용하면서 실행 시간이 점차 감소하였고, 최종적으로는 커널 퓨전 완료 후 15.751000 ms까지 낮아지는 흐름이 관측되었다. 다만 이 수치들은 대부분 단일 실행 결과 또는 기록자의 요약·정성 평가에 기반하므로, 반복 측정 통계나 CPU 대비 우위의 통계적 해석은 현재 페이지에 제시되지 않았다. [근거:E00018,E00020,E00021,E00022,E00027,E00029,E00030,E00031,E00035,E00064,E00068,E00069,E00070,E00071,E00072,E00075,E00076,E00077,E00078,E00081,E00083,E00096,E00097,E00102,E00106,E00109,E00111,E00119,E00120,E00125,E00131,E00132,E00139,E00140,E00144,E00145]",
+          "실행 시간 비교는 CPU 전용 버전과 GPU 포팅·최적화 버전, 그리고 메모리 방식과 커널 축소 적용 여부에 따른 차이를 중심으로 정리한다. 초기 비교에서는 CPU ONLY 계산 버전과 GPU 버전을 만들어 신경망 정방향 통과 및 CROWN 알고리즘(backward) 계산 시간을 측정했으며, eps=1e-06, Output Dimension=16 조건에서 CPU ONLY는 101.237800 ms, GPU 버전(my_lirpa.cu)은 353.057200 ms, GPU OPTIMIZED(cuBLAS + Pool)는 229.691800 ms, HYBRID(matmul=GPU, rest=CPU)는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었다. 이후 그래프 적용 전후 비교에서 forward 방식은 1029s에서 668s로, backward_only_cuda_graph 방식은 787s에서 630s로 감소하여 각각 약 361초, 약 157초 정도 줄어든 것으로 나타났다. 다만 이 감소 결과는 요약된 값이며 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다. 실시간 멀티스트림 구성에서는 forward_cuda_graph의 전체 시간이 1055.282초, infer가 131.7986초, bound가 920.8438초로 측정되어, 그래프 적용 버전 간에도 구성 방식에 따라 시간 차이가 나타났다. [근거:H85ca0e507c4e_4,E00361,E00358,E00375]",
+          "실행 시간 비교는 CPU 전용 반복 버전, mempool 및 warmup을 적용한 GPU 버전, 그리고 이후 backward GPU 파이프라인 완성 버전을 중심으로 정리하였다. mempool과 warmup을 함께 적용한 경우 Elapsed time이 약 103.74 ms로 관찰되어, 연구 기록상 “이제 거의 CPU와 비슷해졌다”는 수준으로 접근한 것으로 서술된다. 반면 CPU ONLY iteration ver에서는 약 193.67 ms가 측정되었고, 이는 기존 backward 대비 약 93 ms 정도 느린 결과로 기록되었다. 이 CPU 버전은 backward_only 구조체를 새로 도입해야 했고, lirpa_backward_only_iteration_array의 구조가 기존 lirpa_forward_backward_fc_array와 달라 새로운 함수와 기본 자료구조 등이 필요했다는 구현 맥락과 함께 언급된다. 이후 backward GPU 파이프라인이 완성되어 실행 결과가 확인되었으며, 실시간성 확인을 위해서는 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 요구가 함께 제시되었다. [근거:H85ca0e507c4e_30,H85ca0e507c4e_31,H85ca0e507c4e_32,H85ca0e507c4e_33,H85ca0e507c4e_34]",
+          "구조 차이는 함수별 실행 위치(GPU 커널 vs CPU for 문)와 GPU 메모리 풀 구조에서 나타난다고 기록된다. 기준 모델(forward bound)과 변형 모델(backward bound)은 bound 계산 방식(forward/backward)에서 차이가 있으며, 측정 결과 두 bound 계산 시간은 warmup 이후 약 0.2 ms 차이로 비슷하게 나타났다고 서술된다. 변형 모델에서는 배칭(batching) 및 cudaGraph 캡처 등 실행 구조 변경이 적용되었고, 준비된 실험 환경에서 단일 스트림 대비 약 3배 시간 단축(25분 → 8분)이 보고되었다고 기록된다. 기준 모델은 CROWN 알고리즘에서 출력한 16개 값에 대해 신경망 기준 또는 lower_bound/upper_bound 기준으로 8개 출력 노드를 선택하는 구조를 사용한다고 설명된다. 변형 모델 중 하나는 메모리 풀(할당/해제 제거)과 memcpy 비용 제거를 적용한 버전으로, 고정된 가중치(W)와 편향(B) 값을 사용한다고 기록된다. 또 다른 변형 모델은 cuBlas, cuSparse 라이브러리를 도입하고 메모리 풀을 사용하며, matvec/matmul 연산을 cuBlas로 수행하도록 변경되었다고 서술된다. [근거:H40849fcc17fe_1,H40849fcc17fe_3,H40849fcc17fe_4,H40849fcc17fe_6,H40849fcc17fe_7,H40849fcc17fe_8]",
+          "기준 모델(v0)은 단독 CPU 처리로 96ms를 기록했으며, 이후 GPU 병렬처리·메모리 풀·cuBlas 도입 등을 거친 변형 모델들은 실행 시간이 달라졌다. v1은 모든 병렬처리 함수를 커널 함수로 바꾸어 355ms, v2는 벡터 연산을 다시 CPU로 처리하고 메모리 풀과 cuBlas를 도입해 229ms, v3은 CPU·GPU 하이브리드 구성과 풀 구조체 축소로 200ms를 보였다. 이후 85ms 수준의 결과가 확인되면서 CPU보다 빠른 실행이 처음으로 나타났다. 다만 각 버전의 구조 차이와 성능 개선 원인 사이의 인과 관계는 문서에 부분적으로만 기술되어 있고, 일부 버전은 실험적 시도 수준에 머문다. 또한 memcpy 감소처럼 특정 최적화의 효과는 제한적이거나 수 ms 수준의 차이에 그쳐, 구조 변화가 성능에 미치는 영향을 체계적으로 해석하기에는 기록이 충분하지 않다. [근거:H40849fcc17fe_9,H40849fcc17fe_10]",
+          "전체 처리 성능의 명시적 순위는 원문에 제시되어 있지 않으며, 여러 실행의 총 소요 시간이 산발적으로 기록되어 있을 뿐 이를 순위 형태로 정리하거나 비교한 서술은 확인되지 않는다. 구성 요소 단위 성능(forward, forward+backward, backward_only)과 관련해서는 avg 기준, 그래프 적용 후 측정 조건에서 forward 1029s, forward+backward 1138s, backward_only 787.8832s가 함께 제시되었고, backward_only가 3가지 방법 중 가장 빠르다고 명시되었다. 다만 구성 요소 단위 성능만의 명시적 순위 비교나, 구성 요소 단위 순위와 전체 처리 성능 순위 사이의 차이·불일치를 비교한 내용은 원문에서 확인되지 않는다. [근거:Hcdbfb7147ce4_1,Hcdbfb7147ce4_2,Hcdbfb7147ce4_3,Hcdbfb7147ce4_4,Hcdbfb7147ce4_7,Hcdbfb7147ce4_8,Hcdbfb7147ce4_9]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p2",
+        "reason": "E00166의 관측은 'Forward 전체 실행 시간 약 64s, Backward 전체 실행 시간 약 98s'이며, '동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 많이 잡히는 점이 눈에 띈다'는 관측은 E00166의 observations에 포함되어 있다. 그러나 본문은 이를 '동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 상대적으로 많이 잡히는 점이 눈에 띄었다'로 서술하여, E00166의 관측 내용(forward의 cudaMemcpy 시간이 많이 잡힘)과 일치하지만, E00166의 limits에 따르면 반복 측정 통계나 조건별 분리 측정은 제시되지 않았으므로, '상대적으로 많이 잡히는 점'이라는 비교·판단이 단일 관측에서 직접 도출된 것처럼 읽힐 여지가 있다. 또한 E00159의 '단일 테스트 결과로 비교하면 다중 데이터셋 테스트 시 forward와 backward 간 3배 차이가 나야 하는데, 실제 관측에서는 그 차이가 나타나지 않아 Nsight System 분석을 사용하기로 했다'는 내용과 본문의 '단일 테스트 결과만으로는 다중 데이터셋 테스트에서 기대되는 forward와 backward 간 3배 차이가 나타나지 않았기 때문에, 분석 도구를 Nsight System으로 전환하게 된 맥락과도 연결된다'는 서술은 대체로 대응하나, E00159의 limits에 따르면 Nsight 분석 결과 수치는 이 요소만으로는 제시되지 않으므로, 본문에서 Nsight System 분석 결과(E00170)를 이 맥락과 직접 연결하여 서술하는 것은 E00159의 한계를 넘어서는 확장으로 볼 수 있다.",
+        "evidence_ids": [
+          "E00159",
+          "E00166"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p2-0",
+        "failure_owner": "none",
+        "quote": "실행 시간 비교는 먼저 40000개 데이터 기준으로 forward와 backward 전체 실행 시간을 관측하는 방식으로 진행되었다. 이 조건에서 forward 전체 실행 시간은 약 64초, backward 전체 실행 시간은 약 98초로 기록되었으며, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 상대적으로 많이 잡히는 점이 눈에 띄었다.  이후 Nsight System 분석을 통해 실행 통계를 확인한 결과, cudaLaunchh 18.527초(2160000회), cudaMemcpy 11.332초(240000회), cudaMemset 2.121초(160000회), cuKernelGetN 392.770ms(2160000회), cuLibraryGetK 16.718μs(18회)로 나타났다.  이러한 관측은 단일 테스트 결과만으로는 다중 데이터셋 테스트에서 기대되는 forward와 backward 간 3배 차이가 나타나지 않았기 때문에, 분석 도구를 Nsight System으로 전환하게 된 맥락과도 연결된다. [근거:E00166,E00170,E00159]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p2",
+        "reason": "E00170의 실행 통계는 특정 실행 조건의 단일 통계이며, 다른 조건과의 비교 해석이나 반복 측정 통계는 제시되지 않았다. 본문은 E00170의 수치를 그대로 인용하고 있으나, 이 수치를 forward/backward 전체 실행 시간(E00166)이나 3배 차이 기대(E00159)와 같은 비교·해석 맥락과 연결하여 서술하고 있어, E00170의 limits에 명시된 '다른 조건과의 비교 해석이나 반복 측정 통계는 제시되지 않았다'는 한계를 넘어서는 확장으로 볼 수 있다. 또한 E00170의 limits에 따르면 각 항목의 Avg/Med/Min/Max/StdDev 등 분포 정보는 원표(p47:img2:e0)에 있으나 진술에는 총 시간과 호출 수만 포함되었으므로, 본문에서 총 시간과 호출 수만 인용한 것은 E00170의 진술 범위와 일치한다.",
+        "evidence_ids": [
+          "E00170"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p2-0",
+        "failure_owner": "none",
+        "quote": "실행 시간 비교는 먼저 40000개 데이터 기준으로 forward와 backward 전체 실행 시간을 관측하는 방식으로 진행되었다. 이 조건에서 forward 전체 실행 시간은 약 64초, backward 전체 실행 시간은 약 98초로 기록되었으며, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 상대적으로 많이 잡히는 점이 눈에 띄었다.  이후 Nsight System 분석을 통해 실행 통계를 확인한 결과, cudaLaunchh 18.527초(2160000회), cudaMemcpy 11.332초(240000회), cudaMemset 2.121초(160000회), cuKernelGetN 392.770ms(2160000회), cuLibraryGetK 16.718μs(18회)로 나타났다.  이러한 관측은 단일 테스트 결과만으로는 다중 데이터셋 테스트에서 기대되는 forward와 backward 간 3배 차이가 나타나지 않았기 때문에, 분석 도구를 Nsight System으로 전환하게 된 맥락과도 연결된다. [근거:E00166,E00170,E00159]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p5",
+        "reason": "근거 E00202의 관측 조건(초기화 이후)과 본문 표현(초기화만 한 상태)이 불일치한다. E00202의 evidence_limitations는 초기화 비용 포함 여부나 반복 측정 통계가 이 사실만으로 제시되지 않는다고 명시하는데, 본문은 이를 '초기화만 한 상태'로 단정해 관측 범위를 좁게 서술했다.",
+        "evidence_ids": [
+          "E00202"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p5-0",
+        "failure_owner": "writer",
+        "quote": "초기화만 한 상태에서는 forward와 backward의 bound 계산 시간이 비슷하며 약 0.2ms 정도 차이가 난다는 관측이 있었다.  이후 GPU 벤치마크 모범 사례를 참고해 적절한 기준을 다시 세우기로 하고 Nvidia의 warm up 가이드라인을 채택했으나, warm up을 적용하자 걸리는 시간과 각 평균 시간이 더 늘어났고 forward가 warm up 이전 backward 급 속도가 나올 정도가 되었다.   그럼에도 warm up을 해도 스파이크 데이터가 뜨고, 가끔은 10번 측정했을 때 평균 시간이 느려지는 문제가 생겼으며, warm up도 warm up 이전 버전과 측정 시간에서 큰 차이가 나지 않았고 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00202,E00203,E00206,E00207,E00208]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p5",
+        "reason": "근거 E00202의 evidence_limitations가 출처 p58:e435의 '5.3배 정도 차이나는 것을 확인했고'를 언급하며, 이는 초기화 이후 0.2ms 차이 주장과 다른 측정 맥락일 수 있어 동일 사실로 혼합 해석하지 않도록 주의하라고 명시한다. 본문은 이 주의 없이 두 관측을 같은 문단 안에서 함께 서술해 혼합 해석 위험을 남겼다.",
+        "evidence_ids": [
+          "E00202"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p5-0",
+        "failure_owner": "writer",
+        "quote": "초기화만 한 상태에서는 forward와 backward의 bound 계산 시간이 비슷하며 약 0.2ms 정도 차이가 난다는 관측이 있었다.  이후 GPU 벤치마크 모범 사례를 참고해 적절한 기준을 다시 세우기로 하고 Nvidia의 warm up 가이드라인을 채택했으나, warm up을 적용하자 걸리는 시간과 각 평균 시간이 더 늘어났고 forward가 warm up 이전 backward 급 속도가 나올 정도가 되었다.   그럼에도 warm up을 해도 스파이크 데이터가 뜨고, 가끔은 10번 측정했을 때 평균 시간이 느려지는 문제가 생겼으며, warm up도 warm up 이전 버전과 측정 시간에서 큰 차이가 나지 않았고 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00202,E00203,E00206,E00207,E00208]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p5",
+        "reason": "근거 E00208의 관측은 정성적 기록이며 변동 계수가 낮다는 느낌은 기록자의 주관적 인상으로, 정량적 변동 계수 값은 원문에 없다고 evidence_limitations에 명시된다. 본문은 '변동 계수가 좀 더 낮은 느낌'을 사실적 관찰처럼 그대로 옮겨 서술해, 주관적 인상을 정량적 안정성 지표처럼 읽히게 할 여지가 있다.",
+        "evidence_ids": [
+          "E00208"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p5-0",
+        "failure_owner": "writer",
+        "quote": "초기화만 한 상태에서는 forward와 backward의 bound 계산 시간이 비슷하며 약 0.2ms 정도 차이가 난다는 관측이 있었다.  이후 GPU 벤치마크 모범 사례를 참고해 적절한 기준을 다시 세우기로 하고 Nvidia의 warm up 가이드라인을 채택했으나, warm up을 적용하자 걸리는 시간과 각 평균 시간이 더 늘어났고 forward가 warm up 이전 backward 급 속도가 나올 정도가 되었다.   그럼에도 warm up을 해도 스파이크 데이터가 뜨고, 가끔은 10번 측정했을 때 평균 시간이 느려지는 문제가 생겼으며, warm up도 warm up 이전 버전과 측정 시간에서 큰 차이가 나지 않았고 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00202,E00203,E00206,E00207,E00208]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p10",
+        "reason": "본문은 포워드+백워드 결과와 포워드 단독 결과가 각각 출력되었다고 서술했으나, 근거 E00245는 포워드+백워드와 백워드_only 두 가지 모드의 검증 결과가 각각 표로 제시되었다고 기록한다. 포워드 단독 결과 표가 출력되었다는 주장은 현재 근거 범위에 없다.",
+        "evidence_ids": [
+          "E00245"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p10-0",
+        "failure_owner": "writer",
+        "quote": "auto_LiRPA 검증 결과는 eps 값에 따라 인증 성공(T), 실패(F), ratio, 연산 시간(time)을 표로 제시하며, 포워드+백워드 결과와 포워드 단독 결과가 각각 출력되었다. 포워드+백워드 실행에서는 EPS별 연산 시간 합산이 107.30s, 전체 프로그램 총 소요 시간이 107.32s로 기록되었고, 포워드 단독 실행에서는 각각 114.77s와 114.78s로 나타났다. 백워드_only 실행에서는 EPS별 연산 시간 합산 55.77s, 전체 소요 시간 55.78s가 기록되었으며, 백워드_only 결과 역시 [auto_LiRPA Verification Results] 표로 제시되었다. 포워드+백워드 결과는 autolirpa_results_forward.csv에, 백워드_only 결과는 autolirpa_results_backward_only.csv에 저장되었다. 실행은 python autolirpa_topk_robustness.py --data-path \"경로/데이터.pickle\" --device cuda --batch-size 1024 방식으로 진행되었고, 배치 사이즈는 1024로 설정되었다. 기록자의 관측으로는 백워드_only가 가장 빠르고 포워드가 가장 느리다는 점이 특이하게 언급되었으며, 이는 일반적으로 기대하는 forward < forward + backward < backward_only 순서와 다른 결과였다. [근거:E00239,E00240,E00245,E00246,E00247,E00249,E00243,H85ca0e507c4e_43,E00250,E00251]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p10",
+        "reason": "본문은 포워드 단독 실행의 EPS별 연산 시간 합산 114.77s와 전체 소요 시간 114.78s를 제시했으나, 이 수치는 근거 E00240의 포워드 단독 측정값(합산 114.77s, 총 소요 114.78s)과 일치한다. 다만 해당 포워드 단독 결과 표가 출력되었다는 서술은 E00245와 충돌하므로 함께 오류로 본다.",
+        "evidence_ids": [
+          "E00240",
+          "E00245"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p10-0",
+        "failure_owner": "writer",
+        "quote": "auto_LiRPA 검증 결과는 eps 값에 따라 인증 성공(T), 실패(F), ratio, 연산 시간(time)을 표로 제시하며, 포워드+백워드 결과와 포워드 단독 결과가 각각 출력되었다. 포워드+백워드 실행에서는 EPS별 연산 시간 합산이 107.30s, 전체 프로그램 총 소요 시간이 107.32s로 기록되었고, 포워드 단독 실행에서는 각각 114.77s와 114.78s로 나타났다. 백워드_only 실행에서는 EPS별 연산 시간 합산 55.77s, 전체 소요 시간 55.78s가 기록되었으며, 백워드_only 결과 역시 [auto_LiRPA Verification Results] 표로 제시되었다. 포워드+백워드 결과는 autolirpa_results_forward.csv에, 백워드_only 결과는 autolirpa_results_backward_only.csv에 저장되었다. 실행은 python autolirpa_topk_robustness.py --data-path \"경로/데이터.pickle\" --device cuda --batch-size 1024 방식으로 진행되었고, 배치 사이즈는 1024로 설정되었다. 기록자의 관측으로는 백워드_only가 가장 빠르고 포워드가 가장 느리다는 점이 특이하게 언급되었으며, 이는 일반적으로 기대하는 forward < forward + backward < backward_only 순서와 다른 결과였다. [근거:E00239,E00240,E00245,E00246,E00247,E00249,E00243,H85ca0e507c4e_43,E00250,E00251]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p10",
+        "reason": "본문은 백워드_only 결과 표가 [auto_LiRPA Verification Results] 표로 제시되었다고 서술했으나, 근거 E00245는 백워드_only 결과 섹션이 '백 워드_only 결과' 제목으로 시작된다고만 기록한다. 표 제목이 동일하게 사용되었는지는 현재 근거만으로 확인되지 않는다.",
+        "evidence_ids": [
+          "E00245"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p10-0",
+        "failure_owner": "none",
+        "quote": "auto_LiRPA 검증 결과는 eps 값에 따라 인증 성공(T), 실패(F), ratio, 연산 시간(time)을 표로 제시하며, 포워드+백워드 결과와 포워드 단독 결과가 각각 출력되었다. 포워드+백워드 실행에서는 EPS별 연산 시간 합산이 107.30s, 전체 프로그램 총 소요 시간이 107.32s로 기록되었고, 포워드 단독 실행에서는 각각 114.77s와 114.78s로 나타났다. 백워드_only 실행에서는 EPS별 연산 시간 합산 55.77s, 전체 소요 시간 55.78s가 기록되었으며, 백워드_only 결과 역시 [auto_LiRPA Verification Results] 표로 제시되었다. 포워드+백워드 결과는 autolirpa_results_forward.csv에, 백워드_only 결과는 autolirpa_results_backward_only.csv에 저장되었다. 실행은 python autolirpa_topk_robustness.py --data-path \"경로/데이터.pickle\" --device cuda --batch-size 1024 방식으로 진행되었고, 배치 사이즈는 1024로 설정되었다. 기록자의 관측으로는 백워드_only가 가장 빠르고 포워드가 가장 느리다는 점이 특이하게 언급되었으며, 이는 일반적으로 기대하는 forward < forward + backward < backward_only 순서와 다른 결과였다. [근거:E00239,E00240,E00245,E00246,E00247,E00249,E00243,H85ca0e507c4e_43,E00250,E00251]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p10",
+        "reason": "본문은 실행 시 배치 사이즈가 1024로 설정되었다고 서술했으나, 근거 E00249는 배치 사이즈 1024를 기록하면서도 싱글 스트림 여부는 '인듯'이라는 추정 표현으로만 제시한다. 배치 사이즈 설정 자체는 지지되지만, 실행 방식에 대한 추가 단정 가능성은 제한적이다.",
+        "evidence_ids": [
+          "E00249"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p10-0",
+        "failure_owner": "none",
+        "quote": "auto_LiRPA 검증 결과는 eps 값에 따라 인증 성공(T), 실패(F), ratio, 연산 시간(time)을 표로 제시하며, 포워드+백워드 결과와 포워드 단독 결과가 각각 출력되었다. 포워드+백워드 실행에서는 EPS별 연산 시간 합산이 107.30s, 전체 프로그램 총 소요 시간이 107.32s로 기록되었고, 포워드 단독 실행에서는 각각 114.77s와 114.78s로 나타났다. 백워드_only 실행에서는 EPS별 연산 시간 합산 55.77s, 전체 소요 시간 55.78s가 기록되었으며, 백워드_only 결과 역시 [auto_LiRPA Verification Results] 표로 제시되었다. 포워드+백워드 결과는 autolirpa_results_forward.csv에, 백워드_only 결과는 autolirpa_results_backward_only.csv에 저장되었다. 실행은 python autolirpa_topk_robustness.py --data-path \"경로/데이터.pickle\" --device cuda --batch-size 1024 방식으로 진행되었고, 배치 사이즈는 1024로 설정되었다. 기록자의 관측으로는 백워드_only가 가장 빠르고 포워드가 가장 느리다는 점이 특이하게 언급되었으며, 이는 일반적으로 기대하는 forward < forward + backward < backward_only 순서와 다른 결과였다. [근거:E00239,E00240,E00245,E00246,E00247,E00249,E00243,H85ca0e507c4e_43,E00250,E00251]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p11",
+        "reason": "E00279는 figure 캡션(p74:e582)에 기록된 '3가지 기술적 이유가 있다'는 존재 언급만 보존하며, 구체적 이유의 내용은 포함하지 않는다. 본문은 '컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록했다'고만 서술해 E00279의 한계와 부합한다. 다만 E00279의 limits는 '3가지 이유의 구체적 내용은 이 요소만으로는 제시되지 않는다'고 명시하므로, 본문에서 '기록했다'는 표현을 존재 언급 범위를 넘어 구체적 원인 제시로 읽히게 쓰면 안 된다. 현재 문장은 그 경계를 넘지 않아 허용 범위 내이나, '3가지 기술적 이유'의 귀속을 E00279의 figure 캡션 존재 언급으로만 제한한 점은 정확하다.",
+        "evidence_ids": [
+          "E00279"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p11-0",
+        "failure_owner": "writer",
+        "quote": "cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이이며, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 이 역전 현상에 대해 기록자는 추론 단계에서 시간이 느려졌다고 관찰했으며, 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록했다. 다만 해당 근거들은 3가지 이유의 구체적 내용이나 정량적 원인 분석까지 포함하지 않는다. [근거:E00277,E00278,E00279,E00280]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p11",
+        "reason": "E00280은 heading 텍스트의 정성적 관찰 문장('일단 추론에서 좀 시간이 느려지긴 했다..')만 포함하며, 정량 수치나 원인 분석은 포함하지 않는다. 본문은 '기록자는 추론 단계에서 시간이 느려졌다고 관찰했으며'라고 서술해 E00280의 정성적 관찰 범위를 넘지 않는다. 다만 E00280의 limits는 '정량 수치나 원인 분석은 이 요소만으로는 제시되지 않는다'고 명시하므로, 본문에서 이 관찰을 Infer 단계 역전(E00278)의 정량적 원인처럼 연결하면 안 된다. 현재 문장은 E00278의 정량 서술과 E00280의 정성적 관찰을 별도 문장으로 분리해 귀속을 혼동하지 않았으므로 허용 범위 내이다.",
+        "evidence_ids": [
+          "E00280"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p11-0",
+        "failure_owner": "writer",
+        "quote": "cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이이며, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 이 역전 현상에 대해 기록자는 추론 단계에서 시간이 느려졌다고 관찰했으며, 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록했다. 다만 해당 근거들은 3가지 이유의 구체적 내용이나 정량적 원인 분석까지 포함하지 않는다. [근거:E00277,E00278,E00279,E00280]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p11",
+        "reason": "E00277의 measurements는 cudaHostRegister 787.88s, No Pinning 776.70s, 차이 11초, 1회당 약 12μs를 명시하고, observations는 '약 1.4%(약 11초) 차이', '92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이'로 기록한다. 본문은 '787.88초 대 776.70초로 약 1.4%(약 11초) 차이이며, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다'고 서술해 수치·조건·해석을 E00277과 일치시킨다. 다만 E00277의 limits는 '반복 측정 통계나 조건별 분리 측정은 포함하지 않는다'고 명시하므로, 본문에서 이 수치를 반복 측정 통계나 조건별 분리 결과로 확장하면 안 된다. 현재 문장은 그 확장을 하지 않아 허용 범위 내이다.",
+        "evidence_ids": [
+          "E00277"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p11-0",
+        "failure_owner": "writer",
+        "quote": "cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이이며, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 이 역전 현상에 대해 기록자는 추론 단계에서 시간이 느려졌다고 관찰했으며, 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록했다. 다만 해당 근거들은 3가지 이유의 구체적 내용이나 정량적 원인 분석까지 포함하지 않는다. [근거:E00277,E00278,E00279,E00280]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p11",
+        "reason": "E00278의 measurements는 Bound 단계 cudaHostRegister 658.80s vs No Pinning 663.17s(차이 4.37초), Infer 단계 cudaHostRegister 127.18s vs No Pinning 111.92s(차이 15.26초)를 명시하고, observations는 'Register가 4.37초 더 빠름', 'Register가 15.26초 더 느림', '데이터 전송 직후 바로 동기화가 일어나는 Infer 단계에서 15초가 역전됨'으로 기록한다. 본문은 'Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다'고 서술해 수치·조건·해석을 E00278과 일치시킨다. 다만 E00278의 limits는 '반복 측정 통계나 조건별 분리 측정은 포함하지 않는다'고 명시하므로, 본문에서 이 단계별 수치를 반복 측정 통계나 조건별 분리 결과로 확장하면 안 된다. 현재 문장은 그 확장을 하지 않아 허용 범위 내이다.",
+        "evidence_ids": [
+          "E00278"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p11-0",
+        "failure_owner": "writer",
+        "quote": "cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이이며, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 이 역전 현상에 대해 기록자는 추론 단계에서 시간이 느려졌다고 관찰했으며, 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록했다. 다만 해당 근거들은 3가지 이유의 구체적 내용이나 정량적 원인 분석까지 포함하지 않는다. [근거:E00277,E00278,E00279,E00280]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p13",
+        "reason": "근거 E00284의 명령어(nvidia-smi -lgc 1410)와 본문(그래픽 클록 잠금 sodo nvidia-smi -lgc 1410)은 일치하지만, E00281의 ScopedGpuClockLock 기본 생성자는 2475 MHz를 목표로 하고 실제 실험은 2800 MHz를 사용했다는 귀속·조건 차이가 있다. 본문은 '클록을 2800MHz로 고정한 상태에서 기존 HostRegister 방식으로 실험을 진행했다'고 서술해 E00282의 조건(클록 2800MHz 고정, 기존 HostRegister)과 부합하나, E00281의 기본 목표값 2475 MHz와의 관계를 설명하지 않아 귀속이 불명확하다.",
+        "evidence_ids": [
+          "E00281",
+          "E00282",
+          "E00284"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p13-0",
+        "failure_owner": "writer",
+        "quote": "GPU 클록 고정 후 재실험을 위해 RAII 방식의 ScopedGpuClockLock 구조체를 작성했고, 클록을 2800MHz로 고정한 상태에서 기존 HostRegister 방식으로 실험을 진행했다. 측정 환경 설정으로는 현재 클록 확인(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1), 그래픽 클록 잠금(sudo nvidia-smi -lgc 1410) 명령어를 사용했으며, Persistence mode는 초기화 지연 제거 목적으로 적용되었다. GPU 클록 고정 방법은 CUDA 강의 19장을 참고했다. [근거:E00281,E00282,E00283,E00284,E00286]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p13",
+        "reason": "근거 E00282는 '클록을 2800MHz로 고정하고 돌린 결과(기존 HostRegister)'라는 실험 재시도 사실과 조건만 포함하며 실제 측정 결과 수치는 이 요소만으로 제시되지 않는다는 한계가 명시되어 있다. 본문은 '기존 HostRegister 방식으로 실험을 진행했다'고 서술해 실험 진행 사실까지는 부합하지만, 측정 결과 수치를 제시하지 않은 점은 근거 한계와 충돌하지 않으나, E00282의 한계를 반영하지 않고 실험 진행 사실만 인용한 점이 귀속상 불명확하다.",
+        "evidence_ids": [
+          "E00282"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p13-0",
+        "failure_owner": "writer",
+        "quote": "GPU 클록 고정 후 재실험을 위해 RAII 방식의 ScopedGpuClockLock 구조체를 작성했고, 클록을 2800MHz로 고정한 상태에서 기존 HostRegister 방식으로 실험을 진행했다. 측정 환경 설정으로는 현재 클록 확인(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1), 그래픽 클록 잠금(sudo nvidia-smi -lgc 1410) 명령어를 사용했으며, Persistence mode는 초기화 지연 제거 목적으로 적용되었다. GPU 클록 고정 방법은 CUDA 강의 19장을 참고했다. [근거:E00281,E00282,E00283,E00284,E00286]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p13",
+        "reason": "근거 E00286은 Persistence mode 설정(sudo nvidia-smi -pm 1)이 초기화 지연 제거 목적이라는 점을 포함하나, 실제 적용 결과나 측정 수치는 이 요소만으로 제시되지 않는다는 한계가 있다. 본문은 'Persistence mode는 초기화 지연 제거 목적으로 적용되었다'고 서술해 E00286의 목적과 일치하나, 적용 결과나 측정 수치가 없음을 반영하지 않았다.",
+        "evidence_ids": [
+          "E00286"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p13-0",
+        "failure_owner": "writer",
+        "quote": "GPU 클록 고정 후 재실험을 위해 RAII 방식의 ScopedGpuClockLock 구조체를 작성했고, 클록을 2800MHz로 고정한 상태에서 기존 HostRegister 방식으로 실험을 진행했다. 측정 환경 설정으로는 현재 클록 확인(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1), 그래픽 클록 잠금(sudo nvidia-smi -lgc 1410) 명령어를 사용했으며, Persistence mode는 초기화 지연 제거 목적으로 적용되었다. GPU 클록 고정 방법은 CUDA 강의 19장을 참고했다. [근거:E00281,E00282,E00283,E00284,E00286]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p14",
+        "reason": "문단이 E00279의 '3가지 기술적 이유 존재' 진술을 '기록자는 추론 단계에서 시간이 느려졌다고 관찰했으며, 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록했다'로 결합하여 서술했으나, E00279는 figure 캡션에 기록된 원인 제시 문장만 포함하며 3가지 이유의 구체적 내용은 이 요소만으로 제시되지 않는다는 한계가 명시되어 있다. 또한 E00280은 '일단 추론에서 좀 시간이 느려지긴 했다..'라는 정성적 관찰 기록만 포함하며 정량 수치나 원인 분석은 이 요소만으로 제시되지 않는다는 한계가 명시되어 있다. 문단은 이 두 근거를 결합하여 '기록자가 추론 단계 시간 느려짐을 관찰했고 3가지 기술적 이유가 있다고 기록했다'는 하나의 인과적 서술로 만들었으나, 각 근거의 한계(정성 관찰만/원인 제시 문장만, 구체적 내용 미제시)를 함께 명시하지 않아 근거 범위를 넘어선 결합 서술로 볼 수 있다.",
+        "evidence_ids": [
+          "E00279",
+          "E00280"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p14-0",
+        "failure_owner": "writer",
+        "quote": "cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였으며, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 이 역전 현상에 대해 기록자는 추론 단계에서 시간이 느려졌다고 관찰했으며, 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록했다. 다만 현재 기록은 figure 캡션에 제시된 수치와 해석만 포함하며, 3가지 이유의 구체적 내용이나 정량적 원인 분석은 이 근거만으로는 제시되지 않는다. [근거:E00277,E00278,E00279,E00280]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p15",
+        "reason": "근거 범위를 벗어난 단정적 서술이 포함됨",
+        "evidence_ids": [
+          "E00294"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p15-0",
+        "failure_owner": "writer",
+        "quote": "평균 속도에서는 No-Pin이 약 13초 빨랐지만, 실시간성 관점에서는 치명적인 약점이 있었다. No-Pin(일반 메모리)의 평균 처리 속도는 CPU 캐시 복사 이득으로 약 13초 빠르고 Pinned Memory(Register)는 DMA 셋업 오버헤드로 약간 느렸으나, 최대 지연(Max Spike)은 No-Pin이 8.8ms~11.6ms로 치명적이고 Pinned Memory가 1.64ms로 극도로 안정적이었으며, 지터(Jitter)는 No-Pin이 118μs로 불안정하고 Pinned Memory가 47μs로 안정적이었다. No-Pin은 평소 CPU 캐시로 빠르지만 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 끼어들면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없고, Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 절대적 안정성을 보장한다. [근거:E00292,E00293,E00294,E00296]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p16",
+        "reason": "E00297의 limits는 '문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다'이며 claim_status도 interpretation/context_only다. 본문은 이를 관측된 측정 결과처럼 단정 서술했고, E00297의 measurements는 p80:img0:e1에 귀속된 값인데 본문은 이를 드라이버 내부 동작 해석으로 제시하면서 관측 결과로 처리했다.",
+        "evidence_ids": [
+          "E00297"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p16-0",
+        "failure_owner": "writer",
+        "quote": "1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory는 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin(일반 메모리)은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 약 0.02~0.05μs(20~50ns)에 복사가 끝나 DMA 셋업보다 30~50배 빠르다고 설명되었다. 이에 따라 1회 전송 오버헤드는 No-Pin이 약 0.03μs, Pinned가 약 1.50μs이며, 920,000회 누적 오버헤드는 No-Pin이 약 0.03초, Pinned가 약 1.38초로 제시되었다. 이는 드라이버 내부 동작에 대한 해석이며, 총 시간(평균 시간)만 보면 No-Pin이 더 빨라 보이지만 지터(Jitter)와 최악 실행 시간(WCET)을 보면 Pinned가 유리하여, No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00297,E00299]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p16",
+        "reason": "본문은 '이에 따라 1회 전송 오버헤드는 No-Pin이 약 0.03μs, Pinned가 약 1.50μs이며, 920,000회 누적 오버헤드는 No-Pin이 약 0.03초, Pinned가 약 1.38초로 제시되었다'라고 서술했으나, E00297의 measurements에서 920,000회 누적 오버헤드는 No-Pin 0.03초, Pinned 1.38초로 귀속되어 있고 1회 전송 오버헤드도 No-Pin 0.03μs, Pinned 1.5μs로 귀속된다. 본문은 이 귀속 관계를 유지했지만, E00297의 limits와 claim_status가 관측 결과 사용을 금지하므로 관측 결과처럼 제시한 점이 문제다.",
+        "evidence_ids": [
+          "E00297"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p16-0",
+        "failure_owner": "writer",
+        "quote": "1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory는 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin(일반 메모리)은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 약 0.02~0.05μs(20~50ns)에 복사가 끝나 DMA 셋업보다 30~50배 빠르다고 설명되었다. 이에 따라 1회 전송 오버헤드는 No-Pin이 약 0.03μs, Pinned가 약 1.50μs이며, 920,000회 누적 오버헤드는 No-Pin이 약 0.03초, Pinned가 약 1.38초로 제시되었다. 이는 드라이버 내부 동작에 대한 해석이며, 총 시간(평균 시간)만 보면 No-Pin이 더 빨라 보이지만 지터(Jitter)와 최악 실행 시간(WCET)을 보면 Pinned가 유리하여, No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00297,E00299]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p16",
+        "reason": "본문은 '이는 드라이버 내부 동작에 대한 해석이며'라고 명시했으나, 이어지는 지터/WCET 비교 문장(No-Pin 최대 8.80ms~11.6ms, 지터 118.94μs, Pinned 최대 1.64ms, 지터 47.28μs, 약 7배 안정, 약 60% 감소)은 E00299의 관측 수치로 귀속된다. E00297의 해석 문맥과 E00299의 관측 수치를 한 문장군 안에서 섞어 서술해, E00297의 해석 한계를 E00299의 관측 결과에까지 확장하는 인상을 준다.",
+        "evidence_ids": [
+          "E00297",
+          "E00299"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p16-0",
+        "failure_owner": "writer",
+        "quote": "1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory는 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin(일반 메모리)은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 약 0.02~0.05μs(20~50ns)에 복사가 끝나 DMA 셋업보다 30~50배 빠르다고 설명되었다. 이에 따라 1회 전송 오버헤드는 No-Pin이 약 0.03μs, Pinned가 약 1.50μs이며, 920,000회 누적 오버헤드는 No-Pin이 약 0.03초, Pinned가 약 1.38초로 제시되었다. 이는 드라이버 내부 동작에 대한 해석이며, 총 시간(평균 시간)만 보면 No-Pin이 더 빨라 보이지만 지터(Jitter)와 최악 실행 시간(WCET)을 보면 Pinned가 유리하여, No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00297,E00299]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p17",
+        "reason": "근거 E00297의 limits는 '문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다'로 명시되어 있으나, 본문은 해당 설명을 관측된 측정 결과처럼 단정적으로 서술했다.",
+        "evidence_ids": [
+          "E00297"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p17-0",
+        "failure_owner": "writer",
+        "quote": "1KB 수준의 작은 데이터를 매 루프마다 전송할 때, Pinned Memory(cudaHostRegister)는 드라이버가 매번 DMA 디스크립터 생성 및 하드웨어 큐 제출을 새로 수행하는 방식으로 동작한다고 기록되어 있으며, 이 과정에서 호출 1회당 약 1.0~1.5μs 수준의 오버헤드가 발생한다고 설명된다. 반면 No-Pin(일반 Pageable 메모리)은 GPU 하드웨어 DMA를 직접 호출하지 않고 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 처리되어, 약 0.02~0.05μs(20~50ns)에 복사가 끝난다고 서술된다. 이에 따라 1회 전송 오버헤드는 No-Pin이 약 0.03μs, Pinned가 약 1.5μs로, 920,000회 누적 오버헤드는 No-Pin이 약 0.03초, Pinned가 약 1.38초로 제시된다. 다만 이 설명은 드라이버 내부 동작에 대한 해석·가설 성격의 기록이며, 관측된 측정 결과로 단정하지 않는다. 총 시간(평균 시간) 기준으로는 No-Pin이 더 빨라 보이지만, 지터(Jitter)와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다고 비교된다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로, Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다고 정리된다. [근거:E00297,E00299]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p17",
+        "reason": "근거 E00297의 limits는 '실제 측정값은 표와 후속 측정 결과로 제시된다'고 명시하며, 1회 전송 오버헤드 0.03μs/1.5μs 및 920,000회 누적 0.03초/1.38초는 p80:img0:e1의 표 기반 값이다. 본문은 이 수치를 E00297의 해석 문장에 귀속시켜 근거 범위를 혼동했다.",
+        "evidence_ids": [
+          "E00297"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p17-0",
+        "failure_owner": "writer",
+        "quote": "1KB 수준의 작은 데이터를 매 루프마다 전송할 때, Pinned Memory(cudaHostRegister)는 드라이버가 매번 DMA 디스크립터 생성 및 하드웨어 큐 제출을 새로 수행하는 방식으로 동작한다고 기록되어 있으며, 이 과정에서 호출 1회당 약 1.0~1.5μs 수준의 오버헤드가 발생한다고 설명된다. 반면 No-Pin(일반 Pageable 메모리)은 GPU 하드웨어 DMA를 직접 호출하지 않고 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 처리되어, 약 0.02~0.05μs(20~50ns)에 복사가 끝난다고 서술된다. 이에 따라 1회 전송 오버헤드는 No-Pin이 약 0.03μs, Pinned가 약 1.5μs로, 920,000회 누적 오버헤드는 No-Pin이 약 0.03초, Pinned가 약 1.38초로 제시된다. 다만 이 설명은 드라이버 내부 동작에 대한 해석·가설 성격의 기록이며, 관측된 측정 결과로 단정하지 않는다. 총 시간(평균 시간) 기준으로는 No-Pin이 더 빨라 보이지만, 지터(Jitter)와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다고 비교된다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로, Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다고 정리된다. [근거:E00297,E00299]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p17",
+        "reason": "근거 E00299의 limits는 '실제 측정 조건이나 반복 측정 통계는 별도 요소에서 다룬다'고 명시한다. 본문은 E00299의 수치를 인용하면서 측정 조건·반복 측정 통계의 한계를 함께 제시하지 않아 근거의 한계를 반영하지 않았다.",
+        "evidence_ids": [
+          "E00299"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p17-0",
+        "failure_owner": "writer",
+        "quote": "1KB 수준의 작은 데이터를 매 루프마다 전송할 때, Pinned Memory(cudaHostRegister)는 드라이버가 매번 DMA 디스크립터 생성 및 하드웨어 큐 제출을 새로 수행하는 방식으로 동작한다고 기록되어 있으며, 이 과정에서 호출 1회당 약 1.0~1.5μs 수준의 오버헤드가 발생한다고 설명된다. 반면 No-Pin(일반 Pageable 메모리)은 GPU 하드웨어 DMA를 직접 호출하지 않고 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 처리되어, 약 0.02~0.05μs(20~50ns)에 복사가 끝난다고 서술된다. 이에 따라 1회 전송 오버헤드는 No-Pin이 약 0.03μs, Pinned가 약 1.5μs로, 920,000회 누적 오버헤드는 No-Pin이 약 0.03초, Pinned가 약 1.38초로 제시된다. 다만 이 설명은 드라이버 내부 동작에 대한 해석·가설 성격의 기록이며, 관측된 측정 결과로 단정하지 않는다. 총 시간(평균 시간) 기준으로는 No-Pin이 더 빨라 보이지만, 지터(Jitter)와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다고 비교된다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로, Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다고 정리된다. [근거:E00297,E00299]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p33",
+        "reason": "근거 H85ca0e507c4e_83의 관찰(observations)에는 'warmup 후 걸리는 시간 및 각 평균 시간이 더 늘어남', 'forward가 warm up 이전 backward 급 속도가 나옴', 'warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않음', '스파이크가 안 뜰 때의 시간은 오히려 더 안정적(변동 계수 더 낮은 느낌)'이 포함되어 있다. 그러나 본문은 이러한 관찰 결과를 반영하지 않고, warm up을 한 번 하며 CV를 통해 스파이크·분산을 규명하기로 했다는 계획·의도만 서술하고 있어 근거가 실제로 관찰한 내용과 대응하지 않는다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_83"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p33-0",
+        "failure_owner": "writer",
+        "quote": "초기화만 하면 forward, backward의 bound 계산 시간은 비슷하며(약 0.2 ms 차이), Nvidia warm up 가이드라인을 세워 실제 사이클 시간만 측정하고 warm up을 한 번 하며 CV를 통해 스파이크·분산을 규명하기로 했고, 추론·bound 계산·검증 3가지 값을 나눠서 측정했다고 서술된다. 실시간 PCIe H2D 전송 최적화를 위해 Host Memory Pinning(cudaHostRegister)을 적용해 일반 메모리를 복사 없이 pinned Memory로 승격시켜 GPU가 CPU 메모리에 직접 접근할 수 있도록 했으며, 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 고쳤다고 기록된다. CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거해, 3-layer 네트워크 기준으로 Forward method=0 bound 27→18회(9회 감소), Backward method=1 bound 전체 46→31회(15회 감소), Backward-only method=2 bound 전체 45→33회(12회 감소)가 되었고, graph mode=1에서 샘플 1개 전체 기준으로 Forward 33→24회(9회 감소), Backward 52→37회(15회 감소), Backward-only 51→39회(12회 감소)가 되었다고 정리된다. [근거:H85ca0e507c4e_83,H85ca0e507c4e_84,H85ca0e507c4e_85]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p33",
+        "reason": "근거 H85ca0e507c4e_84의 관찰에는 'cpu 계산 오버헤드가 더 큰 것 같기도 하고 시간이 늘었음'이 포함되어 있다. 본문은 cudaHostRegister 적용 및 memcpy 크기 축소만 서술하고, 해당 적용 이후 관찰된 시간 증가나 CPU 계산 오버헤드 관련 관찰을 반영하지 않아 근거의 관찰 내용과 대응하지 않는다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_84"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p33-0",
+        "failure_owner": "writer",
+        "quote": "초기화만 하면 forward, backward의 bound 계산 시간은 비슷하며(약 0.2 ms 차이), Nvidia warm up 가이드라인을 세워 실제 사이클 시간만 측정하고 warm up을 한 번 하며 CV를 통해 스파이크·분산을 규명하기로 했고, 추론·bound 계산·검증 3가지 값을 나눠서 측정했다고 서술된다. 실시간 PCIe H2D 전송 최적화를 위해 Host Memory Pinning(cudaHostRegister)을 적용해 일반 메모리를 복사 없이 pinned Memory로 승격시켜 GPU가 CPU 메모리에 직접 접근할 수 있도록 했으며, 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 고쳤다고 기록된다. CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거해, 3-layer 네트워크 기준으로 Forward method=0 bound 27→18회(9회 감소), Backward method=1 bound 전체 46→31회(15회 감소), Backward-only method=2 bound 전체 45→33회(12회 감소)가 되었고, graph mode=1에서 샘플 1개 전체 기준으로 Forward 33→24회(9회 감소), Backward 52→37회(15회 감소), Backward-only 51→39회(12회 감소)가 되었다고 정리된다. [근거:H85ca0e507c4e_83,H85ca0e507c4e_84,H85ca0e507c4e_85]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p33",
+        "reason": "근거 H85ca0e507c4e_85의 관찰에는 'graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회'가 포함되어 있다. 본문은 graph mode=1에서 샘플 1개 전체 기준 커널 발사 횟수 감소만 정리하고, cudaGraphLaunch가 infer 1회 + bound 1회로 유지된다는 관찰을 반영하지 않아 근거가 실제로 관찰한 내용과 대응하지 않는다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_85"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p33-0",
+        "failure_owner": "writer",
+        "quote": "초기화만 하면 forward, backward의 bound 계산 시간은 비슷하며(약 0.2 ms 차이), Nvidia warm up 가이드라인을 세워 실제 사이클 시간만 측정하고 warm up을 한 번 하며 CV를 통해 스파이크·분산을 규명하기로 했고, 추론·bound 계산·검증 3가지 값을 나눠서 측정했다고 서술된다. 실시간 PCIe H2D 전송 최적화를 위해 Host Memory Pinning(cudaHostRegister)을 적용해 일반 메모리를 복사 없이 pinned Memory로 승격시켜 GPU가 CPU 메모리에 직접 접근할 수 있도록 했으며, 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 고쳤다고 기록된다. CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거해, 3-layer 네트워크 기준으로 Forward method=0 bound 27→18회(9회 감소), Backward method=1 bound 전체 46→31회(15회 감소), Backward-only method=2 bound 전체 45→33회(12회 감소)가 되었고, graph mode=1에서 샘플 1개 전체 기준으로 Forward 33→24회(9회 감소), Backward 52→37회(15회 감소), Backward-only 51→39회(12회 감소)가 되었다고 정리된다. [근거:H85ca0e507c4e_83,H85ca0e507c4e_84,H85ca0e507c4e_85]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p35",
+        "reason": "H85ca0e507c4e_88의 limits/evidence_limitations에는 '가중치 사전 업로드'의 실제 효과가 p14:review:e9에서 '크게 의미를 못미친다'로 기록되어 역할 대비 성과가 제한적임이 함께 확인된다고 명시되어 있으나, 본문에는 이 제한적 성과/한계가 반영되지 않았다. 근거의 한계까지 함께 사용해야 하는 사실 서술에서 성과 제한 정보가 누락되었다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_88"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p35-0",
+        "failure_owner": "none",
+        "quote": "구성 요소별 역할로는 cuBLAS는 NVIDIA GPU에서 선형대수 연산을 가속하는 라이브러리이며, 메모리 풀은 함수 호출마다의 메모리 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 사용된다고 설명된다. 결합 방식으로는 초기에는 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 결합되었다가, 이후 matmul만 GPU로, 나머지를 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 결합 방식을 바꾸었다고 기록된다. forward+backward 결합은 정방향과 backward 바운드를 함께 실행하는 방식으로 측정되며, backward_only는 backward 바운드만 실행하는 방식으로 측정되고, CUDA 그래프(cudaGraph) 적용 버전도 별도로 측정된다고 서술된다. [근거:H85ca0e507c4e_88,H85ca0e507c4e_89,H85ca0e507c4e_92]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p38",
+        "reason": "H40849fcc17fe_3의 근거 한계를 반영하지 않고 '기준 모델(forward bound)'과 '변형 모델(backward bound)'이라는 명시적 라벨을 사실처럼 서술함. 원문에는 forward/backward를 '기준/변형'으로 지칭한 명시적 라벨이 없으며, 동일 코드 구조에서 switch(case 0/1)로 두 bound 방식을 선택할 수 있다고 기술되어 있음. 또한 0.2ms 차이는 warmup 이후 전체 평균 기준과 단일 샘플 기준이 혼재되어 있고, 단일 샘플에서는 backward가 약 0.2ms 더 느리다는 관찰이 함께 기록되어 있어 '비슷하게 나타났다'는 서술만으로는 이 차이를 충분히 반영하지 못함.",
+        "evidence_ids": [
+          "H40849fcc17fe_3"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p38-0",
+        "failure_owner": "writer",
+        "quote": "구조 차이는 함수별 실행 위치(GPU 커널 vs CPU for 문)와 GPU 메모리 풀 구조에서 나타난다고 기록된다. 기준 모델(forward bound)과 변형 모델(backward bound)은 bound 계산 방식(forward/backward)에서 차이가 있으며, 측정 결과 두 bound 계산 시간은 warmup 이후 약 0.2 ms 차이로 비슷하게 나타났다고 서술된다. 변형 모델에서는 배칭(batching) 및 cudaGraph 캡처 등 실행 구조 변경이 적용되었고, 준비된 실험 환경에서 단일 스트림 대비 약 3배 시간 단축(25분 → 8분)이 보고되었다고 기록된다. 기준 모델은 CROWN 알고리즘에서 출력한 16개 값에 대해 신경망 기준 또는 lower_bound/upper_bound 기준으로 8개 출력 노드를 선택하는 구조를 사용한다고 설명된다. 변형 모델 중 하나는 메모리 풀(할당/해제 제거)과 memcpy 비용 제거를 적용한 버전으로, 고정된 가중치(W)와 편향(B) 값을 사용한다고 기록된다. 또 다른 변형 모델은 cuBlas, cuSparse 라이브러리를 도입하고 메모리 풀을 사용하며, matvec/matmul 연산을 cuBlas로 수행하도록 변경되었다고 서술된다. [근거:H40849fcc17fe_1,H40849fcc17fe_3,H40849fcc17fe_4,H40849fcc17fe_6,H40849fcc17fe_7,H40849fcc17fe_8]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p38",
+        "reason": "H40849fcc17fe_4의 근거 한계를 반영하지 않고 '준비된 실험 환경에서 단일 스트림 대비 약 3배 시간 단축(25분 → 8분)'을 일반화된 성능 결과로 서술함. 해당 수치는 '기존 데이터셋이 준비된 실험 환경' 기준이며, 실시간 환경에서는 데이터셋을 꽉 채우기 어렵다고 명시되어 있음. 또한 cudaGraph로 약 400초 감소는 추론과 bound를 '따로 캡처'했을 때 기준이고, 한번에 캡처한 경우의 수치는 별도로 제시되지 않았음에도 이를 구분하지 않음.",
+        "evidence_ids": [
+          "H40849fcc17fe_4"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p38-0",
+        "failure_owner": "writer",
+        "quote": "구조 차이는 함수별 실행 위치(GPU 커널 vs CPU for 문)와 GPU 메모리 풀 구조에서 나타난다고 기록된다. 기준 모델(forward bound)과 변형 모델(backward bound)은 bound 계산 방식(forward/backward)에서 차이가 있으며, 측정 결과 두 bound 계산 시간은 warmup 이후 약 0.2 ms 차이로 비슷하게 나타났다고 서술된다. 변형 모델에서는 배칭(batching) 및 cudaGraph 캡처 등 실행 구조 변경이 적용되었고, 준비된 실험 환경에서 단일 스트림 대비 약 3배 시간 단축(25분 → 8분)이 보고되었다고 기록된다. 기준 모델은 CROWN 알고리즘에서 출력한 16개 값에 대해 신경망 기준 또는 lower_bound/upper_bound 기준으로 8개 출력 노드를 선택하는 구조를 사용한다고 설명된다. 변형 모델 중 하나는 메모리 풀(할당/해제 제거)과 memcpy 비용 제거를 적용한 버전으로, 고정된 가중치(W)와 편향(B) 값을 사용한다고 기록된다. 또 다른 변형 모델은 cuBlas, cuSparse 라이브러리를 도입하고 메모리 풀을 사용하며, matvec/matmul 연산을 cuBlas로 수행하도록 변경되었다고 서술된다. [근거:H40849fcc17fe_1,H40849fcc17fe_3,H40849fcc17fe_4,H40849fcc17fe_6,H40849fcc17fe_7,H40849fcc17fe_8]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p38",
+        "reason": "H40849fcc17fe_6의 근거 한계를 반영하지 않고 기준 모델의 8개 출력 노드 선택 구조를 확정된 사실처럼 서술함. 원문에는 '아마 최댓값을 따라가는 듯?', '아마 간격을 기준으로 따라감' 등 추측성 표현이 포함되어 있으며, 실제 구현 확정 여부는 교수 제공 답지에 의존한다고 기록되어 있음.",
+        "evidence_ids": [
+          "H40849fcc17fe_6"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p38-0",
+        "failure_owner": "writer",
+        "quote": "구조 차이는 함수별 실행 위치(GPU 커널 vs CPU for 문)와 GPU 메모리 풀 구조에서 나타난다고 기록된다. 기준 모델(forward bound)과 변형 모델(backward bound)은 bound 계산 방식(forward/backward)에서 차이가 있으며, 측정 결과 두 bound 계산 시간은 warmup 이후 약 0.2 ms 차이로 비슷하게 나타났다고 서술된다. 변형 모델에서는 배칭(batching) 및 cudaGraph 캡처 등 실행 구조 변경이 적용되었고, 준비된 실험 환경에서 단일 스트림 대비 약 3배 시간 단축(25분 → 8분)이 보고되었다고 기록된다. 기준 모델은 CROWN 알고리즘에서 출력한 16개 값에 대해 신경망 기준 또는 lower_bound/upper_bound 기준으로 8개 출력 노드를 선택하는 구조를 사용한다고 설명된다. 변형 모델 중 하나는 메모리 풀(할당/해제 제거)과 memcpy 비용 제거를 적용한 버전으로, 고정된 가중치(W)와 편향(B) 값을 사용한다고 기록된다. 또 다른 변형 모델은 cuBlas, cuSparse 라이브러리를 도입하고 메모리 풀을 사용하며, matvec/matmul 연산을 cuBlas로 수행하도록 변경되었다고 서술된다. [근거:H40849fcc17fe_1,H40849fcc17fe_3,H40849fcc17fe_4,H40849fcc17fe_6,H40849fcc17fe_7,H40849fcc17fe_8]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p38",
+        "reason": "H40849fcc17fe_8의 근거 한계를 반영하지 않고 cuSparse 도입을 확정된 변경 사항처럼 서술함. 원문에서 cuSparse는 '혹시 cuSparse는 잘 되나 하고 도입해봤다' 수준의 실험적 시도이며, 실제 적용 결과나 성능 기여는 명확하지 않다고 기록되어 있음.",
+        "evidence_ids": [
+          "H40849fcc17fe_8"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p38-0",
+        "failure_owner": "writer",
+        "quote": "구조 차이는 함수별 실행 위치(GPU 커널 vs CPU for 문)와 GPU 메모리 풀 구조에서 나타난다고 기록된다. 기준 모델(forward bound)과 변형 모델(backward bound)은 bound 계산 방식(forward/backward)에서 차이가 있으며, 측정 결과 두 bound 계산 시간은 warmup 이후 약 0.2 ms 차이로 비슷하게 나타났다고 서술된다. 변형 모델에서는 배칭(batching) 및 cudaGraph 캡처 등 실행 구조 변경이 적용되었고, 준비된 실험 환경에서 단일 스트림 대비 약 3배 시간 단축(25분 → 8분)이 보고되었다고 기록된다. 기준 모델은 CROWN 알고리즘에서 출력한 16개 값에 대해 신경망 기준 또는 lower_bound/upper_bound 기준으로 8개 출력 노드를 선택하는 구조를 사용한다고 설명된다. 변형 모델 중 하나는 메모리 풀(할당/해제 제거)과 memcpy 비용 제거를 적용한 버전으로, 고정된 가중치(W)와 편향(B) 값을 사용한다고 기록된다. 또 다른 변형 모델은 cuBlas, cuSparse 라이브러리를 도입하고 메모리 풀을 사용하며, matvec/matmul 연산을 cuBlas로 수행하도록 변경되었다고 서술된다. [근거:H40849fcc17fe_1,H40849fcc17fe_3,H40849fcc17fe_4,H40849fcc17fe_6,H40849fcc17fe_7,H40849fcc17fe_8]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p40",
+        "reason": "근거 Hcdbfb7147ce4_3과 Hcdbfb7147ce4_4는 backward_only가 가장 빠르다는 비교·순위가 그래프 적용 후 avg 기준으로 확인된다고 명시하지만, 본문은 이를 '구성 요소 단위 성능(forward, forward+backward, backward_only)'의 순위로 서술하고 있다. 근거의 측정 조건(그래프 적용 후, avg 기준)과 구성 요소 범위(backward_only 포함 3가지 방법)를 본문에서 구성 요소 단위 순위 일반으로 확대·변경한 주장이므로 오류다.",
+        "evidence_ids": [
+          "Hcdbfb7147ce4_3",
+          "Hcdbfb7147ce4_4"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p40-0",
+        "failure_owner": "writer",
+        "quote": "전체 처리 성능의 명시적 순위는 원문에 제시되어 있지 않으며, 여러 실행의 총 소요 시간이 산발적으로 기록되어 있을 뿐 이를 순위 형태로 정리하거나 비교한 서술은 확인되지 않는다. 구성 요소 단위 성능(forward, forward+backward, backward_only)과 관련해서는 avg 기준, 그래프 적용 후 측정 조건에서 forward 1029s, forward+backward 1138s, backward_only 787.8832s가 함께 제시되었고, backward_only가 3가지 방법 중 가장 빠르다고 명시되었다. 다만 구성 요소 단위 성능만의 명시적 순위 비교나, 구성 요소 단위 순위와 전체 처리 성능 순위 사이의 차이·불일치를 비교한 내용은 원문에서 확인되지 않는다. [근거:Hcdbfb7147ce4_1,Hcdbfb7147ce4_2,Hcdbfb7147ce4_3,Hcdbfb7147ce4_4,Hcdbfb7147ce4_7,Hcdbfb7147ce4_8,Hcdbfb7147ce4_9]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p40",
+        "reason": "근거 Hcdbfb7147ce4_7과 Hcdbfb7147ce4_9는 구성 요소 단위 성능 순위와 전체 처리 성능 순위 간 차이·불일치 비교가 원문에서 확인되지 않는다고 명시하지만, 본문은 구성 요소 단위 성능 수치를 제시한 뒤 '구성 요소 단위 성능만의 명시적 순위 비교나, 구성 요소 단위 순위와 전체 처리 성능 순위 사이의 차이·불일치를 비교한 내용은 원문에서 확인되지 않는다'고 서술한다. 이는 근거의 '확인되지 않는다'는 부정적 관찰을 본문의 중심 비교 서술로 사용하여, 근거가 지정한 문맥 전용 성격(계획·질문·가설·해석·AI 조언 유지, 관측 결과로 쓰지 않음)을 관측 결과처럼 바꾼 오류다.",
+        "evidence_ids": [
+          "Hcdbfb7147ce4_7",
+          "Hcdbfb7147ce4_9"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p40-0",
+        "failure_owner": "writer",
+        "quote": "전체 처리 성능의 명시적 순위는 원문에 제시되어 있지 않으며, 여러 실행의 총 소요 시간이 산발적으로 기록되어 있을 뿐 이를 순위 형태로 정리하거나 비교한 서술은 확인되지 않는다. 구성 요소 단위 성능(forward, forward+backward, backward_only)과 관련해서는 avg 기준, 그래프 적용 후 측정 조건에서 forward 1029s, forward+backward 1138s, backward_only 787.8832s가 함께 제시되었고, backward_only가 3가지 방법 중 가장 빠르다고 명시되었다. 다만 구성 요소 단위 성능만의 명시적 순위 비교나, 구성 요소 단위 순위와 전체 처리 성능 순위 사이의 차이·불일치를 비교한 내용은 원문에서 확인되지 않는다. [근거:Hcdbfb7147ce4_1,Hcdbfb7147ce4_2,Hcdbfb7147ce4_3,Hcdbfb7147ce4_4,Hcdbfb7147ce4_7,Hcdbfb7147ce4_8,Hcdbfb7147ce4_9]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p41",
+        "reason": "근거 Hefd7e87bb735_58의 limits·observations에 따르면 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 같은 측정 조건은 원문에 직접 명시되어 있지 않다는 부정적 관찰이며, writing_role은 context_only로 관측 결과로 쓰지 않도록 되어 있다. 그러나 본문은 이를 '반면 ~ 원문에 직접 명시되어 있지 않다'라는 관측 결과 서술로 전환하여, 근거의 성격(계획·질문·가설·해석·AI 조언)과 사용 한계를 벗어난다.",
+        "evidence_ids": [
+          "Hefd7e87bb735_58"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p41-0",
+        "failure_owner": "writer",
+        "quote": "측정 방식과 버전 구분은 일부 기록되어 있다. warmup 관련 코드 주석이 남아 있고, 평균 기반 측정이 시도된 정황이 있으며, cudaGraph만 적용된 버전이 별도로 구분된다. sparse.py와 CUDA의 평균 bound 계산 시간 비교 표에서는 forward와 backward 방법에서 bound 계산 성능과 추론+bound+검증 성능이 함께 제시된다. 반면 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 같은 측정 조건은 원문에 직접 명시되어 있지 않다. [근거:Hefd7e87bb735_58,Hefd7e87bb735_62]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p41",
+        "reason": "근거 Hefd7e87bb735_62의 limits는 warmup 코드 주석, '평균으로 측정을 해봤다'는 캡션, cudaGraph만 적용된 버전 heading, sparse.py와 CUDA의 평균 bound 계산 시간 비교 표가 포함되어 있다고만 서술한다. 본문은 이 중 'sparse.py와 CUDA의 평균 bound 계산 시간 비교 표에서는 forward와 backward 방법에서 bound 계산 성능과 추론+bound+검증 성능이 함께 제시된다'고 구체화했는데, 이는 Hefd7e87bb735_62에 귀속된 범위를 넘어 source_table_0024(p58)의 내용을 근거로 끌어온 것으로 보인다. Hefd7e87bb735_62 단독으로는 해당 표의 세부 제시 내용까지 직접 뒷받침하지 않으므로, 지정된 근거만으로 보면 과도한 구체화가 된다.",
+        "evidence_ids": [
+          "Hefd7e87bb735_62"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-1-approved-evidence-S_evaluation_p41-0",
+        "failure_owner": "writer",
+        "quote": "측정 방식과 버전 구분은 일부 기록되어 있다. warmup 관련 코드 주석이 남아 있고, 평균 기반 측정이 시도된 정황이 있으며, cudaGraph만 적용된 버전이 별도로 구분된다. sparse.py와 CUDA의 평균 bound 계산 시간 비교 표에서는 forward와 backward 방법에서 bound 계산 성능과 추론+bound+검증 성능이 함께 제시된다. 반면 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 같은 측정 조건은 원문에 직접 명시되어 있지 않다. [근거:Hefd7e87bb735_58,Hefd7e87bb735_62]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p40",
+        "reason": "전체 처리 성능의 명시적 순위와 구성 요소 단위 순위 간 차이·불일치 비교가 원문에 직접 제시되지 않아, 제안 설계와 변형 방법별 정량 성능 비교의 비교 우위 해석이 부분적으로만 뒷받침된다.",
+        "evidence_ids": [
+          "Hcdbfb7147ce4_1",
+          "Hcdbfb7147ce4_2",
+          "Hcdbfb7147ce4_3",
+          "Hcdbfb7147ce4_4",
+          "Hcdbfb7147ce4_7",
+          "Hcdbfb7147ce4_8",
+          "Hcdbfb7147ce4_9"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "전체 처리 성능의 명시적 순위는 원문에 제시되어 있지 않으며, 여러 실행의 총 소요 시간이 산발적으로 기록되어 있을 뿐 이를 순위 형태로 정리하거나 비교한 서술은 확인되지 않는다. 구성 요소 단위 성능(forward, forward+backward, backward_only)과 관련해서는 avg 기준, 그래프 적용 후 측정 조건에서 forward 1029s, forward+backward 1138s, backward_only 787.8832s가 함께 제시되었고, backward_only가 3가지 방법 중 가장 빠르다고 명시되었다. 다만 구성 요소 단위 성능만의 명시적 순위 비교나, 구성 요소 단위 순위와 전체 처리 성능 순위 사이의 차이·불일치를 비교한 내용은 원문에서 확인되지 않는다. [근거:Hcdbfb7147ce4_1,Hcdbfb7147ce4_2,Hcdbfb7147ce4_3,Hcdbfb7147ce4_4,Hcdbfb7147ce4_7,Hcdbfb7147ce4_8,Hcdbfb7147ce4_9]"
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "warning",
+        "paragraph_id": "S_evaluation_p41",
+        "reason": "cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않다는 점이 확인되며, 발표자료·슬라이드 구성·대본 작성 피드백(E00181, E00182 등)은 GPU/CUDA 실험의 비교 조건을 직접 말하지 않으므로 제외된다.",
+        "evidence_ids": [
+          "Hefd7e87bb735_58",
+          "Hefd7e87bb735_62"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "측정 방식과 버전 구분은 일부 기록되어 있다. warmup 관련 코드 주석이 남아 있고, 평균 기반 측정이 시도된 정황이 있으며, cudaGraph만 적용된 버전이 별도로 구분된다. sparse.py와 CUDA의 평균 bound 계산 시간 비교 표에서는 forward와 backward 방법에서 bound 계산 성능과 추론+bound+검증 성능이 함께 제시된다. 반면 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 같은 측정 조건은 원문에 직접 명시되어 있지 않다. [근거:Hefd7e87bb735_58,Hefd7e87bb735_62]"
+      }
+    ],
+    "evidence_usage_review": {
+      "batches": [
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p1-0",
+          "paragraph_id": "S_evaluation_p1",
+          "target_evidence_ids": [
+            "E00018",
+            "E00020",
+            "E00021",
+            "E00022",
+            "E00027",
+            "E00029",
+            "E00030",
+            "E00031",
+            "E00035",
+            "E00064",
+            "E00068",
+            "E00069",
+            "E00070",
+            "E00071",
+            "E00072",
+            "E00075",
+            "E00076",
+            "E00077",
+            "E00078",
+            "E00081",
+            "E00083",
+            "E00096",
+            "E00097",
+            "E00102",
+            "E00106",
+            "E00109",
+            "E00111",
+            "E00119",
+            "E00120",
+            "E00125",
+            "E00131",
+            "E00132",
+            "E00139",
+            "E00140",
+            "E00144",
+            "E00145"
+          ],
+          "context_evidence_ids": [
+            "E00018",
+            "E00020",
+            "E00021",
+            "E00022",
+            "E00027",
+            "E00029",
+            "E00030",
+            "E00031",
+            "E00035",
+            "E00064",
+            "E00068",
+            "E00069",
+            "E00070",
+            "E00071",
+            "E00072",
+            "E00075",
+            "E00076",
+            "E00077",
+            "E00078",
+            "E00081",
+            "E00083",
+            "E00096",
+            "E00097",
+            "E00102",
+            "E00106",
+            "E00109",
+            "E00111",
+            "E00119",
+            "E00120",
+            "E00125",
+            "E00131",
+            "E00132",
+            "E00139",
+            "E00140",
+            "E00144",
+            "E00145"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p2-0",
+          "paragraph_id": "S_evaluation_p2",
+          "target_evidence_ids": [
+            "E00159",
+            "E00166",
+            "E00170"
+          ],
+          "context_evidence_ids": [
+            "E00159",
+            "E00166",
+            "E00170"
+          ],
+          "issue_count": 2
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p3-0",
+          "paragraph_id": "S_evaluation_p3",
+          "target_evidence_ids": [
+            "E00176",
+            "E00178",
+            "E00180"
+          ],
+          "context_evidence_ids": [
+            "E00176",
+            "E00178",
+            "E00180"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p4-0",
+          "paragraph_id": "S_evaluation_p4",
+          "target_evidence_ids": [
+            "E00187",
+            "E00188",
+            "E00189",
+            "E00190",
+            "E00191"
+          ],
+          "context_evidence_ids": [
+            "E00187",
+            "E00188",
+            "E00189",
+            "E00190",
+            "E00191"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p5-0",
+          "paragraph_id": "S_evaluation_p5",
+          "target_evidence_ids": [
+            "E00202",
+            "E00203",
+            "E00206",
+            "E00207",
+            "E00208"
+          ],
+          "context_evidence_ids": [
+            "E00202",
+            "E00203",
+            "E00206",
+            "E00207",
+            "E00208"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p6-0",
+          "paragraph_id": "S_evaluation_p6",
+          "target_evidence_ids": [
+            "E00211",
+            "E00212",
+            "E00213"
+          ],
+          "context_evidence_ids": [
+            "E00211",
+            "E00212",
+            "E00213"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p7-0",
+          "paragraph_id": "S_evaluation_p7",
+          "target_evidence_ids": [
+            "E00214",
+            "E00215",
+            "E00216"
+          ],
+          "context_evidence_ids": [
+            "E00214",
+            "E00215",
+            "E00216"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p8-0",
+          "paragraph_id": "S_evaluation_p8",
+          "target_evidence_ids": [
+            "E00223",
+            "E00224",
+            "E00227",
+            "E00228"
+          ],
+          "context_evidence_ids": [
+            "E00223",
+            "E00224",
+            "E00227",
+            "E00228"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p9-0",
+          "paragraph_id": "S_evaluation_p9",
+          "target_evidence_ids": [
+            "E00158",
+            "E00169",
+            "E00171",
+            "E00238"
+          ],
+          "context_evidence_ids": [
+            "E00158",
+            "E00169",
+            "E00171",
+            "E00238"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p10-0",
+          "paragraph_id": "S_evaluation_p10",
+          "target_evidence_ids": [
+            "E00239",
+            "E00240",
+            "E00243",
+            "E00245",
+            "E00246",
+            "E00247",
+            "E00249",
+            "E00250",
+            "E00251",
+            "H85ca0e507c4e_43"
+          ],
+          "context_evidence_ids": [
+            "E00239",
+            "E00240",
+            "E00245",
+            "E00246",
+            "E00247",
+            "E00249",
+            "H85ca0e507c4e_43",
+            "E00243",
+            "E00250",
+            "E00251"
+          ],
+          "issue_count": 4
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p11-0",
+          "paragraph_id": "S_evaluation_p11",
+          "target_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 4
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p12-0",
+          "paragraph_id": "S_evaluation_p12",
+          "target_evidence_ids": [
+            "E00297",
+            "E00299"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p13-0",
+          "paragraph_id": "S_evaluation_p13",
+          "target_evidence_ids": [
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p14-0",
+          "paragraph_id": "S_evaluation_p14",
+          "target_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p15-0",
+          "paragraph_id": "S_evaluation_p15",
+          "target_evidence_ids": [
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00296"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12",
+            "E00294",
+            "E00296"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p16-0",
+          "paragraph_id": "S_evaluation_p16",
+          "target_evidence_ids": [
+            "E00297",
+            "E00299"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p17-0",
+          "paragraph_id": "S_evaluation_p17",
+          "target_evidence_ids": [
+            "E00297",
+            "E00299"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00297",
+            "E00299",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_63",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_66",
+            "H85ca0e507c4e_76",
+            "Hcdbfb7147ce4_6",
+            "Hcdbfb7147ce4_10",
+            "Hcdbfb7147ce4_11",
+            "Hcdbfb7147ce4_12"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p18-0",
+          "paragraph_id": "S_evaluation_p18",
+          "target_evidence_ids": [
+            "E00301",
+            "E00304",
+            "E00305",
+            "E00306",
+            "E00307",
+            "E00308"
+          ],
+          "context_evidence_ids": [
+            "E00301",
+            "E00304",
+            "E00305",
+            "E00306",
+            "E00307",
+            "E00308"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p19-0",
+          "paragraph_id": "S_evaluation_p19",
+          "target_evidence_ids": [
+            "E00303"
+          ],
+          "context_evidence_ids": [
+            "E00303"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p20-0",
+          "paragraph_id": "S_evaluation_p20",
+          "target_evidence_ids": [
+            "E00358",
+            "E00361",
+            "E00375",
+            "H85ca0e507c4e_4"
+          ],
+          "context_evidence_ids": [
+            "E00358",
+            "E00361",
+            "E00375",
+            "H85ca0e507c4e_4"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p21-0",
+          "paragraph_id": "S_evaluation_p21",
+          "target_evidence_ids": [
+            "E00309",
+            "Hefd7e87bb735_34",
+            "Hefd7e87bb735_67"
+          ],
+          "context_evidence_ids": [
+            "E00309",
+            "Hefd7e87bb735_67",
+            "Hefd7e87bb735_34"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p22-0",
+          "paragraph_id": "S_evaluation_p22",
+          "target_evidence_ids": [
+            "E00313",
+            "E00314",
+            "E00315"
+          ],
+          "context_evidence_ids": [
+            "E00313",
+            "E00314",
+            "E00315"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p23-0",
+          "paragraph_id": "S_evaluation_p23",
+          "target_evidence_ids": [
+            "E00318",
+            "E00319",
+            "E00320"
+          ],
+          "context_evidence_ids": [
+            "E00318",
+            "E00319",
+            "E00320"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p24-0",
+          "paragraph_id": "S_evaluation_p24",
+          "target_evidence_ids": [
+            "E00339",
+            "E00341",
+            "E00343",
+            "E00344",
+            "Hefd7e87bb735_53"
+          ],
+          "context_evidence_ids": [
+            "E00339",
+            "E00341",
+            "E00343",
+            "E00344",
+            "Hefd7e87bb735_53"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p25-0",
+          "paragraph_id": "S_evaluation_p25",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_30",
+            "H85ca0e507c4e_31",
+            "H85ca0e507c4e_32",
+            "H85ca0e507c4e_33",
+            "H85ca0e507c4e_34"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_30",
+            "H85ca0e507c4e_31",
+            "H85ca0e507c4e_32",
+            "H85ca0e507c4e_33",
+            "H85ca0e507c4e_34"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p26-0",
+          "paragraph_id": "S_evaluation_p26",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_35",
+            "H85ca0e507c4e_36",
+            "H85ca0e507c4e_38"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_35",
+            "H85ca0e507c4e_36",
+            "H85ca0e507c4e_38"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p27-0",
+          "paragraph_id": "S_evaluation_p27",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_44",
+            "H85ca0e507c4e_45",
+            "H85ca0e507c4e_46",
+            "H85ca0e507c4e_47",
+            "H85ca0e507c4e_48",
+            "H85ca0e507c4e_49"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_44",
+            "H85ca0e507c4e_45",
+            "H85ca0e507c4e_46",
+            "H85ca0e507c4e_47",
+            "H85ca0e507c4e_48",
+            "H85ca0e507c4e_49"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p28-0",
+          "paragraph_id": "S_evaluation_p28",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_51",
+            "H85ca0e507c4e_52",
+            "H85ca0e507c4e_53",
+            "H85ca0e507c4e_54",
+            "H85ca0e507c4e_56"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_51",
+            "H85ca0e507c4e_52",
+            "H85ca0e507c4e_53",
+            "H85ca0e507c4e_54",
+            "H85ca0e507c4e_56"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p29-0",
+          "paragraph_id": "S_evaluation_p29",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_57",
+            "H85ca0e507c4e_58",
+            "H85ca0e507c4e_59",
+            "H85ca0e507c4e_60",
+            "H85ca0e507c4e_62",
+            "H85ca0e507c4e_63"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_57",
+            "H85ca0e507c4e_58",
+            "H85ca0e507c4e_59",
+            "H85ca0e507c4e_60",
+            "H85ca0e507c4e_62",
+            "H85ca0e507c4e_63"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p30-0",
+          "paragraph_id": "S_evaluation_p30",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_64",
+            "H85ca0e507c4e_66",
+            "H85ca0e507c4e_67",
+            "H85ca0e507c4e_68",
+            "H85ca0e507c4e_69",
+            "H85ca0e507c4e_70",
+            "H85ca0e507c4e_71"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_64",
+            "H85ca0e507c4e_66",
+            "H85ca0e507c4e_67",
+            "H85ca0e507c4e_68",
+            "H85ca0e507c4e_69",
+            "H85ca0e507c4e_70",
+            "H85ca0e507c4e_71"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p31-0",
+          "paragraph_id": "S_evaluation_p31",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_72",
+            "H85ca0e507c4e_74",
+            "H85ca0e507c4e_75",
+            "H85ca0e507c4e_78"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_72",
+            "H85ca0e507c4e_74",
+            "H85ca0e507c4e_75",
+            "H85ca0e507c4e_78"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p32-0",
+          "paragraph_id": "S_evaluation_p32",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_79",
+            "H85ca0e507c4e_80",
+            "H85ca0e507c4e_81"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_79",
+            "H85ca0e507c4e_80",
+            "H85ca0e507c4e_81"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p33-0",
+          "paragraph_id": "S_evaluation_p33",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_83",
+            "H85ca0e507c4e_84",
+            "H85ca0e507c4e_85"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_83",
+            "H85ca0e507c4e_84",
+            "H85ca0e507c4e_85"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p34-0",
+          "paragraph_id": "S_evaluation_p34",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_86",
+            "H85ca0e507c4e_87"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_86",
+            "H85ca0e507c4e_87"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p35-0",
+          "paragraph_id": "S_evaluation_p35",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_89",
+            "H85ca0e507c4e_92"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_89",
+            "H85ca0e507c4e_92"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p36-0",
+          "paragraph_id": "S_evaluation_p36",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_93",
+            "H85ca0e507c4e_94",
+            "H85ca0e507c4e_95"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_93",
+            "H85ca0e507c4e_94",
+            "H85ca0e507c4e_95"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p37-0",
+          "paragraph_id": "S_evaluation_p37",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_97",
+            "H85ca0e507c4e_98"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_97",
+            "H85ca0e507c4e_98"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p38-0",
+          "paragraph_id": "S_evaluation_p38",
+          "target_evidence_ids": [
+            "H40849fcc17fe_1",
+            "H40849fcc17fe_3",
+            "H40849fcc17fe_4",
+            "H40849fcc17fe_6",
+            "H40849fcc17fe_7",
+            "H40849fcc17fe_8"
+          ],
+          "context_evidence_ids": [
+            "H40849fcc17fe_1",
+            "H40849fcc17fe_3",
+            "H40849fcc17fe_4",
+            "H40849fcc17fe_6",
+            "H40849fcc17fe_7",
+            "H40849fcc17fe_8"
+          ],
+          "issue_count": 4
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p39-0",
+          "paragraph_id": "S_evaluation_p39",
+          "target_evidence_ids": [
+            "H40849fcc17fe_10",
+            "H40849fcc17fe_9"
+          ],
+          "context_evidence_ids": [
+            "H40849fcc17fe_9",
+            "H40849fcc17fe_10"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p40-0",
+          "paragraph_id": "S_evaluation_p40",
+          "target_evidence_ids": [
+            "Hcdbfb7147ce4_1",
+            "Hcdbfb7147ce4_2",
+            "Hcdbfb7147ce4_3",
+            "Hcdbfb7147ce4_4",
+            "Hcdbfb7147ce4_7",
+            "Hcdbfb7147ce4_8",
+            "Hcdbfb7147ce4_9"
+          ],
+          "context_evidence_ids": [
+            "Hefd7e87bb735_58",
+            "Hefd7e87bb735_62",
+            "Hcdbfb7147ce4_7",
+            "Hcdbfb7147ce4_9",
+            "Hcdbfb7147ce4_1",
+            "Hcdbfb7147ce4_2",
+            "Hcdbfb7147ce4_3",
+            "Hcdbfb7147ce4_4",
+            "Hcdbfb7147ce4_8"
+          ],
+          "issue_count": 2
+        },
+        {
+          "name": "review-1-approved-evidence-S_evaluation_p41-0",
+          "paragraph_id": "S_evaluation_p41",
+          "target_evidence_ids": [
+            "Hefd7e87bb735_58",
+            "Hefd7e87bb735_62"
+          ],
+          "context_evidence_ids": [
+            "Hefd7e87bb735_58",
+            "Hefd7e87bb735_62",
+            "Hcdbfb7147ce4_7",
+            "Hcdbfb7147ce4_9"
+          ],
+          "issue_count": 2
+        }
+      ],
+      "summary": {
+        "checked_paragraph_ids": [
+          "S_evaluation_p1",
+          "S_evaluation_p2",
+          "S_evaluation_p3",
+          "S_evaluation_p4",
+          "S_evaluation_p5",
+          "S_evaluation_p6",
+          "S_evaluation_p7",
+          "S_evaluation_p8",
+          "S_evaluation_p9",
+          "S_evaluation_p10",
+          "S_evaluation_p11",
+          "S_evaluation_p12",
+          "S_evaluation_p13",
+          "S_evaluation_p14",
+          "S_evaluation_p15",
+          "S_evaluation_p16",
+          "S_evaluation_p17",
+          "S_evaluation_p18",
+          "S_evaluation_p19",
+          "S_evaluation_p20",
+          "S_evaluation_p21",
+          "S_evaluation_p22",
+          "S_evaluation_p23",
+          "S_evaluation_p24",
+          "S_evaluation_p25",
+          "S_evaluation_p26",
+          "S_evaluation_p27",
+          "S_evaluation_p28",
+          "S_evaluation_p29",
+          "S_evaluation_p30",
+          "S_evaluation_p31",
+          "S_evaluation_p32",
+          "S_evaluation_p33",
+          "S_evaluation_p34",
+          "S_evaluation_p35",
+          "S_evaluation_p36",
+          "S_evaluation_p37",
+          "S_evaluation_p38",
+          "S_evaluation_p39",
+          "S_evaluation_p40",
+          "S_evaluation_p41"
+        ],
+        "checked_evidence_ids": [
+          "E00018",
+          "E00020",
+          "E00021",
+          "E00022",
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00031",
+          "E00035",
+          "E00064",
+          "E00068",
+          "E00069",
+          "E00070",
+          "E00071",
+          "E00072",
+          "E00075",
+          "E00076",
+          "E00077",
+          "E00078",
+          "E00081",
+          "E00083",
+          "E00096",
+          "E00097",
+          "E00102",
+          "E00106",
+          "E00109",
+          "E00111",
+          "E00119",
+          "E00120",
+          "E00125",
+          "E00131",
+          "E00132",
+          "E00139",
+          "E00140",
+          "E00144",
+          "E00145",
+          "E00158",
+          "E00159",
+          "E00166",
+          "E00169",
+          "E00170",
+          "E00171",
+          "E00176",
+          "E00178",
+          "E00180",
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00202",
+          "E00203",
+          "E00206",
+          "E00207",
+          "E00208",
+          "E00211",
+          "E00212",
+          "E00213",
+          "E00214",
+          "E00215",
+          "E00216",
+          "E00223",
+          "E00224",
+          "E00227",
+          "E00228",
+          "E00238",
+          "E00239",
+          "E00240",
+          "E00243",
+          "E00245",
+          "E00246",
+          "E00247",
+          "E00249",
+          "E00250",
+          "E00251",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00301",
+          "E00303",
+          "E00304",
+          "E00305",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00309",
+          "E00313",
+          "E00314",
+          "E00315",
+          "E00318",
+          "E00319",
+          "E00320",
+          "E00339",
+          "E00341",
+          "E00343",
+          "E00344",
+          "E00358",
+          "E00361",
+          "E00375",
+          "H40849fcc17fe_1",
+          "H40849fcc17fe_10",
+          "H40849fcc17fe_3",
+          "H40849fcc17fe_4",
+          "H40849fcc17fe_6",
+          "H40849fcc17fe_7",
+          "H40849fcc17fe_8",
+          "H40849fcc17fe_9",
+          "H85ca0e507c4e_30",
+          "H85ca0e507c4e_31",
+          "H85ca0e507c4e_32",
+          "H85ca0e507c4e_33",
+          "H85ca0e507c4e_34",
+          "H85ca0e507c4e_35",
+          "H85ca0e507c4e_36",
+          "H85ca0e507c4e_38",
+          "H85ca0e507c4e_4",
+          "H85ca0e507c4e_43",
+          "H85ca0e507c4e_44",
+          "H85ca0e507c4e_45",
+          "H85ca0e507c4e_46",
+          "H85ca0e507c4e_47",
+          "H85ca0e507c4e_48",
+          "H85ca0e507c4e_49",
+          "H85ca0e507c4e_51",
+          "H85ca0e507c4e_52",
+          "H85ca0e507c4e_53",
+          "H85ca0e507c4e_54",
+          "H85ca0e507c4e_56",
+          "H85ca0e507c4e_57",
+          "H85ca0e507c4e_58",
+          "H85ca0e507c4e_59",
+          "H85ca0e507c4e_60",
+          "H85ca0e507c4e_62",
+          "H85ca0e507c4e_63",
+          "H85ca0e507c4e_64",
+          "H85ca0e507c4e_66",
+          "H85ca0e507c4e_67",
+          "H85ca0e507c4e_68",
+          "H85ca0e507c4e_69",
+          "H85ca0e507c4e_70",
+          "H85ca0e507c4e_71",
+          "H85ca0e507c4e_72",
+          "H85ca0e507c4e_74",
+          "H85ca0e507c4e_75",
+          "H85ca0e507c4e_78",
+          "H85ca0e507c4e_79",
+          "H85ca0e507c4e_80",
+          "H85ca0e507c4e_81",
+          "H85ca0e507c4e_83",
+          "H85ca0e507c4e_84",
+          "H85ca0e507c4e_85",
+          "H85ca0e507c4e_86",
+          "H85ca0e507c4e_87",
+          "H85ca0e507c4e_88",
+          "H85ca0e507c4e_89",
+          "H85ca0e507c4e_92",
+          "H85ca0e507c4e_93",
+          "H85ca0e507c4e_94",
+          "H85ca0e507c4e_95",
+          "H85ca0e507c4e_97",
+          "H85ca0e507c4e_98",
+          "Hcdbfb7147ce4_1",
+          "Hcdbfb7147ce4_2",
+          "Hcdbfb7147ce4_3",
+          "Hcdbfb7147ce4_4",
+          "Hcdbfb7147ce4_7",
+          "Hcdbfb7147ce4_8",
+          "Hcdbfb7147ce4_9",
+          "Hefd7e87bb735_34",
+          "Hefd7e87bb735_53",
+          "Hefd7e87bb735_58",
+          "Hefd7e87bb735_62",
+          "Hefd7e87bb735_67"
+        ],
+        "issue_count": 36,
+        "blocking_paragraph_ids": [
+          "S_evaluation_p5",
+          "S_evaluation_p10",
+          "S_evaluation_p11",
+          "S_evaluation_p13",
+          "S_evaluation_p14",
+          "S_evaluation_p15",
+          "S_evaluation_p16",
+          "S_evaluation_p17",
+          "S_evaluation_p33",
+          "S_evaluation_p38",
+          "S_evaluation_p40",
+          "S_evaluation_p41"
+        ]
+      },
+      "coverage_batches": [
+        "all"
+      ]
+    },
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [
+      {
+        "item_id": "RI_eval_1",
+        "added_paragraph_ids": [
+          "S_evaluation_p9",
+          "S_evaluation_p10",
+          "S_evaluation_p27"
+        ]
+      }
+    ],
+    "response_normalizations": [],
+    "approved": false,
+    "required_content_coverage": {
+      "met": 1,
+      "total": 1,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 1,
+      "not_visible": 0,
+      "total": 1,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+  }
+}

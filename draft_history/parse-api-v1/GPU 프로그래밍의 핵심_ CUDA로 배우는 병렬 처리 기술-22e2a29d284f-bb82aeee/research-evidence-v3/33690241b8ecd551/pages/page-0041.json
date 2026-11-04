@@ -1,0 +1,511 @@
+{
+  "initial": [
+    {
+      "statement": "backward_bound_gpu에서 기존에는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고, affine_min/max도 GPU에서 계산되어 GPU -> CPU -> GPU -> CPU 불필요한 복사가 발생했다고 설명함.",
+      "limits": "구체적 커널명·데이터 크기는 원문에 없음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "기존 방식: GPU (backward_bound_gpu 계산결과) -> CPU, 이후 CPU에서 affine_min/max 수행",
+        "affine_min/max도 GPU에서 계산되어 GPU -> CPU -> GPU -> CPU 복사 발생"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p41:e276",
+          "page": 41,
+          "quote": "backward_bound_gpu에서 기존에는 GPU (backward_bound_gpu 계산결과) -> CPU\n이후\nCPU에서 affine_min/max를 통해 계산을 수행한 후 최종결과를 얻는 방식이었다\n(이 때 affine_min/max 도 GPU에서 계산이 돌아가기 때문에\nGPU -> CPU -> GPU -> CPU 불필요한 복사가 발생됨\n)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0041F0001"
+    },
+    {
+      "statement": "affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU -> CPU 메모리 복사를 최소화했다고 설명함.",
+      "limits": "개선 후 복사량·정량적 감소치는 원문에 없음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "affine_min/max를 backward_bound_gpu 내에서 실행하도록 개선",
+        "GPU -> CPU 메모리 복사 최소화"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p41:e277",
+          "page": 41,
+          "quote": "이 부분에서 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여\nGPU -> CPU 이렇게 메모리 복사를 최소화함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0041F0002"
+    },
+    {
+      "statement": "개선 후 CROWN Verification에서 Elapsed time 15.828400 ms가 나왔고, 결과는 15ms 후반까지 나왔다고 기록함.",
+      "limits": "측정 조건·반복 횟수는 원문에 상세하지 않음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "eps = 1e-06",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "Elapsed time: 15.828400 ms",
+        "결과가 15ms 후반까지 나옴"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "15.8284",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "eps = 1e-06, Output Dimension 16",
+          "element_ids": [
+            "p41:e278"
+          ],
+          "raw_value": "15.8284",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p41:e278",
+          "page": 41,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 15.828400 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | inference (y) 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] [ 13] [ 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2,670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p41:e279",
+          "page": 41,
+          "quote": "결 과는 15ms 후반까지 나옴",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0041F0003"
+    },
+    {
+      "statement": "GPU 안에서 최종 정답 계산을 위해 affine_min_gpu와 affine_max_gpu 커널을 호출하는 코드 조각이 제시됨.",
+      "limits": "커널 퓨전 적용 여부는 이 요소에서 확정되지 않음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "affine_min_gpu<<<blocksPerGrid, 256>>> 및 affine_max_gpu<<<blocksPerGrid, 256>>> 호출 코드 제시"
+      ],
+      "parameters": [
+        {
+          "name": "affine_min_gpu 블록당 스레드 수",
+          "value": "256",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p41:e281"
+          ]
+        },
+        {
+          "name": "affine_max_gpu 블록당 스레드 수",
+          "value": "256",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p41:e281"
+          ]
+        }
+      ],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p41:e281",
+          "page": 41,
+          "quote": "![image](/image/placeholder)\n// 3. GPU 안에서 최종 정답 계산 // 커널 퓨전 가능할듯 affine_min_gpu<<<blocksPerGrid,f 256>>>(lower_M, lower_p, d_xl, d_xu, d_final_lower); affine_max_gpu<<<blocksPerGrid,f 256>>>(upper_M, upper_p, d_xl, d_xu, d_final_upper); ;",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0041F0004"
+    },
+    {
+      "statement": "이 부분에서 커널 퓨전이 가능할 것 같다고 언급함.",
+      "limits": "실제 적용 결과는 이후 요소에서 다룸",
+      "kind": "method",
+      "claim_status": "hypothesis",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "커널 퓨전 가능성 언급"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p41:e282",
+          "page": 41,
+          "quote": "이 부분 커널 퓨전 가능할듯",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0041F0005"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "memcpy 호출 횟수가 66개에서 56개로 줄었다고 기록함.",
+        "limits": "호출 횟수 외 복사량·시간 감소치는 이 요소에서 제시되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "memcpy 호출 횟수 66 -> 56개로 감소"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "memcpy 호출 횟수",
+            "value": "66",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "개선 전",
+            "element_ids": [
+              "p40:e274"
+            ]
+          },
+          {
+            "metric": "memcpy 호출 횟수",
+            "value": "56",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "개선 후",
+            "element_ids": [
+              "p40:e274"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p40:e274"
+        ]
+      },
+      {
+        "statement": "개선 후 CROWN Verification에서 Elapsed time 15.751000 ms가 측정되었고, 하한선이 약 0.2ms 낮아진 듯하다고 기록함.",
+        "limits": "측정 조건·반복 횟수는 원문에 상세하지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Elapsed time: 15.751000 ms",
+          "하한선이 약 0.2ms 낮아진 듯함"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "15.751",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "eps = 1e-06, Output Dimension 16",
+            "element_ids": [
+              "p42:e284"
+            ]
+          },
+          {
+            "metric": "Elapsed time 감소 추정",
+            "value": "0.2",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "커널 퓨전 적용 후 하한선 추정",
+            "element_ids": [
+              "p42:e285"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p42:e284",
+          "p42:e285"
+        ]
+      },
+      {
+        "statement": "미리 작성해둔 퓨전 함수를 사용하여 affine_min과 affine_max를 하나의 커널로 병합(커널 퓨전 완료)했다고 기록함.",
+        "limits": "퓨전 함수의 내부 구현·성능 영향은 이 요소에서 정량화되지 않음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "미리 작성해둔 퓨전 함수 사용",
+          "affine_min과 affine_max를 하나의 커널로 병합"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p42:e283",
+          "p42:img0:e0"
+        ]
+      },
+      {
+        "statement": "커널 퓨전 완료 후 호출되는 affine_minmax_pair_gpu 커널의 시그니처가 제시됨.",
+        "limits": "블록/스레드 구성 등 실행 파라미터는 이 요소에서 확인되지 않음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "affine_minmax_pair_gpu 커널 호출 코드 제시"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p42:img0:e1",
+          "p42:img0:e2"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p41:e275": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "note": "구분선 텍스트로 연구 주장·조건·결과·출처 성격이 없어 target_element 분류 대상에서 제외됨. raw_data로도 보존 가치가 낮아 unresolved로 처리.",
+        "addition_refs": []
+      },
+      "p41:e276": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "기존 방식의 GPU->CPU->GPU->CPU 복사 발생 설명이 facts[0]에 반영됨.",
+        "addition_refs": []
+      },
+      "p41:e277": {
+        "state": "represented",
+        "fact_refs": [
+          1
+        ],
+        "note": "affine_min/max를 backward_bound_gpu 내에서 실행하도록 개선하여 GPU->CPU 복사 최소화한 내용이 facts[1]에 반영됨.",
+        "addition_refs": []
+      },
+      "p41:e278": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "개선 후 Elapsed time 15.828400 ms 및 15ms 후반 결과가 facts[2]에 반영됨.",
+        "addition_refs": []
+      },
+      "p41:e279": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "결과가 15ms 후반까지 나왔다는 진술이 facts[2]의 observations에 포함됨.",
+        "addition_refs": []
+      },
+      "p41:e280": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "note": "추가 최적화 발견을 언급한 제목성 문장이지만 이 요소 자체로는 방법·조건·결과가 특정되지 않아 facts/additions에 반영하지 않음. 연구 맥락상 후속 요소와 연계됨.",
+        "addition_refs": []
+      },
+      "p41:e281": {
+        "state": "represented",
+        "fact_refs": [
+          3
+        ],
+        "note": "affine_min_gpu/affine_max_gpu 호출 코드 조각과 블록당 256 스레드 정보가 facts[3]에 반영됨.",
+        "addition_refs": []
+      },
+      "p41:e282": {
+        "state": "represented",
+        "fact_refs": [
+          4
+        ],
+        "note": "커널 퓨전 가능성 언급이 facts[4]에 반영됨.",
+        "addition_refs": []
+      }
+    }
+  },
+  "facts": [
+    {
+      "statement": "backward_bound_gpu에서 기존에는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고, affine_min/max도 GPU에서 계산되어 GPU -> CPU -> GPU -> CPU 불필요한 복사가 발생했다고 설명함.",
+      "limits": "구체적 커널명·데이터 크기는 원문에 없음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "기존 방식: GPU (backward_bound_gpu 계산결과) -> CPU, 이후 CPU에서 affine_min/max 수행",
+        "affine_min/max도 GPU에서 계산되어 GPU -> CPU -> GPU -> CPU 복사 발생"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p41:e276",
+          "page": 41,
+          "quote": "backward_bound_gpu에서 기존에는 GPU (backward_bound_gpu 계산결과) -> CPU\n이후\nCPU에서 affine_min/max를 통해 계산을 수행한 후 최종결과를 얻는 방식이었다\n(이 때 affine_min/max 도 GPU에서 계산이 돌아가기 때문에\nGPU -> CPU -> GPU -> CPU 불필요한 복사가 발생됨\n)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0041F0001"
+    },
+    {
+      "statement": "affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU -> CPU 메모리 복사를 최소화했다고 설명함.",
+      "limits": "개선 후 복사량·정량적 감소치는 원문에 없음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "affine_min/max를 backward_bound_gpu 내에서 실행하도록 개선",
+        "GPU -> CPU 메모리 복사 최소화"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p41:e277",
+          "page": 41,
+          "quote": "이 부분에서 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여\nGPU -> CPU 이렇게 메모리 복사를 최소화함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0041F0002"
+    },
+    {
+      "statement": "개선 후 CROWN Verification에서 Elapsed time 15.828400 ms가 나왔고, 결과는 15ms 후반까지 나왔다고 기록함.",
+      "limits": "측정 조건·반복 횟수는 원문에 상세하지 않음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "eps = 1e-06",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "Elapsed time: 15.828400 ms",
+        "결과가 15ms 후반까지 나옴"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "15.8284",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "eps = 1e-06, Output Dimension 16",
+          "element_ids": [
+            "p41:e278"
+          ],
+          "raw_value": "15.8284",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p41:e278",
+          "page": 41,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 15.828400 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | inference (y) 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] [ 13] [ 14] [ 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2,670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p41:e279",
+          "page": 41,
+          "quote": "결 과는 15ms 후반까지 나옴",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0041F0003"
+    },
+    {
+      "statement": "GPU 안에서 최종 정답 계산을 위해 affine_min_gpu와 affine_max_gpu 커널을 호출하는 코드 조각이 제시됨.",
+      "limits": "커널 퓨전 적용 여부는 이 요소에서 확정되지 않음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "affine_min_gpu<<<blocksPerGrid, 256>>> 및 affine_max_gpu<<<blocksPerGrid, 256>>> 호출 코드 제시"
+      ],
+      "parameters": [
+        {
+          "name": "affine_min_gpu 블록당 스레드 수",
+          "value": "256",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p41:e281"
+          ]
+        },
+        {
+          "name": "affine_max_gpu 블록당 스레드 수",
+          "value": "256",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p41:e281"
+          ]
+        }
+      ],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p41:e281",
+          "page": 41,
+          "quote": "![image](/image/placeholder)\n// 3. GPU 안에서 최종 정답 계산 // 커널 퓨전 가능할듯 affine_min_gpu<<<blocksPerGrid,f 256>>>(lower_M, lower_p, d_xl, d_xu, d_final_lower); affine_max_gpu<<<blocksPerGrid,f 256>>>(upper_M, upper_p, d_xl, d_xu, d_final_upper); ;",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0041F0004"
+    },
+    {
+      "statement": "이 부분에서 커널 퓨전이 가능할 것 같다고 언급함.",
+      "limits": "실제 적용 결과는 이후 요소에서 다룸",
+      "kind": "method",
+      "claim_status": "hypothesis",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "커널 퓨전 가능성 언급"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p41:e282",
+          "page": 41,
+          "quote": "이 부분 커널 퓨전 가능할듯",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0041F0005"
+    }
+  ]
+}

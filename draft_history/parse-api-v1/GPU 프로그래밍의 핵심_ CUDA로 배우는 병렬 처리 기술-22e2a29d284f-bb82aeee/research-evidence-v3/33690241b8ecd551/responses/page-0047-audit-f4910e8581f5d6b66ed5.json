@@ -1,0 +1,259 @@
+{
+  "request_fingerprint": "f4910e8581f5d6b66ed541efa019d306d81050366bc35845bade37c3f03e7323",
+  "value": {
+    "additions": [
+      {
+        "statement": "단일 데이터 기준 memcpy 호출 횟수는 forward와 backward 각각 6번이며, 입력 데이터 ± eps, 가중치, bias, upper bound 결과, lower bound 결과 총 6개로 예상했으나, 가중치와 bias는 nvtx 찍기 전에 한 번에 올라가고(prepare network on gpu), 실제로는 입력 데이터 ± eps와 upper/lower bound 결과 총 4번만 복사하면 되는 것으로 추정했다.",
+        "limits": "단일 데이터 memcpy 호출 횟수 및 복사 대상 추정 기록.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "단일 데이터 memcpy 호출 횟수 forward/backward 각 6번",
+          "예상 복사 대상: 입력 데이터 ± eps, 가중치, bias, upper bound 결과, lower bound 결과 (총 6개)",
+          "가중치·bias는 nvtx 찍기 전에 한 번에 올라감(prepare network on gpu)",
+          "실제 복사 대상은 입력 데이터 ± eps와 upper/lower bound 결과 총 4번"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p46:e323",
+          "p46:e325",
+          "p46:e326",
+          "p46:e327"
+        ]
+      },
+      {
+        "statement": "신경망 추론 결과에서는 입력값(H2D)과 추론값(D2H)이 복사되며, CROWN에서는 입력 데이터 ± eps와 upper/lower bound 해서 총 6개가 복사된다.",
+        "limits": "추론 결과 및 CROWN 복사 대상 기록.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "신경망 추론 결과: 입력값(H2D), 추론값(D2H)",
+          "CROWN: 입력 데이터 ± eps와 upper/lower bound 총 6개"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p46:e329",
+          "p46:e331"
+        ]
+      },
+      {
+        "statement": "프로그램 전체 실행에서 18번이므로 6번을 빼면 외부에서 12번이며, 가중치 행은 3개(신경망 구조가 256 * 491 * 491 * 16이므로 개수만큼)이다.",
+        "limits": "전체 memcpy 횟수와 가중치 행 수 추정 기록.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "신경망 구조 256 * 491 * 491 * 16"
+        ],
+        "observations": [
+          "전체 18번",
+          "외부 12번",
+          "가중치 행 3개"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p47:e332"
+        ]
+      },
+      {
+        "statement": "가중치 관련 복사는 (가중치 + 가중치 양수부/음수부 + bias) * 3이다.",
+        "limits": "가중치 복사 구성 기록.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "가중치+양수부/음수부+bias를 3배"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p47:e333"
+        ]
+      },
+      {
+        "statement": "forward와 backward의 cudaMemcpy 횟수는 동일하다.",
+        "limits": "호출 횟수 동일성 기록.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "forward/backward cudaMemcpy 횟수 동일"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p47:e336"
+        ]
+      },
+      {
+        "statement": "단일 테스트 forward/backward는 시간에서 3배 차이가 나는데, 왜 92만개의 데이터를 돌리면 비슷해지는지(약 1분 차이)에 대해 아직 해결하지 못했다.",
+        "limits": "미해결 질문 기록.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "단일 테스트 3배 차이",
+          "92만개 데이터"
+        ],
+        "observations": [
+          "92만개 데이터에서 비슷해짐",
+          "약 1분 차이",
+          "미해결"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p47:e338"
+        ]
+      },
+      {
+        "statement": "forward 전체 실행 시간이 약 64.064s, backward 전체 실행 시간이 약 98.995s 정도이며, 동일한 호출 횟수(240000회)임에도 forward의 cudaMemcpy 총 시간(40.726s)이 backward(11.332s)보다 크게 잡히는 점이 눈에 띈다.",
+        "limits": "전체 실행 시간 및 cudaMemcpy 시간 분포 관측. 40000개 데이터 기준 테스트. Nsight Systems 분석 기반.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "40000개 데이터 테스트",
+          "Nsight Systems 분석 사용",
+          "CROWN_SWEEP 구간 측정"
+        ],
+        "observations": [
+          "forward 전체 실행 시간 64.064s",
+          "backward 전체 실행 시간 98.995s",
+          "forward cudaMemcpy: 40.726s (240000회, 평균 169.691μs)",
+          "backward cudaMemcpy: 11.332s (240000회, 평균 47.216μs)",
+          "동일 호출 횟수 대비 forward cudaMemcpy 시간이 더 큼"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p47:e337",
+          "p47:img0:e0",
+          "p47:img1:e0",
+          "p47:img2:e0",
+          "p47:img3:e0"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p47:e332": {
+        "state": "represented",
+        "fact_refs": [
+          6
+        ],
+        "note": "전체 18번, 외부 12번, 가중치 행 3개(256*491*491*16) 내용 반영.",
+        "addition_refs": [
+          2
+        ]
+      },
+      "p47:e333": {
+        "state": "represented",
+        "fact_refs": [
+          7
+        ],
+        "note": "가중치+양수부/음수부+bias * 3 내용 반영.",
+        "addition_refs": [
+          3
+        ]
+      },
+      "p47:e334": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "note": "원문 'forward - (일단 40000개의 데이터에 대해서만 테스트 했을 때)'는 제목성 문장으로, 구체적인 수치·결과가 제시되지 않아 보존할 사실이 없음.",
+        "addition_refs": []
+      },
+      "p47:e335": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "note": "원문 'backward - (일단 40000개의 데이터에 대해서만 테스트 했을 때)'는 제목성 문장으로, 구체적인 수치·결과가 제시되지 않아 보존할 사실이 없음.",
+        "addition_refs": []
+      },
+      "p47:e336": {
+        "state": "represented",
+        "fact_refs": [
+          8
+        ],
+        "note": "cudaMemcpy 횟수 동일 내용 반영.",
+        "addition_refs": [
+          4
+        ]
+      },
+      "p47:e337": {
+        "state": "represented",
+        "fact_refs": [
+          9
+        ],
+        "note": "forward 64s/backward 98s, 동일 호출 횟수 대비 forward cudaMemcpy 시간 큼 내용 반영.",
+        "addition_refs": [
+          6
+        ]
+      },
+      "p47:e338": {
+        "state": "represented",
+        "fact_refs": [
+          10
+        ],
+        "note": "단일 3배 차이 vs 92만개 비슷해짐(약 1분 차이) 미해결 내용 반영.",
+        "addition_refs": [
+          5
+        ]
+      },
+      "p47:e339": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "note": "원문 '= ================================================================'는 구분선으로, 보존할 연구 내용이 없음.",
+        "addition_refs": []
+      },
+      "p47:img0:e0": {
+        "state": "represented",
+        "fact_refs": [
+          9
+        ],
+        "note": "forward cudaMemcpy 40.726s, 240000회, 평균 169.691μs 등 표 내용 반영.",
+        "addition_refs": [
+          6
+        ]
+      },
+      "p47:img1:e0": {
+        "state": "represented",
+        "fact_refs": [
+          9
+        ],
+        "note": "CROWN_SWEEP [64.064 s] heading 반영.",
+        "addition_refs": [
+          6
+        ]
+      },
+      "p47:img2:e0": {
+        "state": "represented",
+        "fact_refs": [
+          9
+        ],
+        "note": "backward cudaMemcpy 11.332s, 240000회, 평균 47.216μs 등 표 내용 반영.",
+        "addition_refs": [
+          6
+        ]
+      },
+      "p47:img3:e0": {
+        "state": "represented",
+        "fact_refs": [
+          9
+        ],
+        "note": "CROWN_SWEEP [98.995 s] heading 반영.",
+        "addition_refs": [
+          6
+        ]
+      }
+    }
+  }
+}

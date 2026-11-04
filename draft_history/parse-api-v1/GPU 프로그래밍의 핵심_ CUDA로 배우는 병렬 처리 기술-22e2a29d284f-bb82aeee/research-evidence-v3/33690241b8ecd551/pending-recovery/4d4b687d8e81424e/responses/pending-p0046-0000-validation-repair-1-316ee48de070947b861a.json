@@ -1,0 +1,117 @@
+{
+  "request_fingerprint": "316ee48de070947b861ad43c311cb4fd4c486f0367e06cb28d6e3f70555233d3",
+  "value": {
+    "decisions": {
+      "P0047R0F0006": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "단일 데이터에 대한 memcpy 호출 횟수는 forward/backward 각각 6번이다.",
+            "limits": "단일 데이터 기준 호출 횟수 기록은 문단(p46:e323)에 근거한다. Nsight System 표(p46:img0:e0)는 cudaMemcpy 6회 호출과 시간 통계를 제공하나 forward/backward 분리 및 '단일 데이터 기준' 라벨은 표만으로 확인되지 않는다.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "단일 데이터",
+              "호출 횟수 6회는 문단(p46:e323) 근거, 시간 통계는 표(p46:img0:e0)에서 확인되나 방향별 분리 없음"
+            ],
+            "observations": [
+              "forward memcpy 6번 (문단 p46:e323)",
+              "backward memcpy 6번 (문단 p46:e323)",
+              "cudaMemcpy 6회 호출, 평균 182.834μs, 중앙값 21.129μs, 최소 9.434μs, 최대 932.351μs, 표준편차 368.454μs (표 p46:img0:e0, 방향별 분리 없음)"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "단일 데이터 forward memcpy 호출 횟수",
+                "value": "6",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "문단(p46:e323)",
+                "element_ids": [
+                  "p46:e323"
+                ]
+              },
+              {
+                "metric": "단일 데이터 backward memcpy 호출 횟수",
+                "value": "6",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "문단(p46:e323)",
+                "element_ids": [
+                  "p46:e323"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy 호출 횟수",
+                "value": "6",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "Nsight System 표(p46:img0:e0), 단일 행, forward/backward 구분 없음",
+                "element_ids": [
+                  "p46:img0:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy 평균 시간",
+                "value": "182.834",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "Nsight System 표(p46:img0:e0), 단일 행, forward/backward 구분 없음",
+                "element_ids": [
+                  "p46:img0:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy 중앙값 시간",
+                "value": "21.129",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "Nsight System 표(p46:img0:e0), 단일 행, forward/backward 구분 없음",
+                "element_ids": [
+                  "p46:img0:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy 최소 시간",
+                "value": "9.434",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "Nsight System 표(p46:img0:e0), 단일 행, forward/backward 구분 없음",
+                "element_ids": [
+                  "p46:img0:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy 최대 시간",
+                "value": "932.351",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "Nsight System 표(p46:img0:e0), 단일 행, forward/backward 구분 없음",
+                "element_ids": [
+                  "p46:img0:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy 표준편차",
+                "value": "368.454",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "Nsight System 표(p46:img0:e0), 단일 행, forward/backward 구분 없음",
+                "element_ids": [
+                  "p46:img0:e0"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p46:e323",
+              "p46:img0:e0"
+            ]
+          }
+        ],
+        "reason": "대상 사실(P0047R0F0006)은 승인 후보 P0046F0006과 동일 진술을 공유하나, 기존 수정안에서 Nsight System 표(p46:img0:e0)의 시간 통계를 forward/backward 각각에 별도 측정으로 귀속하고 '단일 데이터 기준' 라벨을 표 출처로 제시한 오류가 있었다. 표 p46:img0:e0은 cudaMemcpy 1개 행만 포함하며 방향별 분리 행이나 '단일 데이터 기준' 명시적 라벨을 제공하지 않는다. 호출 횟수 6회(forward/backward 각각)는 문단(p46:e323)에서 확인되지만, 시간 통계의 방향별 귀속은 표만으로 확인되지 않고 문단 맥락과의 결합에 의존한다. 또한 limits의 '40000개 데이터 테스트와는 별개' 서술에서 40000 수치는 다른 요소(p45:e313, p47:e334, p47:e335)에 등장하나 '별개' 판단은 해석이므로 제거한다. 따라서 측정 출처와 귀속을 명확히 구분하여 수정한다: 호출 횟수는 문단(p46:e323)에 근거, 시간 통계는 표(p46:img0:e0)의 단일 cudaMemcpy 행으로 귀속하며 방향별 분리가 없음을 명시한다."
+      }
+    }
+  }
+}

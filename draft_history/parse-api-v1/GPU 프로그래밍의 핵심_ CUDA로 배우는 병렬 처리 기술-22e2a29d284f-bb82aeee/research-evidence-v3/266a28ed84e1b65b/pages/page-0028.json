@@ -1,0 +1,663 @@
+{
+  "initial": [
+    {
+      "statement": "cuSparse가 잘 되는지 확인하려고 도입해봤다.",
+      "limits": "도입 동기만 명시되고 구체적 테스트 범위는 이 요소에 없음",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "도입 목적: cuSparse의 적용 가능성 확인"
+      ],
+      "observations": [
+        "cuSparse 도입 시도"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p28:e191",
+          "page": 28,
+          "quote": "혹시 cuSparse는 잘 되나 하고 도입해봤다",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": []
+    },
+    {
+      "statement": "현재 적용된 범위는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고, cuSPARSE handle 및 CSR descriptor를 유지하며, network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하고, 기존 matmul은 아직 유지하는 것이다.",
+      "limits": "network_forward() 외 다른 단계 적용 여부는 이 요소에 없음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [
+        "적용 범위: W, W_pos, W_neg CSR 변환(네트워크 준비 단계)",
+        "cuSPARSE handle 및 CSR descriptor 유지",
+        "network_forward()의 dense matvec를 cuSPARSE SpMV로 교체",
+        "기존 matmul은 아직 유지"
+      ],
+      "observations": [
+        "W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환",
+        "cuSPARSE handle 및 CSR descriptor 유지",
+        "network_forward()의 dense matvec를 cuSPARSE SpMV로 교체",
+        "기존 matmul은 아직 유지"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p28:enh:e3",
+          "page": 28,
+          "quote": "W, W_pos, W_neg 를 네트워크 준비 단계에서 CSR 형식으로 변환\ncuSPARSE handle 및 CSR descriptor 유지\nnetwork_forward() 의 dense matvec 를 cuSPARSE SpMV 로 교체\n기존 matmul 은 아직 유지",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0028F0001"
+    },
+    {
+      "statement": "cuSparse를 이용해 벡터 곱(spMV)만 적용한 상황에서 결과가 27ms로 좀 더 느려졌으며, 여기서 빠르면 spMM(Sparse 행렬곱)을 도입하기로 했다.",
+      "limits": "비교 기준은 이전 최소 24ms 또는 25~26ms대 실행으로 보임",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "적용 범위: cuSparse를 이용한 벡터 곱(spMV)만 적용",
+        "eps = 1e-06",
+        "mempool + warmup",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "실행 결과 elapsed time: 27.107400 ms",
+        "27ms로 좀 더 느려짐",
+        "빠르면 spMM(Sparse 행렬곱) 도입 검토 계획"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "elapsed_time",
+          "value": "27.1074",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "cuSparse spMV만 적용, eps=1e-06, mempool + warmup, Output Dimension 16",
+          "element_ids": [
+            "p28:e192",
+            "p28:e195",
+            "p28:e194"
+          ],
+          "raw_value": "27.1074",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p28:e192",
+          "page": 28,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 27,107400 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1,880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2,670843 1,846872 -1.714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p28:e194",
+          "page": 28,
+          "quote": "이 렇게 했는데\n즉\ncuSparse를 이용해서 벡터 곱(spMV)만 적용 해본 상황, 여기서 빠르면 spMM(Sparse\n행렬곱) 을 도입하기로 했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p28:e195",
+          "page": 28,
+          "quote": "결 과는 27ms .. 좀 더 느려졌다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "limits의 원문 미확인 수치: 24, 25, 26",
+        "설정값의 출처가 사실의 출처 범위 밖입니다.",
+        "설정값의 출처가 사실의 출처 범위 밖입니다.",
+        "설정값의 출처가 사실의 출처 범위 밖입니다."
+      ],
+      "id": "P0028F0002"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "cuSparse 도입 후 실행 결과 elapsed time은 27.107400 ms로, 이전 40.050500 ms 대비 감소했다.",
+        "limits": "비교 대상은 동일 페이지의 이전 실행 기록(eps=1e-06, mempool+warmup, Output Dimension 16)이며, 27ms가 이전 최소 24ms 대비 느린지 여부는 이 요소에서 확인되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse spMV 적용 후 실행",
+          "eps = 1e-06",
+          "mempool + warmup",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Elapsed time: 27.107400 ms",
+          "이전 실행(40.050500 ms) 대비 감소"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "27.1074",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuSparse spMV 적용, eps=1e-06, mempool+warmup, Output Dimension 16",
+            "element_ids": [
+              "p28:e192",
+              "p28:enh:e1"
+            ]
+          },
+          {
+            "metric": "elapsed_time",
+            "value": "40.0505",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuSparse 도입 전 동일 설정 실행",
+            "element_ids": [
+              "p27:e188",
+              "p27:review:e2"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p28:e192",
+          "p28:e195",
+          "p27:e188",
+          "p27:review:e2"
+        ]
+      },
+      {
+        "statement": "cuSparse 도입 후 27ms 결과가 이전 최소 24ms보다 느리다는 비교는 p29의 메모에서 언급되며, p28 요소에는 해당 비교 기준이 직접 기록되지 않았다.",
+        "limits": "p28 요소에는 24ms 기준값이 없음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "비교 언급 출처: p29 메모"
+        ],
+        "observations": [
+          "p29 메모에서 27ms가 4단계 최소 24ms보다 느리다고 언급",
+          "p28 요소에는 24ms 기준값이 직접 기록되지 않음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e0"
+        ]
+      },
+      {
+        "statement": "cuSparse 도입 동기는 cuSparse가 잘 되는지 확인하려는 시도였다.",
+        "limits": "구체적 테스트 범위/평가 항목은 이 요소에 없음",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "도입 목적: cuSparse 적용 가능성 확인"
+        ],
+        "observations": [
+          "cuSparse 도입 시도"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:e191",
+          "p28:enh:e0"
+        ]
+      },
+      {
+        "statement": "현재 적용된 cuSparse 범위는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환, cuSPARSE handle 및 CSR descriptor 유지, network_forward()의 dense matvec를 cuSPARSE SpMV로 교체, 기존 matmul은 아직 유지이다.",
+        "limits": "network_forward() 외 다른 단계 적용 여부는 이 요소에 없음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "적용 범위: W, W_pos, W_neg CSR 변환(네트워크 준비 단계)",
+          "cuSPARSE handle 및 CSR descriptor 유지",
+          "network_forward()의 dense matvec를 cuSPARSE SpMV로 교체",
+          "기존 matmul은 아직 유지"
+        ],
+        "observations": [
+          "W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환",
+          "cuSPARSE handle 및 CSR descriptor 유지",
+          "network_forward()의 dense matvec를 cuSPARSE SpMV로 교체",
+          "기존 matmul은 아직 유지"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:enh:e3"
+        ]
+      },
+      {
+        "statement": "cuSparse를 이용해 벡터 곱(spMV)만 적용한 상황에서 결과가 27ms로 좀 더 느려졌으며, 여기서 빠르면 spMM(Sparse 행렬곱)을 도입하기로 했다.",
+        "limits": "비교 기준은 이전 최소 24ms 또는 25~26ms대 실행으로 보이나 p28 요소에는 해당 기준값이 직접 기록되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "적용 범위: cuSparse를 이용한 벡터 곱(spMV)만 적용",
+          "eps = 1e-06",
+          "mempool + warmup",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "실행 결과 elapsed time: 27.107400 ms",
+          "27ms로 좀 더 느려짐",
+          "빠르면 spMM(Sparse 행렬곱) 도입 검토 계획"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "27.1074",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuSparse spMV만 적용, eps=1e-06, mempool+warmup, Output Dimension 16",
+            "element_ids": [
+              "p28:e192",
+              "p28:e195",
+              "p28:e194",
+              "p28:enh:e1"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p28:e192",
+          "p28:e194",
+          "p28:e195",
+          "p28:enh:e1",
+          "p28:enh:e5"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [
+      0
+    ],
+    "ledger": {
+      "p28:e191": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p28:e192": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p28:e194": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p28:e195": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p28:enh:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p28:enh:e1": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p28:enh:e2": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p28:enh:e3": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p28:enh:e4": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p28:enh:e5": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p28:enh:e6": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      }
+    },
+    "ledger_validation_error": "대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+  },
+  "facts": [
+    {
+      "statement": "현재 적용된 범위는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고, cuSPARSE handle 및 CSR descriptor를 유지하며, network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하고, 기존 matmul은 아직 유지하는 것이다.",
+      "limits": "network_forward() 외 다른 단계 적용 여부는 이 요소에 없음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [
+        "적용 범위: W, W_pos, W_neg CSR 변환(네트워크 준비 단계)",
+        "cuSPARSE handle 및 CSR descriptor 유지",
+        "network_forward()의 dense matvec를 cuSPARSE SpMV로 교체",
+        "기존 matmul은 아직 유지"
+      ],
+      "observations": [
+        "W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환",
+        "cuSPARSE handle 및 CSR descriptor 유지",
+        "network_forward()의 dense matvec를 cuSPARSE SpMV로 교체",
+        "기존 matmul은 아직 유지"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p28:enh:e3",
+          "page": 28,
+          "quote": "W, W_pos, W_neg 를 네트워크 준비 단계에서 CSR 형식으로 변환\ncuSPARSE handle 및 CSR descriptor 유지\nnetwork_forward() 의 dense matvec 를 cuSPARSE SpMV 로 교체\n기존 matmul 은 아직 유지",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0028F0001"
+    },
+    {
+      "statement": "cuSparse를 이용해 벡터 곱(spMV)만 적용한 상황에서 결과가 27ms로 좀 더 느려졌으며, 여기서 빠르면 spMM(Sparse 행렬곱)을 도입하기로 했다.",
+      "limits": "비교 기준은 이전 최소 24ms 또는 25~26ms대 실행으로 보임",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "적용 범위: cuSparse를 이용한 벡터 곱(spMV)만 적용",
+        "eps = 1e-06",
+        "mempool + warmup",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "실행 결과 elapsed time: 27.107400 ms",
+        "27ms로 좀 더 느려짐",
+        "빠르면 spMM(Sparse 행렬곱) 도입 검토 계획"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "elapsed_time",
+          "value": "27.1074",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "cuSparse spMV만 적용, eps=1e-06, mempool + warmup, Output Dimension 16",
+          "element_ids": [
+            "p28:e192",
+            "p28:e195",
+            "p28:e194"
+          ],
+          "raw_value": "27.1074",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p28:e192",
+          "page": 28,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 27,107400 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1,880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2,670843 1,846872 -1.714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p28:e194",
+          "page": 28,
+          "quote": "이 렇게 했는데\n즉\ncuSparse를 이용해서 벡터 곱(spMV)만 적용 해본 상황, 여기서 빠르면 spMM(Sparse\n행렬곱) 을 도입하기로 했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p28:e195",
+          "page": 28,
+          "quote": "결 과는 27ms .. 좀 더 느려졌다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "limits의 원문 미확인 수치: 24, 25, 26",
+        "설정값의 출처가 사실의 출처 범위 밖입니다.",
+        "설정값의 출처가 사실의 출처 범위 밖입니다.",
+        "설정값의 출처가 사실의 출처 범위 밖입니다."
+      ],
+      "id": "P0028F0002"
+    },
+    {
+      "statement": "cuSparse 도입 후 실행 결과 elapsed time은 27.107400 ms로, 이전 40.050500 ms 대비 감소했다.",
+      "limits": "비교 대상은 동일 페이지의 이전 실행 기록(eps=1e-06, mempool+warmup, Output Dimension 16)이며, 27ms가 이전 최소 24ms 대비 느린지 여부는 이 요소에서 확인되지 않음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "cuSparse spMV 적용 후 실행",
+        "eps = 1e-06",
+        "mempool + warmup",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "Elapsed time: 27.107400 ms",
+        "이전 실행(40.050500 ms) 대비 감소"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "elapsed_time",
+          "value": "40.0505",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "cuSparse 도입 전 동일 설정 실행",
+          "element_ids": [
+            "p27:e188",
+            "p27:review:e2"
+          ],
+          "raw_value": "40.0505",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [
+        {
+          "metric": "elapsed_time",
+          "value": "27.1074",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "cuSparse spMV 적용, eps=1e-06, mempool+warmup, Output Dimension 16",
+          "element_ids": [
+            "p28:e192",
+            "p28:enh:e1"
+          ],
+          "validation_error": "source_id_outside_fact"
+        }
+      ],
+      "sources": [
+        {
+          "element_id": "p28:e192",
+          "page": 28,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 27,107400 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1,880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2,670843 1,846872 -1.714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p28:e195",
+          "page": 28,
+          "quote": "결 과는 27ms .. 좀 더 느려졌다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p27:e188",
+          "page": 27,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 40,050500 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] 15] 0.903952 0.990928 -0.591686 0.324877 2,829982 2,199842 -2,379492 -1,422470 0.788409 -2.194350 1.078205 3.603885 3,004923 -1.185600 1,494055 -3,060963 0.904427 0.991328 -0.591280 0.325260 2,830317 2,200121 -2.379074 -1.421962 0.788821 -2.193915 1.078522 3,604276 3,005297 -1.185184 1,494391 -3.060550 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p27:review:e2",
+          "page": 27,
+          "quote": "| calc success |\n| --- |\n| Elapsed time: 40.050500 ms |\n| Output Dimension: 16 |",
+          "origin": "enhanced_numeric_ocr_review"
+        }
+      ],
+      "numeric_issues": [
+        "limits의 원문 미확인 수치: 24",
+        "측정값의 출처가 사실의 출처 범위 밖입니다."
+      ],
+      "id": "P0028F0003"
+    },
+    {
+      "statement": "cuSparse 도입 동기는 cuSparse가 잘 되는지 확인하려는 시도였다.",
+      "limits": "구체적 테스트 범위/평가 항목은 이 요소에 없음",
+      "kind": "method",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "도입 목적: cuSparse 적용 가능성 확인"
+      ],
+      "observations": [
+        "cuSparse 도입 시도"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p28:e191",
+          "page": 28,
+          "quote": "혹시 cuSparse는 잘 되나 하고 도입해봤다",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p28:enh:e0",
+          "page": 28,
+          "quote": "혹시 cuSparse는 잘 되나 하고 도입해봤다",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0028F0004"
+    },
+    {
+      "statement": "현재 적용된 cuSparse 범위는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환, cuSPARSE handle 및 CSR descriptor 유지, network_forward()의 dense matvec를 cuSPARSE SpMV로 교체, 기존 matmul은 아직 유지이다.",
+      "limits": "network_forward() 외 다른 단계 적용 여부는 이 요소에 없음",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "conditions": [
+        "적용 범위: W, W_pos, W_neg CSR 변환(네트워크 준비 단계)",
+        "cuSPARSE handle 및 CSR descriptor 유지",
+        "network_forward()의 dense matvec를 cuSPARSE SpMV로 교체",
+        "기존 matmul은 아직 유지"
+      ],
+      "observations": [
+        "W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환",
+        "cuSPARSE handle 및 CSR descriptor 유지",
+        "network_forward()의 dense matvec를 cuSPARSE SpMV로 교체",
+        "기존 matmul은 아직 유지"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p28:enh:e3",
+          "page": 28,
+          "quote": "W, W_pos, W_neg 를 네트워크 준비 단계에서 CSR 형식으로 변환\ncuSPARSE handle 및 CSR descriptor 유지\nnetwork_forward() 의 dense matvec 를 cuSPARSE SpMV 로 교체\n기존 matmul 은 아직 유지",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0028F0005"
+    },
+    {
+      "statement": "cuSparse를 이용해 벡터 곱(spMV)만 적용한 상황에서 결과가 27ms로 좀 더 느려졌으며, 여기서 빠르면 spMM(Sparse 행렬곱)을 도입하기로 했다.",
+      "limits": "비교 기준은 이전 최소 24ms 또는 25~26ms대 실행으로 보이나 p28 요소에는 해당 기준값이 직접 기록되지 않음",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "적용 범위: cuSparse를 이용한 벡터 곱(spMV)만 적용",
+        "eps = 1e-06",
+        "mempool + warmup",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "실행 결과 elapsed time: 27.107400 ms",
+        "27ms로 좀 더 느려짐",
+        "빠르면 spMM(Sparse 행렬곱) 도입 검토 계획"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "elapsed_time",
+          "value": "27.1074",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "cuSparse spMV만 적용, eps=1e-06, mempool+warmup, Output Dimension 16",
+          "element_ids": [
+            "p28:e192",
+            "p28:e195",
+            "p28:e194",
+            "p28:enh:e1"
+          ],
+          "raw_value": "27.1074",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p28:e192",
+          "page": 28,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 27,107400 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] 15] 0.081772 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1,880139 0.706986 -2.612086 0.003713 1.310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 0.273823 0.102482 0.114541 2,670843 1,846872 -1.714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p28:e194",
+          "page": 28,
+          "quote": "이 렇게 했는데\n즉\ncuSparse를 이용해서 벡터 곱(spMV)만 적용 해본 상황, 여기서 빠르면 spMM(Sparse\n행렬곱) 을 도입하기로 했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p28:e195",
+          "page": 28,
+          "quote": "결 과는 27ms .. 좀 더 느려졌다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p28:enh:e1",
+          "page": 28,
+          "quote": "Starting CROWN Verification (eps = 1e-06) mempool + warmup\ncalc success\nElapsed time: 27.107400 ms\nOutput Dimension: 16\n[Index] | Lower Bound | Upper Bound | Normal Pred (y)\n[0] | 0.081772 | 0.082159 | 0.081966\n[1] | 0.273538 | 0.273823 | 0.273680\n[2] | 0.102147 | 0.102482 | 0.102314\n[3] | 0.114244 | 0.114541 | 0.114393\n[4] | 2.670552 | 2.670843 | 2.670697\n[5] | 1.846574 | 1.846872 | 1.846723\n[6] | -1.714750 | -1.714490 | -1.714620\n[7] | -1.880139 | -1.879695 | -1.879916\n[8] | 0.706986 | 0.707275 | 0.707131\n[9] | -2.612086 | -2.611722 | -2.611904\n[10] | 0.003713 | 0.003976 | 0.003845\n[11] | 1.310476 | 1.310817 | 1.310646\n[12] | 2.049539 | 2.049839 | 2.049689\n[13] | -1.025923 | -1.025597 | -1.025760\n[14] | 1.082576 | 1.082852 | 1.082714\n[15] | -3.404772 | -3.404355 | -3.404563",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p28:enh:e5",
+          "page": 28,
+          "quote": "cuSparse를 이용해서 벡터 곱(spMV)만 적용 해본 상황, 여기서 빠르면 spMM(Sparse 행렬곱) 을 도입하기로 했다.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [
+        "limits의 원문 미확인 수치: 24, 25, 26"
+      ],
+      "id": "P0028F0006"
+    }
+  ]
+}

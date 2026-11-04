@@ -1,0 +1,447 @@
+{
+  "request_fingerprint": "c54160275c486d1722aa76cd490c8aa709c2f5cd31ab15dd15ac2d0633648865",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "v1-1-3(crown_test_preload_fix)은 미리 로드한 W 가중치를 실제로 활용하도록 고친 버전이다.",
+          "limits": "성능 차이는 크지 않았고, 이후 memcpy 절감 효과가 크지 않다고 판단하여 my_lirpa_mempool.cu(v1-1-1)로 롤백함.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "v1-1-3은 crown_test_preload_fix로 명명됨",
+            "my_lirpa_mempool_preload_on_gpu.cu와 비교 시 성능 차이가 거의 없었음",
+            "100회, 500회 반복 누적시간 비교에서 500회 기준 5~10ms 정도 우세했음"
+          ],
+          "observations": [
+            "d_W 타입을 double*에서 Matrix*로 변경",
+            "positive_part(W,d_W)와 negative_part(W,d_W)에서 W 복사 스킵",
+            "matmul(A,W,d_W)에서 B행렬 복사 스킵(backward)",
+            "matvec(W,x,d_W)에서 A행렬 복사 스킵(forward)",
+            "pre_upload_weights_to_gpu를 memcpy2D 대신 Matrix 할당/복사로 변경"
+          ],
+          "parameters": [
+            {
+              "name": "d_W 타입",
+              "value": "double* → Matrix*",
+              "value_kind": "text",
+              "element_ids": [
+                "p14:e111",
+                "p14:enh:e2",
+                "p14:review:e2"
+              ]
+            },
+            {
+              "name": "positive_part(W,d_W) 절약 효과",
+              "value": "2MB 절약",
+              "value_kind": "text",
+              "element_ids": [
+                "p14:enh:e4",
+                "p14:review:e4"
+              ]
+            },
+            {
+              "name": "negative_part(W,d_W) 절약 효과",
+              "value": "2MB 절약",
+              "value_kind": "text",
+              "element_ids": [
+                "p14:enh:e4",
+                "p14:review:e4"
+              ]
+            },
+            {
+              "name": "matmul(A,W,d_W) 절약 효과",
+              "value": "2MB × 2회 = 4MB 절약",
+              "value_kind": "text",
+              "element_ids": [
+                "p14:enh:e4",
+                "p14:review:e4"
+              ]
+            },
+            {
+              "name": "matvec(W,x,d_W) 절약 효과",
+              "value": "2MB 절약",
+              "value_kind": "text",
+              "element_ids": [
+                "p14:enh:e4",
+                "p14:review:e4"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "누적시간 차이(100회 비교)",
+              "value": "거의 없음",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "my_lirpa_mempool_preload_on_gpu.cu 대비",
+              "element_ids": [
+                "p14:e114",
+                "p14:enh:e6",
+                "p14:review:e6"
+              ]
+            },
+            {
+              "metric": "누적시간 차이(500회 비교)",
+              "value": "5~10",
+              "value_kind": "range",
+              "unit": "ms",
+              "condition": "preload 버전 대비 우세",
+              "element_ids": [
+                "p14:e116",
+                "p14:enh:e8",
+                "p14:review:e8"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p14:e110",
+            "p14:e111",
+            "p14:e112",
+            "p14:e113",
+            "p14:e114",
+            "p14:e115",
+            "p14:e116",
+            "p14:e117",
+            "p14:e118",
+            "p14:enh:e0",
+            "p14:enh:e1",
+            "p14:enh:e2",
+            "p14:enh:e3",
+            "p14:enh:e4",
+            "p14:enh:e5",
+            "p14:enh:e6",
+            "p14:enh:e7",
+            "p14:enh:e8",
+            "p14:enh:e9",
+            "p14:enh:e10",
+            "p14:review:e0",
+            "p14:review:e1",
+            "p14:review:e2",
+            "p14:review:e3",
+            "p14:review:e4",
+            "p14:review:e5",
+            "p14:review:e6",
+            "p14:review:e7",
+            "p14:review:e8",
+            "p14:review:e9",
+            "p14:review:e10"
+          ]
+        },
+        {
+          "statement": "v1-1-3의 preload 방식은 memcpy 절감 목적이었으나 실제 성능 차이는 크지 않았다.",
+          "limits": "500회 기준 5~10ms 우세 수준으로, 작성자는 의미를 크게 못 미친다고 판단함.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "my_lirpa_mempool_preload_on_gpu.cu와 비교",
+            "100회 비교에서는 차이가 거의 없었음",
+            "500회 비교에서 5~10ms 우세"
+          ],
+          "observations": [
+            "100회 비교에서 성능 차이가 거의 없었음",
+            "500회 비교에서 5~10ms 정도 우세했음",
+            "결국 가중치를 미리 로드해 memcpy를 줄이는 접근이 큰 의미를 못 미친다고 판단"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "500회 누적시간 차이",
+              "value": "5~10",
+              "value_kind": "range",
+              "unit": "ms",
+              "condition": "preload 버전 대비 우세",
+              "element_ids": [
+                "p14:e116",
+                "p14:enh:e8",
+                "p14:review:e8"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p14:e114",
+            "p14:e115",
+            "p14:e116",
+            "p14:e117",
+            "p14:enh:e6",
+            "p14:enh:e7",
+            "p14:enh:e8",
+            "p14:enh:e9",
+            "p14:review:e6",
+            "p14:review:e7",
+            "p14:review:e8",
+            "p14:review:e9"
+          ]
+        },
+        {
+          "statement": "v1-1-3 실험 후 다시 my_lirpa_mempool.cu(v1-1-1)로 롤백했다.",
+          "limits": "롤백 시점과 이유는 preload 방식의 성능 개선이 크지 않았기 때문.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "v1-1-3 실험 이후",
+            "my_lirpa_mempool.cu로 롤백"
+          ],
+          "observations": [
+            "my_lirpa_mempool.cu로 롤백(v1-1-1)"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p14:e118",
+            "p14:enh:e10",
+            "p14:review:e10"
+          ]
+        }
+      ],
+      "1": [
+        {
+          "statement": "v1-1-1-1(my_lirpa_mempool_cuBlas.cu)은 메모리풀에 cuBlas를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBlas로 수행하도록 변경한 버전이다.",
+          "limits": "v1-1-1 대비 평균 실행당 시간이 30ms 차이난다고 기록됨.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "메모리풀 기반 구현",
+            "matvec, matmul에 cuBlas 사용"
+          ],
+          "observations": [
+            "기존 v1-1-1 대비 평균 실행당 시간이 30ms 차이남"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "평균 실행당 시간 차이",
+              "value": "30",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "v1-1-1 대비",
+              "element_ids": [
+                "p15:e122"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p14:e120",
+            "p15:e122"
+          ]
+        },
+        {
+          "statement": "my_lirpa_mempool_cuBlas.cu의 CROWN 검증 실행 결과 500회 반복 총 소요시간은 61796.584100ms, 평균 반복당 시간은 123.593168ms로 기록되었다.",
+          "limits": "메모리풀 warm up은 아직 하지 않은 상태라고 명시됨.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps = 1e-06",
+            "500 iterations",
+            "Output Dimension: 16",
+            "메모리풀 warm up 미수행 상태"
+          ],
+          "observations": [
+            "calc success",
+            "Total Elapsed time: 61796.584100 ms",
+            "Average time per iter: 123.593168 ms"
+          ],
+          "parameters": [
+            {
+              "name": "eps",
+              "value": "1e-06",
+              "value_kind": "text",
+              "element_ids": [
+                "p15:e121"
+              ]
+            },
+            {
+              "name": "iterations",
+              "value": "500",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p15:e121"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "Total Elapsed time",
+              "value": "61796.584100",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "my_lirpa_mempool_cuBlas.cu, 500 iterations, eps=1e-06",
+              "element_ids": [
+                "p15:e121"
+              ]
+            },
+            {
+              "metric": "Average time per iter",
+              "value": "123.593168",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "my_lirpa_mempool_cuBlas.cu, 500 iterations, eps=1e-06",
+              "element_ids": [
+                "p15:e121"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p15:e121"
+          ]
+        },
+        {
+          "statement": "my_lirpa_mempool.cu의 500회 실행 결과 평균 반복당 시간은 157ms로 기록되었다.",
+          "limits": "해당 수치는 평균 157ms로 표기되어 있으며, 메모리풀 warm up은 아직 하지 않은 상태라고 명시됨.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "500회 실행",
+            "메모리풀 warm up 미수행 상태"
+          ],
+          "observations": [
+            "평균 157ms"
+          ],
+          "parameters": [
+            {
+              "name": "iterations",
+              "value": "500",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p15:e124"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "Average time per iter",
+              "value": "157",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "my_lirpa_mempool.cu, 500회",
+              "element_ids": [
+                "p15:e124"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p15:e124"
+          ]
+        },
+        {
+          "statement": "아직 메모리풀 warm up을 하지 않은 상태이며, 이를 수행한 뒤 진행해 보자는 계획이 기록되어 있다.",
+          "limits": "warm up 수행 후 재측정 계획은 언급되었으나 실제 수행 결과는 제시되지 않음.",
+          "kind": "limitation",
+          "claim_status": "planned",
+          "source_origin": "research_note",
+          "conditions": [
+            "메모리풀 warm up 미수행 상태"
+          ],
+          "observations": [
+            "메모리풀 warm up을 한 뒤에 진행해 보자는 계획"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p15:e125"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "statement": "v1-1-2에서 50ms가 줄어든 이유는 preload로 가중치를 활용한 것이 아니라, pre_upload_weights_to_gpu가 의도치 않게 GPU 웜업 역할을 하여 초기화 비용이 타이머 밖으로 밀려났기 때문이다.",
+          "limits": "d_W를 활용해서 빨라진 것이 아니라고 명시됨.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "pre_upload_weights_to_gpu가 t_start 앞에서 cudaMalloc과 cudaMemcpy를 호출",
+            "mempool 버전은 ensure_pool() → 첫 번째 cudaMalloc이 t_start 안에 포함됨"
+          ],
+          "observations": [
+            "GPU 컨텍스트 초기화(CUDA 드라이버 로드)",
+            "GPU 클럭 부스팅(저전력 → 최대 성능 주파수 전환)",
+            "JIT 컴파일(커널 코드 첫 번째 컴파일)",
+            "이 세 가지 초기화 비용이 전부 타이머 구간 밖으로 빠져나감",
+            "mempool 버전은 초기화 비용이 측정에 포함됨",
+            "preload 버전은 초기화가 타이머 밖이어서 측정에서 제외됨",
+            "first_try에서 warmup_cublas()를 명시적으로 둔 이유도 이 때문"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "초기화 비용 차이로 인한 측정 시간 감소",
+              "value": "50",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "v1-1-2 preload 버전 vs mempool 버전",
+              "element_ids": [
+                "p13:e108"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p13:e105",
+            "p13:e106",
+            "p13:e107",
+            "p13:e108",
+            "p13:e109"
+          ]
+        },
+        {
+          "statement": "v1-1-2의 50ms 감소는 GPU warmup 때문이며 preload 자체 때문은 아니라고 결론지었다.",
+          "limits": "preload로 인한 연산 개선이 아니라 warmup 효과로 해석함.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "v1-1-2 기준"
+          ],
+          "observations": [
+            "GPU warmup 때문에 50ms가 줄어든 것",
+            "preload 때문 아님"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "감소한 측정 시간",
+              "value": "50",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "v1-1-2",
+              "element_ids": [
+                "p13:e109"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p13:e109"
+          ]
+        }
+      ],
+      "3": [
+        {
+          "statement": "mempool 버전은 GPU 메모리풀 할당까지 시간에 계산되고, mempool_preload 버전은 가중치를 시간 측정 전에 미리 로드해서 해당 시간이 제외된다.",
+          "limits": "두 버전의 시간 측정 범위 차이가 존재함.",
+          "kind": "setup",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "mempool 버전은 GPU 메모리풀 할당까지 시간에 계산됨",
+            "mempool_preload 버전은 가중치를 시간 측정 전에 미리 로드함"
+          ],
+          "observations": [
+            "mempool 버전은 할당까지 시간에 포함됨",
+            "mempool_preload 버전은 해당 시간이 제외됨"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p13:e107"
+          ]
+        }
+      ]
+    }
+  }
+}

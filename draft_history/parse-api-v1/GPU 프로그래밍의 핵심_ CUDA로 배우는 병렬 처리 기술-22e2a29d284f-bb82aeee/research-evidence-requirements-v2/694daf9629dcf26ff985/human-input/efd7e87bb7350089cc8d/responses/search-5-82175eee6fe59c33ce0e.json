@@ -1,0 +1,224 @@
+{
+  "request_fingerprint": "82175eee6fe59c33ce0e14a9f60b18a261e27642661ccf55c84a4da0e604e83d",
+  "value": {
+    "title": "Q5 답변",
+    "facts": [
+      {
+        "statement": "단일 데이터 테스트에서는 forward와 backward 사이에 3배 정도의 시간 차이가 관찰되었으나, 92만 개의 데이터를 사용한 다중 데이터 테스트에서는 그 차이가 크게 줄어들어 forward 전체 실행 시간 약 64s, backward 전체 실행 시간 약 98s 정도로 비슷하게 나타났다.",
+        "limits": "원문 p47:e337, p47:e338",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "단일 데이터 테스트",
+          "다중 데이터 테스트(92만 개 데이터)",
+          "forward/backward bound 계산"
+        ],
+        "observations": [
+          "단일 데이터에서는 3배 차이",
+          "다중 데이터에서는 1분 정도 차이(64s vs 98s)",
+          "cudaMemcpy 호출 횟수는 동일함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p47:e337",
+          "p47:e338",
+          "p47:e336"
+        ]
+      },
+      {
+        "statement": "cudaMemcpy 호출 횟수는 forward와 backward에서 동일하게 6번이었으나, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 더 많이 잡혀 전체 실행 시간 차이의 원인이 되었다.",
+        "limits": "원문 p47:e336, p47:e337",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "Nsight System 분석",
+          "cudaMemcpy 횟수 측정",
+          "forward/backward 비교"
+        ],
+        "observations": [
+          "단일 데이터 기준 memcpy 호출 횟수 forward/backward 각 6번",
+          "실제 복사 대상은 입력 데이터 ± eps, upper bound, lower bound 결과 등 4개로 추정",
+          "가중치·bias는 prepare network on gpu 단계에서 한 번에 올라감"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p47:e336",
+          "p47:e337",
+          "p46:e323",
+          "p46:e324",
+          "p46:e325",
+          "p46:e326",
+          "p46:e327"
+        ]
+      },
+      {
+        "statement": "CROWN 결과를 담는 구조체(ForwardBoundResult, BackwardBoundResult)를 반복문 바깥 main 함수 scope에서 선언해 두고 switch 내부에서 값을 담으면 값에 의한 복사가 발생하여, 92만 번 반복 시 구조체 복사 오버헤드가 커져 성능이 저하되었다.",
+        "limits": "원문 p49:e349, p49:e350, p50:e355",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch(method) 사용",
+          "구조체 선언 위치(main scope vs case 내부)",
+          "값에 의한 복사"
+        ],
+        "observations": [
+          "main scope 선언 시 switch 레이블에 의해 초기화가 생략되는 컴파일 오류 발생",
+          "case 내부에 중괄호로 작은 scope를 만들어 선언과 동시에 생성하도록 변경",
+          "변경 후 2100s대 문제가 해결되고 준수한 결과 도출"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p49:e349",
+          "p49:e350",
+          "p50:e351",
+          "p50:e352",
+          "p50:e353",
+          "p50:e354",
+          "p50:e355",
+          "p50:e357"
+        ]
+      },
+      {
+        "statement": "실행 인자(command line argument)로 forward/backward를 선택하도록 하고 switch문을 사용하는 방식으로 변경했을 때, 기존 번거롭게 backward만 돌리던 실행 결과(1560.37s) 대비 실행 시간이 증가(2164s)하여 약 600초(10분) 느려지는 현상이 발생하였다.",
+        "limits": "원문 p48:e342, p48:e343, p48:e344, p49:e345",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "실행 인자 기반 method 선택",
+          "switch(method) 도입",
+          "backward 전용 실행 vs forward/backward 선택 실행"
+        ],
+        "observations": [
+          "기존 backward 실행 결과 total elapsed 1560.37s",
+          "코드 변경 후 2164s로 증가",
+          "약 600초 느려짐"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p48:e342",
+          "p48:e343",
+          "p48:e344",
+          "p49:e345"
+        ]
+      },
+      {
+        "statement": "실행 인자 유무, switch 사용 여부, 구조체 복사 제거 여부에 따라 동일 조건처럼 보이는 실행에서도 total elapsed 시간이 1342.47s, 1460.60s, 1560.37s, 1561.72s, 1564.18s, 1636s, 2187s 등으로 크게 변동하여, 실행 조건/코드 구조 차이가 공정 비교를 저해하는 요소로 작용하였다.",
+        "limits": "원문 p51:e360~p51:e372, p52:e374~p52:e377",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "실행 인자 있는 버전/없는 버전",
+          "forward/backward",
+          "구조체 복사 제거 여부",
+          "switch 사용 여부"
+        ],
+        "observations": [
+          "실행 인자 없는 backward 1560.37s / 1561.72s",
+          "실행 인자 없는 forward 1460.60s",
+          "실행 인자 있는 backward 1564.18s",
+          "실행 인자 있는 forward 1360.22s / 1447.17s",
+          "실행 인자 있는 forward가 실행 인자 없는 forward보다 빠른 경우도 존재",
+          "값이 크게 튀는 현상 반복 발생"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p51:e360",
+          "p51:e361",
+          "p51:e362",
+          "p51:e363",
+          "p51:e364",
+          "p51:e365",
+          "p51:e366",
+          "p51:e367",
+          "p51:e368",
+          "p51:e369",
+          "p51:e370",
+          "p51:e371",
+          "p51:e372",
+          "p52:e373",
+          "p52:e374",
+          "p52:e375",
+          "p52:e376",
+          "p52:e377"
+        ]
+      },
+      {
+        "statement": "현재 해결하지 못한 의문으로 ① 단일 데이터 테스트(forward/backward 3배 차이)와 달리 다중 데이터 테스트에서 forward 성능 감소가 어디서 일어나는지, ② 구조체 값에 의한 복사를 제거한 뒤 backward가 다시 2100s 정도로 튀는 원인, ③ 실행 인자 추가 및 switch문 사용이 실제로 성능에 영향을 준 것인지가 남아 있다.",
+        "limits": "원문 p52:e381",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "단일 데이터 vs 다중 데이터",
+          "구조체 복사 제거 전후",
+          "실행 인자+switch 도입 전후"
+        ],
+        "observations": [
+          "단일 데이터 3배 차이와 다중 데이터 유사 시간 간 괴리 미해결",
+          "복사 제거 후 backward 시간 다시 튀는 현상 미해결",
+          "switch/실행 인자 영향 여부 미해결"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p52:e381"
+        ]
+      },
+      {
+        "statement": "공정 비교를 위해 추론(inference), bound 계산, 검증(verification)을 모두 합쳐 측정하던 것을 각각 나누어 측정하고, 단일 데이터(optimizing.exe)에 대해 warm-up이 미치는 영향을 측정하며, forward/backward 및 sparse.py 기준으로 각 평균 시간이 몇 배 차이나는지 검사하는 조건이 제안·계획되었다.",
+        "limits": "원문 p53:e387, p53:e388",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "추론+bound+검증 분리 측정",
+          "warm-up 영향 측정",
+          "평균 시간 배율 비교"
+        ],
+        "observations": [
+          "추론+bound+검증 통합 측정 상태를 나누기로 함",
+          "단일 데이터 warm-up 영향 측정 계획",
+          "sparse.py도 나누어 측정 계획",
+          "평균 시간 배율 검사 계획"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p53:e387",
+          "p53:e388"
+        ]
+      },
+      {
+        "statement": "92만 번 실행에서 forward/backward 시간이 가끔 튀는 경우가 있어 평균과 분산을 구해 슬라이드에 넣기로 하였고, 실제로 20번씩 측정이 완료되었다고 기록되어 있다.",
+        "limits": "원문 p53:e387",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "92만 번 forward/backward 반복 측정",
+          "평균·분산 산출"
+        ],
+        "observations": [
+          "가끔 튀는 경우 존재",
+          "평균·분산 측정 완료(20번씩)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p53:e387"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

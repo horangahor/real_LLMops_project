@@ -1,0 +1,28 @@
+{
+  "request_fingerprint": "ed3dc51a1664297cd356f9850ab3827bbebaae8ed851bebdf821f9f294bdf2b0",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "CUDA 포팅은 C++ 기반 코드에 GPU 동작이 필요한 부분만 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)에서 컴파일이 가능하다. 이 작업에서는 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 kernel 함수(device, 즉 GPU에서 동작하는 코드)로 바꾸는 구상을 검토했다. mat_add부터 배열을 통한 연산을 하고 있어 포팅을 시도했으며, mat_add는 여러 번 호출되어 메모리 할당/해제도 여러 번 일어나므로 비효율적이라 판단했으나 최적화는 나중에 진행하기로 했다. CUDA Toolkit 설치 시 cuBLAS 라이브러리가 자동으로 포함되어 별도 설치는 필요 없으며, cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다. 컴파일 옵션에 -lcublas를 넣었는데, -l은 라이브러리를 링크하라는 컴파일러 옵션이고, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이다. my_lirpa_op.cu에서 cublasDgemm()(GPU 최적화 행렬곱) 함수를 사용하기 때문에 이 라이브러리를 연결해줘야 한다. v1-1-1-1은 메모리풀에 cuBlas를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBlas를 활용하도록 한 버전이며, 파일은 my_lirpa_mempool_cuBlas.cu이다. 가중치를 GPU에 사전 업로드하는 함수 pre_upload_weights_to_gpu를 구현했으며, 이 함수는 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 GPU 메모리를 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하여 net->d_W[i]에 저장한다. CPU에서 GPU로 신경망 메모리를 어떻게 나누어 복사하고 있는지에 대한 질문을 받았으며, GPU 메모리 사용량을 확인하는 방법으로 Nsight System이 제시되었다. Nsight System 계열 도구에서 GPU VRAM 사용량이 310.00 MiB로 표시되었으며, 이는 Gemini가 메모리 풀의 행렬·벡터 기준으로 계산한 약 114MB와 차이가 있어 이상하다고 기록되었다. CUDA 실행 시 CUDA Context가 생성되며, 이 Context가 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하고 VRAM을 사용하므로, 런타임 오버헤드를 감안하면 프로파일러에 보이는 VRAM 사용량이 코드 계산값보다 작을 수 있다고 해석되었다. 10주차 세미나 이후 생각해볼 사항으로 backward_only CUDA 구현(커널 구현 완료, 최적화 적용 여부 탐색중), cudaGraph 원리 학습, 찬희씨와 auto lirpa 모델 소통(repo 수령, 데이터셋·모델 동일 확인), 미팅 일정, 배칭+다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 기록되었다. auto lirpa repo를 받아서 실행해보기로 했으며, repo 주소는 https://github.com/horangahor/antenna_auto_lirpa이다.",
+          "evidence_ids": [
+            "E00001",
+            "E00002",
+            "E00005",
+            "E00024",
+            "E00025",
+            "E00026",
+            "E00034",
+            "E00042",
+            "E00054",
+            "E00087",
+            "E00088",
+            "E00089",
+            "E00233",
+            "E00235"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,223 @@
+{
+  "request_fingerprint": "846ea7ee12ff4131b101bc684ce163368906e380326a187938afddd046443e55",
+  "value": {
+    "additions": [
+      {
+        "statement": "cuSparse 도입 후 CROWN Verification 실행 결과 elapsed time은 27.107400 ms로, 이전 40.050500 ms 대비 빨라졌지만 24 ms baseline보다는 느려졌다.",
+        "limits": "비교 대상(40.050500 ms, 24 ms)은 각각 p27:e188/p27:review:e2와 p29:enh:e0/p29:enh:e2에서 확인되며, 이 요소 자체에는 비교 수치가 직접 명시되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse spMV만 적용",
+          "eps = 1e-06",
+          "mempool + warmup",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "실행 결과 elapsed time: 27.107400 ms",
+          "이전 40.050500 ms 대비 감소",
+          "24 ms baseline 대비 증가"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time",
+            "value": "27.1074",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuSparse spMV만 적용, eps=1e-06, mempool + warmup, Output Dimension 16",
+            "element_ids": [
+              "p28:e192",
+              "p28:e195",
+              "p28:enh:e1"
+            ]
+          },
+          {
+            "metric": "elapsed_time",
+            "value": "40.0505",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuSparse 도입 전 CROWN Verification, eps=1e-06, mempool + warmup, Output Dimension 16",
+            "element_ids": [
+              "p27:e188",
+              "p27:review:e2"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p28:e192",
+          "p28:e195",
+          "p28:enh:e1",
+          "p27:e188",
+          "p27:review:e2",
+          "p29:enh:e0",
+          "p29:enh:e2"
+        ]
+      },
+      {
+        "statement": "cuSparse가 느려진 이유는 최적화 부족이 아니라 현재 workload가 cuSPARSE에 불리하기 때문이다.",
+        "limits": "원문에 구체적 벤치마크 수치는 없으며 정성적 설명임",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "행렬 크기가 작고 layer가 3개뿐임",
+          "SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼",
+          "매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함",
+          "network_forward()가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함",
+          "cuSPARSE는 대규모 sparse throughput에는 강하지만 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음"
+        ],
+        "observations": [
+          "cuSparse가 느려진 이유는 최적화 부족이 아니라 현재 workload가 cuSPARSE에 불리하기 때문",
+          "현재는 cuSPARSE가 적용된 부분이 network_forward()의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데 그 일부에 오버헤드가 추가됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e3",
+          "p29:enh:e4",
+          "p29:enh:e5"
+        ]
+      },
+      {
+        "statement": "cuSparse 확장 대신 24 ms baseline으로 돌아가고 cuSparse는 별도 실험으로 두는 편이 좋다는 의견이 제시되었다.",
+        "limits": "의견 제시이며 확정 결론이 아님",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "24 ms baseline으로 복귀",
+          "cuSPARSE는 별도 실험으로 분리"
+        ],
+        "observations": [
+          "지금은 cuSPARSE를 계속 확장하지 않는 편이 좋음",
+          "24 ms baseline으로 돌아가고 cuSPARSE는 별도 실험으로 두는 것이 제안됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e2"
+        ]
+      },
+      {
+        "statement": "나중에 다시 시도할 경우 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가해야 한다.",
+        "limits": "추후 재시도 조건 제안이며 현재 적용 결과는 아님",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "descriptor와 buffer를 미리 만들어 재사용",
+          "network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 평가"
+        ],
+        "observations": [
+          "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고 network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가해야 함",
+          "지금은 24 ms 버전을 기준으로 유지하는 것이 합리적"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e6"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p28:e191": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "도입 동기만 명시되고 구체적 테스트 범위는 이 요소에 없음",
+        "addition_refs": []
+      },
+      "p28:e192": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "실행 결과 elapsed time 27.107400 ms 포함",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p28:e194": {
+        "state": "represented",
+        "fact_refs": [
+          1,
+          2
+        ],
+        "note": "적용 범위 및 spMV만 적용한 상황, spMM 도입 계획 포함",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p28:e195": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "결과 27ms로 좀 더 느려졌다는 관찰 포함",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p28:enh:e0": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "p28:e191과 동일 내용",
+        "addition_refs": []
+      },
+      "p28:enh:e1": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "실행 결과 표 포함, elapsed time 27.107400 ms 확인",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p28:enh:e2": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "현재 적용 범위 설명 도입부",
+        "addition_refs": []
+      },
+      "p28:enh:e3": {
+        "state": "represented",
+        "fact_refs": [
+          1
+        ],
+        "note": "적용 범위 상세 목록",
+        "addition_refs": []
+      },
+      "p28:enh:e4": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "연결 문구",
+        "addition_refs": []
+      },
+      "p28:enh:e5": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "spMV만 적용한 상황과 spMM 도입 계획",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p28:enh:e6": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "결과 27ms로 느려졌다는 관찰",
+        "addition_refs": [
+          0
+        ]
+      }
+    }
+  }
+}

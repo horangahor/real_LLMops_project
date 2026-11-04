@@ -1,0 +1,167 @@
+{
+  "request_fingerprint": "1354462016ae183d2317fa17f90db3fe12d3d423f902c8ccbfcb576823bf2a65",
+  "value": {
+    "checks": {
+      "P0079F0003": {
+        "support": "unsupported",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [
+          "0.02~0.05 μs(20~50 ns) 복사 시간",
+          "DMA 셋업 대비 30~50배 빠름",
+          "Pushbuffer 뒤에 데이터를 슬쩍 얹어 함께 보냄",
+          "Core i7/19, Ryzen 등 특정 CPU 모델 언급"
+        ],
+        "note": "원문은 외부 조언/해석으로 DMA 셋업 오버헤드 1.0~1.5 μs와 No-Pin 복사 0.02~0.05 μs, 30~50배 차이를 서술했으나 실측 근거는 제시되지 않음. 'Pushbuffer 뒤에 데이터를 슬쩍 얹어 함께 보낸다'는 표현도 원문에 그대로 있으나 구현 확인 불가. CPU 모델 표기(Core i7/19)는 원문 그대로이며 사실 검증 불가."
+      },
+      "P0079F0004": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p79:e621)에 cudaMemcpyAsync가 CUDA Graph 바깥에 있고 매 반복문마다 개별 호출된다는 코드 관찰과 1,028바이트 전송 시 두 방식 드라이버 내부 동작이 다르다는 설명이 그대로 존재함. 다만 코드 실제 구현은 이 요소에서 확인되지 않는다는 한계가 원문에 명시됨."
+      },
+      "P0079F0005": {
+        "support": "unsupported",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [
+          "DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드 1.0~1.5 μs/호출"
+        ],
+        "note": "원문에 Pinned Memory 경로(CPU 드라이버 가상→물리 주소 조회, DMA 디스크립터 생성, Doorbell MMIO 제출, GPU DMA 엔진 PCIe TLP 읽기 개시)와 1.0~1.5 μs 오버헤드가 서술되어 있으나 실측 근거는 없음. 수치는 외부 조언/해석이며 확정 불가."
+      },
+      "P0080F0001": {
+        "support": "supported",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p80:e622)에 backward_only가 더 빠른 이유 + pinned memory가 더 느린 이유까지 분석 끝나야 한다는 메모가 그대로 존재함. 이는 분석 완료 목표 진술이며 실측 결과가 아님."
+      },
+      "P0081F0001": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p81:e624)에 여러 번 측정 결과 pinned memory 미적용 버전 복사 속도가 약 3배 빠르며, 작은 전송에서 CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할 가능성이 있으나 내부 구현 직접 확인 불가로 확정 불가라고 명시됨."
+      },
+      "P0081F0002": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p81:e625)에 추론 완료까지 동기화(synchronize) 시간이 pinned memory 미적용 버전이 가장 빠르며, 1번 H2D 복사 시간이 영향을 미칠 수 있다는 관찰이 명시됨. 추론 과정 cuda stream synchronize 구조(H2D - 추론 graph 실행 - D2H)도 함께 서술됨."
+      },
+      "P0081F0003": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p81:e626)에 여러 번 측정 결과 cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느렸으며, 2copy→1copy 변경이 크게 효과를 보지 못했다는 관찰이 명시됨."
+      },
+      "P0081F0004": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p81:e627)에 작은 데이터 크기(현재 입력 기준 1Kib)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다는 해석이 명시됨."
+      },
+      "P0081F0005": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p81:e628)에 여러 번 측정 결과 pinned 적용 버전 cudaMemcpyAsync가 더 빨라서 2copy→1copy로 가며 고정 setup 비용이 줄었구나 했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다는 관찰이 명시됨."
+      },
+      "P0081F0006": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p81:e629)에 pinned memory가 더 느린 이유 분석은 이 정도로 종료하며 연구 목적이 아니고 너무 깊게 들어가면 다른 것도 못할 것 같다는 중단 결정이 명시됨."
+      },
+      "P0081F0007": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p81:e630)에 backward_only는 왜 제일 빠른가라는 질문이 명시되어 있음. 이는 질문/의제이며 답변이 아님."
+      },
+      "P0082F0001": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p82:enh:e3, p82:enh:e5, p82:e632)에 CROWN 3가지 방법에서 사용하는 커널 퓨전 및 backward_only에서 메모리 복사 커널 제거가 명시되어 있으며, bound 기준 Forward 27→18회(9회 감소), Backward 46→31회(15회 감소), Backward-only 45→33회(12회 감소), 전체 기준 Forward 33→24회(9회 감소), Backward 52→37회(15회 감소), Backward-only 51→39회(12회 감소)가 표로 제시됨. CUDA kernel launch만 집계하고 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외한다는 조건도 명시됨."
+      },
+      "P0082F0002": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p82:enh:e7, p84:e647)에 Forward method=0 bound 기준 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 레이어당 8→5회 감소(9개 감소)가 명시됨."
+      },
+      "P0082F0003": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p82:enh:e7, p84:e647)에 Backward method=1 기준 split_pos_neg + bias accumulation 2→1, 레이어당 backward 단계 5→4회, forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소가 명시됨."
+      },
+      "P0082F0004": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p82:enh:e8)에 graph mode=1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회라고 명시됨. 이번 작업은 graph launch 횟수 대상이 아니라는 조건도 함께 서술됨."
+      },
+      "P0083F0001": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p83:e641, p83:e642)에 forward total elapsed 1029s → 668s(668.37s)가 figure 측정 기준(all eps × all data)으로 명시됨."
+      },
+      "P0083F0003": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "contradictions": [],
+        "missing_support": [],
+        "note": "원문(p83:e638, p83:e639, p83:review:e1, p83:review:e3)에 787s → 630s로 157초 정도 줄었다(figure 기준 total elapsed)는 관찰이 명시됨. 630.94s 수치도 함께 제시됨."
+      }
+    }
+  }
+}

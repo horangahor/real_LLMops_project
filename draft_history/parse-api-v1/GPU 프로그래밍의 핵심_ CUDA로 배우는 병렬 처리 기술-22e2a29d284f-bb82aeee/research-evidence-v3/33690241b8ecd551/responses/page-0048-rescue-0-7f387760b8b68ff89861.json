@@ -1,0 +1,171 @@
+{
+  "request_fingerprint": "7f387760b8b68ff898615fb7cce881cbb1b664455ba18318ad58fd35e954ae2d",
+  "value": {
+    "facts": [
+      {
+        "statement": "C++ 측정 루프 코드에서 ForwardBoundResult fwd와 BackwardBoundResult bwd를 switch 스코프 바깥에 선언하고, switch(method) 분기 내에서 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하며, eps_list와 데이터 N에 대한 이중 루프에서 certify_topk로 Top-k 인증 판정을 수행한다.",
+        "limits": "코드 스니펫의 구조적 설명이며, 실제 성능 영향은 p49에서 별도로 지적됨(구조체 값에 의한 복사 문제).",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "switch(method) 분기 사용",
+          "eps_list 이중 루프",
+          "N개 데이터 반복"
+        ],
+        "observations": [
+          "ForwardBoundResult fwd와 BackwardBoundResult bwd를 switch 스코프 바깥에 선언",
+          "case 0: lirpa_forward_bound_impl(*net, dataset[i], eps_f, false, false, true) 호출",
+          "case 1: lirpa_backward_bound(*net, dataset[i], eps_f, false, false) 호출",
+          "1b = &fwd.final_lower / &bwd.final_lower, ub = &fwd.final_upper / &bwd.final_upper 할당",
+          "certify_topk(y0, *1b, *ub, k) 판정 결과에 따라 Ht_count 또는 f_count 증가"
+        ],
+        "parameters": [
+          {
+            "name": "method",
+            "value": "0 또는 1",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p48:e340"
+            ]
+          },
+          {
+            "name": "eps_list",
+            "value": "double 배열",
+            "value_kind": "text",
+            "element_ids": [
+              "p48:e340"
+            ]
+          },
+          {
+            "name": "N",
+            "value": "데이터 개수",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p48:e340"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p48:e340"
+        ]
+      },
+      {
+        "statement": "실행 결과 그림에서 eps 조건 4가지(9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00) 각각에 대해 T=0, F=40000, ratio=0.000의 결과가 표시되고, r-59999 표기가 있으며, total elapsed: 1560.37s로 측정되고 results saved to results_cuda.csv로 저장된다.",
+        "limits": "이 그림은 코드 변경 전 기존 실행 결과(1560s)로 해석됨(p48:e343 참조). 1560.37s는 정밀 측정값이며 1560s는 반올림 표기.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "eps 조건 4가지",
+          "커맨드라인 인자 방식 이전 실행",
+          "기존 번거롭게 backward 실행"
+        ],
+        "observations": [
+          "eps=9.0e-05: T=0 F=40000 ratio=0.000",
+          "eps=1.0e-02: T=0 F=40000 ratio=0.000",
+          "eps=1.0e-01: T=0 F=40000 ratio=0.000",
+          "eps=1.0e+00: T=0 F=40000 ratio=0.000",
+          "r-59999 표기 존재",
+          "total elapsed: 1560.37s",
+          "results saved to results_cuda.csv"
+        ],
+        "parameters": [
+          {
+            "name": "eps 조건 목록",
+            "value": "9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00",
+            "value_kind": "text",
+            "element_ids": [
+              "p48:e342"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "전체 실행 시간",
+            "value": "1560.37",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "코드 변경 전 기존 backward 실행, 커맨드라인 인자 방식 이전",
+            "element_ids": [
+              "p48:e342"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p48:e342"
+        ]
+      },
+      {
+        "statement": "OCR로 추출된 단락에서 'eps= 1.0e+00: T= 0 F=40000 ratio=0.000'이라는 eps 결과 라인이 확인된다.",
+        "limits": "OCR 추출 텍스트이며, p48:e342 그림의 eps 결과 라인 중 하나(eps=1.0e+00 조건)와 동일한 내용.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "OCR 추출",
+          "eps=1.0e+00 조건"
+        ],
+        "observations": [
+          "eps= 1.0e+00: T= 0 F=40000 ratio=0.000"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p48:img2:e0"
+        ]
+      },
+      {
+        "statement": "OCR로 추출된 단락에서 'total elapsed: 2164.98s'라는 정밀한 전체 실행 시간이 확인된다.",
+        "limits": "이 값은 코드 변경 후 실행 결과의 정밀한 측정값이며, 승인된 사실 P0048F0001에는 2164s(반올림/정수 표기)로 보존됨. 원시 OCR에는 2164.98s로 더 정밀한 값이 존재.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "OCR 추출",
+          "코드 변경 후 실행",
+          "커맨드라인 인자로 forward/backward 선택 실행"
+        ],
+        "observations": [
+          "total elapsed: 2164.98s"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "전체 실행 시간",
+            "value": "2164.98",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "커맨드라인 인자로 forward/backward 선택 실행, 코드 변경 후",
+            "element_ids": [
+              "p48:img2:e1"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p48:img2:e1"
+        ]
+      },
+      {
+        "statement": "OCR로 추출된 단락에서 'results saved to results_cuda.csv'라는 결과 저장 경로가 확인된다.",
+        "limits": "결과 파일 저장 경로에 대한 정보이며, p48:e342 그림에도 동일한 내용이 표기됨.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "OCR 추출",
+          "결과 저장"
+        ],
+        "observations": [
+          "results saved to results_cuda.csv"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p48:img2:e2"
+        ]
+      }
+    ]
+  }
+}

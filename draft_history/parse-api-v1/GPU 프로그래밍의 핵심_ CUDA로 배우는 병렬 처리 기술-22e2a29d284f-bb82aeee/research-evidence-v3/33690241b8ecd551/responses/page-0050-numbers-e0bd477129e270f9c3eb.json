@@ -1,0 +1,399 @@
+{
+  "request_fingerprint": "e0bd477129e270f9c3eb8f3f9e84ae1e275d8d4d692c02e83af016fb11c7276c",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "switch(method) 바깥 main 함수 scope에 fwd/bwd를 선언했을 때 nvcc 컴파일에서 warning #546-D와 error C2360/C2361이 발생했으며, 이는 transfer of control이 초기화를 우회하고 case/default 레이블에 의해 초기화가 생략되었기 때문이다.",
+          "limits": "컴파일러 진단 메시지는 nvcc 컴파일 과정에서 발생한 것으로 기록되었으며, 경고는 -diag-suppress로 억제 가능하다고 안내되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "nvcc 컴파일",
+            "switch(method) 바깥에 fwd/bwd 선언",
+            "case 0/1 및 default 레이블"
+          ],
+          "observations": [
+            "warning #546-D: transfer of control bypasses initialization of variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260)",
+            "error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략되었습니다.",
+            "error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략되었습니다.",
+            "error C2361: 'fwd' 초기화가 'default' 레이블에 의해 생략되었습니다.",
+            "Remark: The warnings can be suppressed with \"-diag-suppress <warning-number>\""
+          ],
+          "parameters": [
+            {
+              "name": "fwd 선언 위치",
+              "value": "switch(method) 바깥 main 함수 scope",
+              "value_kind": "text",
+              "element_ids": [
+                "p50:e354"
+              ]
+            },
+            {
+              "name": "bwd 선언 위치",
+              "value": "switch(method) 바깥 main 함수 scope",
+              "value_kind": "text",
+              "element_ids": [
+                "p50:e354"
+              ]
+            },
+            {
+              "name": "fwd 선언 라인",
+              "value": "252",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p50:e354"
+              ]
+            },
+            {
+              "name": "bwd 선언 라인",
+              "value": "260",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p50:e354"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "컴파일 경고 번호",
+              "value": "546-D",
+              "value_kind": "scalar",
+              "unit": "warning",
+              "condition": "nvcc 컴파일, switch 바깥 선언",
+              "element_ids": [
+                "p50:e354"
+              ]
+            },
+            {
+              "metric": "컴파일 오류 번호",
+              "value": "C2360",
+              "value_kind": "scalar",
+              "unit": "error",
+              "condition": "fwd 초기화가 case 레이블에 의해 생략",
+              "element_ids": [
+                "p50:e354"
+              ]
+            },
+            {
+              "metric": "컴파일 오류 번호",
+              "value": "C2361",
+              "value_kind": "scalar",
+              "unit": "error",
+              "condition": "bwd 초기화가 default 레이블에 의해 생략",
+              "element_ids": [
+                "p50:e354"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p50:e354",
+            "p50:e355"
+          ]
+        },
+        {
+          "statement": "CROWN 스윕 실행에서 거의 600초(10분) 느려지는 성능 문제가 발생했다.",
+          "limits": "정확한 기준 실행 시간과의 비교 수치는 명시되지 않았으며, '거의 600초'라는 정성적 표현으로 기록되었다.",
+          "kind": "problem",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "CROWN_SWEEP 실행",
+            "eps × 데이터 이중 루프"
+          ],
+          "observations": [
+            "거의 600초== 10분 느려졌다.. 왜일까.."
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p49:e345"
+          ]
+        },
+        {
+          "statement": "switch문 바깥에 CROWN 결과를 담을 구조체를 선언해두고 반복문 내부에서 CROWN을 돌려서 결과를 담는 방식이 값에 의한 복사를 발생시키며, 92만 번 복사되면 상당한 오버헤드가 된다는 해석이다.",
+          "limits": "92만 번이라는 복사 횟수는 작성자의 추정이며, 실제 복사 횟수와 성능 저하 간의 인과 관계는 실측되지 않았다.",
+          "kind": "method",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "switch 스코프 바깥에 구조체 선언",
+            "반복문 내부에서 CROWN 결과 저장",
+            "92만 번 복사"
+          ],
+          "observations": [
+            "switch의 스코프 바깥에 CROWN 결과를 담을 구조체를 선언해놓고 반복문 내부에서 CROWN을 돌려서 결과를 담고 있는데, 이 부분이 옛날에 배웠듯, 값에 의한 복사란 말이다",
+            "그래서 그 구조체를 전부 복사하느라고 그렇다는 것이다. (92만번 복사하면 꽤 크다.)"
+          ],
+          "parameters": [
+            {
+              "name": "복사 횟수 추정",
+              "value": "92만 번",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p49:e350"
+              ]
+            }
+          ],
+          "measurements": [],
+          "element_ids": [
+            "p49:e349",
+            "p49:e350"
+          ]
+        },
+        {
+          "statement": "switch문 안에서 선언과 동시에 생성되도록 변경 - case 0: ForwardBoundResult fwd = lirpa_forward_bound_impl(...), case 1: BackwardBoundResult bwd = lirpa_backward_bound(...) 방식으로 수정했다.",
+          "limits": "이 방식은 switch 안의 각 case에 중괄호 스코프를 함께 적용해야 컴파일 오류가 발생하지 않는다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "implementation_code",
+          "conditions": [
+            "switch(method) 내부",
+            "case 0: forward bound",
+            "case 1: backward bound"
+          ],
+          "observations": [
+            "그래서 이런식으로 안에서 선언과 동시에 만들어지도록 해봤다."
+          ],
+          "parameters": [
+            {
+              "name": "case 0 선언 방식",
+              "value": "ForwardBoundResult fwd = lirpa_forward_bound_impl(*net, dataset[i], eps_f, false, false, true)",
+              "value_kind": "text",
+              "element_ids": [
+                "p50:e351"
+              ]
+            },
+            {
+              "name": "case 1 선언 방식",
+              "value": "BackwardBoundResult bwd = lirpa_backward_bound(*net, dataset[i], eps_f, false, false)",
+              "value_kind": "text",
+              "element_ids": [
+                "p50:e351"
+              ]
+            }
+          ],
+          "measurements": [],
+          "element_ids": [
+            "p50:e351",
+            "p50:e352"
+          ]
+        },
+        {
+          "statement": "switch 안의 선언문은 중괄호로 스코프를 만들어주지 않으면 컴파일 오류가 발생한다.",
+          "limits": "중괄호 없이 선언할 경우 transfer of control이 초기화를 우회하는 문제가 발생한다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "switch 안의 선언문",
+            "중괄호 스코프 필요"
+          ],
+          "observations": [
+            "참고로 switch 안의 선언문은 중괄호로 저렇게 덮어주지 않으면 안되더라"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p50:e353"
+          ]
+        },
+        {
+          "statement": "fwd, bwd 초기화가 해당 레이블에 의해 생략되는 문제 - main 함수 scope의 선언문은 무조건 선언이 되어야 하는데 레이블에 의해 생략되므로 작은 scope를 만들어준 것이다.",
+          "limits": "이 설명은 작성자의 해석이며, C++ 표준의 switch 문 내 변수 선언 규칙에 기반한다.",
+          "kind": "method",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "fwd/bwd 초기화가 레이블에 의해 생략",
+            "main 함수 scope 선언문",
+            "작은 scope 생성"
+          ],
+          "observations": [
+            "fwd, bwd 초기화가 해당 레이블에 의해 생략되었다.. 즉 main 함수 scope의 선언문은 무조건 선언이 되어야하는데 레이블에 의해 그 부분이 생략되고 있으니 작은 scope를 만들어준 것."
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p50:e355"
+          ]
+        },
+        {
+          "statement": "수정 후 준수한 결과가 나왔으며, 2100s 초 나오는 문제의 원인이 해결되었다.",
+          "limits": "2100s라는 수치는 이전 문제의 추정치로 언급되었으며, 수정 후 구체적인 측정값은 별도로 기록되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "switch 내부 선언 방식 적용 후"
+          ],
+          "observations": [
+            "음 .. 준수한 결과다. ⇒ 이러면 2100s 초 나오는 문제도 원인 해결 완료"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p50:e357"
+          ]
+        },
+        {
+          "statement": "수정 후 다양한 실행 조건에서 측정된 총 elapsed 시간. 실행인자 유무와 forward/backward 방법에 따라 1342.47s에서 1634.61s 사이의 값이 관찰되었다.",
+          "limits": "각 측정값의 정확한 방법/인자 조합은 일부 불명확하며, 저자의 메모에 기반한 추정 분류가 포함되었다. eps=1.0e-01과 eps=1.0e+00에 대한 측정으로 보이나 개별 eps별 분해 시간은 명시되지 않았다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "eps=1.0e-01 및 eps=1.0e+00",
+            "F=40000, ratio=0.000",
+            "실행인자 유무",
+            "forward/backward 방법"
+          ],
+          "observations": [
+            "1560s도 나왔단 말이지..",
+            "이 건 뭐지? 100초 정도 차이나는 건..…..?",
+            "forward는 갑자기 또 1342s 까지도 떨어지네.. 뭐냐 도대체 크아악 (아마 이건 앞서 말했던 값에 의한 복사를 해결해서?)",
+            "(이게 실행인자 없는 버전 backward)",
+            "(근데 실행인자 없는 버전 forward) ?????? 이건 또 실행인자 있는게 더 빨라",
+            "다시 실행 인자 있는 backward",
+            "1564s 정도로 비슷하다."
+          ],
+          "parameters": [
+            {
+              "name": "데이터 수",
+              "value": "40000",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p51:e360",
+                "p51:e364",
+                "p51:e366",
+                "p51:e368",
+                "p51:e370",
+                "p50:img2:e0"
+              ]
+            },
+            {
+              "name": "eps 값",
+              "value": "1.0e-01",
+              "value_kind": "text",
+              "element_ids": [
+                "p51:e360",
+                "p51:e364",
+                "p51:e366",
+                "p51:e368",
+                "p51:e370",
+                "p50:img2:e0"
+              ]
+            },
+            {
+              "name": "eps 값",
+              "value": "1.0e+00",
+              "value_kind": "text",
+              "element_ids": [
+                "p51:e360",
+                "p51:e364",
+                "p51:e366",
+                "p51:e368",
+                "p51:e370",
+                "p50:img2:e0"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "total elapsed",
+              "value": "1560.37",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "실행인자 없는 버전 (저자가 backward로 추정)",
+              "element_ids": [
+                "p51:e360"
+              ]
+            },
+            {
+              "metric": "total elapsed",
+              "value": "1342.47",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "forward 방법",
+              "element_ids": [
+                "p51:e364"
+              ]
+            },
+            {
+              "metric": "total elapsed",
+              "value": "1561.72",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "실행인자 있는 버전 (방법 불명확)",
+              "element_ids": [
+                "p51:e366"
+              ]
+            },
+            {
+              "metric": "total elapsed",
+              "value": "1460.60",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "실행인자 없는 버전 backward",
+              "element_ids": [
+                "p51:e368"
+              ]
+            },
+            {
+              "metric": "total elapsed",
+              "value": "1564.18",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "실행인자 없는 버전 forward (저자 메모: 실행인자 있는 게 더 빠르다고 언급)",
+              "element_ids": [
+                "p51:e370"
+              ]
+            },
+            {
+              "metric": "total elapsed",
+              "value": "1564.18",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "실행인자 있는 backward (1564s 정도로 비슷)",
+              "element_ids": [
+                "p51:e370",
+                "p51:e371",
+                "p51:e372"
+              ]
+            },
+            {
+              "metric": "total elapsed",
+              "value": "1634.61",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "이미지 OCR 추출 결과 (방법/인자 조합 불명확)",
+              "element_ids": [
+                "p50:img2:e1"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p51:e359",
+            "p51:e360",
+            "p51:e361",
+            "p51:e362",
+            "p51:e363",
+            "p51:e364",
+            "p51:e365",
+            "p51:e366",
+            "p51:e367",
+            "p51:e368",
+            "p51:e369",
+            "p51:e370",
+            "p51:e371",
+            "p51:e372",
+            "p50:img2:e0",
+            "p50:img2:e1",
+            "p50:img2:e2"
+          ]
+        }
+      ]
+    }
+  }
+}

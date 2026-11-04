@@ -1,0 +1,579 @@
+{
+  "api": "2.0",
+  "content": {
+    "html": "<h1 id='0'>4주차 랩미팅 후 해야할 것 정리</h1>\n<p id='1' data-category='paragraph'><b>1. CROWN 알고리즘에서 출력한 16개의 값 ⇒</b></p>\n<p id='2' data-category='paragraph'>a. 신경망을 기준으로 sorting (아마 최댓값을 따라가는 듯?) : 최댓값부터 8개의 출력노드를 선택</p>\n<p id='3' data-category='paragraph'>b. lower_bound, upper_bound 를 기준으로 sorting (아마 간격을 기준으로 따라감) : 8개의 출력노드를 선택하도록 하기</p>\n<p id='4' data-category='paragraph'>⇒ 이거에 대한 답지는 교수님께서 제공해주시기로 했음</p>\n<p id='5' data-category='paragraph'><b>2. 타일링 :</b> 메모리 사이즈에 대해 전부 처리하기 어려우니 일부만 올려서 계산하고 다시 다음부분 올려서 계산하고 하는것은 어떻게 처리하고 있나?</p>\n<p id='6' data-category='paragraph'><b>ex)</b> 예를 들어 1~100까지 있다하면 1~10을 올려서 계산하는동안, 11~20을 올리고 그런거..</p>\n<p id='7' data-category='paragraph'>그래서 지금 혹시 신경망이 매우 커서 GPU램에 다 안올라가는 상황인가? 그렇다면 지금 어떻게 처리를 하고 있나? 를 여쭤보신듯.</p>\n<p id='8' data-category='paragraph'><b>2-1. forward + backward</b> 로 하고 있으면 , 알고리즘을 봤을때 (신경망과 상관없이)</p>\n<p id='9' data-category='paragraph'>고정값인 가중치, 편향 행렬이 있다 (적어도 그런 행렬과 벡터가 3쌍 있을것임)</p>\n<p id='10' data-category='paragraph'>⇒ 즉 신경망 모델 사이즈의 3배정도 메모리를 차지하고 있을것임 (그래서 스택 메모리가 128MB 필요했나?)</p>\n<p id='11' data-category='paragraph'>그래서 이걸 한번 봐라 (알고리즘을)</p>\n<p id='12' data-category='paragraph'><b>3.</b> 그리고 내가 할 것은 성능이 개선된 프로그램을 가져가기 (cpu보다 빠르도록) ← 지금까지 테스트한 것들 가져가면 될듯 + 더 찾아보기</p>\n<p id='13' data-category='paragraph'><b>3-1.</b> 메모리 풀(할당, 해제 제거) + memcpy 비용 제거한 버전 ( 고정된 W, B 값 )</p>\n<p id='14' data-category='paragraph'><b>3-2.</b> cuBlas , cuSparse</p>\n<h2 id='15'>정리</h2>\n<p id='16' data-category='paragraph'><b>v0 :</b> 단독 CPU 처리 , <b>96ms</b></p>\n<p id='17' data-category='paragraph'><b>v1 :</b> 모든 병렬처리 함수를 커널 함수로 바꿈 , <b>355ms</b> // 이게 my_lirpa.cu</p>\n<p id='18' data-category='paragraph'><b>v2 :</b> 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입 , <b>229ms</b> // crown_test_op_only_GPU.cu</p>\n<p id='19' data-category='paragraph'><b>v3 :</b> CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, <b>200ms</b> // crown_test_op_hybrid.cu</p>",
+    "markdown": "# 4주차 랩미팅 후 해야할 것 정리\n\n**1. CROWN 알고리즘에서 출력한 16개의 값 ⇒**\n\na. 신경망을 기준으로 sorting (아마 최댓값을 따라가는 듯?) : 최댓값부터 8개의 출력노드를 선택\n\nb. lower_bound, upper_bound 를 기준으로 sorting (아마 간격을 기준으로 따라감) : 8개의 출력노드를 선택하도록 하기\n\n⇒ 이거에 대한 답지는 교수님께서 제공해주시기로 했음\n\n**2. 타일링 :** 메모리 사이즈에 대해 전부 처리하기 어려우니 일부만 올려서 계산하고 다시 다음부분 올려서 계산하고 하는것은 어떻게 처리하고 있나?\n\n**ex)** 예를 들어 1~100까지 있다하면 1~10을 올려서 계산하는동안, 11~20을 올리고 그런거..\n\n그래서 지금 혹시 신경망이 매우 커서 GPU램에 다 안올라가는 상황인가? 그렇다면 지금 어떻게 처리를 하고 있나? 를 여쭤보신듯.\n\n**2-1. forward + backward** 로 하고 있으면 , 알고리즘을 봤을때 (신경망과 상관없이)\n\n고정값인 가중치, 편향 행렬이 있다 (적어도 그런 행렬과 벡터가 3쌍 있을것임)\n\n⇒ 즉 신경망 모델 사이즈의 3배정도 메모리를 차지하고 있을것임 (그래서 스택 메모리가 128MB 필요했나?)\n\n그래서 이걸 한번 봐라 (알고리즘을)\n\n**3.** 그리고 내가 할 것은 성능이 개선된 프로그램을 가져가기 (cpu보다 빠르도록) ← 지금까지 테스트한 것들 가져가면 될듯 + 더 찾아보기\n\n**3-1.** 메모리 풀(할당, 해제 제거) + memcpy 비용 제거한 버전 ( 고정된 W, B 값 )\n\n**3-2.** cuBlas , cuSparse\n\n## 정리\n\n**v0 :** 단독 CPU 처리 , **96ms**\n\n**v1 :** 모든 병렬처리 함수를 커널 함수로 바꿈 , **355ms** // 이게 my_lirpa.cu\n\n**v2 :** 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입 , **229ms** // crown_test_op_only_GPU.cu\n\n**v3 :** CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, **200ms** // crown_test_op_hybrid.cu",
+    "text": "4주차 랩미팅 후 해야할 것 정리\n1. CROWN 알고리즘에서 출력한 16개의 값 ⇒\na. 신경망을 기준으로 sorting (아마 최댓값을 따라가는 듯?) : 최댓값부터 8개의 출력노드를 선택\nb. lower_bound, upper_bound 를 기준으로 sorting (아마 간격을 기준으로 따라감) : 8개의 출력노드를 선택하도록 하기\n⇒ 이거에 대한 답지는 교수님께서 제공해주시기로 했음\n2. 타일링 : 메모리 사이즈에 대해 전부 처리하기 어려우니 일부만 올려서 계산하고 다시 다음부분 올려서 계산하고 하는것은 어떻게 처리하고 있나?\nex) 예를 들어 1~100까지 있다하면 1~10을 올려서 계산하는동안, 11~20을 올리고 그런거..\n그래서 지금 혹시 신경망이 매우 커서 GPU램에 다 안올라가는 상황인가? 그렇다면 지금 어떻게 처리를 하고 있나? 를 여쭤보신듯.\n2-1. forward + backward 로 하고 있으면 , 알고리즘을 봤을때 (신경망과 상관없이)\n고정값인 가중치, 편향 행렬이 있다 (적어도 그런 행렬과 벡터가 3쌍 있을것임)\n⇒ 즉 신경망 모델 사이즈의 3배정도 메모리를 차지하고 있을것임 (그래서 스택 메모리가 128MB 필요했나?)\n그래서 이걸 한번 봐라 (알고리즘을)\n3. 그리고 내가 할 것은 성능이 개선된 프로그램을 가져가기 (cpu보다 빠르도록) ← 지금까지 테스트한 것들 가져가면 될듯 + 더 찾아보기\n3-1. 메모리 풀(할당, 해제 제거) + memcpy 비용 제거한 버전 ( 고정된 W, B 값 )\n3-2. cuBlas , cuSparse\n정리\nv0 : 단독 CPU 처리 , 96ms\nv1 : 모든 병렬처리 함수를 커널 함수로 바꿈 , 355ms // 이게 my_lirpa.cu\nv2 : 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입 , 229ms // crown_test_op_only_GPU.cu\nv3 : CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, 200ms // crown_test_op_hybrid.cu"
+  },
+  "elements": [
+    {
+      "id": 0,
+      "page": 1,
+      "category": "heading1",
+      "content": {
+        "html": "<h1 id='0'>4주차 랩미팅 후 해야할 것 정리</h1>",
+        "markdown": "# 4주차 랩미팅 후 해야할 것 정리",
+        "text": "4주차 랩미팅 후 해야할 것 정리"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.136
+        },
+        {
+          "x": 0.402,
+          "y": 0.136
+        },
+        {
+          "x": 0.402,
+          "y": 0.152
+        },
+        {
+          "x": 0.116,
+          "y": 0.152
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='1' data-category='paragraph'><b>1. CROWN 알고리즘에서 출력한 16개의 값 ⇒</b></p>",
+        "markdown": "**1. CROWN 알고리즘에서 출력한 16개의 값 ⇒**",
+        "text": "1. CROWN 알고리즘에서 출력한 16개의 값 ⇒"
+      },
+      "coordinates": [
+        {
+          "x": 0.147,
+          "y": 0.16
+        },
+        {
+          "x": 0.546,
+          "y": 0.16
+        },
+        {
+          "x": 0.546,
+          "y": 0.175
+        },
+        {
+          "x": 0.147,
+          "y": 0.175
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='2' data-category='paragraph'>a. 신경망을 기준으로 sorting (아마 최댓값을 따라가는 듯?) : 최댓값부터 8개의 출력노드를 선택</p>",
+        "markdown": "a. 신경망을 기준으로 sorting (아마 최댓값을 따라가는 듯?) : 최댓값부터 8개의 출력노드를 선택",
+        "text": "a. 신경망을 기준으로 sorting (아마 최댓값을 따라가는 듯?) : 최댓값부터 8개의 출력노드를 선택"
+      },
+      "coordinates": [
+        {
+          "x": 0.205,
+          "y": 0.177
+        },
+        {
+          "x": 0.871,
+          "y": 0.177
+        },
+        {
+          "x": 0.871,
+          "y": 0.209
+        },
+        {
+          "x": 0.205,
+          "y": 0.209
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='3' data-category='paragraph'>b. lower_bound, upper_bound 를 기준으로 sorting (아마 간격을 기준으로 따라감) : 8개의 출력노드를 선택하도록 하기</p>",
+        "markdown": "b. lower_bound, upper_bound 를 기준으로 sorting (아마 간격을 기준으로 따라감) : 8개의 출력노드를 선택하도록 하기",
+        "text": "b. lower_bound, upper_bound 를 기준으로 sorting (아마 간격을 기준으로 따라감) : 8개의 출력노드를 선택하도록 하기"
+      },
+      "coordinates": [
+        {
+          "x": 0.205,
+          "y": 0.212
+        },
+        {
+          "x": 0.825,
+          "y": 0.212
+        },
+        {
+          "x": 0.825,
+          "y": 0.244
+        },
+        {
+          "x": 0.205,
+          "y": 0.244
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='4' data-category='paragraph'>⇒ 이거에 대한 답지는 교수님께서 제공해주시기로 했음</p>",
+        "markdown": "⇒ 이거에 대한 답지는 교수님께서 제공해주시기로 했음",
+        "text": "⇒ 이거에 대한 답지는 교수님께서 제공해주시기로 했음"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.263
+        },
+        {
+          "x": 0.586,
+          "y": 0.263
+        },
+        {
+          "x": 0.586,
+          "y": 0.278
+        },
+        {
+          "x": 0.116,
+          "y": 0.278
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='5' data-category='paragraph'><b>2. 타일링 :</b> 메모리 사이즈에 대해 전부 처리하기 어려우니 일부만 올려서 계산하고 다시 다음부분 올려서 계산하고 하는것은 어떻게 처리하고 있나?</p>",
+        "markdown": "**2. 타일링 :** 메모리 사이즈에 대해 전부 처리하기 어려우니 일부만 올려서 계산하고 다시 다음부분 올려서 계산하고 하는것은 어떻게 처리하고 있나?",
+        "text": "2. 타일링 : 메모리 사이즈에 대해 전부 처리하기 어려우니 일부만 올려서 계산하고 다시 다음부분 올려서 계산하고 하는것은 어떻게 처리하고 있나?"
+      },
+      "coordinates": [
+        {
+          "x": 0.145,
+          "y": 0.297
+        },
+        {
+          "x": 0.842,
+          "y": 0.297
+        },
+        {
+          "x": 0.842,
+          "y": 0.33
+        },
+        {
+          "x": 0.145,
+          "y": 0.33
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='6' data-category='paragraph'><b>ex)</b> 예를 들어 1~100까지 있다하면 1~10을 올려서 계산하는동안, 11~20을 올리고 그런거..</p>",
+        "markdown": "**ex)** 예를 들어 1~100까지 있다하면 1~10을 올려서 계산하는동안, 11~20을 올리고 그런거..",
+        "text": "ex) 예를 들어 1~100까지 있다하면 1~10을 올려서 계산하는동안, 11~20을 올리고 그런거.."
+      },
+      "coordinates": [
+        {
+          "x": 0.174,
+          "y": 0.332
+        },
+        {
+          "x": 0.855,
+          "y": 0.332
+        },
+        {
+          "x": 0.855,
+          "y": 0.365
+        },
+        {
+          "x": 0.174,
+          "y": 0.365
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='7' data-category='paragraph'>그래서 지금 혹시 신경망이 매우 커서 GPU램에 다 안올라가는 상황인가? 그렇다면 지금 어떻게 처리를 하고 있나? 를 여쭤보신듯.</p>",
+        "markdown": "그래서 지금 혹시 신경망이 매우 커서 GPU램에 다 안올라가는 상황인가? 그렇다면 지금 어떻게 처리를 하고 있나? 를 여쭤보신듯.",
+        "text": "그래서 지금 혹시 신경망이 매우 커서 GPU램에 다 안올라가는 상황인가? 그렇다면 지금 어떻게 처리를 하고 있나? 를 여쭤보신듯."
+      },
+      "coordinates": [
+        {
+          "x": 0.175,
+          "y": 0.384
+        },
+        {
+          "x": 0.867,
+          "y": 0.384
+        },
+        {
+          "x": 0.867,
+          "y": 0.417
+        },
+        {
+          "x": 0.175,
+          "y": 0.417
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='8' data-category='paragraph'><b>2-1. forward + backward</b> 로 하고 있으면 , 알고리즘을 봤을때 (신경망과 상관없이)</p>",
+        "markdown": "**2-1. forward + backward** 로 하고 있으면 , 알고리즘을 봤을때 (신경망과 상관없이)",
+        "text": "2-1. forward + backward 로 하고 있으면 , 알고리즘을 봤을때 (신경망과 상관없이)"
+      },
+      "coordinates": [
+        {
+          "x": 0.179,
+          "y": 0.435
+        },
+        {
+          "x": 0.853,
+          "y": 0.435
+        },
+        {
+          "x": 0.853,
+          "y": 0.451
+        },
+        {
+          "x": 0.179,
+          "y": 0.451
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='9' data-category='paragraph'>고정값인 가중치, 편향 행렬이 있다 (적어도 그런 행렬과 벡터가 3쌍 있을것임)</p>",
+        "markdown": "고정값인 가중치, 편향 행렬이 있다 (적어도 그런 행렬과 벡터가 3쌍 있을것임)",
+        "text": "고정값인 가중치, 편향 행렬이 있다 (적어도 그런 행렬과 벡터가 3쌍 있을것임)"
+      },
+      "coordinates": [
+        {
+          "x": 0.119,
+          "y": 0.453
+        },
+        {
+          "x": 0.766,
+          "y": 0.453
+        },
+        {
+          "x": 0.766,
+          "y": 0.468
+        },
+        {
+          "x": 0.119,
+          "y": 0.468
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='10' data-category='paragraph'>⇒ 즉 신경망 모델 사이즈의 3배정도 메모리를 차지하고 있을것임 (그래서 스택 메모리가 128MB 필요했나?)</p>",
+        "markdown": "⇒ 즉 신경망 모델 사이즈의 3배정도 메모리를 차지하고 있을것임 (그래서 스택 메모리가 128MB 필요했나?)",
+        "text": "⇒ 즉 신경망 모델 사이즈의 3배정도 메모리를 차지하고 있을것임 (그래서 스택 메모리가 128MB 필요했나?)"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.47
+        },
+        {
+          "x": 0.855,
+          "y": 0.47
+        },
+        {
+          "x": 0.855,
+          "y": 0.504
+        },
+        {
+          "x": 0.116,
+          "y": 0.504
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='11' data-category='paragraph'>그래서 이걸 한번 봐라 (알고리즘을)</p>",
+        "markdown": "그래서 이걸 한번 봐라 (알고리즘을)",
+        "text": "그래서 이걸 한번 봐라 (알고리즘을)"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.522
+        },
+        {
+          "x": 0.42,
+          "y": 0.522
+        },
+        {
+          "x": 0.42,
+          "y": 0.539
+        },
+        {
+          "x": 0.117,
+          "y": 0.539
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='12' data-category='paragraph'><b>3.</b> 그리고 내가 할 것은 성능이 개선된 프로그램을 가져가기 (cpu보다 빠르도록) ← 지금까지 테스트한 것들 가져가면 될듯 + 더 찾아보기</p>",
+        "markdown": "**3.** 그리고 내가 할 것은 성능이 개선된 프로그램을 가져가기 (cpu보다 빠르도록) ← 지금까지 테스트한 것들 가져가면 될듯 + 더 찾아보기",
+        "text": "3. 그리고 내가 할 것은 성능이 개선된 프로그램을 가져가기 (cpu보다 빠르도록) ← 지금까지 테스트한 것들 가져가면 될듯 + 더 찾아보기"
+      },
+      "coordinates": [
+        {
+          "x": 0.145,
+          "y": 0.557
+        },
+        {
+          "x": 0.838,
+          "y": 0.557
+        },
+        {
+          "x": 0.838,
+          "y": 0.59
+        },
+        {
+          "x": 0.145,
+          "y": 0.59
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='13' data-category='paragraph'><b>3-1.</b> 메모리 풀(할당, 해제 제거) + memcpy 비용 제거한 버전 ( 고정된 W, B 값 )</p>",
+        "markdown": "**3-1.** 메모리 풀(할당, 해제 제거) + memcpy 비용 제거한 버전 ( 고정된 W, B 값 )",
+        "text": "3-1. 메모리 풀(할당, 해제 제거) + memcpy 비용 제거한 버전 ( 고정된 W, B 값 )"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.608
+        },
+        {
+          "x": 0.772,
+          "y": 0.608
+        },
+        {
+          "x": 0.772,
+          "y": 0.626
+        },
+        {
+          "x": 0.116,
+          "y": 0.626
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='14' data-category='paragraph'><b>3-2.</b> cuBlas , cuSparse</p>",
+        "markdown": "**3-2.** cuBlas , cuSparse",
+        "text": "3-2. cuBlas , cuSparse"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.644
+        },
+        {
+          "x": 0.309,
+          "y": 0.644
+        },
+        {
+          "x": 0.309,
+          "y": 0.66
+        },
+        {
+          "x": 0.117,
+          "y": 0.66
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "page": 1,
+      "category": "heading1",
+      "sub_category": "h2",
+      "content": {
+        "html": "<h2 id='15'>정리</h2>",
+        "markdown": "## 정리",
+        "text": "정리"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.712
+        },
+        {
+          "x": 0.158,
+          "y": 0.712
+        },
+        {
+          "x": 0.158,
+          "y": 0.727
+        },
+        {
+          "x": 0.117,
+          "y": 0.727
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='16' data-category='paragraph'><b>v0 :</b> 단독 CPU 처리 , <b>96ms</b></p>",
+        "markdown": "**v0 :** 단독 CPU 처리 , **96ms**",
+        "text": "v0 : 단독 CPU 처리 , 96ms"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.747
+        },
+        {
+          "x": 0.345,
+          "y": 0.747
+        },
+        {
+          "x": 0.345,
+          "y": 0.763
+        },
+        {
+          "x": 0.116,
+          "y": 0.763
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='17' data-category='paragraph'><b>v1 :</b> 모든 병렬처리 함수를 커널 함수로 바꿈 , <b>355ms</b> // 이게 my_lirpa.cu</p>",
+        "markdown": "**v1 :** 모든 병렬처리 함수를 커널 함수로 바꿈 , **355ms** // 이게 my_lirpa.cu",
+        "text": "v1 : 모든 병렬처리 함수를 커널 함수로 바꿈 , 355ms // 이게 my_lirpa.cu"
+      },
+      "coordinates": [
+        {
+          "x": 0.115,
+          "y": 0.781
+        },
+        {
+          "x": 0.726,
+          "y": 0.781
+        },
+        {
+          "x": 0.726,
+          "y": 0.798
+        },
+        {
+          "x": 0.115,
+          "y": 0.798
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='18' data-category='paragraph'><b>v2 :</b> 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입 , <b>229ms</b> // crown_test_op_only_GPU.cu</p>",
+        "markdown": "**v2 :** 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입 , **229ms** // crown_test_op_only_GPU.cu",
+        "text": "v2 : 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입 , 229ms // crown_test_op_only_GPU.cu"
+      },
+      "coordinates": [
+        {
+          "x": 0.115,
+          "y": 0.815
+        },
+        {
+          "x": 0.695,
+          "y": 0.815
+        },
+        {
+          "x": 0.695,
+          "y": 0.851
+        },
+        {
+          "x": 0.115,
+          "y": 0.851
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='19' data-category='paragraph'><b>v3 :</b> CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, <b>200ms</b> // crown_test_op_hybrid.cu</p>",
+        "markdown": "**v3 :** CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, **200ms** // crown_test_op_hybrid.cu",
+        "text": "v3 : CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, 200ms // crown_test_op_hybrid.cu"
+      },
+      "coordinates": [
+        {
+          "x": 0.115,
+          "y": 0.867
+        },
+        {
+          "x": 0.818,
+          "y": 0.867
+        },
+        {
+          "x": 0.818,
+          "y": 0.902
+        },
+        {
+          "x": 0.115,
+          "y": 0.902
+        }
+      ]
+    }
+  ],
+  "model": "document-parse-260930",
+  "ocr": true,
+  "usage": {
+    "pages": 1,
+    "enhanced": [
+      1
+    ]
+  }
+}

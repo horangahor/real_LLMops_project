@@ -1,0 +1,27 @@
+{
+  "request_fingerprint": "c0ab7a26a43a60a37e92ee9b61eb915422eab0cc1ec069ac2edf1482396e37df",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "초기화만 하면 forward와 backward의 bound 계산 시간은 약 0.2 ms 차이로 비슷했다. 측정 방식은 Nvidia의 warm up 가이드라인을 참고해 실제 사이클 시간만 측정하고 warm up을 한 번 하며, CV를 통해 스파이크와 분산 정도를 규명하기로 했고, 추론·bound 계산·검증 3가지 값을 나눠서 측정했다. 다만 실제 측정에서는 warm up 이후 걸리는 시간과 각 평균 시간이 더 늘어났고, forward가 warm up 이전 backward 급 속도가 나올 정도였으며, warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았다. 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 느낌으로 변동 계수가 더 낮았다.",
+          "evidence_ids": [
+            "H85ca0e507c4e_83"
+          ]
+        },
+        {
+          "text": "실시간 PCIe H2D 전송 최적화를 위해 Host Memory Pinning(cudaHostRegister)을 적용해 일반 메모리를 복사 없이 pinned Memory로 승격시켜 GPU가 CPU 메모리에 직접 접근할 수 있도록 했다. 커널 memcpy에서는 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 고쳤으며, out_bytes를 sizeof(int) + (size_t)out_dim * sizeof(float)로 계산해 16개 노드 × 두 개의 바운드 총 32(*4byte)만 cudaMemcpyAsync로 가져오도록 했다. 다만 이 적용 이후 cpu 계산 오버헤드가 더 큰 것 같기도 하고 시간이 늘었다는 느낌이 있었다.",
+          "evidence_ids": [
+            "H85ca0e507c4e_84"
+          ]
+        },
+        {
+          "text": "CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거해, 3-layer 네트워크 기준으로 Forward method=0 bound 27→18회(9회 감소), Backward method=1 bound 전체 46→31회(15회 감소), Backward-only method=2 bound 전체 45→33회(12회 감소)가 되었다. graph mode=1에서 샘플 1개 전체 기준으로는 Forward 33→24회(9회 감소), Backward 52→37회(15회 감소), Backward-only 51→39회(12회 감소)가 되었다. 이 수치는 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하고 CUDA kernel launch만 센 값이며, graph mode=1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회로 유지되었다.",
+          "evidence_ids": [
+            "H85ca0e507c4e_85"
+          ]
+        }
+      ]
+    }
+  }
+}

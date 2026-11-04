@@ -1,0 +1,129 @@
+{
+  "request_fingerprint": "3487fdfe7044fc1160e2ec50128cf555cc7aed38d2531a61e3dbbe5c37868764",
+  "value": {
+    "decisions": {
+      "P0054F0005": {
+        "action": "repair",
+        "representative_fact_id": "P0054F0001",
+        "corrections": [
+          {
+            "statement": "limits의 '92만 번' 수치는 원문 미확인 수치가 아님",
+            "limits": "limits에 기재된 '전체 92만 번 실행'은 p54:e394('elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있는데') 및 p53:e387·p53:e388('forward, backward 92만번 실행', '92만번의 forward, backward 측정하기')에서 확인되므로, numeric_issues의 'limits의 원문 미확인 수치: 92'는 잘못된 플래그임. 해당 수치는 원문에서 확인됨.",
+            "kind": "method",
+            "claim_status": "documented_method",
+            "source_origin": "research_note",
+            "conditions": [
+              "추론(네트워크 정방향 통과) 후 bound 계산, bound 계산 후 검증(Top-k 인증 판정) 순서로 진행",
+              "case 0은 ForwardBoundResult, case 1은 BackwardBoundResult 사용",
+              "각 case 안에서 직접 초기화하여 NRVO 적용, 4MB+ 구조체 복사 0회"
+            ],
+            "observations": [
+              "추론 시간 누적 변수: time_infer_total",
+              "bound 시간 누적 변수: time_bound_total",
+              "검증 시간 누적 변수: time_certify_total",
+              "Top-k 인증 판정 결과에 따라 t_count 또는 f_count 증가"
+            ],
+            "parameters": [
+              {
+                "name": "추론 시간 측정 구간",
+                "value": "t0 ~ t1",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p54:e392"
+                ]
+              },
+              {
+                "name": "bound 시간 측정 구간",
+                "value": "t1 ~ t2",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p54:e392"
+                ]
+              },
+              {
+                "name": "검증 시간 측정 구간",
+                "value": "t2 ~ t3",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p54:e392"
+                ]
+              },
+              {
+                "name": "bound 계산 방법(case)",
+                "value": "0: ForwardBoundResult (lirpa_forward_bound_imp1), 1: BackwardBoundResult (lirpa_backward_bound)",
+                "value_kind": "text",
+                "element_ids": [
+                  "p54:e392"
+                ]
+              },
+              {
+                "name": "Top-k 인증 판정 함수",
+                "value": "certify_topk(y0, final_lower, final_upper, k)",
+                "value_kind": "text",
+                "element_ids": [
+                  "p54:e392"
+                ]
+              }
+            ],
+            "measurements": [],
+            "element_ids": [
+              "p54:e392",
+              "p54:e393",
+              "p54:e394",
+              "p53:e387",
+              "p53:e388"
+            ]
+          }
+        ],
+        "reason": "승인 후보 P0054F0001·P0054R0F0001은 핵심 진술(끝마다 시간 기록)을 지지하나 매개변수·관찰·한계 정보가 비어 있음. 대상 P0054F0005는 p54:e392 코드에서 확인되는 구간(t0~t1, t1~t2, t2~t3), case 분기, 누적 변수명, certify_topk 호출, NRVO/4MB+ 주석 등 풍부한 세부를 포함하며, 이 세부들은 모두 p54:e392에 존재함. 따라서 단순 중복이 아니라 세부를 보존한 수리 대상임. numeric_issues의 '92'는 p54:e394·p53:e387·p53:e388에서 확인되는 실제 수치이므로 제거함. rejected_measurements 3건은 실제 측정값이 아니라 누적 변수명(time_infer_total 등)을 measurement로 잘못 넣은 것이므로 measurements에서 제거하고, 해당 변수명은 이미 observations에 존재하므로 중복 없이 정리함."
+      },
+      "P0054F0008": {
+        "action": "repair",
+        "representative_fact_id": "P0054F0004",
+        "corrections": [
+          {
+            "statement": "단일 데이터(optimizing.exe) 측정 검증 과정에서 warm up 코드를 먼저 넣음",
+            "limits": "warm up의 구체적 영향 수치는 별도 측정·검증 완료되었으나 발표에서는 초기화 비용 관련 자투리로 처리 예정",
+            "kind": "method",
+            "claim_status": "documented_method",
+            "source_origin": "research_note",
+            "conditions": [
+              "단일 데이터(optimizing.exe) 대상",
+              "warm up 영향 측정 및 검증 완료"
+            ],
+            "observations": [
+              "warm up 코드를 먼저 넣음",
+              "교수님이 초기화 비용 때문일 것이라고 언급",
+              "발표에서는 자투리로 넣거나 생략 예정"
+            ],
+            "parameters": [
+              {
+                "name": "warm up 대상",
+                "value": "단일 데이터(optimizing.exe)",
+                "value_kind": "text",
+                "element_ids": [
+                  "p53:e388"
+                ]
+              },
+              {
+                "name": "warm up 코드 삽입 시점",
+                "value": "측정 전 먼저 넣음",
+                "value_kind": "text",
+                "element_ids": [
+                  "p54:e398"
+                ]
+              }
+            ],
+            "measurements": [],
+            "element_ids": [
+              "p54:e397",
+              "p54:e398",
+              "p53:e388"
+            ]
+          }
+        ],
+        "reason": "핵심 방법 진술('단일 데이터 측정 검증 과정에서 warm up 코드를 먼저 넣음')은 p54:e397('단일 데이터 측정 에 대해서 검증하기')과 p54:e398('먼저 warm up 코드 넣었다')로 지지되어 P0054F0004와 일치함. 그러나 대상에 추가된 '(optimizing.exe)' 구체화, limits·observations의 '측정 & 검증 완료', '교수님 초기화 비용 언급', '발표 자투리 처리 예정' 등은 p54:e397/e398 범위에 없고 p53:e388('b. 단일 데이터(optimizing.exe)에 대해서도 warm up 이 얼마나 영향미치는지 측정하기 ⇐ 측정 & 검증 완료 (이건 근데 발표에서 교수님이 초기화 비용때문이겠지 라고 말씀하셔서.. 일단 자투리로 넣던가 하자)')에 존재함. 따라서 p53:e388을 출처로 연결하여 missing_support를 해소함. 핵심 방법은 P0054F0004와 중복되나 부가 세부(optimizing.exe, 측정 완료, 교수 언급, 발표 계획)를 보존하기 위해 수리 후 대표 ID는 P0054F0004로 유지함."
+      }
+    }
+  }
+}

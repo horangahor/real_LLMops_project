@@ -1,0 +1,360 @@
+{
+  "request_fingerprint": "db61af0229932dbad3a53481ace61ca05fcd408c25295a986adb099d7a3343fc",
+  "value": {
+    "facts": [
+      {
+        "statement": "실시간 PCIe H2D 전송 최적화를 위해 데이터셋 메모리를 cudaHostRegister로 pinned memory로 등록했으며, N>0일 때만 등록하고 cudaHostRegisterDefault 플래그를 사용했다.",
+        "limits": "등록 성공/실패 처리 및 출력 메시지는 코드에 명시된 범위로 한정됨",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "N > 0",
+          "cudaHostRegisterDefault",
+          "실시간 PCIe H2D 전송 최적화 목적"
+        ],
+        "observations": [
+          "GPU가 CPU 메모리에 직접 접근 가능",
+          "데이터셋 전송 속도 향상 목적",
+          "5, 6G 환경에서의 실시간 입력 속도 재현 목적"
+        ],
+        "parameters": [
+          {
+            "name": "register_flag",
+            "value": "cudaHostRegisterDefault",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          },
+          {
+            "name": "register_size",
+            "value": "(size_t)N * sizeof(Vector)",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          },
+          {
+            "name": "register_pointer",
+            "value": "dataset.data()",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e0"
+        ]
+      },
+      {
+        "statement": "cudaHostRegister 등록 성공 시 'Dataset host memory pinned via cudaHostRegister (<MB> MB, zero CPU blocking DMA enabled).'를 출력하고, 실패 시 cudaGetErrorString(reg_err)를 포함한 Notice를 출력한다.",
+        "limits": "출력 메시지와 오류 처리 방식은 코드에 명시된 범위로 한정됨",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaHostRegister 성공/실패 분기"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e0"
+        ]
+      },
+      {
+        "statement": "커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, cpu 계산 오버헤드가 더 큰 것 같아 시간이 늘었다.",
+        "limits": "cpu 계산 오버헤드와 시간 증가의 정량적 비교는 느낌 수준의 진술로 남음",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "MAXDIM 512 float 복사",
+          "필요한 만큼만 복사"
+        ],
+        "observations": [
+          "cpu 계산 오버헤드 증가 가능성",
+          "시간 증가"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p60:e462",
+          "p60:enh:e3"
+        ]
+      },
+      {
+        "statement": "cudaMemcpyAsync로 out_bytes만큼 d_final_lower, d_final_upper를 Host로 복사하고 cudaStreamSynchronize(stream)를 수행했다.",
+        "limits": "out_bytes는 sizeof(int) + out_dim * sizeof(float)로 계산됨",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaMemcpyAsync",
+          "cudaStreamSynchronize"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "out_bytes",
+            "value": "sizeof(int) + (size_t)out_dim * sizeof(float)",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e4"
+            ]
+          },
+          {
+            "name": "copy_kind",
+            "value": "cudaMemcpyDeviceToHost",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e4"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e4"
+        ]
+      },
+      {
+        "statement": "forward_cuda_graph의 전체 시간이 약 983s 정도이고, cpu에서 필요한 만큼만 계산한 뒤 복사한 시간이 1055 정도이며 72초 차이가 나 더 느려졌다.",
+        "limits": "두 값의 정확한 측정 조건과 비교 기준은 문맥상 서로 다른 실행 방식으로 언급됨",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward_cuda_graph",
+          "cpu 계산 후 복사 방식"
+        ],
+        "observations": [
+          "72초 차이",
+          "더 느려짐"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "forward_cuda_graph 전체 시간",
+            "value": "983",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "forward_cuda_graph",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e9"
+            ]
+          },
+          {
+            "metric": "cpu 계산 후 복사 시간",
+            "value": "1055",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cpu에서 필요한 만큼만 계산 후 복사",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e9"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p60:e467",
+          "p60:enh:e9",
+          "p60:enh:e10"
+        ]
+      },
+      {
+        "statement": "cudaMemcpyAsync 복사 크기를 512 float에서 필요한 만큼으로 변경한 후 측정한 결과, forward_cuda_graph는 983.5557s, 실시간 멀티스트림 forward_cuda_graph는 1055.282s로 나타났다.",
+        "limits": "표의 수치는 소수점 포함 원본 값이며, 두 행은 서로 다른 실행 방식(graph 단독 vs 실시간 멀티스트림)에 해당함",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "40000 샘플",
+          "23 eps"
+        ],
+        "observations": [
+          "forward_cuda_graph_fused는 bound 시간이 0으로 표시됨"
+        ],
+        "parameters": [
+          {
+            "name": "sample_count",
+            "value": "40000",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p60:enh:e8"
+            ]
+          },
+          {
+            "name": "eps_count",
+            "value": "23",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p60:enh:e8"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "forward_cuda_graph 총 시간",
+            "value": "983.5557",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "graph 단독, 40000 샘플, 23 eps",
+            "element_ids": [
+              "p60:enh:e8"
+            ]
+          },
+          {
+            "metric": "forward_cuda_graph infer 시간",
+            "value": "111.8191",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "graph 단독, 40000 샘플, 23 eps",
+            "element_ids": [
+              "p60:enh:e8"
+            ]
+          },
+          {
+            "metric": "forward_cuda_graph bound 시간",
+            "value": "869.6823",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "graph 단독, 40000 샘플, 23 eps",
+            "element_ids": [
+              "p60:enh:e8"
+            ]
+          },
+          {
+            "metric": "실시간 멀티스트림 forward_cuda_graph 총 시간",
+            "value": "1055.282",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "실시간 멀티스트림, 40000 샘플, 23 eps",
+            "element_ids": [
+              "p60:enh:e8"
+            ]
+          },
+          {
+            "metric": "실시간 멀티스트림 forward_cuda_graph infer 시간",
+            "value": "131.7986",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "실시간 멀티스트림, 40000 샘플, 23 eps",
+            "element_ids": [
+              "p60:enh:e8"
+            ]
+          },
+          {
+            "metric": "실시간 멀티스트림 forward_cuda_graph bound 시간",
+            "value": "920.8438",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "실시간 멀티스트림, 40000 샘플, 23 eps",
+            "element_ids": [
+              "p60:enh:e8"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p60:enh:e8"
+        ]
+      },
+      {
+        "statement": "cudaEvent 하드웨어 타이머 측정은 시스템 인자로 제어하며, 0은 비활성화(최고 속도), 1은 마지막 샘플만 1회 측정(기본값), 2는 매 샘플마다 측정하여 92만 번 전체 정밀 측정 시 호출당 20~50us 드라이버 오버헤드가 발생한다.",
+        "limits": "측정 오버헤드 수치는 주의 사항으로 언급됨",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "measure_gpu 시스템 인자",
+          "argc > 8 && strlen(argv[8]) > 0"
+        ],
+        "observations": [
+          "measure_gpu=2 시 호출당 20~50us 드라이버 오버헤드 발생 주의"
+        ],
+        "parameters": [
+          {
+            "name": "measure_gpu_option_0",
+            "value": "비활성화 (Off, 드라이버 오버헤드 0, 최고 속도)",
+            "value_kind": "text",
+            "element_ids": [
+              "p61:e471"
+            ]
+          },
+          {
+            "name": "measure_gpu_option_1",
+            "value": "마지막 샘플만 1회 측정 (Last sample only, 전체 루프 오버헤드 0초 + 맨 마지막 Pure GPU 시간 리포트, 기본값)",
+            "value_kind": "text",
+            "element_ids": [
+              "p61:e471"
+            ]
+          },
+          {
+            "name": "measure_gpu_option_2",
+            "value": "매 샘플마다 측정 (All samples, 92만 번 전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)",
+            "value_kind": "text",
+            "element_ids": [
+              "p61:e471"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p61:e471"
+        ]
+      },
+      {
+        "statement": "시간 증가의 원인으로 cudaMemcpy CPU 계산, cudaEvent 커널 측정, GPU 클럭 세 가지가 의심된다.",
+        "limits": "원인은 가설 수준이며 확정적이지 않음",
+        "kind": "method",
+        "claim_status": "hypothesis",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e473"
+        ]
+      },
+      {
+        "statement": "graph만 적용한 이전 버전이 더 빠르며, topk 속도는 빨라져서 이 부분은 빼먹을 수 있을지도 모른다.",
+        "limits": "topk 속도 개선의 정량적 수치는 명시되지 않음",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "graph만 적용한 버전",
+          "커밋 이전 버전"
+        ],
+        "observations": [
+          "graph만 적용한 버전이 더 빠름",
+          "topk 속도 향상"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e475",
+          "p61:e477"
+        ]
+      },
+      {
+        "statement": "빼먹을 부분으로 데이터셋 pinnedMemory, 검증(heap->stack) 배열, cudaEvent(Nsight Compute 분석 위해 필요)가 정리되었다.",
+        "limits": "각 항목의 구체적 구현 내용은 별도 문서 참조",
+        "kind": "method",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e479"
+        ]
+      }
+    ]
+  }
+}

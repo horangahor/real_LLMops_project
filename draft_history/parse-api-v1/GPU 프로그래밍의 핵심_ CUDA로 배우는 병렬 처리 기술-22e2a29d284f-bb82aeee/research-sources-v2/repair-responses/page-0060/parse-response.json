@@ -1,0 +1,354 @@
+{
+  "api": "2.0",
+  "content": {
+    "html": "<pre id='0'><code>// 실시간 PCIe H2D 전송 최적화: Host Memory Pinning (cudaHostRegister)\n// pinned memory 를 써서 GPU가 CPU 메모리에 직접 접근할 수 있도록 하며 데이터셋 전송 속도 향상\n// 왜 이걸 했냐 하면 실제 상황 최대한 재현을 위한 것 (5 , 6G 환경에서의 실시간 입력 속도를 최대한 재현하기 위함)\nbool dataset_pinned = false;\nif (N &gt; 0) {\n    // cudaHostRegister : 일반 메모리로 만들어진 메모리 영역을 복사 없이 pinned Memory 로 승격시켜줌\n    // 인자로 시작 포인터 dataset.data() / 등록할 메모리 크기 (N * sizeof(Vector))\n    // 플래그 cudaHostRegisterDefault (가장 일반적인 pinning 옵션)\n    cudaError_t reg_err = cudaHostRegister(dataset.data(), (size_t)N * sizeof(Vector), cudaHostRegisterDefault);\n    if (reg_err == cudaSuccess) { // 여기서 cudaSuccess는 cuda에서 쓰는 성공 고유 상태코드\n        dataset_pinned = true;\n        std::cout &lt;&lt; &#34;Dataset host memory pinned via cudaHostRegister (&#34;\n                    &lt;&lt; ((size_t)N * sizeof(Vector)) / (1024 * 1024) &lt;&lt; &#34; MB, zero CPU blocking DMA enabled).&#34; &lt;&lt; std::endl;\n    } else {\n        std::cout &lt;&lt; &#34;Notice: cudaHostRegister skipped (&#34; &lt;&lt; cudaGetErrorString(reg_err) &lt;&lt; &#34;).&#34; &lt;&lt; std::endl;\n    }\n}</code></pre>\n<p id='1' data-category='paragraph'>+</p>\n<p id='2' data-category='paragraph'>커널 memcpy에서 기존에 MAXDIM으로 무조건 512 개의 float만큼 복사했는데, 이걸 고쳤다..</p>\n<p id='3' data-category='paragraph'>필요한 만큼의 데이터 크기만 복사해서 주도록 (근데 여기서 cpu 계산 오버헤드가 더 큰 것 같기도 하고 , 왜냐하면 시간이 늘었음)</p>\n<pre id='4'><code>// 이것도 16개 노드 * 두개의 바운드 해서 총 32 (* 4byte)만 딱 가져오려고\nconst size_t out_bytes = sizeof(int) + (size_t)out_dim * sizeof(float);\ncudaMemcpyAsync(h_final_lower, d_final_lower, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaMemcpyAsync(h_final_upper, d_final_upper, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaStreamSynchronize(stream);</code></pre>\n<p id='5' data-category='paragraph'>예를 들어 이런 거,</p>\n<p id='6' data-category='paragraph'>자세한 내용은 아래 문서 링크 참조</p>\n<p id='7' data-category='paragraph'><u>단일 샘플 빠르게 입력</u></p>\n<table id='8'><tr><td>#######</td><td>forward_cuda_graph</td><td>40000</td><td>23</td><td>983.5557</td><td>111.8191</td><td>869.6823</td><td>1.958</td><td>0.1215</td><td>0.9453</td><td>0.0021</td></tr><tr><td>#######</td><td>backward_cuda_graph</td><td>40000</td><td>23</td><td>1134.724</td><td>111.6514</td><td>1021.007</td><td>1.9707</td><td>0.1214</td><td>1.1098</td><td>0.0021</td></tr><tr><td>#######</td><td>forward_cuda_graph_fused</td><td>40000</td><td>23</td><td>1006.863</td><td>0</td><td>1004.825</td><td>1.9407</td><td>0</td><td>1.0922</td><td>0.0021</td></tr><tr><td>#######</td><td>backward_cuda_graph_fus</td><td>40000</td><td>23</td><td>1116.847</td><td>0</td><td>1114.759</td><td>1.9908</td><td>0</td><td>1.2117</td><td>0.0022</td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td colspan=\"11\">실시간 멀티스트림</td></tr><tr><td>#######</td><td>forward_cuda_graph</td><td>40000</td><td>23</td><td>1055.282</td><td>131.7986</td><td>920.8438</td><td>1.5972</td><td>0.1433</td><td>1.0009</td><td>0.0017</td></tr></table>\n<p id='9' data-category='paragraph'>위의 forward_cuda_graph 가 983s 정도가 전체 시간이고 , 아래의 1055가 cpu에서 필요한만큼만 계산한 뒤 복사한 시간임</p>\n<p id='10' data-category='paragraph'>72초 차이 나는데 (더 늦어짐..)</p>\n<p id='11' data-category='paragraph'>일단 마지막 1055의 자세한 측정 결과를 보면</p>",
+    "markdown": "```\n// 실시간 PCIe H2D 전송 최적화: Host Memory Pinning (cudaHostRegister)\n// pinned memory 를 써서 GPU가 CPU 메모리에 직접 접근할 수 있도록 하며 데이터셋 전송 속도 향상\n// 왜 이걸 했냐 하면 실제 상황 최대한 재현을 위한 것 (5 , 6G 환경에서의 실시간 입력 속도를 최대한 재현하기 위함)\nbool dataset_pinned = false;\nif (N > 0) {\n    // cudaHostRegister : 일반 메모리로 만들어진 메모리 영역을 복사 없이 pinned Memory 로 승격시켜줌\n    // 인자로 시작 포인터 dataset.data() / 등록할 메모리 크기 (N * sizeof(Vector))\n    // 플래그 cudaHostRegisterDefault (가장 일반적인 pinning 옵션)\n    cudaError_t reg_err = cudaHostRegister(dataset.data(), (size_t)N * sizeof(Vector), cudaHostRegisterDefault);\n    if (reg_err == cudaSuccess) { // 여기서 cudaSuccess는 cuda에서 쓰는 성공 고유 상태코드\n        dataset_pinned = true;\n        std::cout << \"Dataset host memory pinned via cudaHostRegister (\"\n                    << ((size_t)N * sizeof(Vector)) / (1024 * 1024) << \" MB, zero CPU blocking DMA enabled).\" << std::endl;\n    } else {\n        std::cout << \"Notice: cudaHostRegister skipped (\" << cudaGetErrorString(reg_err) << \").\" << std::endl;\n    }\n}\n```\n\n+\n\n커널 memcpy에서 기존에 MAXDIM으로 무조건 512 개의 float만큼 복사했는데, 이걸 고쳤다..\n\n필요한 만큼의 데이터 크기만 복사해서 주도록 (근데 여기서 cpu 계산 오버헤드가 더 큰 것 같기도 하고 , 왜냐하면 시간이 늘었음)\n\n```\n// 이것도 16개 노드 * 두개의 바운드 해서 총 32 (* 4byte)만 딱 가져오려고\nconst size_t out_bytes = sizeof(int) + (size_t)out_dim * sizeof(float);\ncudaMemcpyAsync(h_final_lower, d_final_lower, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaMemcpyAsync(h_final_upper, d_final_upper, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaStreamSynchronize(stream);\n```\n\n예를 들어 이런 거,\n\n자세한 내용은 아래 문서 링크 참조\n\n<u>단일 샘플 빠르게 입력</u>\n\n| ####### | forward_cuda_graph | 40000 | 23 | 983.5557 | 111.8191 | 869.6823 | 1.958 | 0.1215 | 0.9453 | 0.0021 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| ####### | backward_cuda_graph | 40000 | 23 | 1134.724 | 111.6514 | 1021.007 | 1.9707 | 0.1214 | 1.1098 | 0.0021 |\n| ####### | forward_cuda_graph_fused | 40000 | 23 | 1006.863 | 0 | 1004.825 | 1.9407 | 0 | 1.0922 | 0.0021 |\n| ####### | backward_cuda_graph_fus | 40000 | 23 | 1116.847 | 0 | 1114.759 | 1.9908 | 0 | 1.2117 | 0.0022 |\n|  |  |  |  |  |  |  |  |  |  |  |\n| 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 |\n| ####### | forward_cuda_graph | 40000 | 23 | 1055.282 | 131.7986 | 920.8438 | 1.5972 | 0.1433 | 1.0009 | 0.0017 |\n\n\n위의 forward_cuda_graph 가 983s 정도가 전체 시간이고 , 아래의 1055가 cpu에서 필요한만큼만 계산한 뒤 복사한 시간임\n\n72초 차이 나는데 (더 늦어짐..)\n\n일단 마지막 1055의 자세한 측정 결과를 보면",
+    "text": "// 실시간 PCIe H2D 전송 최적화: Host Memory Pinning (cudaHostRegister)\n// pinned memory 를 써서 GPU가 CPU 메모리에 직접 접근할 수 있도록 하며 데이터셋 전송 속도 향상\n// 왜 이걸 했냐 하면 실제 상황 최대한 재현을 위한 것 (5 , 6G 환경에서의 실시간 입력 속도를 최대한 재현하기 위함)\nbool dataset_pinned = false;\nif (N > 0) {\n    // cudaHostRegister : 일반 메모리로 만들어진 메모리 영역을 복사 없이 pinned Memory 로 승격시켜줌\n    // 인자로 시작 포인터 dataset.data() / 등록할 메모리 크기 (N * sizeof(Vector))\n    // 플래그 cudaHostRegisterDefault (가장 일반적인 pinning 옵션)\n    cudaError_t reg_err = cudaHostRegister(dataset.data(), (size_t)N * sizeof(Vector), cudaHostRegisterDefault);\n    if (reg_err == cudaSuccess) { // 여기서 cudaSuccess는 cuda에서 쓰는 성공 고유 상태코드\n        dataset_pinned = true;\n        std::cout << \"Dataset host memory pinned via cudaHostRegister (\"\n                    << ((size_t)N * sizeof(Vector)) / (1024 * 1024) << \" MB, zero CPU blocking DMA enabled).\" << std::endl;\n    } else {\n        std::cout << \"Notice: cudaHostRegister skipped (\" << cudaGetErrorString(reg_err) << \").\" << std::endl;\n    }\n}\n+\n커널 memcpy에서 기존에 MAXDIM으로 무조건 512 개의 float만큼 복사했는데, 이걸 고쳤다..\n필요한 만큼의 데이터 크기만 복사해서 주도록 (근데 여기서 cpu 계산 오버헤드가 더 큰 것 같기도 하고 , 왜냐하면 시간이 늘었음)\n// 이것도 16개 노드 * 두개의 바운드 해서 총 32 (* 4byte)만 딱 가져오려고\nconst size_t out_bytes = sizeof(int) + (size_t)out_dim * sizeof(float);\ncudaMemcpyAsync(h_final_lower, d_final_lower, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaMemcpyAsync(h_final_upper, d_final_upper, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaStreamSynchronize(stream);\n예를 들어 이런 거,\n자세한 내용은 아래 문서 링크 참조\n단일 샘플 빠르게 입력\n| ####### | forward_cuda_graph | 40000 | 23 | 983.5557 | 111.8191 | 869.6823 | 1.958 | 0.1215 | 0.9453 | 0.0021 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| ####### | backward_cuda_graph | 40000 | 23 | 1134.724 | 111.6514 | 1021.007 | 1.9707 | 0.1214 | 1.1098 | 0.0021 |\n| ####### | forward_cuda_graph_fused | 40000 | 23 | 1006.863 | 0 | 1004.825 | 1.9407 | 0 | 1.0922 | 0.0021 |\n| ####### | backward_cuda_graph_fus | 40000 | 23 | 1116.847 | 0 | 1114.759 | 1.9908 | 0 | 1.2117 | 0.0022 |\n|  |  |  |  |  |  |  |  |  |  |  |\n| 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 |\n| ####### | forward_cuda_graph | 40000 | 23 | 1055.282 | 131.7986 | 920.8438 | 1.5972 | 0.1433 | 1.0009 | 0.0017 |\n\n위의 forward_cuda_graph 가 983s 정도가 전체 시간이고 , 아래의 1055가 cpu에서 필요한만큼만 계산한 뒤 복사한 시간임\n72초 차이 나는데 (더 늦어짐..)\n일단 마지막 1055의 자세한 측정 결과를 보면"
+  },
+  "elements": [
+    {
+      "id": 0,
+      "page": 1,
+      "category": "code",
+      "content": {
+        "html": "<pre id='0'><code>// 실시간 PCIe H2D 전송 최적화: Host Memory Pinning (cudaHostRegister)\n// pinned memory 를 써서 GPU가 CPU 메모리에 직접 접근할 수 있도록 하며 데이터셋 전송 속도 향상\n// 왜 이걸 했냐 하면 실제 상황 최대한 재현을 위한 것 (5 , 6G 환경에서의 실시간 입력 속도를 최대한 재현하기 위함)\nbool dataset_pinned = false;\nif (N &gt; 0) {\n    // cudaHostRegister : 일반 메모리로 만들어진 메모리 영역을 복사 없이 pinned Memory 로 승격시켜줌\n    // 인자로 시작 포인터 dataset.data() / 등록할 메모리 크기 (N * sizeof(Vector))\n    // 플래그 cudaHostRegisterDefault (가장 일반적인 pinning 옵션)\n    cudaError_t reg_err = cudaHostRegister(dataset.data(), (size_t)N * sizeof(Vector), cudaHostRegisterDefault);\n    if (reg_err == cudaSuccess) { // 여기서 cudaSuccess는 cuda에서 쓰는 성공 고유 상태코드\n        dataset_pinned = true;\n        std::cout &lt;&lt; &#34;Dataset host memory pinned via cudaHostRegister (&#34;\n                    &lt;&lt; ((size_t)N * sizeof(Vector)) / (1024 * 1024) &lt;&lt; &#34; MB, zero CPU blocking DMA enabled).&#34; &lt;&lt; std::endl;\n    } else {\n        std::cout &lt;&lt; &#34;Notice: cudaHostRegister skipped (&#34; &lt;&lt; cudaGetErrorString(reg_err) &lt;&lt; &#34;).&#34; &lt;&lt; std::endl;\n    }\n}</code></pre>",
+        "markdown": "```\n// 실시간 PCIe H2D 전송 최적화: Host Memory Pinning (cudaHostRegister)\n// pinned memory 를 써서 GPU가 CPU 메모리에 직접 접근할 수 있도록 하며 데이터셋 전송 속도 향상\n// 왜 이걸 했냐 하면 실제 상황 최대한 재현을 위한 것 (5 , 6G 환경에서의 실시간 입력 속도를 최대한 재현하기 위함)\nbool dataset_pinned = false;\nif (N > 0) {\n    // cudaHostRegister : 일반 메모리로 만들어진 메모리 영역을 복사 없이 pinned Memory 로 승격시켜줌\n    // 인자로 시작 포인터 dataset.data() / 등록할 메모리 크기 (N * sizeof(Vector))\n    // 플래그 cudaHostRegisterDefault (가장 일반적인 pinning 옵션)\n    cudaError_t reg_err = cudaHostRegister(dataset.data(), (size_t)N * sizeof(Vector), cudaHostRegisterDefault);\n    if (reg_err == cudaSuccess) { // 여기서 cudaSuccess는 cuda에서 쓰는 성공 고유 상태코드\n        dataset_pinned = true;\n        std::cout << \"Dataset host memory pinned via cudaHostRegister (\"\n                    << ((size_t)N * sizeof(Vector)) / (1024 * 1024) << \" MB, zero CPU blocking DMA enabled).\" << std::endl;\n    } else {\n        std::cout << \"Notice: cudaHostRegister skipped (\" << cudaGetErrorString(reg_err) << \").\" << std::endl;\n    }\n}\n```",
+        "text": "// 실시간 PCIe H2D 전송 최적화: Host Memory Pinning (cudaHostRegister)\n// pinned memory 를 써서 GPU가 CPU 메모리에 직접 접근할 수 있도록 하며 데이터셋 전송 속도 향상\n// 왜 이걸 했냐 하면 실제 상황 최대한 재현을 위한 것 (5 , 6G 환경에서의 실시간 입력 속도를 최대한 재현하기 위함)\nbool dataset_pinned = false;\nif (N > 0) {\n    // cudaHostRegister : 일반 메모리로 만들어진 메모리 영역을 복사 없이 pinned Memory 로 승격시켜줌\n    // 인자로 시작 포인터 dataset.data() / 등록할 메모리 크기 (N * sizeof(Vector))\n    // 플래그 cudaHostRegisterDefault (가장 일반적인 pinning 옵션)\n    cudaError_t reg_err = cudaHostRegister(dataset.data(), (size_t)N * sizeof(Vector), cudaHostRegisterDefault);\n    if (reg_err == cudaSuccess) { // 여기서 cudaSuccess는 cuda에서 쓰는 성공 고유 상태코드\n        dataset_pinned = true;\n        std::cout << \"Dataset host memory pinned via cudaHostRegister (\"\n                    << ((size_t)N * sizeof(Vector)) / (1024 * 1024) << \" MB, zero CPU blocking DMA enabled).\" << std::endl;\n    } else {\n        std::cout << \"Notice: cudaHostRegister skipped (\" << cudaGetErrorString(reg_err) << \").\" << std::endl;\n    }\n}"
+      },
+      "coordinates": [
+        {
+          "x": 0.127,
+          "y": 0.092
+        },
+        {
+          "x": 0.873,
+          "y": 0.092
+        },
+        {
+          "x": 0.873,
+          "y": 0.314
+        },
+        {
+          "x": 0.127,
+          "y": 0.314
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='1' data-category='paragraph'>+</p>",
+        "markdown": "+",
+        "text": "+"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.328
+        },
+        {
+          "x": 0.133,
+          "y": 0.328
+        },
+        {
+          "x": 0.133,
+          "y": 0.339
+        },
+        {
+          "x": 0.117,
+          "y": 0.339
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='2' data-category='paragraph'>커널 memcpy에서 기존에 MAXDIM으로 무조건 512 개의 float만큼 복사했는데, 이걸 고쳤다..</p>",
+        "markdown": "커널 memcpy에서 기존에 MAXDIM으로 무조건 512 개의 float만큼 복사했는데, 이걸 고쳤다..",
+        "text": "커널 memcpy에서 기존에 MAXDIM으로 무조건 512 개의 float만큼 복사했는데, 이걸 고쳤다.."
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.36
+        },
+        {
+          "x": 0.816,
+          "y": 0.36
+        },
+        {
+          "x": 0.816,
+          "y": 0.392
+        },
+        {
+          "x": 0.116,
+          "y": 0.392
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='3' data-category='paragraph'>필요한 만큼의 데이터 크기만 복사해서 주도록 (근데 여기서 cpu 계산 오버헤드가 더 큰 것 같기도 하고 , 왜냐하면 시간이 늘었음)</p>",
+        "markdown": "필요한 만큼의 데이터 크기만 복사해서 주도록 (근데 여기서 cpu 계산 오버헤드가 더 큰 것 같기도 하고 , 왜냐하면 시간이 늘었음)",
+        "text": "필요한 만큼의 데이터 크기만 복사해서 주도록 (근데 여기서 cpu 계산 오버헤드가 더 큰 것 같기도 하고 , 왜냐하면 시간이 늘었음)"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.395
+        },
+        {
+          "x": 0.867,
+          "y": 0.395
+        },
+        {
+          "x": 0.867,
+          "y": 0.429
+        },
+        {
+          "x": 0.116,
+          "y": 0.429
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "page": 1,
+      "category": "code",
+      "content": {
+        "html": "<pre id='4'><code>// 이것도 16개 노드 * 두개의 바운드 해서 총 32 (* 4byte)만 딱 가져오려고\nconst size_t out_bytes = sizeof(int) + (size_t)out_dim * sizeof(float);\ncudaMemcpyAsync(h_final_lower, d_final_lower, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaMemcpyAsync(h_final_upper, d_final_upper, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaStreamSynchronize(stream);</code></pre>",
+        "markdown": "```\n// 이것도 16개 노드 * 두개의 바운드 해서 총 32 (* 4byte)만 딱 가져오려고\nconst size_t out_bytes = sizeof(int) + (size_t)out_dim * sizeof(float);\ncudaMemcpyAsync(h_final_lower, d_final_lower, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaMemcpyAsync(h_final_upper, d_final_upper, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaStreamSynchronize(stream);\n```",
+        "text": "// 이것도 16개 노드 * 두개의 바운드 해서 총 32 (* 4byte)만 딱 가져오려고\nconst size_t out_bytes = sizeof(int) + (size_t)out_dim * sizeof(float);\ncudaMemcpyAsync(h_final_lower, d_final_lower, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaMemcpyAsync(h_final_upper, d_final_upper, out_bytes, cudaMemcpyDeviceToHost, stream);\ncudaStreamSynchronize(stream);"
+      },
+      "coordinates": [
+        {
+          "x": 0.121,
+          "y": 0.434
+        },
+        {
+          "x": 0.861,
+          "y": 0.434
+        },
+        {
+          "x": 0.861,
+          "y": 0.509
+        },
+        {
+          "x": 0.121,
+          "y": 0.509
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='5' data-category='paragraph'>예를 들어 이런 거,</p>",
+        "markdown": "예를 들어 이런 거,",
+        "text": "예를 들어 이런 거,"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.515
+        },
+        {
+          "x": 0.275,
+          "y": 0.515
+        },
+        {
+          "x": 0.275,
+          "y": 0.532
+        },
+        {
+          "x": 0.117,
+          "y": 0.532
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='6' data-category='paragraph'>자세한 내용은 아래 문서 링크 참조</p>",
+        "markdown": "자세한 내용은 아래 문서 링크 참조",
+        "text": "자세한 내용은 아래 문서 링크 참조"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.55
+        },
+        {
+          "x": 0.411,
+          "y": 0.55
+        },
+        {
+          "x": 0.411,
+          "y": 0.565
+        },
+        {
+          "x": 0.117,
+          "y": 0.565
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='7' data-category='paragraph'><u>단일 샘플 빠르게 입력</u></p>",
+        "markdown": "<u>단일 샘플 빠르게 입력</u>",
+        "text": "단일 샘플 빠르게 입력"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.567
+        },
+        {
+          "x": 0.307,
+          "y": 0.567
+        },
+        {
+          "x": 0.307,
+          "y": 0.582
+        },
+        {
+          "x": 0.117,
+          "y": 0.582
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "page": 1,
+      "category": "table",
+      "content": {
+        "html": "<table id='8'><tr><td>#######</td><td>forward_cuda_graph</td><td>40000</td><td>23</td><td>983.5557</td><td>111.8191</td><td>869.6823</td><td>1.958</td><td>0.1215</td><td>0.9453</td><td>0.0021</td></tr><tr><td>#######</td><td>backward_cuda_graph</td><td>40000</td><td>23</td><td>1134.724</td><td>111.6514</td><td>1021.007</td><td>1.9707</td><td>0.1214</td><td>1.1098</td><td>0.0021</td></tr><tr><td>#######</td><td>forward_cuda_graph_fused</td><td>40000</td><td>23</td><td>1006.863</td><td>0</td><td>1004.825</td><td>1.9407</td><td>0</td><td>1.0922</td><td>0.0021</td></tr><tr><td>#######</td><td>backward_cuda_graph_fus</td><td>40000</td><td>23</td><td>1116.847</td><td>0</td><td>1114.759</td><td>1.9908</td><td>0</td><td>1.2117</td><td>0.0022</td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td colspan=\"11\">실시간 멀티스트림</td></tr><tr><td>#######</td><td>forward_cuda_graph</td><td>40000</td><td>23</td><td>1055.282</td><td>131.7986</td><td>920.8438</td><td>1.5972</td><td>0.1433</td><td>1.0009</td><td>0.0017</td></tr></table>",
+        "markdown": "| ####### | forward_cuda_graph | 40000 | 23 | 983.5557 | 111.8191 | 869.6823 | 1.958 | 0.1215 | 0.9453 | 0.0021 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| ####### | backward_cuda_graph | 40000 | 23 | 1134.724 | 111.6514 | 1021.007 | 1.9707 | 0.1214 | 1.1098 | 0.0021 |\n| ####### | forward_cuda_graph_fused | 40000 | 23 | 1006.863 | 0 | 1004.825 | 1.9407 | 0 | 1.0922 | 0.0021 |\n| ####### | backward_cuda_graph_fus | 40000 | 23 | 1116.847 | 0 | 1114.759 | 1.9908 | 0 | 1.2117 | 0.0022 |\n|  |  |  |  |  |  |  |  |  |  |  |\n| 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 |\n| ####### | forward_cuda_graph | 40000 | 23 | 1055.282 | 131.7986 | 920.8438 | 1.5972 | 0.1433 | 1.0009 | 0.0017 |\n",
+        "text": "| ####### | forward_cuda_graph | 40000 | 23 | 983.5557 | 111.8191 | 869.6823 | 1.958 | 0.1215 | 0.9453 | 0.0021 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| ####### | backward_cuda_graph | 40000 | 23 | 1134.724 | 111.6514 | 1021.007 | 1.9707 | 0.1214 | 1.1098 | 0.0021 |\n| ####### | forward_cuda_graph_fused | 40000 | 23 | 1006.863 | 0 | 1004.825 | 1.9407 | 0 | 1.0922 | 0.0021 |\n| ####### | backward_cuda_graph_fus | 40000 | 23 | 1116.847 | 0 | 1114.759 | 1.9908 | 0 | 1.2117 | 0.0022 |\n|  |  |  |  |  |  |  |  |  |  |  |\n| 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 | 실시간 멀티스트림 |\n| ####### | forward_cuda_graph | 40000 | 23 | 1055.282 | 131.7986 | 920.8438 | 1.5972 | 0.1433 | 1.0009 | 0.0017 |\n"
+      },
+      "coordinates": [
+        {
+          "x": 0.121,
+          "y": 0.603
+        },
+        {
+          "x": 0.882,
+          "y": 0.603
+        },
+        {
+          "x": 0.882,
+          "y": 0.672
+        },
+        {
+          "x": 0.121,
+          "y": 0.672
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='9' data-category='paragraph'>위의 forward_cuda_graph 가 983s 정도가 전체 시간이고 , 아래의 1055가 cpu에서 필요한만큼만 계산한 뒤 복사한 시간임</p>",
+        "markdown": "위의 forward_cuda_graph 가 983s 정도가 전체 시간이고 , 아래의 1055가 cpu에서 필요한만큼만 계산한 뒤 복사한 시간임",
+        "text": "위의 forward_cuda_graph 가 983s 정도가 전체 시간이고 , 아래의 1055가 cpu에서 필요한만큼만 계산한 뒤 복사한 시간임"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.693
+        },
+        {
+          "x": 0.796,
+          "y": 0.693
+        },
+        {
+          "x": 0.796,
+          "y": 0.725
+        },
+        {
+          "x": 0.116,
+          "y": 0.725
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='10' data-category='paragraph'>72초 차이 나는데 (더 늦어짐..)</p>",
+        "markdown": "72초 차이 나는데 (더 늦어짐..)",
+        "text": "72초 차이 나는데 (더 늦어짐..)"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.728
+        },
+        {
+          "x": 0.375,
+          "y": 0.728
+        },
+        {
+          "x": 0.375,
+          "y": 0.744
+        },
+        {
+          "x": 0.117,
+          "y": 0.744
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='11' data-category='paragraph'>일단 마지막 1055의 자세한 측정 결과를 보면</p>",
+        "markdown": "일단 마지막 1055의 자세한 측정 결과를 보면",
+        "text": "일단 마지막 1055의 자세한 측정 결과를 보면"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.745
+        },
+        {
+          "x": 0.493,
+          "y": 0.745
+        },
+        {
+          "x": 0.493,
+          "y": 0.76
+        },
+        {
+          "x": 0.117,
+          "y": 0.76
+        }
+      ]
+    }
+  ],
+  "model": "document-parse-260930",
+  "ocr": true,
+  "usage": {
+    "pages": 1,
+    "enhanced": [
+      1
+    ]
+  }
+}

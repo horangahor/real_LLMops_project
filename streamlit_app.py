@@ -151,6 +151,7 @@ if "full_paper_draft" not in st.session_state:
             st.session_state["full_paper_draft"] = latest["draft_markdown"]
             st.session_state["paper_plan"] = latest["plan"]
             st.session_state["planned_review"] = latest["review"]
+            st.session_state["planned_review_warnings"] = latest.get("review_warnings")
             st.session_state["draft_mode"] = "adaptive"
             st.session_state["draft_plan_fingerprint"] = plan_fingerprint(latest["plan"])
             st.session_state["is_legacy_draft"] = False
@@ -357,6 +358,7 @@ if generate_btn or plan_btn or extract_btn or requirements_btn or resume_request
                 st.session_state["is_legacy_draft"] = False
                 st.session_state["draft_mode"] = "adaptive" if adaptive else "legacy_cuda"
                 st.session_state["planned_review"] = pipeline_result.get("review") if adaptive else None
+                st.session_state["planned_review_warnings"] = pipeline_result.get("review_warnings") if adaptive else None
                 st.session_state["draft_plan_fingerprint"] = plan_fingerprint(pipeline_result["plan"]) if adaptive else None
             
             st.toast("✅ 근거 요구사항을 저장했습니다." if requirements_btn else "✅ 연구 근거를 자동 추출했습니다." if extract_btn else
@@ -435,6 +437,21 @@ else:
         st.caption("[확인 필요] 표시는 원자료 확인이 필요한 내용입니다.")
         if st.session_state.get("draft_mode") == "adaptive":
             st.caption("연구별 작성 계획을 적용한 초안입니다. 자동 검토는 독립적인 사실 검증이 아니므로 저자의 확인이 필요합니다.")
+            editorial_warnings = (st.session_state.get("planned_review") or {}).get("editorial_warnings", [])
+            content_warnings = (st.session_state.get("planned_review") or {}).get("content_warnings", [])
+            if content_warnings:
+                st.warning(f"소절 내용 보완 후 확인할 지적 {len(content_warnings)}개를 경고로 남겼습니다. 미해결 지적은 검토 경고 모음에서 확인할 수 있습니다.")
+            if editorial_warnings:
+                st.warning(f"편집 보완 후에도 확인할 사항 {len(editorial_warnings)}개가 남았습니다. 초안과 검토 기록을 함께 확인해주세요.")
+            warning_summary = st.session_state.get("planned_review_warnings")
+            if warning_summary and warning_summary.get("warning_count"):
+                with st.expander("검토 경고 모음"):
+                    for warning_stage in warning_summary["stages"]:
+                        st.markdown(f"**{warning_stage['heading']} · {warning_stage['stage']}**")
+                        for issue in warning_stage["warnings"]:
+                            st.write(f"- {issue['reason']}")
+                    st.download_button("검토 경고 JSON 저장", data=json.dumps(warning_summary, ensure_ascii=False, indent=2),
+                                       file_name="review-warnings.json", mime="application/json")
             with st.expander("계획·근거 검토 결과"):
                 st.json(st.session_state.get("planned_review", {}))
         elif REVIEW_JSON.exists():

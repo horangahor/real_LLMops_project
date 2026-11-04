@@ -1,0 +1,70 @@
+{
+  "request_fingerprint": "78dd8ddab8868a13ca3204b85b33649b57b9ff6dccf6383d1a8af8ffb0f1ca73",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "v2는 벡터 연산을 다시 CPU로 처리하고 메모리풀과 cuBLAS를 도입했으며 229ms였다.",
+          "limits": "CPU 기준(v0 96ms)과의 직접 비교는 이 문장만으로 확인되지 않음",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "MODE: GPU OPTIMIZED (cuBLAS + Pool)"
+          ],
+          "observations": [
+            "calc success",
+            "Output Dimension: 16",
+            "100ms정도 줄었지만 여전히 CPU보다 느림"
+          ],
+          "parameters": [
+            {
+              "name": "eps",
+              "value": "1e-06",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p5:e43"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "Elapsed time",
+              "value": "229.6918",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "MODE: GPU OPTIMIZED (cuBLAS + Pool)",
+              "element_ids": [
+                "p5:e43"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p5:e43",
+            "p5:e45",
+            "p5:e46",
+            "p8:e76"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "statement": "v2 적용 방안: 1) cuBLAS 미리 예열(계산 전 더미 matmul 호출), 2) 가중치(W) GPU에 사전 업로드(네트워크 로드 시 미리 업로드, matmul 호출마다 memcpy 삭제), 3) 16x491 행렬 등 필요한 부분만 복사(현재 512x512, 2MB 행렬 Memcpy 중)",
+          "limits": "각 방안의 개별 효과 측정은 이 문장만으로 확인되지 않음",
+          "kind": "setup",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p6:e51",
+            "p6:e52",
+            "p6:e53"
+          ]
+        }
+      ]
+    }
+  }
+}

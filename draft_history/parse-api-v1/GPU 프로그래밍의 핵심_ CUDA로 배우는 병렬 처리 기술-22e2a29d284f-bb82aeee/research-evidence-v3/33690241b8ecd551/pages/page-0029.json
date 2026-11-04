@@ -1,0 +1,1072 @@
+{
+  "initial": [
+    {
+      "statement": "느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문이라는 의견이 있었다.",
+      "limits": "해석/조언이며 실측 원인 분리는 아니다.",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e3",
+          "page": 29,
+          "quote": "느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0001"
+    },
+    {
+      "statement": " workload가 cuSPARSE에 불리한 이유로 행렬 크기가 작고 layer가 3개뿐이며, SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 크고, 매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 하며, network_forward()가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행하고, cuSPARSE는 대규모 sparse throughput에는 강하지만 작은 연산의 latency에는 custom kernel이 더 빠를 수 있다는 점이 제시되었다.",
+      "limits": "원인 설명은 조언/해석이며, 각 항목의 기여도는 정량 분리되지 않았다.",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e4",
+          "page": 29,
+          "quote": "행렬 크기가 작고 layer가 3개뿐임\nSpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼\n매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함\nnetwork_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함\ncuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0002"
+    },
+    {
+      "statement": "현재는 cuSPARSE가 적용된 부분이 network_forward()의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황이라고 설명했다.",
+      "limits": "24 ms는 기준선 언급이며, 해당 요소에서 cuSPARSE 적용 전 실측값이 직접 출력된 것은 아니다.",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "cuSPARSE 적용 부분이 network_forward()의 W*x 뿐임"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "전체 기준선 언급",
+          "value": "24",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "cuSPARSE 적용 전 기준선 언급",
+          "element_ids": [
+            "p29:enh:e5"
+          ],
+          "raw_value": "24",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e5",
+          "page": 29,
+          "quote": "특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0003"
+    },
+    {
+      "statement": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가해야 한다고 제안했다.",
+      "limits": "향후 재시도에 대한 제안이며 실제 수행 결과는 아니다.",
+      "kind": "method",
+      "claim_status": "planned",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e6",
+          "page": 29,
+          "quote": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0004"
+    },
+    {
+      "statement": "spMM까지 도입한 후 CROWN Verification 실행에서 Elapsed time이 38.580600 ms로 측정되어, 작성자는 이를 '거의 40ms로 회귀'라고 표현했다.",
+      "limits": "38.580600 ms는 해당 실행 출력값이며, '거의 40ms'는 작성자의 정성적 표현이다. eps = 1e-06 조건에서의 단일 측정값이다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "spMM까지 도입 후",
+        "CROWN Verification (eps = 1e-06)",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "Elapsed time: 38.580600 ms",
+        "Output Dimension: 16",
+        "Lower/Upper Bound 및 Normal Pred (y) 16개 인덱스 출력 포함"
+      ],
+      "parameters": [
+        {
+          "name": "Elapsed time",
+          "value": "38.580600",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p30:e202",
+            "p30:enh:e0"
+          ]
+        }
+      ],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:e201",
+          "page": 29,
+          "quote": "혹 시 몰라서 spMM까지 도입한 후에 결과를 봤다",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p30:e202",
+          "page": 30,
+          "quote": "![image](/image/placeholder)\ncalc success Elapsed time: 38,580600 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 1] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 1.232060 1,339939 0.431007 3,121480 2,898119 3,541973 -0.424204 -0.951575 3.576376 -3.821863 1.800856 3,880063 3.075189 -0.533501 2,420017 -1.841872 1.232429 1,340349 0.431408 3.121885 2,898479 3,542253 -0.423742 -0.951086 3,576872 -3.821336 1.801248 3.880416 3.075570 -0.533005 2,420428 -1,841407 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p30:e203",
+          "page": 30,
+          "quote": "거 의 40ms로 회귀.. 이러면 안된다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p30:enh:e0",
+          "page": 30,
+          "quote": "calc success\nElapsed time: 38.580600 ms\nOutput Dimension: 16\n\n[Index] | Lower Bound | Upper Bound | Normal Pred (y)\n\n[ 0] | 1.232060 | 1.232429 | 0.081966\n[ 1] | 1.339939 | 1.340349 | 0.273680\n[ 2] | 0.431007 | 0.431408 | 0.102314\n[ 3] | 3.121480 | 3.121885 | 0.114393\n[ 4] | 2.898119 | 2.898479 | 2.670697\n[ 5] | 3.541973 | 3.542253 | 1.846723\n[ 6] | -0.424204 | -0.423742 | -1.714520\n[ 7] | -0.951575 | -0.951086 | -1.879916\n[ 8] | 3.576376 | 3.576872 | 0.707131\n[ 9] | -3.821863 | -3.821336 | -2.611904\n[ 10] | 1.800856 | 1.801248 | 0.003845\n[ 11] | 3.880063 | 3.880416 | 1.310646\n[ 12] | 3.075189 | 3.075570 | 2.049689\n[ 13] | -0.533501 | -0.533005 | -1.025760\n[ 14] | 2.420017 | 2.420428 | 1.082714\n[ 15] | -1.841872 | -1.841407 | -3.404563",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p30:enh:e1",
+          "page": 30,
+          "quote": "거의 40ms로 회귀.. 이러면 안된다.",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p30:enh:e7",
+          "page": 30,
+          "quote": "(그리고 network_forward는 신경망의 일반 추론값을 출력하는데 이게 아직 GPU 파이프라인이 아니라서 최적화가 안되어있기도 하고..)",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [
+        "limits의 원문 미확인 수치: 1e-06",
+        "조건·관찰의 원문 미확인 수치: 1e-06",
+        "설정값의 출처가 사실의 출처 범위 밖입니다.",
+        "설정값의 출처가 사실의 출처 범위 밖입니다."
+      ],
+      "id": "P0029F0005"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "cuSPARSE를 도입해보기 위해 시도했다는 언급이 있었다.",
+        "limits": "시도 사실만 언급되며, 도입 범위나 결과는 별도 요소로 기술된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:e191",
+          "p28:enh:e0"
+        ]
+      },
+      {
+        "statement": "cuSPARSE 도입 당시 적용된 범위는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고, cuSPARSE handle 및 CSR descriptor를 유지하며, network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하되 기존 matmul은 아직 유지하는 것이었다.",
+        "limits": "적용 범위는 기술 내용이며, 각 항목의 실제 적용 성공 여부나 성능 영향은 별도 측정으로 확인되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:enh:e3"
+        ]
+      },
+      {
+        "statement": "cuSPARSE를 벡터 곱(spMV)만 적용해본 상황에서 결과가 27ms로, 이전보다 좀 더 느려졌다고 기록했다.",
+        "limits": "27ms는 해당 시도 직후의 실행 출력값이며, 비교 기준 시점의 정확한 측정 조건은 이 문장만으로 특정되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE를 이용해서 벡터 곱(spMV)만 적용 해본 상황"
+        ],
+        "observations": [
+          "Elapsed time: 27.107400 ms",
+          "Output Dimension: 16",
+          "Lower/Upper Bound 및 Normal Pred (y) 16개 인덱스 출력 포함"
+        ],
+        "parameters": [
+          {
+            "name": "Elapsed time",
+            "value": "27.107400",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p28:e192",
+              "p28:enh:e1"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p28:e194",
+          "p28:e195",
+          "p28:enh:e5",
+          "p28:enh:e6"
+        ]
+      },
+      {
+        "statement": "spMM까지 도입한 뒤 결과를 확인했다는 언급이 있었다.",
+        "limits": "시도 사실만 언급되며, 그 결과의 수치와 해석은 별도 요소로 기술된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:e201",
+          "p29:enh:e7"
+        ]
+      },
+      {
+        "statement": "spMM까지 도입한 후 CROWN Verification 실행에서 Elapsed time이 38.580600 ms로 측정되었고, 작성자는 이를 '거의 40ms로 회귀'라고 표현했다.",
+        "limits": "38.580600 ms는 해당 실행 출력값이며, '거의 40ms'는 작성자의 정성적 표현이다. eps = 1e-06 조건에서의 단일 측정값이다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMM까지 도입 후",
+          "CROWN Verification (eps = 1e-06)",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Elapsed time: 38.580600 ms",
+          "Output Dimension: 16",
+          "Lower/Upper Bound 및 Normal Pred (y) 16개 인덱스 출력 포함"
+        ],
+        "parameters": [
+          {
+            "name": "Elapsed time",
+            "value": "38.580600",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p30:e202",
+              "p30:enh:e0"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p29:e201",
+          "p30:e202",
+          "p30:e203",
+          "p30:enh:e0",
+          "p30:enh:e1",
+          "p30:enh:e7"
+        ]
+      },
+      {
+        "statement": "신경망이 너무 작아서 그런 것일 수 있다는 의견이 있었다.",
+        "limits": "원인 가능성에 대한 의견이며, 실측을 통한 원인 분리는 아니다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e204",
+          "p30:enh:e2"
+        ]
+      },
+      {
+        "statement": "network_forward는 신경망의 일반 추론값을 출력하는데, 아직 GPU 파이프라인이 아니라서 최적화가 안 되어 있다는 언급이 있었다.",
+        "limits": "현재 상태에 대한 설명이며, 최적화 부재의 정량적 영향은 별도 분리되지 않았다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e205",
+          "p30:enh:e7"
+        ]
+      },
+      {
+        "statement": "cuBLAS와 cuSPARSE는 실험했지만 현재 모델 크기와 호출 패턴에서는 느려졌으므로, 현재 기준 코드에는 포함하지 않은 상태이며, 후에 다시 도입해보는 시도가 필요하다고 기록했다.",
+        "limits": "현재 코드 포함 여부와 향후 재시도 필요성은 기록/계획이며, 실제 재도입 결과는 아니다.",
+        "kind": "method",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuBLAS와 cuSPARSE를 실험함",
+          "현재 모델 크기와 호출 패턴에서 느려졌음"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e206",
+          "p30:enh:e8"
+        ]
+      },
+      {
+        "statement": "주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞다는 의견이 있었다.",
+        "limits": "측정/유지 방향에 대한 의견이며, 공식 결과 채택의 최종 결정 여부는 이 문장만으로 확정되지 않는다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e3"
+        ]
+      },
+      {
+        "statement": "network_forward()는 전체 타이머에 포함되지만 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가되고, 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크며, SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황이라는 이유가 제시되었다.",
+        "limits": "이유 설명은 해석이며, 각 비용 항목의 기여도는 정량 분리되지 않았다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e5"
+        ]
+      },
+      {
+        "statement": "공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다는 의견이 있었다.",
+        "limits": "유지/비교 방향에 대한 의견이며, 실제 공식 결과 채택 여부는 이 문장만으로 확정되지 않는다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:enh:e6"
+        ]
+      },
+      {
+        "statement": "지금은 cuSPARSE를 계속 확장하지 않는 편이 좋으며, 24 ms baseline으로 돌아가고 cuSPARSE는 별도 실험으로 두라는 의견이 있었다.",
+        "limits": "진행 방향에 대한 의견이며, 실제 baseline 복귀 실행 결과는 이 문장만으로 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e2"
+        ]
+      },
+      {
+        "statement": "4단계까지 진행했을 때 최소 24ms까지 나왔다는 언급이 있었다.",
+        "limits": "24ms는 작성자가 언급한 최소치이며, 해당 단계의 정확한 측정 조건·반복 수·평균/중앙값 여부는 이 문장만으로 특정되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "4단계까지 진행했을 때"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "최소 Elapsed time",
+            "value": "24",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p29:enh:e0"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e0"
+        ]
+      },
+      {
+        "statement": "cuSPARSE가 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 것이 아니었냐는 의문이 있었다.",
+        "limits": "기대/의문에 대한 언급이며, 실제 지원 여부나 성능 보장의 실측 확인은 아니다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e0"
+        ]
+      },
+      {
+        "statement": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가해야 한다는 제안이 있었다.",
+        "limits": "향후 재시도에 대한 제안이며 실제 수행 결과는 아니다.",
+        "kind": "method",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:enh:e6"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p29:e201": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p29:enh:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p29:enh:e1": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p29:enh:e2": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p29:enh:e3": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p29:enh:e4": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p29:enh:e5": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p29:enh:e6": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p29:enh:e7": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      }
+    },
+    "ledger_validation_error": "수집 대장의 사실 인덱스가 잘못됐습니다."
+  },
+  "facts": [
+    {
+      "statement": "느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문이라는 의견이 있었다.",
+      "limits": "해석/조언이며 실측 원인 분리는 아니다.",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e3",
+          "page": 29,
+          "quote": "느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0001"
+    },
+    {
+      "statement": " workload가 cuSPARSE에 불리한 이유로 행렬 크기가 작고 layer가 3개뿐이며, SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 크고, 매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 하며, network_forward()가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행하고, cuSPARSE는 대규모 sparse throughput에는 강하지만 작은 연산의 latency에는 custom kernel이 더 빠를 수 있다는 점이 제시되었다.",
+      "limits": "원인 설명은 조언/해석이며, 각 항목의 기여도는 정량 분리되지 않았다.",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e4",
+          "page": 29,
+          "quote": "행렬 크기가 작고 layer가 3개뿐임\nSpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼\n매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함\nnetwork_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함\ncuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0002"
+    },
+    {
+      "statement": "현재는 cuSPARSE가 적용된 부분이 network_forward()의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황이라고 설명했다.",
+      "limits": "24 ms는 기준선 언급이며, 해당 요소에서 cuSPARSE 적용 전 실측값이 직접 출력된 것은 아니다.",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "cuSPARSE 적용 부분이 network_forward()의 W*x 뿐임"
+      ],
+      "observations": [],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "전체 기준선 언급",
+          "value": "24",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "cuSPARSE 적용 전 기준선 언급",
+          "element_ids": [
+            "p29:enh:e5"
+          ],
+          "raw_value": "24",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e5",
+          "page": 29,
+          "quote": "특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0003"
+    },
+    {
+      "statement": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가해야 한다고 제안했다.",
+      "limits": "향후 재시도에 대한 제안이며 실제 수행 결과는 아니다.",
+      "kind": "method",
+      "claim_status": "planned",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e6",
+          "page": 29,
+          "quote": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0004"
+    },
+    {
+      "statement": "spMM까지 도입한 후 CROWN Verification 실행에서 Elapsed time이 38.580600 ms로 측정되어, 작성자는 이를 '거의 40ms로 회귀'라고 표현했다.",
+      "limits": "38.580600 ms는 해당 실행 출력값이며, '거의 40ms'는 작성자의 정성적 표현이다. eps = 1e-06 조건에서의 단일 측정값이다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "spMM까지 도입 후",
+        "CROWN Verification (eps = 1e-06)",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "Elapsed time: 38.580600 ms",
+        "Output Dimension: 16",
+        "Lower/Upper Bound 및 Normal Pred (y) 16개 인덱스 출력 포함"
+      ],
+      "parameters": [
+        {
+          "name": "Elapsed time",
+          "value": "38.580600",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p30:e202",
+            "p30:enh:e0"
+          ]
+        }
+      ],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:e201",
+          "page": 29,
+          "quote": "혹 시 몰라서 spMM까지 도입한 후에 결과를 봤다",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p30:e202",
+          "page": 30,
+          "quote": "![image](/image/placeholder)\ncalc success Elapsed time: 38,580600 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 1] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 1.232060 1,339939 0.431007 3,121480 2,898119 3,541973 -0.424204 -0.951575 3.576376 -3.821863 1.800856 3,880063 3.075189 -0.533501 2,420017 -1.841872 1.232429 1,340349 0.431408 3.121885 2,898479 3,542253 -0.423742 -0.951086 3,576872 -3.821336 1.801248 3.880416 3.075570 -0.533005 2,420428 -1,841407 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p30:e203",
+          "page": 30,
+          "quote": "거 의 40ms로 회귀.. 이러면 안된다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p30:enh:e0",
+          "page": 30,
+          "quote": "calc success\nElapsed time: 38.580600 ms\nOutput Dimension: 16\n\n[Index] | Lower Bound | Upper Bound | Normal Pred (y)\n\n[ 0] | 1.232060 | 1.232429 | 0.081966\n[ 1] | 1.339939 | 1.340349 | 0.273680\n[ 2] | 0.431007 | 0.431408 | 0.102314\n[ 3] | 3.121480 | 3.121885 | 0.114393\n[ 4] | 2.898119 | 2.898479 | 2.670697\n[ 5] | 3.541973 | 3.542253 | 1.846723\n[ 6] | -0.424204 | -0.423742 | -1.714520\n[ 7] | -0.951575 | -0.951086 | -1.879916\n[ 8] | 3.576376 | 3.576872 | 0.707131\n[ 9] | -3.821863 | -3.821336 | -2.611904\n[ 10] | 1.800856 | 1.801248 | 0.003845\n[ 11] | 3.880063 | 3.880416 | 1.310646\n[ 12] | 3.075189 | 3.075570 | 2.049689\n[ 13] | -0.533501 | -0.533005 | -1.025760\n[ 14] | 2.420017 | 2.420428 | 1.082714\n[ 15] | -1.841872 | -1.841407 | -3.404563",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p30:enh:e1",
+          "page": 30,
+          "quote": "거의 40ms로 회귀.. 이러면 안된다.",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p30:enh:e7",
+          "page": 30,
+          "quote": "(그리고 network_forward는 신경망의 일반 추론값을 출력하는데 이게 아직 GPU 파이프라인이 아니라서 최적화가 안되어있기도 하고..)",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [
+        "limits의 원문 미확인 수치: 1e-06",
+        "조건·관찰의 원문 미확인 수치: 1e-06",
+        "설정값의 출처가 사실의 출처 범위 밖입니다.",
+        "설정값의 출처가 사실의 출처 범위 밖입니다."
+      ],
+      "id": "P0029F0005"
+    },
+    {
+      "statement": "작성자는 cuSPARSE spMV만 적용한 결과에서 27ms가 나오자, 이전에 4단계까지 진행했을 때 최소 24ms까지 나왔던 기준과 비교하여 계속 진행해야 하는지 의문을 제기했으며, cuSPARSE가 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 것이 아닌지 의문을 표했다.",
+      "limits": "이는 작성자의 질문과 해석이며, 실제 원인 분석 결과가 아니다.",
+      "kind": "problem",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "spMV 적용 결과 27ms 측정",
+        "이전 baseline 24ms (4단계까지 진행 시 최소치)"
+      ],
+      "observations": [
+        "27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지",
+        "이러면 계속 진행해야하나? 근데 왜 이러지?",
+        "cuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e0",
+          "page": 29,
+          "quote": "해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지?\ncuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0006"
+    },
+    {
+      "statement": "오후 8:14 시점에 작성된 기록이며, 이후 spMM까지 도입해보기로 결정했다.",
+      "limits": "시간 정보는 작성 시점 기록이며, 실험 조건과 직접 연결되지 않는다.",
+      "kind": "setup",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "오후 8:14 기록"
+      ],
+      "observations": [
+        "오후 8:14"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e1",
+          "page": 29,
+          "quote": "오후 8:14",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0007"
+    },
+    {
+      "statement": "spMM까지 도입한 뒤 결과를 확인했다는 언급이 있었다.",
+      "limits": "시도 사실만 언급되며, 그 결과의 수치와 해석은 별도 요소로 기술된다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:e201",
+          "page": 29,
+          "quote": "혹 시 몰라서 spMM까지 도입한 후에 결과를 봤다",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p29:enh:e7",
+          "page": 29,
+          "quote": "혹시 몰라서 spMM까지 도입한 후에 결과를 봤다",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0008"
+    },
+    {
+      "statement": "spMM까지 도입한 후 CROWN Verification 실행에서 Elapsed time이 38.580600 ms로 측정되었고, 작성자는 이를 '거의 40ms로 회귀.. 이러면 안된다'고 표현했다.",
+      "limits": "38.580600 ms는 해당 실행 출력값이며, '거의 40ms'는 작성자의 정성적 표현이다. eps = 1e-06 조건에서의 단일 측정값이다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "spMM까지 도입 후",
+        "CROWN Verification (eps = 1e-06)",
+        "Output Dimension: 16"
+      ],
+      "observations": [
+        "Elapsed time: 38.580600 ms",
+        "Output Dimension: 16",
+        "Lower/Upper Bound 및 Normal Pred (y) 16개 인덱스 출력 포함",
+        "작성자가 '거의 40ms로 회귀.. 이러면 안된다'고 기록함"
+      ],
+      "parameters": [
+        {
+          "name": "Elapsed time",
+          "value": "38.580600",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p30:e202",
+            "p30:enh:e0"
+          ]
+        },
+        {
+          "name": "Output Dimension",
+          "value": "16",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p30:e202",
+            "p30:enh:e0"
+          ]
+        }
+      ],
+      "measurements": [],
+      "rejected_measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "38.580600",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "cuSPARSE spMM 적용 후, CROWN Verification eps=1e-06",
+          "element_ids": [
+            "p30:e202",
+            "p30:enh:e0"
+          ],
+          "validation_error": "측정 조건의 수치를 연결 원문에서 확인하지 못했습니다."
+        }
+      ],
+      "sources": [
+        {
+          "element_id": "p29:e201",
+          "page": 29,
+          "quote": "혹 시 몰라서 spMM까지 도입한 후에 결과를 봤다",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p30:e202",
+          "page": 30,
+          "quote": "![image](/image/placeholder)\ncalc success Elapsed time: 38,580600 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 1] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 1.232060 1,339939 0.431007 3,121480 2,898119 3,541973 -0.424204 -0.951575 3.576376 -3.821863 1.800856 3,880063 3.075189 -0.533501 2,420017 -1.841872 1.232429 1,340349 0.431408 3.121885 2,898479 3,542253 -0.423742 -0.951086 3,576872 -3.821336 1.801248 3.880416 3.075570 -0.533005 2,420428 -1,841407 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p30:e203",
+          "page": 30,
+          "quote": "거 의 40ms로 회귀.. 이러면 안된다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p30:enh:e0",
+          "page": 30,
+          "quote": "calc success\nElapsed time: 38.580600 ms\nOutput Dimension: 16\n\n[Index] | Lower Bound | Upper Bound | Normal Pred (y)\n\n[ 0] | 1.232060 | 1.232429 | 0.081966\n[ 1] | 1.339939 | 1.340349 | 0.273680\n[ 2] | 0.431007 | 0.431408 | 0.102314\n[ 3] | 3.121480 | 3.121885 | 0.114393\n[ 4] | 2.898119 | 2.898479 | 2.670697\n[ 5] | 3.541973 | 3.542253 | 1.846723\n[ 6] | -0.424204 | -0.423742 | -1.714520\n[ 7] | -0.951575 | -0.951086 | -1.879916\n[ 8] | 3.576376 | 3.576872 | 0.707131\n[ 9] | -3.821863 | -3.821336 | -2.611904\n[ 10] | 1.800856 | 1.801248 | 0.003845\n[ 11] | 3.880063 | 3.880416 | 1.310646\n[ 12] | 3.075189 | 3.075570 | 2.049689\n[ 13] | -0.533501 | -0.533005 | -1.025760\n[ 14] | 2.420017 | 2.420428 | 1.082714\n[ 15] | -1.841872 | -1.841407 | -3.404563",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p30:enh:e1",
+          "page": 30,
+          "quote": "거의 40ms로 회귀.. 이러면 안된다.",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p30:enh:e7",
+          "page": 30,
+          "quote": "(그리고 network_forward는 신경망의 일반 추론값을 출력하는데 이게 아직 GPU 파이프라인이 아니라서 최적화가 안되어있기도 하고..)",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [
+        "limits의 원문 미확인 수치: 1e-06",
+        "조건·관찰의 원문 미확인 수치: 1e-06",
+        "설정값을 원문에서 확인하지 못했습니다: 1e-06"
+      ],
+      "id": "P0029F0009"
+    },
+    {
+      "statement": "작성자와 조언자는 느려진 이유가 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문이라고 분석했다.",
+      "limits": "이는 작성자 및 조언자의 해석이며, 실제 프로파일링 측정 결과가 아닌 추론이다.",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [
+        "행렬 크기가 작고 layer가 3개뿐임",
+        "SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼",
+        "매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함",
+        "network_forward()가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함",
+        "cuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음"
+      ],
+      "observations": [
+        "느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문",
+        "행렬 크기가 작고 layer가 3개뿐임",
+        "SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼",
+        "매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함",
+        "network_forward()가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함",
+        "cuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e3",
+          "page": 29,
+          "quote": "느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다.",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p29:enh:e4",
+          "page": 29,
+          "quote": "행렬 크기가 작고 layer가 3개뿐임\nSpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼\n매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함\nnetwork_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함\ncuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0010"
+    },
+    {
+      "statement": "조언자는 현재는 cuSPARSE가 적용된 부분이 network_forward()의 W*x 뿐이라 전체 24ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황이라고 설명했다.",
+      "limits": "이는 조언자의 해석이며, 실제 각 부분의 시간 분해 측정 결과는 아니다.",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [
+        "cuSPARSE가 적용된 부분이 network_forward()의 W*x 뿐임",
+        "전체 24ms 중 일부만 영향을 받음",
+        "그 일부에 오버헤드가 추가됨"
+      ],
+      "observations": [
+        "현재는 cuSPARSE가 적용된 부분이 network_forward()의 W*x 뿐이라 전체 24ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e5",
+          "page": 29,
+          "quote": "특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0011"
+    },
+    {
+      "statement": "조언자는 나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가해야 하며, 지금은 24ms 버전을 기준으로 유지하는 것이 합리적이라고 권고했다.",
+      "limits": "이는 AI 조언이며, 실제 구현되거나 측정된 내용이 아니다. 향후 계획 성격의 제안이다.",
+      "kind": "limitation",
+      "claim_status": "planned",
+      "source_origin": "ai_advice",
+      "conditions": [
+        "나중에 다시 시도한다면",
+        "descriptor와 buffer를 미리 만들어 재사용",
+        "network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 평가"
+      ],
+      "observations": [
+        "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가해야 합니다.",
+        "지금은 24ms 버전을 기준으로 유지하는 것이 합리적입니다."
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e6",
+          "page": 29,
+          "quote": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0012"
+    },
+    {
+      "statement": "지금은 cuSPARSE를 계속 확장하지 않는 편이 좋으며, 24 ms baseline으로 돌아가고 cuSPARSE는 별도 실험으로 두라는 의견이 있었다.",
+      "limits": "진행 방향에 대한 의견이며, 실제 baseline 복귀 실행 결과는 이 문장만으로 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e2",
+          "page": 29,
+          "quote": "지금은 cuSPARSE를 계속 확장하지 않는 편이 좋습니다. 24 ms baseline으로 돌아가고, cuSPARSE는 별도 실험으로 두세요.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0013"
+    },
+    {
+      "statement": "4단계까지 진행했을 때 최소 24ms까지 나왔다는 언급이 있었다.",
+      "limits": "24ms는 작성자가 언급한 최소치이며, 해당 단계의 정확한 측정 조건·반복 수·평균/중앙값 여부는 이 문장만으로 특정되지 않는다.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "4단계까지 진행했을 때"
+      ],
+      "observations": [],
+      "parameters": [
+        {
+          "name": "최소 Elapsed time",
+          "value": "24",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p29:enh:e0"
+          ]
+        }
+      ],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e0",
+          "page": 29,
+          "quote": "해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지?\ncuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0014"
+    },
+    {
+      "statement": "cuSPARSE가 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 것이 아니었냐는 의문이 있었다.",
+      "limits": "기대/의문에 대한 언급이며, 실제 지원 여부나 성능 보장의 실측 확인은 아니다.",
+      "kind": "limitation",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e0",
+          "page": 29,
+          "quote": "해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지?\ncuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0015"
+    },
+    {
+      "statement": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV를 평가해야 한다는 제안이 있었다.",
+      "limits": "향후 재시도에 대한 제안이며 실제 수행 결과는 아니다.",
+      "kind": "method",
+      "claim_status": "planned",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p29:enh:e6",
+          "page": 29,
+          "quote": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0029F0016"
+    }
+  ]
+}

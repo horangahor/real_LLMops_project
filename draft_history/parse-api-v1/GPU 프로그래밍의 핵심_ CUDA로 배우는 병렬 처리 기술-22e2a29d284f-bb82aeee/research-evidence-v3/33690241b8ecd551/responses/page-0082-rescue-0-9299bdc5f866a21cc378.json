@@ -1,0 +1,348 @@
+{
+  "request_fingerprint": "9299bdc5f866a21cc378b07723da5ce8d7354875def2b7d98b0ca0782f63be96",
+  "value": {
+    "facts": [
+      {
+        "statement": "CROWN 3가지 방법에서 사용하는 커널을 퓨전하고 backward_only에서 메모리 복사 커널을 제거했다",
+        "limits": "3-layer 네트워크 기준, CUDA kernel launch만 집계(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외)",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "3-layer 네트워크",
+          "CUDA kernel launch만 집계",
+          "H2D/D2H memcpy 제외",
+          "cudaStreamSynchronize 제외",
+          "cudaGraphLaunch 제외"
+        ],
+        "observations": [
+          "bound 기준 Forward method=0: 27회 → 18회(9회 감소)",
+          "bound 기준 Backward method=1 전체: 46회 → 31회(15회 감소)",
+          "bound 기준 Backward-only method=2 전체: 45회 → 33회(12회 감소)",
+          "전체 기준 Forward: 33회 → 24회(9회 감소)",
+          "전체 기준 Backward: 52회 → 37회(15회 감소)",
+          "전체 기준 Backward-only: 51회 → 39회(12회 감소)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:e632",
+          "p82:enh:e0",
+          "p82:enh:e1",
+          "p82:enh:e2",
+          "p82:enh:e3",
+          "p82:enh:e5"
+        ]
+      },
+      {
+        "statement": "Forward에서는 무거운 커널 연산의 호출 횟수가 9개 줄었다",
+        "limits": "method 0 bound 기준, 레이어당 8 → 5회",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "Forward method=0 bound",
+          "레이어당 기준"
+        ],
+        "observations": [
+          "lower/upper matmul: 2 → 1",
+          "lower/upper bias matvec: 2 → 1",
+          "matrix scaling + vector affine: 2 → 1",
+          "method 0 기준 레이어당 8 → 5회"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e7",
+          "p82:enh:e3"
+        ]
+      },
+      {
+        "statement": "Backward에서는 forward 부분 12개(9+3), 실제 backward 부분에서는 3개 줄었다",
+        "limits": "method 1 기준, forward 쪽 relaxation/cache 통합 포함",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "Backward method=1",
+          "forward 쪽 relaxation/cache 통합 포함"
+        ],
+        "observations": [
+          "split_pos_neg + bias accumulation: 2 → 1",
+          "레이어당 backward 단계 5 → 4회",
+          "method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e7",
+          "p82:enh:e3"
+        ]
+      },
+      {
+        "statement": "graph mode=1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회다",
+        "limits": "graph mode=1 기준, 이번 작업은 graph launch 횟수 대상이 아님",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "graph mode=1"
+        ],
+        "observations": [
+          "샘플당 cudaGraphLaunch infer 1회 + bound 1회, 총 2회"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e8"
+        ]
+      },
+      {
+        "statement": "Forward method=0 bound에서 커널 호출 횟수가 27회에서 18회로 9회 감소했다",
+        "limits": "3-layer 네트워크 기준, CUDA kernel launch만 집계(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외)",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "3-layer 네트워크",
+          "CUDA kernel launch만 집계",
+          "H2D/D2H memcpy 제외",
+          "cudaStreamSynchronize 제외",
+          "cudaGraphLaunch 제외",
+          "Forward method=0 bound"
+        ],
+        "observations": [
+          "27회 → 18회",
+          "9회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e3"
+        ]
+      },
+      {
+        "statement": "Backward method=1 bound 전체에서 커널 호출 횟수가 46회에서 31회로 15회 감소했다",
+        "limits": "3-layer 네트워크 기준, CUDA kernel launch만 집계(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외)",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "3-layer 네트워크",
+          "CUDA kernel launch만 집계",
+          "H2D/D2H memcpy 제외",
+          "cudaStreamSynchronize 제외",
+          "cudaGraphLaunch 제외",
+          "Backward method=1 bound 전체"
+        ],
+        "observations": [
+          "46회 → 31회",
+          "15회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e3"
+        ]
+      },
+      {
+        "statement": "Backward-only method=2 bound 전체에서 커널 호출 횟수가 45회에서 33회로 12회 감소했다",
+        "limits": "3-layer 네트워크 기준, CUDA kernel launch만 집계(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외)",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "3-layer 네트워크",
+          "CUDA kernel launch만 집계",
+          "H2D/D2H memcpy 제외",
+          "cudaStreamSynchronize 제외",
+          "cudaGraphLaunch 제외",
+          "Backward-only method=2 bound 전체"
+        ],
+        "observations": [
+          "45회 → 33회",
+          "12회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e3"
+        ]
+      },
+      {
+        "statement": "전체 기준 Forward에서 커널 호출 횟수가 33회에서 24회로 9회 감소했다",
+        "limits": "3-layer 네트워크 기준, CUDA kernel launch만 집계(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외)",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "3-layer 네트워크",
+          "CUDA kernel launch만 집계",
+          "H2D/D2H memcpy 제외",
+          "cudaStreamSynchronize 제외",
+          "cudaGraphLaunch 제외",
+          "전체 기준 Forward"
+        ],
+        "observations": [
+          "33회 → 24회",
+          "9회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e5"
+        ]
+      },
+      {
+        "statement": "전체 기준 Backward에서 커널 호출 횟수가 52회에서 37회로 15회 감소했다",
+        "limits": "3-layer 네트워크 기준, CUDA kernel launch만 집계(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외)",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "3-layer 네트워크",
+          "CUDA kernel launch만 집계",
+          "H2D/D2H memcpy 제외",
+          "cudaStreamSynchronize 제외",
+          "cudaGraphLaunch 제외",
+          "전체 기준 Backward"
+        ],
+        "observations": [
+          "52회 → 37회",
+          "15회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e5"
+        ]
+      },
+      {
+        "statement": "전체 기준 Backward-only에서 커널 호출 횟수가 51회에서 39회로 12회 감소했다",
+        "limits": "3-layer 네트워크 기준, CUDA kernel launch만 집계(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외)",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "3-layer 네트워크",
+          "CUDA kernel launch만 집계",
+          "H2D/D2H memcpy 제외",
+          "cudaStreamSynchronize 제외",
+          "cudaGraphLaunch 제외",
+          "전체 기준 Backward-only"
+        ],
+        "observations": [
+          "51회 → 39회",
+          "12회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e5"
+        ]
+      },
+      {
+        "statement": "Forward에서 lower/upper matmul이 2회에서 1회로, lower/upper bias matvec이 2회에서 1회로, matrix scaling + vector affine이 2회에서 1회로 감소했으며, method 0 기준 레이어당 8회에서 5회로 감소했다",
+        "limits": "Forward method=0 bound 기준, 레이어당 기준",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "Forward method=0 bound",
+          "레이어당 기준"
+        ],
+        "observations": [
+          "lower/upper matmul: 2 → 1",
+          "lower/upper bias matvec: 2 → 1",
+          "matrix scaling + vector affine: 2 → 1",
+          "method 0 기준 레이어당 8 → 5회"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e7"
+        ]
+      },
+      {
+        "statement": "Backward에서 split_pos_neg + bias accumulation이 2회에서 1회로, 레이어당 backward 단계가 5회에서 4회로 감소했으며, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소했다",
+        "limits": "Backward method=1 기준, forward 쪽 relaxation/cache 통합 포함",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "Backward method=1",
+          "forward 쪽 relaxation/cache 통합 포함"
+        ],
+        "observations": [
+          "split_pos_neg + bias accumulation: 2 → 1",
+          "레이어당 backward 단계 5 → 4회",
+          "method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e7"
+        ]
+      },
+      {
+        "statement": "Backward-only에서 각 타깃 레이어의 weight/bias 초기 복사 2회 제거, backward 단계의 split/bias kernel 통합으로 총 12회 감소했다",
+        "limits": "Backward-only method=2 기준",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "Backward-only method=2"
+        ],
+        "observations": [
+          "각 타깃 레이어의 weight/bias 초기 복사 2회 제거",
+          "backward 단계의 split/bias kernel 통합",
+          "총 12회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e7"
+        ]
+      },
+      {
+        "statement": "graph mode=1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회이며, 이번 작업은 graph launch 횟수 대상이 아니다",
+        "limits": "graph mode=1 기준",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "graph mode=1"
+        ],
+        "observations": [
+          "샘플당 cudaGraphLaunch infer 1회 + bound 1회, 총 2회",
+          "이번 작업은 graph launch 횟수 대상이 아님"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e8"
+        ]
+      },
+      {
+        "statement": "Backward에서는 forward 부분 12개(9+3, backward에서 사용하는 cache까지 저장하는 커널을 사용했으니 3개 추가로 감소), 실제 backward 부분에서는 3개 감소했다",
+        "limits": "method 1 기준, forward 쪽 relaxation/cache 통합 포함",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "Backward method=1",
+          "forward 쪽 relaxation/cache 통합 포함"
+        ],
+        "observations": [
+          "forward 부분 12개 감소(9+3)",
+          "실제 backward 부분 3개 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e7"
+        ]
+      }
+    ]
+  }
+}

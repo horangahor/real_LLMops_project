@@ -1,0 +1,33 @@
+{
+  "id": "0a551534-e3e9-4695-8ec2-39756b37e54c",
+  "object": "chat.completion",
+  "created": 1793712408,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"title\": \"구성 요소별 역할·결합 방식·상호작용 효과\", \"facts\": [{\"statement\": \"구성 요소별 역할: cuBLAS는 NVIDIA GPU에서 선형대수 연산을 가속하는 라이브러리이며, 메모리 풀은 함수 호출마다의 메모리 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 사용된다. 가중치(W) GPU 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 미리 GPU에 올려 matmul 호출마다의 memcpy를 줄이려는 역할이고, 벡터 연산을 CPU로 돌리는 것은 matmul만 GPU로 실행하는 하이브리드 구성을 만들기 위한 역할이다.\", \"limits\": \"역할 설명은 p5:review:e2, p6:review:e3, p10:review:e1~e4, p10:review:e7, p14:review:e2~e4, p14:review:e5에 근거한다. 다만 '가중치 사전 업로드'의 실제 효과는 p14:review:e9에서 '크게 의미를 못미친다'로 기록되어 있어 역할 대비 성과가 제한적임이 함께 확인된다.\", \"kind\": \"method\", \"claim_status\": \"observed\", \"source_origin\": \"research_note\", \"conditions\": [\"\"], \"observations\": [\"p5:review:e2\", \"p6:review:e3\", \"p10:review:e1\", \"p10:review:e2\", \"p10:review:e3\", \"p10:review:e4\", \"p10:review:e7\", \"p14:review:e2\", \"p14:review:e3\", \"p14:review:e4\", \"p14:review:e5\", \"p14:review:e9\"], \"parameters\": [], \"measurements\": [], \"element_ids\": [\"p5:review:e2\", \"p6:review:e3\", \"p10:review:e1\", \"p10:review:e2\", \"p10:review:e3\", \"p10:review:e4\", \"p10:review:e7\", \"p14:review:e2\", \"p14:review:e3\", \"p14:review:e4\", \"p14:review:e5\", \"p14:review:e9\"]}, {\"statement\": \"결합 방식: 초기에는 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 결합되었다. 이후 matmul만 GPU로, 나머지를 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 결합 방식을 바꾸었다. v2 적용 방안에서는 cuBLAS 예열(더미 matmul 호출로 초기화), 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하도록 memcpy 범위를 줄이는 방식이 추가로 결합되었다.\", \"limits\": \"결합 방식의 서술은 p5:review:e0, p5:review:e2, p5:review:e4, p6:review:e0, p6:review:e3, p10:review:e1~e4, p14:review:e1~e4에 근거한다. 'v2 적용 방안' 항목들은 실행 결과 화면과 함께 기록되어 있으나, 실제 구현·실행 원문에서 각 구성 요소의 역할, 구성 요소들의 결합 방식, 상호작용 효과를 직접 뒷받침하는 근거만 연결하라는 지시에 따라 실행 결과(Elapsed time 등)가 함께 제시된 결합만 사실로 연결한다.\", \"kind\": \"method\", \"claim_status\": \"observed\", \"source_origin\": \"research_note\", \"conditions\": [\"\"], \"observations\": [\"p5:review:e0\", \"p5:review:e2\", \"p5:review:e4\", \"p6:review:e0\", \"p6:review:e3\", \"p10:review:e1\", \"p10:review:e2\", \"p10:review:e3\", \"p10:review:e4\", \"p14:review:e1\", \"p14:review:e2\", \"p14:review:e3\", \"p14:review:e4\"], \"parameters\": [], \"measurements\": [], \"element_ids\": [\"p5:review:e0\", \"p5:review:e2\", \"p5:review:e4\", \"p6:review:e0\", \"p6:review:e3\", \"p10:review:e1\", \"p10:review:e2\", \"p10:review:e3\", \"p10:review:e4\", \"p14:review:e1\", \"p14:review:e2\", \"p14:review:e3\", \"p14:review:e4\"]}, {\"statement\": \"상호작용 효과: 메모리 풀과 cuBLAS 예열(warmup) 조합은 매우 효과적이며 두 개만으로 거의 200ms를 단축했다. 이후 make_zero_matrix/make_zero_vector를 CPU 실행으로 회귀시키자 22~25ms가 추가로 줄었고, forward 함수의 DTOH memcpy를 극단적으로 없앴을 때 64.716ms까지 감소했다. backward_bound_gpu에만 커널 퓨전을 진행했을 때 23ms 후반대가, lirpa_forward_bound 사용 함수들을 커널 퓨전했을 때 22ms 초반까지 나왔다. backward에서 사용하는 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu는 22ms가 보이는 비율을 늘리고 최저점(28ms)이 잘 안 보이게 하는 효과가 있었다. forward-backward 간 전달되는 alpha/beta 값을 메모리 풀에 올려 전달 과정을 삭제하고 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했을 때 21.0188ms까지 감소했다.\", \"limits\": \"상호작용 효과는 각 실행 결과(Elapsed time)와 함께 기록된 p19:review:e1, p19:review:e7, p19:review:e8, p22:review:e1, p22:review:e2, p31:review:e6, p32:review:e1, p32:review:e2, p32:review:e5, p35:review:e1, p35:review:e2, p35:review:e4에 근거한다. 단, p31:review:e1에서 '신경망 크기가 매우 작고 cuBlas/cuSparse 동작 방식에서 오버헤드가 생겼다'는 원인 분석도 함께 제시되어 있어, 상호작용 효과가 항상 선형적으로 누적되지는 않음을 보여준다.\", \"kind\": \"method\", \"claim_status\": \"observed\", \"source_origin\": \"research_note\", \"conditions\": [\"\"], \"observations\": [\"p19:review:e1\", \"p19:review:e7\", \"p19:review:e8\", \"p22:review:e1\", \"p22:review:e2\", \"p31:review:e1\", \"p31:review:e6\", \"p32:review:e1\", \"p32:review:e2\", \"p32:review:e5\", \"p35:review:e1\", \"p35:review:e2\", \"p35:review:e4\"], \"parameters\": [], \"measurements\": [], \"element_ids\": [\"p19:review:e1\", \"p19:review:e7\", \"p19:review:e8\", \"p22:review:e1\", \"p22:review:e2\", \"p31:review:e1\", \"p31:review:e6\", \"p32:review:e1\", \"p32:review:e2\", \"p32:review:e5\", \"p35:review:e1\", \"p35:review:e2\", \"p35:review:e4\"]}], \"coverage\": {}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 11007,
+    "completion_tokens": 1663,
+    "total_tokens": 12670,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

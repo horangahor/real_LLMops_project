@@ -1,0 +1,759 @@
+{
+  "initial": [
+    {
+      "statement": "결과를 담을 벡터를 memcpy 하는 것을 멈추고, 결과가 저장될 행렬/벡터도 memcpy 하던 것을 제거하니 10ms 정도 또 줄었다.",
+      "limits": "memcpy 제거 후 약 10ms 감소 관찰",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "measurement_log",
+      "conditions": [
+        "결과 벡터 memcpy 중단",
+        "결과 저장 행렬/벡터 memcpy 제거"
+      ],
+      "observations": [
+        "결과를 담을 벡터를 memcpy 하는 짓 멈추기",
+        "쓸때없이 결과가 저장될 행렬, 벡터도 memcpy 하는 일이 있었는데 이걸 제거하니 10ms 정도 또 줄었음"
+      ],
+      "parameters": [
+        {
+          "name": "감소 폭",
+          "value": "10",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p20:e144"
+          ]
+        }
+      ],
+      "measurements": [
+        {
+          "metric": "memcpy 제거로 인한 감소 폭",
+          "value": "1E+1",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "결과 벡터 및 결과 저장 행렬/벡터 memcpy 제거",
+          "element_ids": [
+            "p20:e144"
+          ],
+          "raw_value": "1E+1",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p20:e144",
+          "page": 20,
+          "quote": "결 과를 담을 벡터를 memcpy 하는 짓 멈추기\n(쓸때없이 결과가 저장될 행렬, 벡터도 memcpy 하는 일이 있었는데 이걸 제거하니 10ms\n정도 또 줄었음)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0020F0001"
+    },
+    {
+      "statement": "mempool + warmup 설정에서 Elapsed time이 115.469900 ms로 측정되었다.",
+      "limits": "mempool + warmup, 1회 시도 기준",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "measurement_log",
+      "conditions": [
+        "CROWN Verification",
+        "eps = 1e-06",
+        "mempool + warmup"
+      ],
+      "observations": [
+        "Elapsed time: 115,469900 ms"
+      ],
+      "parameters": [
+        {
+          "name": "eps",
+          "value": "1e-06",
+          "value_kind": "text",
+          "element_ids": [
+            "p20:e145"
+          ]
+        },
+        {
+          "name": "소요시간",
+          "value": "115.469900",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p20:e145"
+          ]
+        }
+      ],
+      "measurements": [
+        {
+          "metric": "Elapsed time (mempool + warmup)",
+          "value": "115.4699",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "CROWN Verification, eps=1e-06, mempool + warmup",
+          "element_ids": [
+            "p20:e145"
+          ],
+          "raw_value": "115.4699",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p20:e145",
+          "page": 20,
+          "quote": "![image](/image/placeholder)\nIOCHOPK data read start: test_data_1.bin data read success (dim=256) Pi ⌀Starting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 115,469900 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] 0.081772 0.082159 0.081966 1] 0.273538 0.273823 0.273680 Re 2] 0.102147 0.102482 0.102314 3] 0.114244 0.114541 0.114393 4] 2.670552 2.670843 2.670697 CU 5] 1.846574 1.846872 1.846723 6] -1.714750 -1.714490 -1.714620 최 7] -1.880139 -1.879695 -1.879916 8] 0.706986 0.707275 0.707131 포 9] -2.612086 -2.611722 -2.611904 10] 0.003713 0.003976 0.003845 전 11] 1.310476 1.310817 1.310646 12] 2,049539 2,049839 2,049689 소 13] -1.025923 -1.025597 -1.025760 14] 1.082576 1.082852 1,082714 15] -3,404772 -3,404355 -3.404563 개 계속하려면 아무 키나 누르십시오",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0020F0002"
+    },
+    {
+      "statement": "가중치, positive_part / negative_part 거친 가중치를 GPU 메모리에 미리 올려놓으면 matmul이나 matvec에서 memcpy가 절반되고, 양수/음수부 가중치는 forward 돌 때마다 계산할 필요가 없어진다.",
+      "limits": "미리 올려놓는 방식의 효과에 대한 정성적 설명",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "implementation_code",
+      "conditions": [
+        "가중치 GPU 메모리 미리 적재",
+        "positive_part / negative_part 거친 가중치",
+        "matmul / matvec"
+      ],
+      "observations": [
+        "matmul 이나 matvec 에서 memcpy 절반됨",
+        "양수, 음수부 가중치는 forward 돌때마다 계산 필요없어짐"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p20:e147",
+          "page": 20,
+          "quote": "가 중치 , positive_part / negative_part 거친 가중치 GPU 메모리에 미리 올려놓기\n(matmul 이나 matvec 에서 memcpy 절반됨 / 양수, 음수부 가중치는 forward 돌때마다 계산\n필요없어짐)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0020F0003"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "mempool + warmup 설정에서 CROWN Verification의 Elapsed time이 128.894800 ms로 측정되었다.",
+        "limits": "mempool + warmup, 1회 시도 기준",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "CROWN Verification",
+          "eps = 1e-06",
+          "mempool + warmup"
+        ],
+        "observations": [
+          "Elapsed time: 128,894800 ms"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p19:e141"
+            ]
+          },
+          {
+            "name": "소요시간",
+            "value": "128.894800",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p19:e141"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time (mempool + warmup)",
+            "value": "128.8948",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CROWN Verification, eps=1e-06, mempool + warmup",
+            "element_ids": [
+              "p19:e141",
+              "p19:review:e7"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p19:e141",
+          "p19:review:e7"
+        ]
+      },
+      {
+        "statement": "mempool + warmup 설정에서 CROWN Verification의 Elapsed time이 103.741500 ms로 측정되었다.",
+        "limits": "mempool + warmup, 1회 시도 기준",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "CROWN Verification",
+          "eps = 1e-06",
+          "mempool + warmup"
+        ],
+        "observations": [
+          "Elapsed time: 103,741500 ms"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p21:e148"
+            ]
+          },
+          {
+            "name": "소요시간",
+            "value": "103.741500",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p21:e148"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time (mempool + warmup)",
+            "value": "103.7415",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CROWN Verification, eps=1e-06, mempool + warmup",
+            "element_ids": [
+              "p21:e148",
+              "p21:e149"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p21:e148",
+          "p21:e149"
+        ]
+      },
+      {
+        "statement": "메모리 풀 + warm up 조합만으로 거의 200ms 단축되었다.",
+        "limits": "두 개만으로 거의 200ms 단축",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "메모리 풀 + warm up 조합"
+        ],
+        "observations": [
+          "메모리 풀 + warm up 조합은 일단 매우 좋다는 것 (두 개만으로 거의 200ms 단축함)"
+        ],
+        "parameters": [
+          {
+            "name": "단축 폭",
+            "value": "200",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p19:e137",
+              "p19:review:e1"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "메모리 풀 + warm up 조합에 의한 단축 폭",
+            "value": "200",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "메모리 풀 + warm up 조합",
+            "element_ids": [
+              "p19:e137",
+              "p19:review:e1"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p19:e137",
+          "p19:review:e1"
+        ]
+      },
+      {
+        "statement": "영벡터 만들기를 다시 GPU로 해봤을 때 3~5 ms 시간이 늘어나서 CPU로 두는 것이 좋을 듯하다.",
+        "limits": "GPU 실행 시 3~5 ms 증가 관찰",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "영벡터 만들기 GPU 실행"
+        ],
+        "observations": [
+          "영벡터 만들기는 다시 gpu로 해봤는데 이것도 유의미하게 (3~5 ms) 시간이 늘어남,, 그냥 cpu로 두는게 좋을듯"
+        ],
+        "parameters": [
+          {
+            "name": "증가 폭",
+            "value": "3~5",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p19:e143",
+              "p19:review:e9"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "영벡터 만들기 GPU 실행 시 증가 폭",
+            "value": "3~5",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "영벡터 만들기 GPU 실행",
+            "element_ids": [
+              "p19:e143",
+              "p19:review:e9"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p19:e143",
+          "p19:review:e9"
+        ]
+      },
+      {
+        "statement": "22~25ms 정도 줄었다.",
+        "limits": "22~25ms 감소 관찰",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "특정 최적화 적용"
+        ],
+        "observations": [
+          "22 ~ 25ms 정도 줄었다!! 이것만으로도 …"
+        ],
+        "parameters": [
+          {
+            "name": "감소 폭",
+            "value": "22~25",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p19:e142",
+              "p19:review:e8"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "특정 최적화에 의한 감소 폭",
+            "value": "22~25",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "특정 최적화 적용",
+            "element_ids": [
+              "p19:e142",
+              "p19:review:e8"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p19:e142",
+          "p19:review:e8"
+        ]
+      },
+      {
+        "statement": "50ms만 더 단축하면 CPU를 따라잡을 수 있다.",
+        "limits": "CPU 대비 50ms 차이",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "CPU 대비 성능 비교"
+        ],
+        "observations": [
+          "50ms만 더 단축하면 cpu 따라 잡을 수 있는데.. 흠.."
+        ],
+        "parameters": [
+          {
+            "name": "추가 단축 필요 폭",
+            "value": "50",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p19:e138",
+              "p19:review:e2"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "CPU 따라잡기 위해 필요한 추가 단축 폭",
+            "value": "50",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CPU 대비 성능 비교",
+            "element_ids": [
+              "p19:e138",
+              "p19:review:e2"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p19:e138",
+          "p19:review:e2"
+        ]
+      },
+      {
+        "statement": "memcpy 병목을 잡아야 CPU보다 빨라질 수 있다.",
+        "limits": "현재 memcpy가 주요 병목",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "memcpy 병목"
+        ],
+        "observations": [
+          "지금 제일 중요한 건 memcpy 병목인데.. 이걸 잡아야 cpu보다 빨라질 수 있음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p19:e139",
+          "p19:review:e3"
+        ]
+      },
+      {
+        "statement": "my_lirpa_mempool_warmup.cu의 make_zero_matrix, make_zero_vector를 다시 CPU 실행으로 회귀하고 수식어를 optimizing으로 변경하였다.",
+        "limits": "CPU 회귀 및 수식어 변경",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "my_lirpa_mempool_warmup.cu",
+          "make_zero_matrix",
+          "make_zero_vector",
+          "CPU 실행"
+        ],
+        "observations": [
+          "my_lirpa_mempool_warmup.cu의 make_zero_matrix , make_zero_vector 를 다시 cpu 실행으로 회귀 // 그리고 수식어를 이제부터 optimizing으로 변경"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p19:e140",
+          "p19:review:e4",
+          "p19:review:e5",
+          "p19:review:e6"
+        ]
+      },
+      {
+        "statement": "결과를 담을 벡터를 memcpy 하는 것을 멈추고, 결과가 저장될 행렬/벡터도 memcpy 하던 것을 제거하니 10ms 정도 또 줄었다.",
+        "limits": "memcpy 제거 후 약 10ms 감소 관찰",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "결과 벡터 memcpy 중단",
+          "결과 저장 행렬/벡터 memcpy 제거"
+        ],
+        "observations": [
+          "결과를 담을 벡터를 memcpy 하는 짓 멈추기",
+          "쓸때없이 결과가 저장될 행렬, 벡터도 memcpy 하는 일이 있었는데 이걸 제거하니 10ms 정도 또 줄었음"
+        ],
+        "parameters": [
+          {
+            "name": "감소 폭",
+            "value": "10",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p20:e144"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "memcpy 제거로 인한 감소 폭",
+            "value": "10",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "결과 벡터 및 결과 저장 행렬/벡터 memcpy 제거",
+            "element_ids": [
+              "p20:e144"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p20:e144"
+        ]
+      },
+      {
+        "statement": "가중치, positive_part / negative_part 거친 가중치를 GPU 메모리에 미리 올려놓으면 matmul이나 matvec에서 memcpy가 절반되고, 양수/음수부 가중치는 forward 돌 때마다 계산할 필요가 없어진다.",
+        "limits": "미리 올려놓는 방식의 효과에 대한 정성적 설명",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "가중치 GPU 메모리 미리 적재",
+          "positive_part / negative_part 거친 가중치",
+          "matmul / matvec"
+        ],
+        "observations": [
+          "matmul 이나 matvec 에서 memcpy 절반됨",
+          "양수, 음수부 가중치는 forward 돌때마다 계산 필요없어짐"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p20:e147"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p20:e144": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p20:e145": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p20:e146": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      },
+      "p20:e147": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      }
+    },
+    "ledger_validation_error": "수집 대장의 사실 인덱스가 잘못됐습니다."
+  },
+  "facts": [
+    {
+      "statement": "결과를 담을 벡터를 memcpy 하는 것을 멈추고, 결과가 저장될 행렬/벡터도 memcpy 하던 것을 제거하니 10ms 정도 또 줄었다.",
+      "limits": "memcpy 제거 후 약 10ms 감소 관찰",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "measurement_log",
+      "conditions": [
+        "결과 벡터 memcpy 중단",
+        "결과 저장 행렬/벡터 memcpy 제거"
+      ],
+      "observations": [
+        "결과를 담을 벡터를 memcpy 하는 짓 멈추기",
+        "쓸때없이 결과가 저장될 행렬, 벡터도 memcpy 하는 일이 있었는데 이걸 제거하니 10ms 정도 또 줄었음"
+      ],
+      "parameters": [
+        {
+          "name": "감소 폭",
+          "value": "10",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p20:e144"
+          ]
+        }
+      ],
+      "measurements": [
+        {
+          "metric": "memcpy 제거로 인한 감소 폭",
+          "value": "1E+1",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "결과 벡터 및 결과 저장 행렬/벡터 memcpy 제거",
+          "element_ids": [
+            "p20:e144"
+          ],
+          "raw_value": "1E+1",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p20:e144",
+          "page": 20,
+          "quote": "결 과를 담을 벡터를 memcpy 하는 짓 멈추기\n(쓸때없이 결과가 저장될 행렬, 벡터도 memcpy 하는 일이 있었는데 이걸 제거하니 10ms\n정도 또 줄었음)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0020F0001"
+    },
+    {
+      "statement": "mempool + warmup 설정에서 Elapsed time이 115.469900 ms로 측정되었다.",
+      "limits": "mempool + warmup, 1회 시도 기준",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "measurement_log",
+      "conditions": [
+        "CROWN Verification",
+        "eps = 1e-06",
+        "mempool + warmup"
+      ],
+      "observations": [
+        "Elapsed time: 115,469900 ms"
+      ],
+      "parameters": [
+        {
+          "name": "eps",
+          "value": "1e-06",
+          "value_kind": "text",
+          "element_ids": [
+            "p20:e145"
+          ]
+        },
+        {
+          "name": "소요시간",
+          "value": "115.469900",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p20:e145"
+          ]
+        }
+      ],
+      "measurements": [
+        {
+          "metric": "Elapsed time (mempool + warmup)",
+          "value": "115.4699",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "CROWN Verification, eps=1e-06, mempool + warmup",
+          "element_ids": [
+            "p20:e145"
+          ],
+          "raw_value": "115.4699",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p20:e145",
+          "page": 20,
+          "quote": "![image](/image/placeholder)\nIOCHOPK data read start: test_data_1.bin data read success (dim=256) Pi ⌀Starting CROWN Verification (eps = 1e-06) mempool + warmup calc success Elapsed time: 115,469900 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) 0] 0.081772 0.082159 0.081966 1] 0.273538 0.273823 0.273680 Re 2] 0.102147 0.102482 0.102314 3] 0.114244 0.114541 0.114393 4] 2.670552 2.670843 2.670697 CU 5] 1.846574 1.846872 1.846723 6] -1.714750 -1.714490 -1.714620 최 7] -1.880139 -1.879695 -1.879916 8] 0.706986 0.707275 0.707131 포 9] -2.612086 -2.611722 -2.611904 10] 0.003713 0.003976 0.003845 전 11] 1.310476 1.310817 1.310646 12] 2,049539 2,049839 2,049689 소 13] -1.025923 -1.025597 -1.025760 14] 1.082576 1.082852 1,082714 15] -3,404772 -3,404355 -3.404563 개 계속하려면 아무 키나 누르십시오",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0020F0002"
+    },
+    {
+      "statement": "가중치, positive_part / negative_part 거친 가중치를 GPU 메모리에 미리 올려놓으면 matmul이나 matvec에서 memcpy가 절반되고, 양수/음수부 가중치는 forward 돌 때마다 계산할 필요가 없어진다.",
+      "limits": "미리 올려놓는 방식의 효과에 대한 정성적 설명",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "implementation_code",
+      "conditions": [
+        "가중치 GPU 메모리 미리 적재",
+        "positive_part / negative_part 거친 가중치",
+        "matmul / matvec"
+      ],
+      "observations": [
+        "matmul 이나 matvec 에서 memcpy 절반됨",
+        "양수, 음수부 가중치는 forward 돌때마다 계산 필요없어짐"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p20:e147",
+          "page": 20,
+          "quote": "가 중치 , positive_part / negative_part 거친 가중치 GPU 메모리에 미리 올려놓기\n(matmul 이나 matvec 에서 memcpy 절반됨 / 양수, 음수부 가중치는 forward 돌때마다 계산\n필요없어짐)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0020F0003"
+    },
+    {
+      "statement": "결과를 담을 벡터를 memcpy 하는 것을 멈추고, 결과가 저장될 행렬/벡터도 memcpy 하던 것을 제거하니 10ms 정도 또 줄었다.",
+      "limits": "memcpy 제거 후 약 10ms 감소 관찰",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "measurement_log",
+      "conditions": [
+        "결과 벡터 memcpy 중단",
+        "결과 저장 행렬/벡터 memcpy 제거"
+      ],
+      "observations": [
+        "결과를 담을 벡터를 memcpy 하는 짓 멈추기",
+        "쓸때없이 결과가 저장될 행렬, 벡터도 memcpy 하는 일이 있었는데 이걸 제거하니 10ms 정도 또 줄었음"
+      ],
+      "parameters": [
+        {
+          "name": "감소 폭",
+          "value": "10",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p20:e144"
+          ]
+        }
+      ],
+      "measurements": [
+        {
+          "metric": "memcpy 제거로 인한 감소 폭",
+          "value": "1E+1",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "결과 벡터 및 결과 저장 행렬/벡터 memcpy 제거",
+          "element_ids": [
+            "p20:e144"
+          ],
+          "raw_value": "10",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p20:e144",
+          "page": 20,
+          "quote": "결 과를 담을 벡터를 memcpy 하는 짓 멈추기\n(쓸때없이 결과가 저장될 행렬, 벡터도 memcpy 하는 일이 있었는데 이걸 제거하니 10ms\n정도 또 줄었음)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0020F0004"
+    },
+    {
+      "statement": "가중치, positive_part / negative_part 거친 가중치를 GPU 메모리에 미리 올려놓으면 matmul이나 matvec에서 memcpy가 절반되고, 양수/음수부 가중치는 forward 돌 때마다 계산할 필요가 없어진다.",
+      "limits": "미리 올려놓는 방식의 효과에 대한 정성적 설명",
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "implementation_code",
+      "conditions": [
+        "가중치 GPU 메모리 미리 적재",
+        "positive_part / negative_part 거친 가중치",
+        "matmul / matvec"
+      ],
+      "observations": [
+        "matmul 이나 matvec 에서 memcpy 절반됨",
+        "양수, 음수부 가중치는 forward 돌때마다 계산 필요없어짐"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p20:e147",
+          "page": 20,
+          "quote": "가 중치 , positive_part / negative_part 거친 가중치 GPU 메모리에 미리 올려놓기\n(matmul 이나 matvec 에서 memcpy 절반됨 / 양수, 음수부 가중치는 forward 돌때마다 계산\n필요없어짐)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0020F0005"
+    }
+  ]
+}

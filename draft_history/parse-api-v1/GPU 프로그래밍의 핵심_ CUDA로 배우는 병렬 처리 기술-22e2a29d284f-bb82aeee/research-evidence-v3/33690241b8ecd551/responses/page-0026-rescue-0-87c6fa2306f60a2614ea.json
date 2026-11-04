@@ -1,0 +1,199 @@
+{
+  "request_fingerprint": "87c6fa2306f60a2614ea225e287960b39cb3a5c8dcf72747dc7efae34ab46172",
+  "value": {
+    "facts": [
+      {
+        "statement": "cudaDeviceSynchronize 동기화 제거 후 CROWN Verification 실행 결과: Elapsed time 25.457200 ms, Output Dimension 16.",
+        "limits": "동기화 제거 전후 남은 동기화 코드의 구체적 범위는 명시되지 않음. 이 측정값은 동기화 제거 적용 후의 단일 실행 결과임.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "제거 대상: cudaDeviceSynchronize",
+          "적용 방식: 필요한 부분을 제외하고 동기화 코드 제거",
+          "측정 대상: CROWN Verification 실행 시간"
+        ],
+        "observations": [
+          "cudaDeviceSynchronize 제거 적용",
+          "동기화 제거 후 CROWN Verification 실행"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time_ms",
+            "value": "25.457200",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "동기화 제거 후 CROWN Verification 실행",
+            "element_ids": [
+              "p26:e181"
+            ]
+          },
+          {
+            "metric": "output_dimension",
+            "value": "16",
+            "value_kind": "scalar",
+            "unit": "dimension",
+            "condition": "동기화 제거 후 CROWN Verification 실행",
+            "element_ids": [
+              "p26:e181"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p26:e180",
+          "p26:e181"
+        ]
+      },
+      {
+        "statement": "동기화 제거 후 CROWN Verification 실행 시간이 이전 측정(26.529100 ms) 대비 약 1 ms 정도 줄었다.",
+        "limits": "정확한 차이값은 계산되지 않았으며 '1 ms 정도'라는 근사 표현으로 서술됨. 비교 기준 측정은 p25:e175의 26.529100 ms임.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "비교 기준: p25:e175의 Elapsed time 26.529100 ms (동기화 제거 전)",
+          "비교 대상: p26:e181의 Elapsed time 25.457200 ms (동기화 제거 후)"
+        ],
+        "observations": [
+          "동기화 제거 후 실행 시간이 약 1 ms 감소함"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time_reduction_approximation",
+            "value": "약 1 ms",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "동기화 제거 전후 비교 (26.529100 ms → 25.457200 ms)",
+            "element_ids": [
+              "p26:e182",
+              "p26:e181",
+              "p25:e175"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p26:e182",
+          "p26:e181",
+          "p25:e175"
+        ]
+      },
+      {
+        "statement": "cuBlas 도입했으나 오히려 결과가 안 좋았다.",
+        "limits": "안 좋은 결과의 구체적 지표(elapsed time 등)는 이 요소에 없음. p27:e188의 40.050500 ms 측정값이 cuBlas 도입 후 결과로 추정되나 원문 요소 간 명시적 연결은 없음.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "도입 대상: cuBlas"
+        ],
+        "observations": [
+          "cuBlas 도입 후 결과가 오히려 나빠짐"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e184"
+        ]
+      },
+      {
+        "statement": "cuSparse나 cuBlas 사용 시 컴파일 옵션에 -lcublas, -lcusparse를 붙여야 한다.",
+        "limits": "컴파일 옵션 적용 결과나 실제 빌드 성공 여부는 이 요소에 없음.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "대상 라이브러리: cuSparse, cuBlas",
+          "필요 컴파일 옵션: -lcublas, -lcusparse"
+        ],
+        "observations": [
+          "cuSparse/cuBlas 사용 시 -lcublas, -lcusparse를 컴파일 옵션에 붙여야 함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e185"
+        ]
+      },
+      {
+        "statement": "cuBlas/cuSparse에 -l 플래그를 붙여야 하는 이유 1: 표준 라이브러리(libc)가 아니기 때문이며, 표준 라이브러리 헤더(iostream 등)는 include 시 자동 링크됨.",
+        "limits": "이 설명은 작성자의 해석/근거 서술임.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "대상: cuBlas, cuSparse 라이브러리 링크 방식"
+        ],
+        "observations": [
+          "표준 라이브러리(libc)가 아님",
+          "표준 라이브러리 헤더(iostream 등)는 include 하면 자동으로 링크됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e187"
+        ]
+      },
+      {
+        "statement": "cuBlas/cuSparse에 -l 플래그를 붙여야 하는 이유 2: 표준 라이브러리가 아닌 커스텀 모듈(직접 만든 모듈 등)도 -l를 안 붙이는데, 코드를 직접 가져와서 통째로 컴파일하기 때문(구현체가 컴파일에 통째로 들어감).",
+        "limits": "이 설명은 작성자의 해석/근거 서술임.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "대상: 커스텀 모듈 링크 방식"
+        ],
+        "observations": [
+          "커스텀 모듈은 -l를 안 붙임",
+          "코드를 직접 가져와서 통째로 컴파일함",
+          "구현체가 컴파일에 통째로 들어감"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e187"
+        ]
+      },
+      {
+        "statement": "cuBlas/cuSparse에 -l 플래그를 붙여야 하는 이유 3: cuBlas, cuSparse 같은 라이브러리들은 Nvidia에서 만든 매우 거대한 소스코드 덩어리이라 미리 컴파일되어 있음(컴파일하는 데 실제로 매우 오래 걸림).",
+        "limits": "이 설명은 작성자의 해석/근거 서술임.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "대상: cuBlas, cuSparse 라이브러리 특성"
+        ],
+        "observations": [
+          "Nvidia에서 만든 매우 거대한 소스코드 덩어리",
+          "미리 컴파일되어 있음",
+          "컴파일하는 데 실제로 매우 오래 걸림"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e187"
+        ]
+      },
+      {
+        "statement": "cuBlas/cuSparse에 -l 플래그를 붙여야 하는 이유 4: 소스코드가 없기 때문에 해당 라이브러리를 넣고 한 번에 컴파일 불가.",
+        "limits": "이 설명은 작성자의 해석/근거 서술임.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "대상: cuBlas, cuSparse 라이브러리 컴파일 방식"
+        ],
+        "observations": [
+          "소스코드가 없음",
+          "해당 라이브러리를 넣고 한 번에 컴파일 불가"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e187"
+        ]
+      }
+    ]
+  }
+}

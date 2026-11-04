@@ -1,0 +1,242 @@
+{
+  "request_fingerprint": "5a5480cffd8b49506b4d8fc2e6c47e211152813d094a923f9df8ea61f6811eac",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "초기화 이후 forward와 backward의 bound 계산 시간은 비슷하며, 작성자는 약 0.2ms 정도 차이가 난다고 대략적으로 관찰했다.",
+          "limits": "warmup 1회 기준 측정에서 도출된 대략적 관찰이며, 실제 OCR 측정값(img0:e2 bound 1.7846ms, img3:e3 bound 1.7760ms)은 bound 시간 차이가 약 0.0086ms로 0.2ms보다 훨씬 작다. 0.2ms는 e409에서 언급된 '단일 테스트가 평균보다 0.2ms 정도 느리다'는 맥락의 대략적 수치일 수 있다.",
+          "kind": "method",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "warmup 1회",
+            "초기화 이후",
+            "대략적 관찰"
+          ],
+          "observations": [
+            "forward와 backward bound 계산 시간이 비슷하다는 결론",
+            "작성자가 약 0.2ms 차이로 대략적으로 언급했으나 실제 측정 bound 시간 차이는 더 작음"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "bound_time_backward_ms",
+              "value": "",
+              "value_kind": "range",
+              "unit": "ms",
+              "condition": "warmup 1회, 초기화 이후",
+              "element_ids": [
+                "p56:img0:e2",
+                "p56:img3:e3"
+              ]
+            },
+            {
+              "metric": "bound_time_difference_ms",
+              "value": "",
+              "value_kind": "range",
+              "unit": "ms",
+              "condition": "warmup 1회, 초기화 이후, OCR 측정값 기준",
+              "element_ids": [
+                "p56:img0:e2",
+                "p56:img3:e3"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p57:e420",
+            "p57:enh:e3",
+            "p56:e409",
+            "p56:img0:e2",
+            "p56:img3:e3"
+          ]
+        },
+        {
+          "statement": "gpu 벤치마크 모범 사례를 따라 실제 사이클 시간만 측정(가중치 로드 memcpy 등 제외), warmup 1회, CV를 통한 스파이크·분산 규명을 측정 기준으로 세웠다.",
+          "limits": "warmup 적용 후에도 측정 시간 및 평균 시간이 오히려 늘어나는 현상이 발생했으며(e427, e429, e431), 스파이크 데이터가 여전히 관찰되었다. warmup 버전이 warmup 이전 버전과 측정 시간에서 큰 차이가 나지 않았고(e434-1), 스파이크가 없을 때 변동 계수가 더 낮은 경향(e434-2)은 있었으나 원인 규명은 완료되지 않았다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "gpu 벤치마크 모범 사례",
+            "Nvidia warmup 가이드라인 참조"
+          ],
+          "observations": [
+            "측정 기준 3가지 수립: 실제 사이클 시간만 측정, warmup 1회, CV로 스파이크·분산 규명",
+            "추론·bound 계산·검증 3가지 값을 분리 측정하기로 결정",
+            "warmup 후 시간 증가 및 스파이크 지속 문제 발생",
+            "warmup 유무 간 큰 차이 없음, 스파이크 없을 때 CV가 더 낮은 경향"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p57:e422",
+            "p57:e423",
+            "p57:e424",
+            "p57:e425",
+            "p57:e426",
+            "p57:e427",
+            "p57:e429",
+            "p57:e431",
+            "p57:e434",
+            "p57:enh:e4",
+            "p57:enh:e5",
+            "p57:enh:e6",
+            "p57:enh:e7",
+            "p57:enh:e8",
+            "p57:enh:e9",
+            "p57:enh:e10",
+            "p57:enh:e11",
+            "p57:enh:e12",
+            "p57:enh:e14",
+            "p57:enh:e17",
+            "p57:enh:e18"
+          ]
+        }
+      ],
+      "1": [
+        {
+          "statement": "sparse.py 대비 CUDA 구현의 CROWN bound 계산 평균 속도가 forward 5.32x(81.2% 단축), backward 5.30x(81.1% 단축)이며, 추론+bound+검증 전체 기준으로는 forward 4.86x(79.4% 단축), backward 4.89x(79.6% 단축)이다.",
+          "limits": "n=5 평균 1회 결과 기준, sparse.py와 CUDA 비교. 배치 시스템 구현으로 3배 빨라졌다는 별도 관찰(e441)과는 다른 비교이다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "n=5",
+            "평균 1회 결과",
+            "sparse.py vs CUDA 비교"
+          ],
+          "observations": [
+            "forward bound 계산 5.32x speedup(81.2% 단축), backward 5.30x(81.1% 단축)",
+            "전체 추론+bound+검증 기준 forward 4.86x(79.4% 단축), backward 4.89x(79.6% 단축)"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "bound_calc_speedup_forward",
+              "value": "",
+              "value_kind": "range",
+              "unit": "x",
+              "condition": "n=5 평균 1회, sparse.py vs CUDA",
+              "element_ids": [
+                "p58:img0:e1"
+              ]
+            },
+            {
+              "metric": "bound_calc_speedup_backward",
+              "value": "",
+              "value_kind": "range",
+              "unit": "x",
+              "condition": "n=5 평균 1회, sparse.py vs CUDA",
+              "element_ids": [
+                "p58:img0:e1"
+              ]
+            },
+            {
+              "metric": "total_speedup_forward",
+              "value": "",
+              "value_kind": "range",
+              "unit": "x",
+              "condition": "n=5 평균 1회, sparse.py vs CUDA, 추론+bound+검증",
+              "element_ids": [
+                "p58:img0:e1"
+              ]
+            },
+            {
+              "metric": "total_speedup_backward",
+              "value": "",
+              "value_kind": "range",
+              "unit": "x",
+              "condition": "n=5 평균 1회, sparse.py vs CUDA, 추론+bound+검증",
+              "element_ids": [
+                "p58:img0:e1"
+              ]
+            },
+            {
+              "metric": "sparse_py_forward_ms",
+              "value": "",
+              "value_kind": "range",
+              "unit": "ms",
+              "condition": "n=5 평균 1회",
+              "element_ids": [
+                "p58:img0:e1"
+              ]
+            },
+            {
+              "metric": "cuda_forward_ms",
+              "value": "",
+              "value_kind": "range",
+              "unit": "ms",
+              "condition": "n=5 평균 1회",
+              "element_ids": [
+                "p58:img0:e1"
+              ]
+            },
+            {
+              "metric": "sparse_py_backward_ms",
+              "value": "",
+              "value_kind": "range",
+              "unit": "ms",
+              "condition": "n=5 평균 1회",
+              "element_ids": [
+                "p58:img0:e1"
+              ]
+            },
+            {
+              "metric": "cuda_backward_ms",
+              "value": "",
+              "value_kind": "range",
+              "unit": "ms",
+              "condition": "n=5 평균 1회",
+              "element_ids": [
+                "p58:img0:e1"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p58:img0:e1",
+            "p58:e435"
+          ]
+        },
+        {
+          "statement": "배치 시스템 구현 후 3배 빨라졌으며, 실시간 환경에서는 데이터셋을 이렇게 꽉 채워 넣지 못한다는 한계를 인지했다.",
+          "limits": "실시간 환경 적용 가능성에 대한 제한 언급. temp_batching 브랜치로 별도 저장.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "배치 시스템 구현 후"
+          ],
+          "observations": [
+            "3배 속도 향상",
+            "실시간 환경에선 데이터셋 밀집 투입 불가"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p58:e441",
+            "p58:e442",
+            "p58:e443"
+          ]
+        },
+        {
+          "statement": "지금까지 수행한 최적화: 1) 제로 memcpy, 2) 커널 자체 실행 횟수 감소(커널 퓨전, 커널 graph), 3) GPU 아키텍처 SM 구조 고려(FP64→FP32, double→float).",
+          "limits": "문서화된 최적화 목록.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p58:e444",
+            "p58:e445",
+            "p58:e446",
+            "p58:e447"
+          ]
+        }
+      ]
+    }
+  }
+}

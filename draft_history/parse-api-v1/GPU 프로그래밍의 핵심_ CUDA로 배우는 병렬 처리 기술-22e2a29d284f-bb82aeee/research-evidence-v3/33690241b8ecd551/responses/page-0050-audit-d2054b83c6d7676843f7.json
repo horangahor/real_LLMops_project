@@ -1,0 +1,231 @@
+{
+  "request_fingerprint": "d2054b83c6d7676843f7e784b632b3b63e765d3cd78239887d687af23f1377fc",
+  "value": {
+    "additions": [
+      {
+        "statement": "switch문 바깥에 fwd/bwd를 선언했을 때 nvcc 컴파일에서 warning #546-D와 error C2360/C2361이 발생했으며, 이는 transfer of control이 초기화를 우회하고 case/default 레이블에 의해 초기화가 생략되었기 때문이다.",
+        "limits": "컴파일러 진단 메시지는 nvcc 컴파일 과정에서 발생한 것으로 기록되었으며, 경고는 -diag-suppress로 억제 가능하다고 안내되었다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "nvcc 컴파일",
+          "switch(method) 바깥에 fwd/bwd 선언",
+          "case 0/1 및 default 레이블"
+        ],
+        "observations": [
+          "warning #546-D: transfer of control bypasses initialization of variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260)",
+          "error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략되었습니다.",
+          "error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략되었습니다.",
+          "error C2361: 'fwd' 초기화가 'default' 레이블에 의해 생략되었습니다.",
+          "Remark: The warnings can be suppressed with \"-diag-suppress <warning-number>\""
+        ],
+        "parameters": [
+          {
+            "name": "fwd 선언 위치",
+            "value": "switch(method) 바깥 main 함수 scope",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e354"
+            ]
+          },
+          {
+            "name": "bwd 선언 위치",
+            "value": "switch(method) 바깥 main 함수 scope",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e354"
+            ]
+          },
+          {
+            "name": "fwd 선언 라인",
+            "value": "252",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p50:e354"
+            ]
+          },
+          {
+            "name": "bwd 선언 라인",
+            "value": "260",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p50:e354"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "컴파일 경고 번호",
+            "value": "546-D",
+            "value_kind": "scalar",
+            "unit": "warning",
+            "condition": "nvcc 컴파일, switch 바깥 선언",
+            "element_ids": [
+              "p50:e354"
+            ]
+          },
+          {
+            "metric": "컴파일 오류 번호",
+            "value": "C2360",
+            "value_kind": "scalar",
+            "unit": "error",
+            "condition": "fwd 초기화가 case 레이블에 의해 생략",
+            "element_ids": [
+              "p50:e354"
+            ]
+          },
+          {
+            "metric": "컴파일 오류 번호",
+            "value": "C2361",
+            "value_kind": "scalar",
+            "unit": "error",
+            "condition": "bwd 초기화가 default 레이블에 의해 생략",
+            "element_ids": [
+              "p50:e354"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p50:e354",
+          "p50:e355"
+        ]
+      },
+      {
+        "statement": "switch 내부 중괄호 스코프에서 fwd/bwd를 선언·초기화하는 방식으로 수정한 뒤, backward 실행 시간이 다시 2100s 수준으로 증가하는 문제가 해결되었다고 기록했다.",
+        "limits": "해결 판단은 작성자 해석이며, 이후 실행에서 시간 변동이 다시 관찰되었다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch 내부 중괄호 스코프에서 fwd/bwd 선언",
+          "실행인자 기반 method 선택"
+        ],
+        "observations": [
+          "준수한 결과라고 평가",
+          "2100s 초 나오는 문제도 원인 해결 완료라고 기록"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e357"
+        ]
+      },
+      {
+        "statement": "switch문 안에서 ForwardBoundResult/BackwardBoundResult를 선언과 동시에 생성하도록 코드를 수정했으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 안된다고 기록했다.",
+        "limits": "해당 수정은 switch 케이스별 중괄호 스코프 사용이 필요하며, 중괄호 없이 선언하면 컴파일 경고/오류가 발생할 수 있다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch(method) 내부 case 0/1에서 지역 변수로 선언",
+          "중괄호 스코프 사용"
+        ],
+        "observations": [
+          "switch 안에서 선언과 동시에 만들어지도록 변경",
+          "중괄호로 스코프를 덮어주지 않으면 안된다고 기록"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e351",
+          "p50:e352",
+          "p50:e353"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p50:e351": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "switch 내부 case 0에서 ForwardBoundResult를 선언과 동시에 생성하는 코드 조각이 보존됨.",
+        "addition_refs": [
+          2
+        ]
+      },
+      "p50:e352": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "안에서 선언과 동시에 만들어지도록 해봤다는 기록이 보존됨.",
+        "addition_refs": [
+          2
+        ]
+      },
+      "p50:e353": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "switch 안의 선언문은 중괄호로 덮어주지 않으면 안된다는 기록이 보존됨.",
+        "addition_refs": [
+          2
+        ]
+      },
+      "p50:e354": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "nvcc 컴파일 경고/오류 메시지가 보존됨. 경고 번호 546-D, 오류 번호 C2360/C2361, 억제 방법 안내 포함.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p50:e355": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "fwd/bwd 초기화가 해당 레이블에 의해 생략되었으며, 작은 scope를 만들어준 것이라는 해석이 보존됨.",
+        "addition_refs": [
+          0
+        ]
+      },
+      "p50:e356": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "연구 주장·결과·수치·조건·출처 성격이 없는 연결 문장이라 연구 사실로 분류하지 않음.",
+        "addition_refs": []
+      },
+      "p50:e357": {
+        "state": "represented",
+        "fact_refs": [
+          1
+        ],
+        "note": "준수한 결과이며 2100s 초 문제 원인 해결 완료라는 해석이 보존됨.",
+        "addition_refs": [
+          1
+        ]
+      },
+      "p50:e358": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "구분자성 문장으로 연구 주장·결과·수치·조건·출처 성격이 없어 연구 사실로 분류하지 않음.",
+        "addition_refs": []
+      },
+      "p50:img2:e0": {
+        "state": "raw_data",
+        "fact_refs": [],
+        "note": "원시 실행 출력 조각(eps/T/F/ratio)으로, 연구 주장·조건·해석이 아닌 원시 데이터로 보존.",
+        "addition_refs": []
+      },
+      "p50:img2:e1": {
+        "state": "raw_data",
+        "fact_refs": [],
+        "note": "원시 실행 출력 조각(total elapsed 1634.61s)으로, 연구 주장·조건·해석이 아닌 원시 데이터로 보존.",
+        "addition_refs": []
+      },
+      "p50:img2:e2": {
+        "state": "raw_data",
+        "fact_refs": [],
+        "note": "원시 실행 출력 조각(results saved to results_cuda.csv)으로, 연구 주장·조건·해석이 아닌 원시 데이터로 보존.",
+        "addition_refs": []
+      }
+    }
+  }
+}

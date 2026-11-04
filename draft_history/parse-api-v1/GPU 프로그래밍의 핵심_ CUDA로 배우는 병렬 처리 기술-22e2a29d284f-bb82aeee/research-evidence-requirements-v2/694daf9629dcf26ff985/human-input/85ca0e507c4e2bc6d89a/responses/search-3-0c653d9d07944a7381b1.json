@@ -1,0 +1,322 @@
+{
+  "request_fingerprint": "0c653d9d07944a7381b1fa3a8eaa2a031b06dfb27fcdff93c38dce5e60e0277a",
+  "value": {
+    "title": "methods_Q5 재검토 결과",
+    "facts": [
+      {
+        "statement": "backward_bound_gpu()에 커널 퓨전을 적용하여 23ms 후반대까지 성능이 관찰되었다.",
+        "limits": "p31:e212, p31:e213, p31:e214",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "backward_bound_gpu() 대상 커널 퓨전 적용"
+        ],
+        "observations": [
+          "Elapsed time: 23,925200 ms",
+          "23ms 정도가 보인다는것"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e212",
+          "p31:e213",
+          "p31:e214"
+        ]
+      },
+      {
+        "statement": "lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전하여 22ms 초반까지 성능이 관찰되었다.",
+        "limits": "p32:e216, p32:e217, p32:e218",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "lirpa_forward_bound 사용 함수 커널 퓨전"
+        ],
+        "observations": [
+          "Elapsed time: 22,342900 ms",
+          "22ms 초반까지 나온다"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e216",
+          "p32:e217",
+          "p32:e218"
+        ]
+      },
+      {
+        "statement": "backward_bound_gpu에서 affine 중복 계산 삭제, new_(upper, lower)_p를 복사 대신 std::swap으로 포인터 스와핑, backward 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu 커널 함수 도입, build_coeff_pair_fused_gpu 커널 퓨전, backward_bias_pair_fused_gpu 커널 퓨전을 적용하였다.",
+        "limits": "p32:e222",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "backward_bound_gpu 최적화 및 커널 퓨전 적용"
+        ],
+        "observations": [
+          "커널 2개 함수 줄어듦",
+          "22ms 보이는 비율이 늘었다",
+          "최저점(28ms)도 잘 안보이게 됐고 체감상, 효과가 있는듯"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e222"
+        ]
+      },
+      {
+        "statement": "위 5번까지 적용 후 22,157400 ms가 관찰되었으며, 계속해서 1개의 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전을 모두 진행하였다.",
+        "limits": "p33:e223, p33:e224, p33:e225",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "5번까지 적용 후 최고 성능"
+        ],
+        "observations": [
+          "Elapsed time: 22,157400 ms",
+          "최고 성능 나왓는데..",
+          "1개의 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전 모두 진행함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p33:e223",
+          "p33:e224",
+          "p33:e225"
+        ]
+      },
+      {
+        "statement": "동기화(cudaDeviceSynchronize) 제거 및 필요한 부분을 제외한 동기화 코드 제거로 1ms 정도 시간이 줄었다.",
+        "limits": "p26:e180, p26:e181, p26:e182",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "cudaDeviceSynchronize 제거"
+        ],
+        "observations": [
+          "Elapsed time: 25,457200 ms",
+          "1 ms 정도 줄었다"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e180",
+          "p26:e181",
+          "p26:e182"
+        ]
+      },
+      {
+        "statement": "cuBlas 도입 시 40,050500 ms로 시간이 늘어났고, cuSparse 도입 시 27,107400 ms로 더 느려졌으며, spMM까지 도입 후 38,580600 ms로 거의 40ms로 회귀하였다.",
+        "limits": "p26:e184, p27:e188, p27:e189, p28:e191, p28:e192, p28:e195, p29:e201, p30:e202, p30:e203",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "cuBlas/cuSparse/spMM 도입"
+        ],
+        "observations": [
+          "Elapsed time: 40,050500 ms",
+          "40ms 정도로 다시 시간이 늘어남",
+          "Elapsed time: 27,107400 ms",
+          "결과는 27ms .. 좀 더 느려졌다",
+          "Elapsed time: 38,580600 ms",
+          "거의 40ms로 회귀.. 이러면 안된다"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e184",
+          "p27:e188",
+          "p27:e189",
+          "p28:e191",
+          "p28:e192",
+          "p28:e195",
+          "p29:e201",
+          "p30:e202",
+          "p30:e203"
+        ]
+      },
+      {
+        "statement": "현재 모델 크기와 호출 패턴에서는 cuBLAS와 cuSPARSE가 느려졌으므로 현 기준 코드에는 포함하지 않은 상태이며, 후에 다시 도입해보는 시도가 필요하다.",
+        "limits": "p30:e206",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "현재 모델 크기와 호출 패턴"
+        ],
+        "observations": [
+          "cuBLAS와 cuSPARSE는 실험했지만 현재 모델 크기와 호출 패턴에서는 느려졌으므로, 현 기준 코드에는 포함하지 않은 상태, 후에 다시 도입해보는 시도가 필요함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e206"
+        ]
+      },
+      {
+        "statement": "신경망 크기가 매우 작고 cuBlas, cuSparse의 동작 방식에서 오버헤드가 생겼으며, 이는 신경망이 작기 때문이다.",
+        "limits": "p31:e208, p31:e209",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "원인 분석"
+        ],
+        "observations": [
+          "신경망의 크기가 매우 작다",
+          "cuBlas, cuSparse 의 동작 방식에서 오버헤드가 생겼다. (이 또한 신경망이 작기 때문에)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e208",
+          "p31:e209"
+        ]
+      },
+      {
+        "statement": "GPU VRAM 사용량이 310.00 MiB로 관찰되었으며, CUDA Context 생성 및 런타임 오버헤드를 감안하면 코드 계산값보다 작을 수 있다.",
+        "limits": "p23:e156, p23:e157, p23:e158",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "GPU VRAM 프로파일"
+        ],
+        "observations": [
+          "Memory: ■ Budget: 10.97 GiB ■ Usage: 310.00 MiB Committed Memory: 311.19 MiB",
+          "310MiB? 이거 뭔가 이상하다",
+          "CUDA가 실행(CUDA API 의 첫 호출시)되면 CUDA Context라는게 생성됨 이게 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하는데 이게 VRAM을 사용함 + 런타임 오버헤드까지 하면 충분히 프로파일러에 나오는 VRAM 사용량은 내가 코드로 계산한 값보다 작을 수 있다"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p23:e156",
+          "p23:e157",
+          "p23:e158"
+        ]
+      },
+      {
+        "statement": "forward 함수에서 DTOH하는 memcpy를 극단적으로 없앴고, 그 결과 64.716000 ms가 관찰되었다.",
+        "limits": "p22:e150, p22:e151, p22:e152",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "forward 함수 DTOH memcpy 제거"
+        ],
+        "observations": [
+          "이제 forward 함수에서 DTOH하는 memcpy를 극단적으로 없앴다",
+          "Elapsed time: 64.716000 ms",
+          "64ms … 엄청 줄었다.."
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p22:e150",
+          "p22:e151",
+          "p22:e152"
+        ]
+      },
+      {
+        "statement": "mempool + warmup 적용 시 103,741500 ms가 관찰되었다.",
+        "limits": "p21:e148, p21:e149",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "mempool + warmup 적용"
+        ],
+        "observations": [
+          "Elapsed time: 103,741500 ms",
+          "결과 103ms 정도로 이제 거의 cpu와 비슷해졌다"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p21:e148",
+          "p21:e149"
+        ]
+      },
+      {
+        "statement": "CPU ONLY iteration ver 실행 결과 193,665600 ms가 관찰되었으며, 기존 backward보다 93ms 정도 느렸다.",
+        "limits": "p24:e169, p24:e170",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "CPU ONLY iteration ver"
+        ],
+        "observations": [
+          "Elapsed time: 193,665600 ms",
+          "실행결과는 193ms (CPU 버전) , 기존 backward보다 93ms 정도 느림"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p24:e169",
+          "p24:e170"
+        ]
+      },
+      {
+        "statement": "backward_only_iteration 구조체 도입 및 lirpa_backward_only_iteration_array 구조가 lirpa_forward_backward_fc_array와 달라 새로운 함수 추가, 기본 자료구조 등이 필요하였다.",
+        "limits": "p24:e171",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "backward_only 구조체 도입"
+        ],
+        "observations": [
+          "그 다음에 backward_only의 구조체를 도입해야 했는데 lirpa_backward_only_iteration_array 의 구조가 lirpa_forward_backward_fc_array와 좀 다름 (새로운 함수 추가, 기본 자료구조 등)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p24:e171"
+        ]
+      },
+      {
+        "statement": "현재 backward GPU 파이프라인이 완성되었고 실행 결과가 관찰되었다.",
+        "limits": "p24:e174",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "backward GPU 파이프라인 완성"
+        ],
+        "observations": [
+          "현재 backward GPU 파이프라인 완성",
+          "실행 결과"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p24:e174"
+        ]
+      },
+      {
+        "statement": "실시간성 확인을 위해 마이크로초 ~ 수 밀리초(ms) 내로 제한해야 한다는 요구가 관찰되었다.",
+        "limits": "p25:e178",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [
+          "실시간성 요구"
+        ],
+        "observations": [
+          "실시간성을 확인하려면 마이크로초 ~ 수 밀리초(ms) 내로 제한해야 함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p25:e178"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

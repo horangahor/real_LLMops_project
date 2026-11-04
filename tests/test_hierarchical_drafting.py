@@ -28,6 +28,29 @@ class Client:
 
     def __call__(self, system, packet, schema, path):
         stage = path.parent.parent.name
+        if packet.get("operation") in ("editorial_revision", "editorial_assembly"):
+            from review_test_support import editorial_reply
+            self.events.append((stage, "generate", copy.deepcopy(packet)))
+            if stage == self.fail_once:
+                self.fail_once = None
+                raise RuntimeError("test interruption")
+            value = editorial_reply(packet)
+            if packet["operation"] == "editorial_revision":
+                if packet.get("output_mode") == "fixed_slots":
+                    for sid, parts in packet["source_parts"].items():
+                        for key, units in parts.items():
+                            unit = units[0]
+                            value["sections"][sid]["parts"][key][unit["paragraph_id"]]["spans"][unit["id"]].update(
+                                action="replace", text=unit["text"] + f" 연결을 보완했다 {len(self.events)}.")
+                else:
+                    for row in value["sections"].values():
+                        for paragraphs in row["parts"].values():
+                            paragraphs[0]["segments"][0]["text"] += f" 연결을 보완했다 {len(self.events)}."
+            if stage == self.corrupt_editor_once:
+                self.corrupt_editor_once = None
+                sid = "s1"
+                value["sections"][sid]["parts"]["p1"][0]["segments"][0]["source_id"] = packet["source_parts"][sid]["p0"][0]["id"]
+            return value
         if packet.get("operation") == "editorial_review":
             self.events.append((stage, "review", copy.deepcopy(packet)))
             if stage == self.fail_once:
@@ -38,14 +61,8 @@ class Client:
                 self.reject_once = None
             return {"issues": [{"section_id": packet["outline"][0]["id"], "paragraph_id": "none", "category": "flow",
                                 "severity": "error", "reason": "test correction required"}] if fail else []}
-        if "findings" in schema["properties"]:
-            from review_test_support import confirmed_findings
-            self.events.append((stage, "review_verification", copy.deepcopy(packet)))
-            return confirmed_findings(packet, schema)
-        if "links" in schema["properties"]:
-            self.events.append((stage, "citation_repair", copy.deepcopy(packet)))
-            return {"links": {key: {"paragraph_id": "none", "support_quote": ""}
-                              for key in schema["properties"]["links"]["properties"]}}
+        if "findings" in schema["properties"] or "links" in schema["properties"]:
+            raise AssertionError("Retired review/link agents must not be called")
         kind = "review" if "checks" in schema["properties"] else "generate"
         self.events.append((stage, kind, copy.deepcopy(packet)))
         if stage == self.fail_once:
@@ -126,20 +143,31 @@ class HierarchicalDraftingTests(unittest.TestCase):
             self.assertFalse(revision["revision"]["review"]["approved"])
             self.assertTrue(result["review"]["approved"])
 
-    def test_exhausted_leaf_review_keeps_candidate_and_does_not_call_parent_or_publish(self):
+    def test_exhausted_leaf_review_preserves_warnings_and_continues_to_final_draft(self):
         with TemporaryDirectory() as tmp:
             folder = Path(tmp) / "run"
             folder.mkdir()
             (folder / "draft.md").write_text("previous draft", encoding="utf-8")
             client = Client()
             client.reject = "subsection-s1-p1"
-            with self.assertRaisesRegex(ValueError, "subsection-s1-p1"):
-                PlannedPaper(tmp, client).run(research(), output_dir=folder)
-            self.assertEqual((folder / "draft.md").read_text(encoding="utf-8"), "previous draft")
-            self.assertFalse(any(s in ("section-s1", "paper") for s, _, _ in client.events))
+            engine = PlannedPaper(tmp, client)
+            result = engine.run(research(), output_dir=folder)
+            self.assertEqual((folder / "draft.md").read_text(encoding="utf-8"), result["draft_markdown"])
+            self.assertTrue(any(s == "paper" for s, _, _ in client.events))
             candidate = json.loads((folder / "workflow/subsection-s1-p1/candidate.json").read_text(encoding="utf-8"))
-            self.assertFalse(candidate["review"]["approved"])
+            self.assertTrue(candidate["review"]["approved"])
+            self.assertFalse(candidate["review"]["content_approved"])
+            self.assertEqual(result["review"]["content_warnings"][0]["original_severity"], "error")
+            self.assertEqual(result["review"]["content_status"], "needs_attention")
             self.assertEqual(sum(s == "subsection-s1-p1" and k == "review" for s, k, _ in client.events), 3)
+            summary = json.loads((folder / "review-warnings.json").read_text(encoding="utf-8"))
+            self.assertEqual(summary, result["review_warnings"])
+            self.assertEqual(summary["warning_count"], 1)
+            self.assertEqual(summary["stages"][0]["completion"]["revisions"], 2)
+            self.assertIn("F2", summary["stages"][0]["snapshot"]["paragraphs"]["s1_p1"]["text"])
+            before = len(client.events)
+            self.assertEqual(engine.run(research(), output_dir=folder)["review_warnings"], summary)
+            self.assertEqual(len(client.events), before)
 
     def test_resume_reuses_only_reviewed_stages_after_transport_interruption(self):
         with TemporaryDirectory() as tmp:
@@ -166,8 +194,8 @@ class HierarchicalDraftingTests(unittest.TestCase):
                 self.assertEqual(sum(s == target and k == "generate" for s, k, _ in client.events), 2)
                 # The invalid edit is rejected before the reviewer can approve it.
                 self.assertEqual(sum(s == target and k == "review" for s, k, _ in client.events), 1)
-                revision = next(p["revision"] for s, k, p in client.events if s == target and "revision" in p)
-                self.assertIn("허용 범위", revision["validation_error"])
+                repaired = next(p for s, k, p in client.events if s == target and "invalid_response" in p)
+                self.assertIn("구간을 벗어났습니다", repaired["invalid_response"]["reason"])
                 self.assertTrue(result["review"]["approved"])
 
     def test_editor_review_failure_revises_only_that_editing_stage(self):
@@ -181,18 +209,20 @@ class HierarchicalDraftingTests(unittest.TestCase):
                 self.assertEqual(sum(s == "subsection-s1-p1" and k == "generate" for s, k, _ in client.events), 1)
                 self.assertTrue(result["review"]["approved"])
 
-    def test_failed_final_review_preserves_previous_paper_and_reviewed_children(self):
+    def test_exhausted_editorial_review_preserves_findings_as_warnings_and_publishes_draft(self):
         with TemporaryDirectory() as tmp:
             folder = Path(tmp) / "run"
             folder.mkdir()
             (folder / "draft.md").write_text("previous draft", encoding="utf-8")
             client = Client()
             client.reject = "paper"
-            with self.assertRaisesRegex(ValueError, "paper"):
-                PlannedPaper(tmp, client).run(research(), output_dir=folder)
-            self.assertEqual((folder / "draft.md").read_text(encoding="utf-8"), "previous draft")
+            result = PlannedPaper(tmp, client).run(research(), output_dir=folder)
+            self.assertTrue(result["review"]["approved"])
+            self.assertEqual(result["review"]["editorial_status"], "needs_attention")
+            self.assertTrue(result["review"]["issues"][0]["deferred"])
+            self.assertEqual((folder / "draft.md").read_text(encoding="utf-8"), result["draft_markdown"])
             self.assertTrue((folder / "workflow/section-s2/approved.json").is_file())
-            self.assertFalse((folder / "workflow/paper/approved.json").is_file())
+            self.assertTrue((folder / "workflow/paper/approved.json").is_file())
             self.assertFalse((Path(tmp) / "draft_history/planned/latest.json").exists())
 
     def test_stage_checkpoint_tampering_is_rejected_before_reuse(self):
@@ -228,7 +258,9 @@ class HierarchicalDraftingTests(unittest.TestCase):
             self.assertTrue(result["review"]["approved"])
             self.assertEqual(sum(s == "subsection-s0-p0" and k == "generate" for s, k, _ in events), 1)
             self.assertEqual(sum(s == "section-s0" and k == "generate" for s, k, _ in events), 1)
-            self.assertTrue(all(s in ("subsection-s0-p0", "section-s0") for s, _, _ in events))
+            self.assertTrue(all(s in ("subsection-s0-p0", "section-s0", "paper") for s, _, _ in events))
+            self.assertEqual(sum(s == "paper" and k == "generate" for s, k, _ in events), 1)
+            self.assertIn("두 필수 근거를 다시 설명한 본문이다.", result["draft_markdown"])
             request = next(p for s, k, p in events if s == "subsection-s0-p0" and k == "generate")
             self.assertEqual(request["revision"]["review"]["checks"][0]["missing_body_evidence_ids"], ["F2"])
             archive = folder / "workflow/subsection-s0-p0/checkpoint-history" / f"approved-{saved['sha256']}.json"
@@ -263,7 +295,7 @@ class HierarchicalDraftingTests(unittest.TestCase):
             self.assertEqual(first[2]["revision"]["review"]["checks"][0]["missing_body_evidence_ids"], ["F2"])
             self.assertTrue(result["review"]["approved"])
 
-    def test_failed_revision_of_legacy_approval_does_not_restore_approval_or_publish(self):
+    def test_legacy_approval_revalidation_preserves_archive_and_defers_after_two_revisions(self):
         with TemporaryDirectory() as tmp:
             client = Client()
             client.plan["sections"][0]["required_items"][0]["evidence_ids"] = ["F1", "F2"]
@@ -277,14 +309,16 @@ class HierarchicalDraftingTests(unittest.TestCase):
             folder = Path(original["run_dir"])
             saved = self.legacy_checkpoint(folder)
             client.reject = "subsection-s0-p0"
-            with self.assertRaisesRegex(ValueError, "근거·필수 내용 검토 미통과"):
-                engine.run(research())
+            before = len(client.events)
+            result = engine.run(research())
             root = folder / "workflow/subsection-s0-p0"
-            self.assertFalse((root / "approved.json").exists())
+            self.assertTrue((root / "approved.json").exists())
             self.assertEqual(json.loads((root / "checkpoint-history" / f"approved-{saved['sha256']}.json").read_text(encoding="utf-8")), saved)
-            self.assertEqual((folder / "draft.md").read_text(encoding="utf-8"), original["draft_markdown"])
+            self.assertEqual((folder / "draft.md").read_text(encoding="utf-8"), result["draft_markdown"])
+            self.assertFalse(result["review"]["content_approved"])
+            self.assertEqual(sum(s == "subsection-s0-p0" and k == "generate" for s, k, _ in client.events[before:]), 2)
             workflow = json.loads((folder / "workflow.json").read_text(encoding="utf-8"))
-            self.assertEqual(workflow["stages"], [])
+            self.assertEqual(workflow["stages"][-1]["id"], "paper")
 
     def test_archived_checkpoint_tampering_still_stops_before_any_new_call(self):
         with TemporaryDirectory() as tmp:

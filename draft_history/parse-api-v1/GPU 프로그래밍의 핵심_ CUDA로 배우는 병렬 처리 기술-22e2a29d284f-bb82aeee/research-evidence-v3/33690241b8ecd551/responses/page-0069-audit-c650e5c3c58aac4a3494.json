@@ -1,0 +1,245 @@
+{
+  "request_fingerprint": "c650e5c3c58aac4a3494809d23e3ac6f24866ed32d1f8e49a8902518ca276acb",
+  "value": {
+    "additions": [
+      {
+        "statement": "현재 작성자는 2차원 block 크기와 그 안의 tid로 평면적인 계산(단일 샘플에 대한 행렬 연산)을 수행 중이며, z축을 추가하면 저 평면적인 연산을 한 번에 처리하는 것이 가능하다. 이는 3차원(multi sample)을 처리하는 tensor 코어가 있기 때문이며, 현재 작성자는 2차원 커널이라 fp32 코어로만 하고 있다.",
+        "limits": "2차원 커널과 fp32 코어만 사용한다는 서술은 현재 구현 상태에 대한 설명이며, 실제 실험 구성·정밀도·측정 구간 정보는 이 요소에서 확인되지 않는다.",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "현재 작성자는 2차원 block 크기와 그 안의 tid로 평면적인 계산(단일 샘플에 대한 행렬 연산)을 수행 중임",
+          "z축을 추가하면 저 평면적인 연산을 한 번에 처리가 가능함",
+          "3차원(multi sample)을 처리하는 tensor 코어가 있기 때문",
+          "현재 작성자는 2차원 커널이라 fp32 코어로만 하고 있음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e542",
+          "p68:e544",
+          "p68:pdf:b1"
+        ]
+      },
+      {
+        "statement": "antenna_lirpa는 멀티스트림이 아니라 스트림 1개(Single Stream)로 동작하며, cuBLAS Batched GEMM과 텐서 코어(Tensor Core)를 사용해 2분 미만에 완료된다. 반면 현재 C++ 멀티스트림(8분)은 단일 샘플 연산 커널을 64개 스트림에 각각 런치하고 일반 CUDA 코어(FP32 연산기)만 사용하며, 1024개를 처리하려면 수만 번의 커널 호출이 필요하다.",
+        "limits": "2분 미만, 8분, 64개 스트림, 1024개, 수만 번의 커널 호출은 비교 설명에서 제시된 값이며, 실제 실험 구성·정밀도·측정 구간 정보는 이 요소에서 확인되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "antenna_lirpa는 멀티스트림이 아니라 스트림 1개(Single Stream)로 동작함",
+          "antenna_lirpa는 cuBLAS Batched GEMM과 텐서 코어(Tensor Core)를 사용함",
+          "antenna_lirpa는 2분 미만에 완료됨",
+          "현재 C++ 멀티스트림은 8분 소요됨",
+          "현재 C++ 멀티스트림은 단일 샘플 연산 커널을 64개 스트림에 각각 런치함",
+          "현재 C++ 멀티스트림은 일반 CUDA 코어(FP32 연산기)만 사용함",
+          "1024개를 처리하려면 수만 번의 커널 호출이 필요함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e543"
+        ]
+      },
+      {
+        "statement": "antenna_lirpa(PytTorch)는 1024개 입력을 [1024, 16, 491] 크기의 3D 텐서 하나로 병합하고, 스트림 1개에서 단 1번의 cuBLAS GEMM 커널 호출을 수행하며, RTX 4070 SUPER의 텐서 코어(수백 TFLOPS)를 100% 풀가동한다. 이는 스트림의 개수 문제가 아니라 연산기(텐서 코어 VS 일반 코어)와 커널 호출 방식(3D 텐서 배치 VS 단일 샘플 반복)의 체급 차이이다.",
+        "limits": "[1024, 16, 491] 크기, 수백 TFLOPS, 100% 풀가동, 1번의 cuBLAS GEMM 커널 호출은 비교 설명에서 제시된 값이며, 실제 실험 구성·정밀도·측정 구간 정보는 이 요소에서 확인되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "antenna_lirpa(Pytorch)는 1024개 입력을 [1024, 16, 491] 크기의 3D 텐서 하나로 병합함",
+          "antenna_lirpa는 스트림 1개에서 단 1번의 cuBLAS GEMM 커널 호출을 수행함",
+          "RTX 4070 SUPER의 텐서 코어(수백 TFLOPS)를 100% 풀가동함",
+          "스트림의 개수 문제가 아니라 연산기(텐서 코어 VS 일반 코어)와 커널 호출 방식(3D 텐서 배치 VS 단일 샘플 반복)의 체급 차이임"
+        ],
+        "parameters": [
+          {
+            "name": "3D 텐서 크기",
+            "value": "[1024, 16, 491]",
+            "value_kind": "text",
+            "element_ids": [
+              "p68:e543"
+            ]
+          },
+          {
+            "name": "GPU 모델",
+            "value": "RTX 4070 SUPER",
+            "value_kind": "text",
+            "element_ids": [
+              "p68:e543"
+            ]
+          },
+          {
+            "name": "텐서 코어 성능",
+            "value": "수백 TFLOPS",
+            "value_kind": "range",
+            "element_ids": [
+              "p68:e543"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p68:e543"
+        ]
+      },
+      {
+        "statement": "방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지하면서 3.2배 가속(25분 → 8분)하며, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 방법 C(Batched GEMM, 3D 텐서 연산화, 차기 로드맵)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환하여 cublasSgemmBatched 호출하며, PyTorch처럼 텐서 코어를 100% 활용하고, 이렇게 구현하면 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입이 가능해진다.",
+        "limits": "3.2배 가속, 25분 → 8분, 7~8분 한계선, 30초~1분대, 전체 40,000개는 로드맵/비교 설명에서 제시된 값이며, 실제 실험 구성·정밀도·측정 구간 정보는 이 요소에서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지하면서 3.2배 가속(25분 → 8분)함",
+          "스트림 수의 한계(SM 포화)로 7~8분이 한계선임",
+          "방법 C(Batched GEMM, 3D 텐서 연산화, 차기 로드맵)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환하여 cublasSgemmBatched 호출함",
+          "PyTorch처럼 텐서 코어를 100% 활용함",
+          "이렇게 구현하면 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입이 가능해짐"
+        ],
+        "parameters": [
+          {
+            "name": "방법 A 가속 배율",
+            "value": "3.2배",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p68:e543"
+            ]
+          },
+          {
+            "name": "방법 A 소요 시간",
+            "value": "25분 → 8분",
+            "value_kind": "range",
+            "element_ids": [
+              "p68:e543"
+            ]
+          },
+          {
+            "name": "방법 A 한계선",
+            "value": "7~8분",
+            "value_kind": "range",
+            "element_ids": [
+              "p68:e543"
+            ]
+          },
+          {
+            "name": "방법 C 목표 소요 시간",
+            "value": "30초~1분대",
+            "value_kind": "range",
+            "element_ids": [
+              "p68:e543"
+            ]
+          },
+          {
+            "name": "방법 C 대상 전체 개수",
+            "value": "40,000개",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p68:e543"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p68:e543"
+        ]
+      },
+      {
+        "statement": "auto-LiRPA / 3D Grid 방식은 Z축 = 1024로 그리드 크기가 dim3 grid(num_blocks_x, num_blocks_y, 1024)이며, 1024장의 종이를 층층이 쌓아 1024층 아파트 큐브를 한 번에 GPU에 통째로 던진다. 1024개 샘플이 단 하나의 3D 큐브(텐서)로 GPU 메모리에 적재되며, CPU는 단 1번 발사하고 GPU의 56개 SM들이 1024층을 나눠서 동시 연산하며, GPU 코어 7,168개가 1024개 샘플을 동시에 초고속 연산한다.",
+        "limits": "Z축 = 1024, dim3 grid(num_blocks_x, num_blocks_y, 1024), 56개 SM, 7,168개 코어는 비교 설명에서 제시된 값이며, 실제 실험 구성·정밀도·측정 구간 정보는 이 요소에서 확인되지 않는다.",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "auto-LiRPA / 3D Grid 방식은 Z축 = 1024임",
+          "그리드 크기가 dim3 grid(num_blocks_x, num_blocks_y, 1024)임",
+          "1024장의 종이를 층층이 쌓아 1024층 아파트 큐브를 한 번에 GPU에 통째로 던짐",
+          "1024개 샘플이 단 하나의 3D 큐브(텐서)로 GPU 메모리에 적재됨",
+          "CPU는 단 1번 발사함",
+          "GPU의 56개 SM들이 1024층을 나눠서 동시 연산함",
+          "GPU 코어 7,168개가 1024개 샘플을 동시에 초고속 연산함"
+        ],
+        "parameters": [
+          {
+            "name": "Z축 값",
+            "value": "1024",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p70:e546"
+            ]
+          },
+          {
+            "name": "그리드 크기",
+            "value": "dim3 grid(num_blocks_x, num_blocks_y, 1024)",
+            "value_kind": "text",
+            "element_ids": [
+              "p70:e546"
+            ]
+          },
+          {
+            "name": "GPU SM 개수",
+            "value": "56개",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p70:e546"
+            ]
+          },
+          {
+            "name": "GPU 코어 개수",
+            "value": "7,168개",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p70:e546"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p70:e546"
+        ]
+      },
+      {
+        "statement": "차후 최적화 방안 문서(배칭, 멀티스트림)의 방법 1, B가 이 과정을 설명하고 있고, C 과정은 최적화된 라이브러리를 쓰라는 것이다.",
+        "limits": "방법 1, B, C의 구체적인 내용과 문서명은 이 요소에서 확인되지 않으며, 참조 문서와 방법 구분만 서술되어 있다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "차후 최적화 방안 문서(배칭, 멀티스트림)의 방법 1, B가 이 과정을 설명하고 있음",
+          "C 과정은 최적화된 라이브러리를 쓰라는 것임"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p70:e547"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p69:e545": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "p69:e545의 현재 작성자 방식(Z축=1, 그리드 dim3 grid(num_blocks,1,1), 샘플 1장씩 연산, 1024번 반복)은 기존 facts에 반영되었으며, 관련 맥락(2차원 커널/fp32 코어, antenna_lirpa 비교, 3D Grid 방식, 로드맵 방법 A/C)은 additions로 보완함.",
+        "addition_refs": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    }
+  }
+}

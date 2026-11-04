@@ -1,0 +1,225 @@
+{
+  "request_fingerprint": "cc0b0547d977ed5c453c7b90847fe9b0210db29bf34ec49445b9908eafd5be02",
+  "value": {
+    "title": "GPU/CUDA 실험 비교 맥락 검토",
+    "facts": [
+      {
+        "statement": "측정은 추론(infer)·bound 계산·검증(certify) 3가지 값을 각각 나누어 기록하도록 구성했으며, 각 구간 끝마다 std::chrono::high_resolution_clock::now()로 타임스탬프를 찍어 누적 시간을 합산하는 방식으로 수행했다.",
+        "limits": "원문은 측정 구간 분리와 타임스탬프 누적 방식만 서술하며, cudaHostRegister/No Pinning이나 클록 고정·Persistence mode 같은 GPU 측정 조건 설정은 이 요소들에서 직접 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "quoted_instruction",
+        "conditions": [
+          "추론·bound·검증 3구간 분리 측정",
+          "구간 끝 타임스탬프 기록 후 누적 시간 합산"
+        ],
+        "observations": [
+          "구간별 누적 시간을 합산해 elapsed 타임과 미세 오차가 있어 합산 시간을 채택함",
+          "forward/backward 각각 20번 측정 후 평균과 분산을 구해 슬라이드에 넣을 예정"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p54:e392",
+          "p54:e393",
+          "p54:e394",
+          "p54:e395"
+        ]
+      },
+      {
+        "statement": "warm up 코드를 넣었으나, warm up 이후 오히려 걸리는 시간과 각 평균 시간이 더 늘어나는 현상이 나타났고, forward가 warm up 이전 backward 급 속도가 나오는 정도였으며, warm up을 해도 스파이크 데이터가 뜨고 10번 측정 시 평균 시간이 느려지는 문제가 발생했다.",
+        "limits": "이 요소는 warm up 적용 후 관측된 이상 현상과 의문을 서술할 뿐, 클록 고정·Persistence mode·cudaHostRegister/No Pinning 같은 구체적 GPU 조건 비교 결과를 직접 제시하지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "quoted_instruction",
+        "conditions": [
+          "warm up 1회 적용",
+          "CV를 통한 스파이크·분산 규명 시도"
+        ],
+        "observations": [
+          "warm up 후 평균 시간이 더 늘어남",
+          "warm up 후에도 스파이크 발생, 가끔 평균 시간 느려짐",
+          "스파이크가 안 뜰 때는 변동 계수가 더 낮은 느낌"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p57:e423",
+          "p57:e424",
+          "p57:e426",
+          "p57:e427",
+          "p57:e430",
+          "p57:e433"
+        ]
+      },
+      {
+        "statement": "측정 시 실제 사이클 시간만 측정하고 가중치 로드·memcpy 등은 포함하지 않으며, warm up 1회 수행, CV로 스파이크·분산 정도를 규명한다는 GPU 벤치마크 모범 사례 기준을 세우기로 했다.",
+        "limits": "이는 벤치마크 모범 사례를 따라 기준을 세우기로 한 계획/원칙 서술이며, 실제 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 적용 결과로 확인된 공정 비교 조건은 아니다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "quoted_instruction",
+        "conditions": [
+          "GPU 벤치마크 모범 사례 준용",
+          "추론·bound·검증 3값 분리 측정"
+        ],
+        "observations": [
+          "실제 사이클 시간만 측정(가중치 로드·memcpy 제외)",
+          "warm up 1회",
+          "CV로 스파이크·분산 규명"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p57:e422",
+          "p57:e424",
+          "p57:e425"
+        ]
+      },
+      {
+        "statement": "스파이크 문제와 평균 시간 분포 상승 원인에 대해 클록 고정 후 다시 측정하거나 GPU 사용량 측정 등을 해보면 될 것 같다고 언급했으며, 교수님께는 CV가 아주 간헐적으로 튀어서 그렇다고 설명했고 이는 발표에 담을 내용은 아니라고 정리했다.",
+        "limits": "이는 원인 규명을 위한 향후 측정 아이디어와 발표 제외 처리만 서술하며, 실제 클록 고정·GPU 사용량 측정 결과가 공정 비교 조건으로 확정되었다는 근거는 아니다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "quoted_instruction",
+        "conditions": [
+          "스파이크 문제 잔존",
+          "CV 간헐적 튀음"
+        ],
+        "observations": [
+          "클록 고정 후 재측정 또는 GPU 사용량 측정 아이디어 제시",
+          "교수님께는 CV 간헐적 튀음으로 설명, 발표 미포함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p58:e436",
+          "p58:e440"
+        ]
+      },
+      {
+        "statement": "cudaEvent 하드웨어 타이머 측정을 시스템 인자로 제어하며, 0=비활성화(드라이버 오버헤드 0, 최고 속도), 1=마지막 샘플만 1회 측정(기본값), 2=매 샘플마다 측정(92만 번 전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 구분했다.",
+        "limits": "이는 cudaEvent 측정 제어 방식 구분이며, cudaHostRegister/No Pinning 비교나 클록·Persistence mode 같은 GPU 조건 비교와는 직접 연결되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "quoted_instruction",
+        "conditions": [
+          "cudaEvent 측정 제어 시스템 인자 도입",
+          "measure_gpu 인자 0/1/2 구분"
+        ],
+        "observations": [
+          "0: 비활성화, 드라이버 오버헤드 0, 최고 속도",
+          "1: 마지막 샘플만 1회 측정, 전체 루프 오버헤드 0초 + 마지막 Pure GPU 시간 리포트",
+          "2: 매 샘플 측정, 92만 번 전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 주의"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e471"
+        ]
+      },
+      {
+        "statement": "cudaEvent 추가가 전체 시간 증가 원인일 가능성을 의심했고, 원인으로 1) cudaMemcpy 복사할 메모리 계산 CPU 계산, 2) cudaEvent 커널 측정, 3) 진짜 GPU 클럭 가능성을 제시했다.",
+        "limits": "이는 원인 후보 제시이며, 실제 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 적용 결과로 확정된 공정 비교 조건은 아니다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "quoted_instruction",
+        "conditions": [
+          "cudaEvent 추가 후 시간 증가 의심",
+          "그래프만 적용한 버전이 더 빠름 관찰"
+        ],
+        "observations": [
+          "원인 후보: cudaMemcpy 메모리 계산 CPU 계산, cudaEvent 커널 측정, GPU 클럭"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e470",
+          "p61:e473"
+        ]
+      },
+      {
+        "statement": "cudaGraph만 적용된 버전과 pinned Memory 추가 + cudaEvent 제어 + 필요한 만큼 계산 후 D2H memcpy + certify topk 자료구조 스택화 버전을 평균으로 비교했으며, forward에서는 graph 단일 적용이 전체적으로 우수하고 infer_s 기준 약 20초 차이가 났으나, backward에서는 total 시간이 비슷했고 이는 infer에서 깎은 20초를 bound에서 graph보다 20초 빨리 수행했기 때문이라고 분석했다.",
+        "limits": "이는 graph 적용 여부 및 메모리·복사 최적화 조합 간 비교 결과이며, cudaHostRegister/No Pinning이나 클록·Persistence mode 같은 GPU 조건 비교와는 직접 연결되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "quoted_instruction",
+        "conditions": [
+          "cudaGraph만 적용 버전 vs pinned Memory + cudaEvent 제어 + 필요량 계산 D2H memcpy + certify 스택화 버전 평균 비교"
+        ],
+        "observations": [
+          "forward: graph 단일 적용 우수, infer_s 기준 약 20초 차이",
+          "backward: total 시간 비슷, infer에서 깎은 20초를 bound에서 graph보다 20초 빨리 수행"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p62:e482",
+          "p62:e483",
+          "p62:e485"
+        ]
+      },
+      {
+        "statement": "단일 스트림보다 배칭(멀티 스트림, 데이터 여러 개 묶음) 방식이 기존 데이터셋이 준비된 실험 환경에서 단일 스트림보다 3배 빨라졌고(25분 → 8분), 이는 GPU 자원이 남고 단일 스트림과 단일 데이터 복사가 큰 병목을 만든다는 점을 얻었다고 정리했다.",
+        "limits": "이는 배칭·다중 스트림 비교 결과이며, cudaHostRegister/No Pinning이나 클록·Persistence mode 같은 GPU 조건 비교와는 직접 연결되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "quoted_instruction",
+        "conditions": [
+          "배칭 + 멀티 스트림 vs 단일 스트림/단일 데이터 복사 비교",
+          "데이터셋이 준비된 실험 환경"
+        ],
+        "observations": [
+          "단일 스트림보다 3배 시간 빨라짐(25분 → 8분)",
+          "GPU 자원 남음",
+          "단일 스트림·단일 데이터 복사가 큰 병목"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p59:e453",
+          "p63:e490"
+        ]
+      },
+      {
+        "statement": "cudaGraph를 이용해 추론·bound 따로 캡처한 경우와 추론+bound 한 번에 캡처한 경우를 비교했으며, 추론과 bound를 따로 캡처했을 때 기준으로 약 400초 정도 줄어들었다고 기록했다.",
+        "limits": "이는 cudaGraph 캡처 단위 비교 결과이며, cudaHostRegister/No Pinning이나 클록·Persistence mode 같은 GPU 조건 비교와는 직접 연결되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "quoted_instruction",
+        "conditions": [
+          "cudaGraph 캡처 단위 비교(추론·bound 분리 vs 추론+bound 통합)"
+        ],
+        "observations": [
+          "추론·bound 따로 캡처 기준 약 400초 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p59:e454",
+          "p59:e456"
+        ]
+      },
+      {
+        "statement": "이전에 시도한 배칭으로 데이터셋을 통째로 넘겨주는 방식은 실시간 환경이 아니라고 판단해, 대신 데이터셋이 있는 부분을 pinned Memory로 지정하고 메모리 복사 속도를 최대로 늘렸으며, 그 과정에서 cudaMemcpyAsync를 쓰기도 했다고 기록했다.",
+        "limits": "이는 pinned Memory 및 cudaMemcpyAsync 사용 서술이며, cudaHostRegister/No Pinning 간 직접 비교 결과나 클록·Persistence mode 조건 비교로 확정된 내용은 아니다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "quoted_instruction",
+        "conditions": [
+          "데이터셋 통째로 넘기기 대신 pinned Memory 지정",
+          "cudaMemcpyAsync 사용"
+        ],
+        "observations": [
+          "메모리 복사 속도 최대화 목적",
+          "실시간 환경이 아니라고 판단한 배칭 방식과 구분"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p59:e458"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

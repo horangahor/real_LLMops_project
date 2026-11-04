@@ -1,0 +1,157 @@
+{
+  "request_fingerprint": "0957f47df6c43f9747271e50d0091559ab0a2a9d713a7b9fc1be1f3ecf961186",
+  "value": {
+    "decisions": {
+      "P0077F0003": {
+        "action": "duplicate",
+        "representative_fact_id": "P0077R0F0002",
+        "corrections": [],
+        "reason": "승인 후보 P0077R0F0002가 support=supported로 존재하며, 사실 진술·limits·measurements·출처(p77:e602, p77:enh:e8)가 모두 일치한다. AI 조언의 하드웨어 해석이며 실측값이 아니라는 limits도 정확히 기술되어 있어 별도 수정이 필요 없다."
+      },
+      "P0077F0004": {
+        "action": "duplicate",
+        "representative_fact_id": "P0077R0F0003",
+        "corrections": [],
+        "reason": "승인 후보 P0077R0F0003이 support=supported로 존재하며, 사실 진술·limits·measurements·출처(p77:e603, p77:enh:e9, p76:e591, p76:e593)가 모두 일치한다. 92만 번 루프는 AI 조언 언급값, 132초/119초는 실측 반올림값, 인과 설명은 해석이라는 limits가 정확히 기술되어 있어 별도 수정이 필요 없다."
+      },
+      "P0077F0005": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "No-Pin(일반 메모리)에서는 CPU가 직접 복사하며, 1,028 Byte는 CPU 입장에서 너무 작은 크기라서 CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝난다고 설명되었다.",
+            "limits": "이 수치와 설명은 외부 조언/해석이며 실측 결과로 확인되지 않았다. 원문에 제시된 ms 값은 0.00003 ms(30 ns 환산)이며, 20 ns에 해당하는 0.00002 ms는 원문에 명시되지 않은 파생 환산값이다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "1,028 Byte(1 KB)",
+              "No-Pin(일반 메모리)"
+            ],
+            "observations": [
+              "CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝남",
+              "걸어서 옆집 가는 것과 같음"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "CPU L1 캐시→드라이버 내부 버퍼 복사 시간(설명값, 하한)",
+                "value": "2E+1",
+                "value_kind": "scalar",
+                "unit": "ns",
+                "condition": "No-Pin, 1,028 Byte (AI 조언)",
+                "element_ids": [
+                  "p77:e600",
+                  "p77:enh:e6"
+                ]
+              },
+              {
+                "metric": "CPU L1 캐시→드라이버 내부 버퍼 복사 시간(설명값, 상한)",
+                "value": "3E+1",
+                "value_kind": "scalar",
+                "unit": "ns",
+                "condition": "No-Pin, 1,028 Byte (AI 조언)",
+                "element_ids": [
+                  "p77:e600",
+                  "p77:enh:e6"
+                ]
+              },
+              {
+                "metric": "CPU L1 캐시→드라이버 내부 버퍼 복사 시간(ms 변환, 원문 제시값)",
+                "value": "0.00003",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "30 ns = 0.00003 ms (원문 p77:e600에 명시)",
+                "element_ids": [
+                  "p77:e600"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p77:e600",
+              "p77:enh:e6"
+            ]
+          }
+        ],
+        "reason": "원문(p77:e600, p77:enh:e6)에는 '20~30 나노초(0.00003 ms)'만 명시되어 있으며, 0.00002 ms(20 ns 환산)는 원문에 없는 파생값이다. 기존 measurements에 포함된 0.00002 ms 항목을 제거하고, limits에 0.00003 ms만 원문 제시값임을 명시하여 수정한다. 20 ns와 30 ns 자체는 원문에 존재하므로 유지한다."
+      },
+      "P0077F0006": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "p77:e602은 PCIe DMA 엔진 셋업 오버헤드를 1~2 마이크로초(0.0015 ms)로 제시하였다. 0.0015 ms는 1.5 μs에 해당하는 값으로 범위의 중간값을 제시한 것으로 보인다. 1 μs = 0.001 ms, 2 μs = 0.002 ms의 산술적 변환은 성립하나, 원문에 명시된 ms 값은 0.0015 ms이다.",
+            "limits": "0.0015 ms는 원문(p77:e602)에 제시된 값이며, 0.001 ms와 0.002 ms는 원문에 없는 파생 환산값이다. 이는 AI 조언의 해석적 설명이며 실측값으로 확인되지 않았다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "Pinned Memory",
+              "PCIe DMA 엔진",
+              "DMA 셋업 오버헤드"
+            ],
+            "observations": [
+              "1 μs = 0.001 ms",
+              "2 μs = 0.002 ms",
+              "원문 표기: 0.0015 ms (중간값 제시)",
+              "92만 번 루프 동안 누적되어 infer 단계에서 13초 차이 발생 주장 (p77:e603)"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "PCIe DMA 셋업 오버헤드 (하한)",
+                "value": "1",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "Pinned Memory (AI 조언)",
+                "element_ids": [
+                  "p77:e602",
+                  "p77:enh:e8"
+                ]
+              },
+              {
+                "metric": "PCIe DMA 셋업 오버헤드 (상한)",
+                "value": "2",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "Pinned Memory (AI 조언)",
+                "element_ids": [
+                  "p77:e602",
+                  "p77:enh:e8"
+                ]
+              },
+              {
+                "metric": "PCIe DMA 셋업 오버헤드 (ms 변환, 원문 제시값)",
+                "value": "0.0015",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "원문 p77:e602에 명시된 값 (1~2 μs와 함께 제시)",
+                "element_ids": [
+                  "p77:e602"
+                ]
+              },
+              {
+                "metric": "infer 단계 시간 차이 (주장)",
+                "value": "13",
+                "value_kind": "scalar",
+                "unit": "초",
+                "condition": "132초(Pinned) vs 119초(No-Pin) (p77:e603 주장)",
+                "element_ids": [
+                  "p77:e603",
+                  "p77:enh:e9"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p77:e602",
+              "p77:e603",
+              "p77:enh:e8",
+              "p77:enh:e9"
+            ]
+          }
+        ],
+        "reason": "원문(p77:e602)에는 '1 ~ 2 마이크로초(0.0015 ms)'가 명시되어 있으며, 0.0015 ms는 원문에 존재하는 값이다. 기존 measurements의 0.001 ms와 0.002 ms는 원문에 없는 파생 환산값이므로 제거하고, 대신 원문에 실제 제시된 0.0015 ms를 measurements에 추가한다. limits에도 0.0015 ms가 원문 제시값임을 명시하고 0.001/0.002 ms는 파생값임을 기술한다."
+      }
+    }
+  }
+}

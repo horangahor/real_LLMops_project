@@ -1,0 +1,417 @@
+{
+  "request_fingerprint": "fe77f91b566b124ac18fb56e863a61f172a4b32726f062b66d43ea5566c4e3de",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "벤치마크 조건은 backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산이었다.",
+          "limits": "원문 표기 그대로이며, 92만 회 루프와의 표기 차이는 원문 내 표기 차이로 보존한다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "backward_only(method=2)",
+            "CUDA Graph Separate(graph_mode=1)",
+            "총 920,000회 연산"
+          ],
+          "observations": [
+            "조건: backward_only (method=2), CUDA Graph Separate (graph_mode=1), 총 920,000회 연산"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p73:img0:e1"
+          ]
+        }
+      ],
+      "10": [
+        {
+          "statement": "cudaHostAlloc(h_x0 복사)이 cudaHostRegister보다 8.64초 더 걸린 이유는 CPU 루프 내 복사 오버헤드가 반영되었기 때문이며, 매 루프마다 *pinned_in = dataset[i];(1,028바이트)를 92만 번 수행하면서 약 8.64초(회당 약 9.4 μs)의 CPU 메모리 복사 지연이 누적되었다고 기록되었다.",
+          "limits": "원문 서술 기반이며, 1,028바이트와 1 KB(1,024바이트) 표기는 원문 내 표기 차이로 보존한다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "예상했던 대로 CPU 루프 내 복사 오버헤드가 그대로 반영되었습니다.",
+            "매 루프마다 *pinned_in = dataset[i]; (1,028바이트)를 92만 번 수행하면서 약 **8.64초 (회당 약 9.4 $\\mu\\text{s}$)**의 CPU 메모리 복사 지연이 누적되었습니다.",
+            "앞서 나누었던 대화처럼, **\"테스트 코드에서 h_x0를 쓰면 불필요한 시뮬레이션용 CPU memcpy 오버헤드가 발생한다\"**는 사실이 정확하게 수치로 입증되었습니다."
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "CPU 메모리 복사 누적 지연",
+              "value": "8.64",
+              "value_kind": "scalar",
+              "unit": "초",
+              "condition": "cudaHostAlloc(h_x0 복사), 92만 번 루프",
+              "element_ids": [
+                "p73:e576"
+              ]
+            },
+            {
+              "metric": "회당 CPU 메모리 복사 지연",
+              "value": "9.4",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "cudaHostAlloc(h_x0 복사)",
+              "element_ids": [
+                "p73:e576"
+              ]
+            },
+            {
+              "metric": "루프당 복사 크기",
+              "value": "1028",
+              "value_kind": "scalar",
+              "unit": "바이트",
+              "condition": "*pinned_in = dataset[i]",
+              "element_ids": [
+                "p73:e576"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p73:e576"
+          ]
+        }
+      ],
+      "11": [
+        {
+          "statement": "입력 벡터는 256차원(FP32)으로 1,024 Byte(1 KB)에 불과하며, 전송 데이터가 수십~수백 MB 단위일 때는 DMA 대역폭 차이가 크게 벌어지지만 1 KB 수준의 초소형 패킷은 CPU L1/L2 캐시에 이미 올라와 있어 드라이버의 내부 스테이징 버퍼 복사 지연이 0.1 μs 미만으로 거의 무시할 수 있는 수준이라고 기록되었다.",
+          "limits": "원문 서술 기반이며, 1,024 Byte와 1,028바이트 표기는 원문 내 표기 차이로 보존한다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "입력 벡터는 256차원(FP32)으로 불과 **1,024 Byte(1 KB)**에 불과합니다.",
+            "전송 데이터가 수십~수백 MB 단위일 때는 DMA 대역폭 차이가 크게 벌어지지만, 1 KB 수준의 초소형 패킷은 CPU L1/L2 캐시에 이미 올라와 있어 드라이버의 내부 스테이징 버퍼 복사 지연이 $0.1,\\mu\\text{s}$ 미만으로 거의 무시할 수 있는 수준입니다."
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "입력 벡터 크기",
+              "value": "1024",
+              "value_kind": "scalar",
+              "unit": "Byte",
+              "condition": "256차원(FP32), 1 KB",
+              "element_ids": [
+                "p73:e579"
+              ]
+            },
+            {
+              "metric": "입력 벡터 차원",
+              "value": "256",
+              "value_kind": "scalar",
+              "unit": "차원",
+              "condition": "FP32",
+              "element_ids": [
+                "p73:e579"
+              ]
+            },
+            {
+              "metric": "스테이징 버퍼 복사 지연 상한",
+              "value": "0.1",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "1 KB 수준 초소형 패킷, 미만",
+              "element_ids": [
+                "p73:e579"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p73:e579"
+          ]
+        }
+      ],
+      "12": [
+        {
+          "statement": "단일 샘플 처리 시간(~840 μs) 중 85% 이상(약 716 μs)이 순수 GPU 커널 연산(CROWN 역전파 행렬 계산) 시간이며, 전송 시간이 차지하는 비중 자체가 1~2 μs 수준이므로 전송 방식에 따른 전체 지연시간 영향이 미미하다고 기록되었다.",
+          "limits": "원문 서술 기반이며, 840 μs와 716 μs는 근사/구성값으로 보존한다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "단일 샘플 처리 시간(~840 $\\mu\\text{s}$) 중 **85% 이상(약 716 $\\mu\\text{s}$)**이 순수 GPU 커널 연산(CROWN 역전파 행렬 계산) 시간입니다.",
+            "전송 시간이 차지하는 비중 자체가 $1\\sim2,\\mu\\text{s}$ 수준이므로 전송 방식에 따른 전체 지연시간 영향이 미미합니다."
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "단일 샘플 처리 시간",
+              "value": "840",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "~",
+              "element_ids": [
+                "p73:e580"
+              ]
+            },
+            {
+              "metric": "순수 GPU 커널 연산 시간",
+              "value": "716",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "약, 85% 이상",
+              "element_ids": [
+                "p73:e580"
+              ]
+            },
+            {
+              "metric": "전송 시간 비중 하한",
+              "value": "1",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "1~2 μs 수준",
+              "element_ids": [
+                "p73:e580"
+              ]
+            },
+            {
+              "metric": "전송 시간 비중 상한",
+              "value": "2",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "1~2 μs 수준",
+              "element_ids": [
+                "p73:e580"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p73:e580"
+          ]
+        }
+      ],
+      "14": [
+        {
+          "statement": "클록 상태 확인 명령어는 nvidia-smi -q -d CLOCK이며, 클록 고정은 root가 필요하고 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)이 기록되었다.",
+          "limits": "원문 명령어 표기 기반이며, -lgc 1410과 이후 2800 MHz 고정은 별도 단계로 보존한다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "# 현재 클록 확인 nvidia-smi -q -d CLOCK # 클록 고정 (root 필요) sudo nvidia-smi -pm 1 # Persistence mode sudo nvidia-smi -lgc 1410 # Lock graphics clock"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "클록 상태 확인 명령어",
+              "value": "nvidia-smi -q -d CLOCK",
+              "value_kind": "scalar",
+              "unit": "명령어",
+              "condition": "현재 클록 확인",
+              "element_ids": [
+                "p75:e587"
+              ]
+            },
+            {
+              "metric": "Persistence mode 설정 명령어",
+              "value": "sudo nvidia-smi -pm 1",
+              "value_kind": "scalar",
+              "unit": "명령어",
+              "condition": "root 필요",
+              "element_ids": [
+                "p75:e587"
+              ]
+            },
+            {
+              "metric": "Graphics clock 잠금 명령어",
+              "value": "sudo nvidia-smi -lgc 1410",
+              "value_kind": "scalar",
+              "unit": "명령어",
+              "condition": "Lock graphics clock",
+              "element_ids": [
+                "p75:e587"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p75:e587"
+          ]
+        }
+      ],
+      "16": [
+        {
+          "statement": "클록 2800 MHz 고정 후 실행 결과에서 total elapsed는 798.78s였고, Phase Timing Breakdown은 infer 128,893s(16.1%), bound 667.159s(83.5%), certify 1,644s(0.2%)로 기록되었다.",
+          "limits": "원문 표기 기반이며, infer 128,893s는 원문 표기 그대로 보존한다. 전체 경과 798.78s 및 16.1% 비율과 정합하지 않아 원문 파싱 오류(128.893s의 오독) 가능성이 있으나 원문 표기를 우선 보존한다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "total elapsed: 798.78s Phase Timing Breakdown (all eps × all data) infer : 128,893s (16.1%) bound : 667.159s 83.5%) certify : 1,644s (0.2%)"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "전체 경과 시간",
+              "value": "798.78",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "클록 2800 MHz 고정 후",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "infer 단계 누적 시간",
+              "value": "128893",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "원문 표기 128,893s, 16.1% (정합성 의문: 798.78s의 16.1%는 약 128.6s)",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "bound 단계 누적 시간",
+              "value": "667.159",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "83.5%",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "certify 단계 누적 시간",
+              "value": "1644",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "0.2%",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p75:img0:e6"
+          ]
+        }
+      ],
+      "17": [
+        {
+          "statement": "클록 2800 MHz 고정 후 Real-Time Single-Sample(B=1) Latency Analysis에서 평가 샘플 수는 100,000개였고, Min Latency 832.10 μs, Mean Latency 873.54 μs(0.87 ms), Median(P50) 860.10 μs, P95 Tail Latency 971.40 μs, P99 Tail Latency 1087.80 μs, Max Latency 10943.50 μs, Jitter(StdDev) 77.94 μs, Throughput 1144.77 samples/sec, Pure GPU Execution 717.09 μs(마지막 샘플)로 기록되었다.",
+          "limits": "원문 표기 기반이며, Max Latency 10943.50 μs는 원문 표기 그대로 보존한다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "Evaluated Samples : 100000 Min Latency : 832.10 us Mean Latency : 873.54 us (0.87 ms) Median (P50) : 860.10 us P95 Tail Latency : 971.40 us P99 Tail Latency : 1087.80 us Max Latency : 10943.50 us Jitter (StdDev) : 77.94 us Throughput : 1144.77 samples/sec Pure GPU Execution: 717.09 us (last sample)"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "평가 샘플 수",
+              "value": "100000",
+              "value_kind": "scalar",
+              "unit": "개",
+              "condition": "Real-Time Single-Sample(B=1)",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "최소 지연시간",
+              "value": "832.1",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Min Latency",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "평균 지연시간",
+              "value": "873.54",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Mean Latency, 0.87 ms",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "중위값 지연시간",
+              "value": "860.1",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Median(P50)",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "P95 꼬리 지연시간",
+              "value": "971.4",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "P95 Tail Latency",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "P99 꼬리 지연시간",
+              "value": "1087.8",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "P99 Tail Latency",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "최대 지연시간",
+              "value": "10943.5",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Max Latency",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "지터(StdDev)",
+              "value": "77.94",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Jitter",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "처리량",
+              "value": "1144.77",
+              "value_kind": "scalar",
+              "unit": "samples/sec",
+              "condition": "Throughput",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            },
+            {
+              "metric": "순수 GPU 실행 시간",
+              "value": "717.09",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "마지막 샘플",
+              "element_ids": [
+                "p75:img0:e6"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p75:img0:e6"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,613 @@
+{
+  "request_fingerprint": "5664e579e39dac732213538d57613c1ace6ce05bb6e91d31fe23bde7e310ccf1",
+  "value": {
+    "title": "CROWN Verification GPU 최적화 실험 기록",
+    "facts": [
+      {
+        "statement": "AI에게 시켜서 대충 최적화한 버전 my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu를 만들고 실행해봄",
+        "limits": "AI가 생성한 최적화 버전이라는 서술만 있으며 구체적인 최적화 알고리즘은 명시되지 않음",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p4:e40"
+        ]
+      },
+      {
+        "statement": "컴파일 옵션에 -lcublas를 넣었는데 -l은 라이브러리를 링크하라는 컴파일러 옵션이고, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리",
+        "limits": "컴파일러 옵션과 라이브러리 설명은 일반 지식 서술이며 해당 실험의 실제 빌드 명령어는 원문에 없음",
+        "kind": "setup",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p4:e41",
+          "p4:e42"
+        ]
+      },
+      {
+        "statement": "my_lirpa_op.cu에서 cublasDgemm() (GPU 최적화 행렬곱) 함수를 사용하기 때문에 이 라이브러리를 연결해줘야 함",
+        "limits": "cublasDgemm 사용 여부와 링크 필요성은 코드 서술 기반이며 실제 호출 빈도·성능 기여도는 측정되지 않음",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p4:e42"
+        ]
+      },
+      {
+        "statement": "CUDA Toolkit 설치 시 자동으로 포함되어 있어서 별도 설치는 필요 없음",
+        "limits": "설치 환경에 대한 일반 서술이며 실제 사용 환경의 CUDA 버전·설치 방식은 원문에 없음",
+        "kind": "setup",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p4:e42"
+        ]
+      },
+      {
+        "statement": "Starting CROWN Verification (eps = 1e-06) clear |irpa_forward! calc success Elapsed time: 353.057200 ms Output Dimension: 16",
+        "limits": "측정 환경·반복 횟수·입력 모델은 원문에 없음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "calc success"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "353.057200",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "eps = 1e-06, Output Dimension: 16",
+            "element_ids": [
+              "p4:e37"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p4:e37",
+          "p4:e38"
+        ]
+      },
+      {
+        "statement": "적용된 최적화: 1. cuBLAS로 matmul 대체, 2. 메모리 풀 사용 (미리 큰 공간을 할당해서 빌려주는 형식으로 함, 대신 함수 호출마다 메모리 할당, 해제를 없앰), 3. 벡터 연산을 CPU로 바꿈",
+        "limits": "최적화 항목 나열이며 각 항목의 개별 기여도는 분리 측정되지 않음",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p5:e45"
+        ]
+      },
+      {
+        "statement": "229.691ms로 100ms정도 줄었지만 여전히 CPU보다 느림",
+        "limits": "비교 대상인 CPU 기준 수치는 이 문장만으로 확인되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "MODE: GPU OPTIMIZED (cuBLAS + Pool)"
+        ],
+        "observations": [
+          "calc success"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "229.691800",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "MODE: GPU OPTIMIZED (cuBLAS + Pool)",
+            "element_ids": [
+              "p5:e43"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p5:e43",
+          "p5:e46"
+        ]
+      },
+      {
+        "statement": "matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 만들어봄",
+        "limits": "하이브리드 프로그램의 구체적 함수 분할 범위는 다음 페이지 표에서만 확인됨",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p5:e47"
+        ]
+      },
+      {
+        "statement": "Starting CROWN Verification (eps = 1e-06) ** MODE: HYBRID (matmul=GPU, rest=CPU) ** calc success Elapsed time: 201.670100 ms Output Dimension: 16",
+        "limits": "측정 환경·반복 횟수·입력 모델은 원문에 없음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "MODE: HYBRID (matmul=GPU, rest=CPU)",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "calc success"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "201.670100",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "MODE: HYBRID (matmul=GPU, rest=CPU)",
+            "element_ids": [
+              "p6:e48"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p6:e48",
+          "p6:e49"
+        ]
+      },
+      {
+        "statement": "201.670ms, 조금 줄었다, 여전히 cpu보다 느림",
+        "limits": "CPU 기준 수치는 이 문장만으로 확인되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p6:e49"
+        ]
+      },
+      {
+        "statement": "v2에서 적용 방안: 1. cuBLAS 미리 예열: 계산(시간측정) 전에 미리 cuBLAS 호출해서 초기화(즉 예열) ← 방법 더미 matmul을 한번 호출(matmul 안에 cuBLAS가 들어있으니까)",
+        "limits": "예열용 더미 matmul 호출의 실제 실행 여부·효과는 이 문장만으로 확인되지 않음",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p6:e51"
+        ]
+      },
+      {
+        "statement": "cuBLAS: 엔비디아(NVIDIA) 그래픽 카드(GPU)에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리",
+        "limits": "라이브러리 설명은 일반 지식 서술",
+        "kind": "setup",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p6:e52"
+        ]
+      },
+      {
+        "statement": "가중치(W) GPU에 사전 업로드: 가중치는 고정이므로 네트워크 로드할때 미리 업로드 해놓기(그리고 matmul에서 호출마다 복사하는 과정 삭제)(memcpy)",
+        "limits": "사전 업로드·memcpy 제거의 실제 적용 여부는 후속 측정으로만 간접 확인됨",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p6:e53"
+        ]
+      },
+      {
+        "statement": "16 x 491 행렬같은 부분도 있으니까 이때도 전부 복사하기(현재 기준 512 x 512, 2MB행렬을 Memcpy 하는중)보다 필요한 부분만 복사하기",
+        "limits": "현재 memcpy 중인 행렬 크기(512x512, 2MB)는 서술된 값이며 실제 측정 전 상태",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p6:e53"
+        ]
+      },
+      {
+        "statement": "Starting CROWN Verification (eps = 1e-06) ** MODE: HYBRID V2 ** calc success Elapsed time: 85.785300 ms Output Dimension: 16",
+        "limits": "측정 환경·반복 횟수·입력 모델은 원문에 없음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "MODE: HYBRID V2",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "calc success"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "85.785300",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "MODE: HYBRID V2",
+            "element_ids": [
+              "p7:e54"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p7:e54",
+          "p7:e55"
+        ]
+      },
+      {
+        "statement": "85ms 드디어 cpu보다 빨라짐",
+        "limits": "CPU 기준 수치는 이 문장만으로 확인되지 않으며 빨라졌다는 비교 판단은 서술 기반",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p7:e55"
+        ]
+      },
+      {
+        "statement": "미 적용 방안: 4. 희소행렬의 계산에서는 cuBLAS보다 cuSPARSE가 더 효과적(0인 부분을 건너뛰고 계산) 대체가능(다만 CSR이라는 특수한 행렬을 계산에 이용하므로 변환에 따른 오버헤드가 더 클 수 있음) ← 적용해볼만 함(해봤는데 cuBlas가 더 빠름 // crown_test_op_hybrid_v2_Sparse)",
+        "limits": "cuSPARSE 시도는 해봤다고 서술되나 실제 측정값·조건은 원문에 없음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p7:e57"
+        ]
+      },
+      {
+        "statement": "memcpy를 아예 제거하고 GPU내에서만 끝까지 돌아가도록 코드 짜기 ← 이건 코드를 갈아엎어야 하므로 보류(커널 퓨전?)",
+        "limits": "보류 사유와 커널 퓨전 언급은 계획/의견 수준이며 실제 구현·측정은 없음",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p7:e57"
+        ]
+      },
+      {
+        "statement": "CUDA stream 방안: Memcpy와 커널 실행을 겹쳐서 실행 가능하다고 함 ← 이건 아직 모르니까 보류(멀티 스레딩같은 건가?)",
+        "limits": "CUDA stream 관련 내용은 아직 모른다는 서술이며 실제 적용·측정은 없음",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p7:e57"
+        ]
+      },
+      {
+        "statement": "CROWN 알고리즘에서 출력한 16개의 값 ⇒ a. 신경망을 기준으로 sorting(아마 최댓값을 따라가는 듯?): 최댓값부터 8개의 출력노드를 선택, b. lower_bound, upper_bound를 기준으로 sorting(아마 간격을 기준으로 따라감): 8개의 출력노드를 선택하도록 하기",
+        "limits": "sorting 기준과 8개 선택 의도는 추정 서술이며 실제 구현·결과는 없음",
+        "kind": "setup",
+        "claim_status": "hypothesis",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p8:e60",
+          "p8:e61"
+        ]
+      },
+      {
+        "statement": "이거에 대한 답지는 교수님께서 제공해주시기로 했음",
+        "limits": "교수 제공 예정이라는 계획/조언 서술이며 실제 제공 여부는 확인되지 않음",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p8:e62"
+        ]
+      },
+      {
+        "statement": "타일링: 메모리 사이즈에 대해 전부 처리하기 어려우니 일부만 올려서 계산하고 다시 다음부분 올려서 계산하고 하는것은 어떻게 처리하고 있나? ex) 예를 들어 1~100까지 있다하면 1~10을 올려서 계산하는동안, 11~20을 올리고 그런거..",
+        "limits": "타일링 관련 질문은 교수/랩미팅 질의 추정이며 실제 타일링 구현 여부는 확인되지 않음",
+        "kind": "setup",
+        "claim_status": "hypothesis",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p8:e63",
+          "p8:e64"
+        ]
+      },
+      {
+        "statement": "forward + backward로 하고 있으면, 알고리즘을 봤을때(신경망과 상관없이) 고정값인 가중치, 편향 행렬이 있다(적어도 그런 행렬과 벡터가 3쌍 있을것임) ⇒ 즉 신경망 모델 사이즈의 3배정도 메모리를 차지하고 있을것임(그래서 스택 메모리가 128MB 필요했나?)",
+        "limits": "메모리 3배·스택 128MB 필요 추정은 알고리즘 해석 기반이며 실제 메모리 사용량 측정은 없음",
+        "kind": "setup",
+        "claim_status": "hypothesis",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p8:e65",
+          "p8:e66"
+        ]
+      },
+      {
+        "statement": "내가 할 것은 성능이 개선된 프로그램을 가져가기(cpu보다 빠르도록) ← 지금까지 테스트한 것들 가져가면 될듯 + 더 찾아보기",
+        "limits": "가져갈 버전 범위·추가 탐색 항목은 계획 서술",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p8:e67"
+        ]
+      },
+      {
+        "statement": "메모리 풀(할당, 해제 제거) + memcpy 비용 제거한 버전(고정된 W, B 값)",
+        "limits": "해당 버전의 실제 완성·측정 여부는 이 문장만으로 확인되지 않음",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p8:e68"
+        ]
+      },
+      {
+        "statement": "cuBlas, cuSparse",
+        "limits": "비교/적용 후보 목록이며 실제 적용 결과는 앞 항목의 cuSPARSE 서술에서만 부분 확인됨",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p8:e70"
+        ]
+      },
+      {
+        "statement": "정리: v0: 단독 CPU 처리, 96ms",
+        "limits": "v0의 96ms는 정리 문장에만 등장하며 해당 실행의 상세 조건·출력은 원문에 없음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "v0: 단독 CPU 처리"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "96",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "v0: 단독 CPU 처리",
+            "element_ids": [
+              "p8:e73"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p8:e73"
+        ]
+      },
+      {
+        "statement": "정리: v1: 모든 병렬처리 함수를 커널 함수로 바꿈, 355ms // 이게 my_lirpa.cu",
+        "limits": "v1의 355ms는 정리 문장에만 등장하며 해당 실행의 상세 조건·출력은 원문에 없음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "v1: 모든 병렬처리 함수를 커널 함수로 바꿈"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "355",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "v1: 모든 병렬처리 함수를 커널 함수로 바꿈",
+            "element_ids": [
+              "p8:e75"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p8:e75"
+        ]
+      },
+      {
+        "statement": "정리: v2: 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입, 229ms // crown_test_op_only_GPU.cu",
+        "limits": "v2의 229ms는 정리 문장에만 등장하며 해당 실행의 상세 조건·출력은 원문에 없음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "v2: 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "229",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "v2: 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입",
+            "element_ids": [
+              "p8:e76"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p8:e76"
+        ]
+      },
+      {
+        "statement": "정리: v3: CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, 200ms // crown_test_op_hybrid.cu",
+        "limits": "v3의 200ms는 정리 문장에만 등장하며 해당 실행의 상세 조건·출력은 원문에 없음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "v3: CPU, GPU 하이브리드, 풀 구조체 축소"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "200",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "v3: CPU, GPU 하이브리드, 풀 구조체 축소",
+            "element_ids": [
+              "p8:e77"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p8:e77"
+        ]
+      },
+      {
+        "statement": "only_GPU → hybrid 변경점: only_GPU에서 GPU로 돌리고 있던 것들 중, hybrid에서 CPU로 되돌린 함수들: make_zero_matrix(GPU cudaMemset → CPU 생성자 초기화), make_zero_vector(GPU cudaMemset → CPU 생성자 초기화), make_eye(GPU 커널 → CPU for 문, O(n)), mat_add(GPU 커널 + 메모리 풀 → CPU for 문, O(n2)), positive_part(GPU 커널 + 메모리 풀 → CPU for 문, O(n2)), negative_part(GPU 커널 + 메모리 풀 → CPU for 문, O(n2)), rowwise_scale(GPU 커널 + 메모리 풀 → CPU for 문, O(n2)), affine_min(GPU 커널 → CPU for 문, O(n2)), affine_max(GPU 커널 → CPU for 문, O(n2)), matmul(cuBLAS + 메모리풀 → cuBLAS + 메모리풀 동일, O(n3))",
+        "limits": "복잡도 표기(O(n2) 등)는 서술된 값이며 실제 연산량 측정은 없음",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p9:e78"
+        ]
+      },
+      {
+        "statement": "GPU 풀 구조체도 축소: only_GPU는 d_mat[4] + d_vec[2](행렬 4개, 벡터 2개 미리 할당), hybrid는 d_A, d_B, d_C 딱 3개만(matmul 전용)",
+        "limits": "풀 구조체 구성은 서술된 구현 내용이며 실제 할당 크기·메모리량은 측정되지 않음",
+        "kind": "result",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p9:e78"
+        ]
+      },
+      {
+        "statement": "hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for 문으로 되돌린 버전, 새로 추가된 것은 없고 오히려 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스",
+        "limits": "빨라진 원인에 대한 해석은 서술 기반이며 개별 함수별 성능 기여도는 분리 측정되지 않음",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p9:e81"
+        ]
+      }
+    ],
+    "coverage": {
+      "p5": {
+        "status": "extracted",
+        "note": "GPU OPTIMIZED 모드 실행 결과(229.691800ms)와 적용된 최적화 3항목, CPU보다 느리다는 서술, 하이브리드 전환 동기를 수집함"
+      },
+      "p6": {
+        "status": "extracted",
+        "note": "HYBRID 모드 실행 결과(201.670100ms), 여전히 CPU보다 느리다는 서술, v2 적용 방안(예열, 가중치 사전 업로드, 부분 복사)을 수집함"
+      },
+      "p7": {
+        "status": "extracted",
+        "note": "HYBRID V2 실행 결과(85.785300ms)와 CPU보다 빨라졌다는 서술, 미 적용 방안(cuSPARSE 시도 결과, memcpy 제거 보류, CUDA stream 보류)을 수집함"
+      },
+      "p8": {
+        "status": "extracted",
+        "note": "4주차 랩미팅 후 할 일 정리(16개 출력 정렬 방안, 타일링 질문, 메모리 추정, 가져갈 버전 계획)와 정리 문단의 v0~v3 요약 수치를 수집함"
+      }
+    }
+  }
+}

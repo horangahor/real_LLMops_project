@@ -1,0 +1,199 @@
+{
+  "request_fingerprint": "b77272448c6e165d6f346555e0274b65fb312e99f9acf4ab4bccf92ee852fcbb",
+  "value": {
+    "title": "연구의 주요 목표와 기여 및 한 문장 요약",
+    "facts": [
+      {
+        "statement": "연구의 주요 목표는 CROWN 검증 프로그램의 GPU 최적화를 통해 실행 시간을 단축하고, CPU 대비 성능을 개선하는 것이다.",
+        "limits": "원문 전체에서 직접 확인된 목표 진술은 없으며, 최적화 과정의 반복적 성능 측정 결과로 목표를 유추함.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "GPU 최적화 설정 및 계산 성공 메시지 확인(p5:review:e0)",
+          "하이브리드(matmul=GPU, rest=CPU) 모드 시도(p6:review:e0)",
+          "메모리 풀, cuBLAS 예열, 가중치 사전 업로드, memcpy 축소, 커널 퓨전 등 다양한 최적화 시도(p5:review:e2, p6:review:e3, p10:review:e1~e4, p14:review:e4~e5, p31:review:e3~e5, p32:review:e5, p35:review:e0~e1)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p5:review:e0",
+          "p6:review:e0",
+          "p5:review:e2",
+          "p6:review:e3",
+          "p10:review:e1",
+          "p14:review:e4",
+          "p31:review:e3",
+          "p35:review:e0"
+        ]
+      },
+      {
+        "statement": "주요 기여는 메모리 풀, cuBLAS 예열, 가중치 사전 업로드, memcpy 최소화, 커널 퓨전 등의 GPU 최적화 기법을 적용하여 CROWN 검증 실행 시간을 약 229.69ms에서 21.02ms 수준까지 단계적으로 단축한 것이다.",
+        "limits": "최종 성능 수치는 특정 실험 조건에서의 측정값이며, CPU 대비 우위 여부는 일부 구간에서 여전히 느리다고 기록됨.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "GPU OPTIMIZED 모드 229.691800ms(p5:review:e0)",
+          "HYBRID 모드 201.670100ms(p6:review:e0)",
+          "mempool + warmup 128.894800ms(p19:review:e7)",
+          "mempool + warmup + DTOH memcpy 축소 64.716000ms(p22:review:e1)",
+          "mempool + warmup 40.050500ms(p27:review:e2)",
+          "커널 퓨전 적용 23.925200ms(p31:review:e6), 22.342900ms(p32:review:e1)",
+          "alpha/beta 메모리 풀 활용 21.018800ms(p35:review:e2)"
+        ],
+        "parameters": [
+          {
+            "name": "Elapsed time (ms)",
+            "value": "229.691800 → 21.018800",
+            "value_kind": "range",
+            "element_ids": [
+              "p5:review:e0",
+              "p35:review:e2"
+            ]
+          },
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p5:review:e0",
+              "p35:review:e2"
+            ]
+          },
+          {
+            "name": "Output Dimension",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p5:review:e0",
+              "p35:review:e2"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "229.691800",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "GPU OPTIMIZED 모드",
+            "element_ids": [
+              "p5:review:e0"
+            ]
+          },
+          {
+            "metric": "Elapsed time",
+            "value": "201.670100",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "HYBRID (matmul=GPU, rest=CPU) 모드",
+            "element_ids": [
+              "p6:review:e0"
+            ]
+          },
+          {
+            "metric": "Elapsed time",
+            "value": "128.894800",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "mempool + warmup",
+            "element_ids": [
+              "p19:review:e7"
+            ]
+          },
+          {
+            "metric": "Elapsed time",
+            "value": "64.716000",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "mempool + warmup + DTOH memcpy 축소",
+            "element_ids": [
+              "p22:review:e1"
+            ]
+          },
+          {
+            "metric": "Elapsed time",
+            "value": "40.050500",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "mempool + warmup",
+            "element_ids": [
+              "p27:review:e2"
+            ]
+          },
+          {
+            "metric": "Elapsed time",
+            "value": "23.925200",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "커널 퓨전 적용(backward_bound_gpu)",
+            "element_ids": [
+              "p31:review:e6"
+            ]
+          },
+          {
+            "metric": "Elapsed time",
+            "value": "22.342900",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "lirpa_forward_bound 함수 커널 퓨전",
+            "element_ids": [
+              "p32:review:e1"
+            ]
+          },
+          {
+            "metric": "Elapsed time",
+            "value": "21.018800",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "alpha/beta 메모리 풀 활용",
+            "element_ids": [
+              "p35:review:e2"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p5:review:e0",
+          "p6:review:e0",
+          "p19:review:e7",
+          "p22:review:e1",
+          "p27:review:e2",
+          "p31:review:e6",
+          "p32:review:e1",
+          "p35:review:e2"
+        ]
+      },
+      {
+        "statement": "한 문장 요약: 본 연구는 CROWN 검증 프로그램의 GPU 최적화를 위해 메모리 풀, cuBLAS 예열, 가중치 사전 업로드, memcpy 최소화, 커널 퓨전 등을 적용하여 실행 시간을 약 229.69ms에서 21.02ms까지 단축하였다.",
+        "limits": "요약은 측정 기록에 기반한 것이며, 연구의 명시적 목표·기여 문장은 원문에서 직접 확인되지 않음.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "최적화 단계별 elapsed time 감소 기록(p5:review:e0, p6:review:e0, p19:review:e7, p22:review:e1, p27:review:e2, p31:review:e6, p32:review:e1, p35:review:e2)",
+          "최적화 방안 목록(p5:review:e2, p6:review:e3, p10:review:e1~e4, p32:review:e5, p35:review:e0~e1)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p5:review:e0",
+          "p6:review:e0",
+          "p19:review:e7",
+          "p22:review:e1",
+          "p27:review:e2",
+          "p31:review:e6",
+          "p32:review:e1",
+          "p35:review:e2"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

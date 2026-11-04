@@ -1,0 +1,115 @@
+{
+  "request_fingerprint": "c58e272fe1597ef8c6d42e75f76e88bd3521bffe369601130ab60a7facfeac67",
+  "value": {
+    "checks": {
+      "F0076": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "note": "p13:e105에서 작성자가 미리 로드한 가중치를 matmul 함수에서 활용하지 않았음에도 시간이 줄어든 이유를 의문시하는 내용이 확인됨."
+      },
+      "F0077": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "note": "p13:e106에서 preload로 시간이 줄어든 원인을 GPU 웜업 효과로 판단한 작성자의 해석이 확인됨."
+      },
+      "F0078": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "note": "p13:e107에서 mempool 버전은 GPU 메모리풀 할당까지 시간에 포함되고, mempool_preload 버전은 가중치를 시간 측정 전에 미리 로드하여 해당 시간이 제외된다는 측정 구간 차이에 대한 설명이 확인됨."
+      },
+      "F0079": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "note": "p13:e108에서 pre_upload_weights_to_gpu가 t_start 앞에서 cudaMalloc과 cudaMemcpy를 호출하여 CUDA 드라이버 초기화 비용이 타이머 구간 밖으로 빠져나가며, 이로 인해 mempool 버전 대비 약 50ms가 줄어든 것으로 설명하는 내용이 확인됨. 50ms는 별도 실측값이 아닌 설명상의 수치로, conditions에 GPU 컨텍스트 초기화, GPU 클럭 부스팅, JIT 컴파일이 명시되어 있음."
+      },
+      "F0080": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "note": "p13:e109에서 v1-1-2의 50ms 감소가 GPU warmup 때문이며 preload 때문이 아니라고 작성자가 결론지은 내용이 확인됨."
+      },
+      "F0081": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "note": "p14:e113과 p14:enh:e5에서 pre_upload_weights_to_gpu가 memcpy2D 사용이 아니라 Matrix를 할당, 복사하도록 변경되었다는 구현 변경 설명이 확인됨."
+      },
+      "F0082": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "note": "p14:e116과 p14:enh:e8에서 500회 정도 반복 실험 시 5~10ms 정도 우세했다는 관측 결과가 확인됨. conditions에 500회 반복이 명시되어 있음."
+      },
+      "F0083": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "note": "p14:e117과 p14:enh:e9에서 가중치를 미리 로드하여 memcpy를 줄이겠다는 접근이 크게 의미를 못 미친다는 작성자의 결론이 확인됨."
+      },
+      "F0084": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "note": "p15:e121에서 my_lirpa_mempool_cuBlas.cu를 500회 실행했을 때 총 소요시간 61796.584100ms, 평균 실행당 시간 123.593168ms라는 측정 결과가 확인됨. conditions에 500 iterations, eps=1e-06, Output Dimension: 16, 파일명이 명시되어 있고 observations에 calc success가 기록됨."
+      },
+      "F0085": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "note": "p15:e122에서 my_lirpa_mempool_cuBlas.cu가 기존 v1-1-1 대비 평균 실행당 시간이 30ms 차이난다고 작성자가 기록한 비교 진술이 확인됨. conditions에 비교 대상 v1-1-1이 명시되어 있으나 기준 실행값은 명시되지 않음."
+      },
+      "F0086": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "note": "p15:e123에서 my_lirpa_mempool.cu를 500회 실행했을 때 총 소요시간 78755.716600ms, 평균 실행당 시간 157.511433ms라는 측정 결과가 확인됨. conditions에 500 iterations, eps=1e-06, Output Dimension: 16, 파일명이 명시되어 있고 observations에 calc success가 기록됨."
+      },
+      "F0087": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "note": "p15:e124에서 my_lirpa_mempool.cu 500회 실행의 평균 시간이 157ms로 기록되었다는 작성자 요약이 확인됨."
+      },
+      "F0088": {
+        "support": "supported",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "note": "p15:e125에서 아직 메모리풀 warm up을 안 한 상태이며 이를 한 뒤에 진행해보자는 작성자의 계획이 확인됨."
+      },
+      "F0089": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "note": "p16:e126에서 메모리풀 warm up을 해봤으나 별로 차이가 나지 않았다는 실험 관측이 확인됨. observations에 warm up 한 것과 안 한 것의 차이가 크지 않음이 기록됨."
+      },
+      "F0090": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "note": "p16:e126에서 my_lirpa_mempool(cuBlas 없는 버전)이 잘 나올 때는 500회당 평균 120ms 대로 나올 때도 있었다는 실행 편차 관측이 확인됨. observations에 평균 120ms 대로 나온 경우도 있음이 기록됨."
+      },
+      "F0091": {
+        "support": "supported",
+        "claim_status": "hypothesis",
+        "source_origin": "research_note",
+        "note": "p16:e127에서 처음 메모리 풀 할당 비용이 500번의 시행에 묻혀서 크게 차이가 안 나는 것일 수 있다는 작성자의 가설이 확인됨."
+      },
+      "F0092": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "note": "p16:e128에서 hybrid_v2(v4)를 500번 돌리니 CPU보다 실행 속도가 느려졌다는 실험 관측이 확인됨. conditions에 hybrid_v2(v4), 500회가 명시되어 있음."
+      },
+      "F0093": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "note": "p16:e129에서 CPU ONLY 모드에서 500회 실행 시 총 소요시간 39148.493900ms, 평균 실행당 시간 78.296988ms라는 측정 결과가 확인됨. conditions에 MODE: CPU ONLY (no GPU), 500 iterations, eps=1e-06, Output Dimension: 16이 명시되어 있고 observations에 calc success가 기록됨."
+      }
+    }
+  }
+}

@@ -5,7 +5,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from bounded_drafting import REVISION, cited_ids, generate_bounded, generation_fragments
+from bounded_drafting import (FRAGMENT, REVISION, cited_ids, compact_fragment_revision,
+                              generate_bounded, generation_fragments)
+from draft_prose import PROTOCOL
+from drafting_budget import compact_packet, request_bytes, request_limit
 from draft_diagnostics import review_diagnostics, save_review_diagnostics
 from planned_paper import GROUNDING, WRITER, PlannedPaper, parts_schema
 from review_response import checked_review
@@ -32,6 +35,76 @@ def revision_fixture():
 
 
 class DraftRevisionTests(unittest.TestCase):
+    def test_compact_revision_preserves_sources_conditions_decisions_and_relevant_findings(self):
+        source = "현재 문단의 전체 본문이다. [근거:F1]"
+        issues = [
+            {"paragraph_id": "s0_p2", "reason": "현재 문단의 원래 지적", "quote": source, "evidence_ids": ["F1"]},
+            {"paragraph_id": "s0_p1", "reason": "다른 문단의 지적", "quote": "다른 본문", "evidence_ids": ["F1"]},
+            {"paragraph_id": "none", "reason": "공통 조건을 유지한다", "evidence_ids": ["F1"]},
+            {"paragraph_id": "s0_p2", "reason": "별도 대조 구절을 보존한다", "quote": "중복되지 않은 구절", "evidence_ids": ["F1"]},
+        ]
+        packet = {"fragment": {"operation": "revise_paragraph", "paragraph_id": "s0_p2"},
+            "source_body": source, "facts": [{"id": "F1", "sources": [{"quote": "원문 전체"}],
+                "conditions": ["조건 A"], "limits": "관측 범위만 서술"}],
+            "tables": [{"id": "t1", "evidence_ids": ["F1"]}],
+            "human_guidance": [{"action": "accept_limited", "instruction": "결과로 단정하지 않는다"}],
+            "revision": {"review": {"issues": issues, "checks": [{"verdict": "missing"}]}}}
+        original = copy.deepcopy(packet)
+        result = compact_fragment_revision(packet)
+        self.assertEqual(packet, original)
+        for key in ("source_body", "facts", "tables", "human_guidance"):
+            self.assertEqual(result[key], packet[key])
+        rows = result["revision"]["review"]["issues"]
+        self.assertEqual([i["reason"] for i in rows], [issues[i]["reason"] for i in (0, 2, 3)])
+        self.assertNotIn("quote", rows[0])
+        self.assertEqual(rows[2]["quote"], "중복되지 않은 구절")
+        self.assertEqual(result["revision"]["review"]["checks"], packet["revision"]["review"]["checks"])
+        packet["fragment"] = {"operation": "missing_evidence"}
+        packet["source_body"] = ""
+        gap = compact_fragment_revision(packet)
+        self.assertEqual([i["reason"] for i in gap["revision"]["review"]["issues"]], [issues[2]["reason"]])
+
+    def test_oversized_repeated_revision_quotes_fit_without_splitting_comparison_or_source_text(self):
+        _, _, packet, before, _ = revision_fixture()
+        middle = before.split("\n\n")[1] + " 원래 문맥을 유지한다." * 300
+        previous = before.replace(before.split("\n\n")[1], middle)
+        packet["revision"]["previous_sections"]["s0"]["parts"]["p0"] = previous
+        packet["tables"] = [{"id": "comparison", "evidence_ids": ["F3", "F4"],
+                             "columns": ["조건", "관측"], "rows": [["A", "B"]]}]
+        packet["section_plan"]["table_ids"] = ["comparison"]
+        packet["revision"]["review"]["issues"] = [
+            {"section_id": "s0", "paragraph_id": "s0_p2", "severity": "error",
+             "reason": f"조건·한계를 유지해 해당 서술을 수정한다 {i}", "quote": middle, "evidence_ids": ["F3"]}
+            for i in range(15)]
+        original = copy.deepcopy(packet)
+        with patch.dict("os.environ", {"PAPER_REQUEST_MAX_BYTES": "60000"}):
+            tasks = generation_fragments(GROUNDING + WRITER + REVISION, packet, {"s0": packet})
+            edits = [r for _, _, _, r, schema in tasks if schema and r["fragment"].get("paragraph_id") == "s0_p2"]
+            self.assertTrue(edits)
+            self.assertTrue(any(r.get("revision", {}).get("scope") for r in edits))
+            for _, _, _, request, schema in tasks:
+                if schema is not None:
+                    self.assertLessEqual(request_bytes(GROUNDING + WRITER + REVISION + FRAGMENT + PROTOCOL,
+                        compact_packet(request), schema), int(request_limit() * .75))
+            for request in edits:
+                self.assertEqual(request["source_body"], middle)
+                self.assertEqual(len(request["revision"]["review"]["issues"]), 15)
+                self.assertTrue(all("quote" not in i for i in request["revision"]["review"]["issues"]))
+                by_id = {f["id"]: f for f in original["facts"]}
+                self.assertTrue(all(f == by_id[f["id"]] for f in request["facts"]))
+            comparison = next(r for r in edits if r["tables"])
+            self.assertTrue({"F3", "F4"} <= {f["id"] for f in comparison["facts"]})
+            self.assertEqual(comparison["tables"], original["tables"])
+        self.assertEqual(packet, original)
+
+    def test_fitting_revision_keeps_existing_request_inputs_for_cache_reuse(self):
+        _, _, packet, _, _ = revision_fixture()
+        with patch.dict("os.environ", {"PAPER_REQUEST_MAX_BYTES": "50000"}), patch(
+                "bounded_drafting.compact_fragment_revision", side_effect=AssertionError("Already-fitting requests must not change")):
+            tasks = generation_fragments(GROUNDING + WRITER + REVISION, packet, {"s0": packet})
+        self.assertTrue(tasks)
+        self.assertTrue(all("scope" not in request.get("revision", {}) for _, _, _, request, _ in tasks))
+
     def test_split_revision_uses_latest_body_and_preserves_unaffected_windows(self):
         _, _, packet, before, _ = revision_fixture()
         original = copy.deepcopy(packet)
@@ -100,7 +173,7 @@ class DraftRevisionTests(unittest.TestCase):
             manifest = json.loads((Path(tmp) / "generate-1-split-manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(sum(t.get("preserved_connecting_text", False) for t in manifest["tasks"]), 2)
 
-    def test_missing_evidence_fragment_that_omits_requested_ids_is_rejected_locally(self):
+    def test_missing_evidence_fragment_defers_omissions_after_local_repair_and_replays_from_cache(self):
         _, _, packet, _, _ = revision_fixture()
         seen = []
         def client(system, request, schema, path):
@@ -108,11 +181,57 @@ class DraftRevisionTests(unittest.TestCase):
             ids = [f["id"] for f in request["facts"]]
             return {"parts": {"p0": [{"text": "수정한 본문이다.", "evidence_ids": ids[:1]}]}}
         with TemporaryDirectory() as tmp, patch.dict("os.environ", {"PAPER_REQUEST_MAX_BYTES": "50000"}):
-            with self.assertRaisesRegex(ValueError, "분할 본문"):
-                generate_bounded(PlannedPaper(tmp, client), Path(tmp), "generate-1", GROUNDING + WRITER,
-                                 packet, parts_schema(packet), {"s0": packet}, True)
+            engine, warnings = PlannedPaper(tmp, client), []
+            result = generate_bounded(engine, Path(tmp), "generate-1", GROUNDING + WRITER,
+                                      packet, parts_schema(packet), {"s0": packet}, True, on_warning=warnings.append)
             self.assertTrue(any("fragment_validation_error" in r for r in seen))
+            self.assertTrue(warnings)
+            self.assertEqual(warnings[0]["evidence_ids"], ["F10", "F11"])
+            self.assertEqual(warnings[0]["repair_attempts"], 1)
+            self.assertNotIn("F10", cited_ids(result["parts"]["p0"]))
+            manifest = json.loads((Path(tmp) / "generate-1-split-manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["content_warnings"], warnings)
+            count, replayed = len(seen), []
+            self.assertEqual(generate_bounded(engine, Path(tmp), "generate-1", GROUNDING + WRITER,
+                packet, parts_schema(packet), {"s0": packet}, True, on_warning=replayed.append), result)
+            self.assertEqual(len(seen), count)
+            self.assertEqual(replayed, warnings)
             self.assertFalse((Path(tmp) / "approved.json").exists())
+
+    def test_missing_fragment_still_rejects_unknown_empty_and_malformed_citations_after_repair(self):
+        _, _, packet, _, _ = revision_fixture()
+        for invalid in (["UNKNOWN"], [], None):
+            with self.subTest(invalid=invalid), TemporaryDirectory() as tmp, patch.dict(
+                    "os.environ", {"PAPER_REQUEST_MAX_BYTES": "50000"}):
+                warnings = []
+                def client(system, request, schema, path):
+                    ids = [f["id"] for f in request["facts"]]
+                    if request["fragment"]["operation"] == "missing_evidence":
+                        return {"parts": {"p0": [{"text": "잘못된 인용의 본문이다.", "evidence_ids": invalid}]}}
+                    return {"parts": {"p0": [{"text": "수정한 본문이다.", "evidence_ids": ids}]}}
+                with self.assertRaisesRegex(ValueError, "분할 본문.*원인:"):
+                    generate_bounded(PlannedPaper(tmp, client), Path(tmp), "generate-1", GROUNDING + WRITER,
+                                     packet, parts_schema(packet), {"s0": packet}, True, on_warning=warnings.append)
+                self.assertEqual(warnings, [])
+                self.assertFalse((Path(tmp) / "generate-1-split-manifest.json").exists())
+
+    def test_successful_missing_fragment_repair_leaves_no_warning(self):
+        _, _, packet, _, _ = revision_fixture()
+        repairs = []
+        def client(system, request, schema, path):
+            ids = [f["id"] for f in request["facts"]]
+            if request["fragment"]["operation"] == "missing_evidence" and "fragment_validation_error" not in request:
+                ids = ids[:1]
+            if "fragment_validation_error" in request:
+                repairs.append(request)
+            return {"parts": {"p0": [{"text": "근거 범위 내의 보완이다.", "evidence_ids": ids}]}}
+        with TemporaryDirectory() as tmp, patch.dict("os.environ", {"PAPER_REQUEST_MAX_BYTES": "50000"}):
+            warnings = []
+            result = generate_bounded(PlannedPaper(tmp, client), Path(tmp), "generate-1", GROUNDING + WRITER,
+                                      packet, parts_schema(packet), {"s0": packet}, True, on_warning=warnings.append)
+            self.assertTrue(repairs)
+            self.assertEqual(warnings, [])
+            self.assertTrue({"F9", "F10", "F11"} <= cited_ids(result["parts"]["p0"]))
 
     def test_diagnostics_distinguish_missing_citations_from_unselected_cited_paragraphs_and_user_approval(self):
         data, plan, packet, before, report = revision_fixture()

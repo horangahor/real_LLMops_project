@@ -1,0 +1,157 @@
+{
+  "request_fingerprint": "e01535a94be27716c9326fb11ff1e8805d88556eb876101a3d0cf2ca499e8934",
+  "value": {
+    "additions": [
+      {
+        "statement": "커널 함수의 괄호(...) 안에 들어가는 매개변수(Argument)들은 cudaMalloc/cudaMemcpy 규칙의 예외이며, 포인터(배열)는 반드시 GPU 메모리여야 하고 배열/거대한 행렬은 크기가 너무 커서 CPU가 커널 발사 시 데이터를 전부 싸들고 던져줄 수 없으므로 사전에 cudaMemcpy로 VRAM에 옮겨두고 커널에는 작업할 데이터가 주소(d_out)에 있다는 정보만 알려준다",
+        "limits": "CUDA 커널 매개변수 전달 규칙",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e266"
+        ]
+      },
+      {
+        "statement": "스칼라(단일 숫자)는 int/float/double/enum 같은 단일 숫자들이 4바이트~8바이트 정도이므로 CPU가 커널 실행/발사(Launch) 명령을 GPU로 쏠 때 cudaMemcpy 없이 실행 명령서 귀퉁이에 포스트잇처럼 값을 붙여 같이 보낼 수 있으며, 이 공간을 Parameter Bank 또는 Constant Memory라고 부른다",
+        "limits": "스칼라 전달 방식",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e266"
+        ]
+      },
+      {
+        "statement": "matvec_bias_gpu<<<blocksPerGrid, 256>>>(...)처럼 blocksPerGrid나 256 같은 CPU 쪽 숫자 변수들을 자유롭게 커널 인자로 보낼 수 있는 것도 같은 원리이다",
+        "limits": "예시",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e266"
+        ]
+      },
+      {
+        "statement": "포인터 변수는 memcpy를 써서 올려야 하며, 참조할 크기가 매우 커서 결국 CPU가 그 내용을 전부 직접 복사해 커널 함수의 매개변수 주머니에 값을 넣어줄 수 없기 때문이다",
+        "limits": "포인터 전달 방식",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e267"
+        ]
+      },
+      {
+        "statement": "값만 나오는 경우 4~8바이트까지는 CPU가 직접 그 부분을 참조해서 값을 쏴줄 수 있다",
+        "limits": "값 전달 가능 크기",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e268"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p38:e257": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "적용 대상(1번 network_forward 중간 복사 제거)이 facts[0]에 반영됨.",
+        "addition_refs": []
+      },
+      "p38:e258": {
+        "state": "represented",
+        "fact_refs": [
+          1
+        ],
+        "note": "바꾼 과정에 주목할 부분이라는 제목이 facts[1]의 맥락과 연결됨.",
+        "addition_refs": []
+      },
+      "p38:e259": {
+        "state": "represented",
+        "fact_refs": [
+          1
+        ],
+        "note": "net.act[l]을 메모리풀에 올린 적 없다는 내용이 facts[1]에 포함됨.",
+        "addition_refs": []
+      },
+      "p38:e260": {
+        "state": "represented",
+        "fact_refs": [
+          3
+        ],
+        "note": "gemini 설명 도입부.",
+        "addition_refs": []
+      },
+      "p38:e261": {
+        "state": "represented",
+        "fact_refs": [
+          3
+        ],
+        "note": "CPU가 주소가 아니라 값을 읽어 Constant Memory/Registers에 넣어 보낸다는 설명이 facts[3]에 반영됨.",
+        "addition_refs": []
+      },
+      "p38:e262": {
+        "state": "represented",
+        "fact_refs": [
+          2
+        ],
+        "note": "ActivationType이 4바이트 enum이라는 내용이 facts[2]에 반영됨.",
+        "addition_refs": []
+      },
+      "p38:e263": {
+        "state": "represented",
+        "fact_refs": [
+          4,
+          5
+        ],
+        "note": "cudaMalloc/cudaMemcpy 불필요·자동 전달·속도 저하 없음은 facts[4], 큰 배열/구조체는 포인터로 cudaMemcpy 후 주소만 넘긴다는 내용은 facts[5]에 반영됨.",
+        "addition_refs": []
+      },
+      "p38:e264": {
+        "state": "represented",
+        "fact_refs": [
+          6
+        ],
+        "note": "큰 덩어리는 포인터, 작은 숫자/Enum은 값으로 보낸다는 구분이 facts[6]에 반영됨.",
+        "addition_refs": []
+      },
+      "p38:e265": {
+        "state": "represented",
+        "fact_refs": [],
+        "note": "더 정확한 설명 도입부이며, 실제 상세 내용은 다음 요소(p39:e266 등)에 있음.",
+        "addition_refs": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    }
+  }
+}

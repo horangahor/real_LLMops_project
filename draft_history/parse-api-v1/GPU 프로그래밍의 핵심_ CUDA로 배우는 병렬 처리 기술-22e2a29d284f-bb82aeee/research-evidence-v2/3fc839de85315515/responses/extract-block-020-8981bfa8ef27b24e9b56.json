@@ -1,0 +1,439 @@
+{
+  "request_fingerprint": "8981bfa8ef27b24e9b56e18d3c7807d0a37ea22ce0fe803287fada11fd88c957",
+  "value": {
+    "title": "CROWN 커널 퓨전 및 backward_only 메모리 복사 커널 제거",
+    "facts": [
+      {
+        "statement": "CROWN 3가지 방법에서 사용하는 커널을 퓨전하고 backward_only에서 메모리 복사 커널을 제거했다",
+        "limits": "3-layer 네트워크 기준, CUDA kernel launch만 집계(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외)",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "3-layer 네트워크",
+          "CUDA kernel launch만 집계",
+          "H2D/D2H memcpy 제외",
+          "cudaStreamSynchronize 제외",
+          "cudaGraphLaunch 제외"
+        ],
+        "observations": [
+          "bound 기준 Forward method=0: 27회 → 18회(9회 감소)",
+          "bound 기준 Backward method=1 전체: 46회 → 31회(15회 감소)",
+          "bound 기준 Backward-only method=2 전체: 45회 → 33회(12회 감소)",
+          "전체 기준 Forward: 33회 → 24회(9회 감소)",
+          "전체 기준 Backward: 52회 → 37회(15회 감소)",
+          "전체 기준 Backward-only: 51회 → 39회(12회 감소)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e3",
+          "p82:enh:e5",
+          "p82:e632"
+        ]
+      },
+      {
+        "statement": "Forward에서는 무거운 커널 연산의 호출 횟수가 9개 줄었다",
+        "limits": "method 0 bound 기준, 레이어당 8 → 5회",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "Forward method=0 bound",
+          "레이어당 기준"
+        ],
+        "observations": [
+          "lower/upper matmul: 2 → 1",
+          "lower/upper bias matvec: 2 → 1",
+          "matrix scaling + vector affine: 2 → 1",
+          "method 0 기준 레이어당 8 → 5회"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e7",
+          "p84:e647"
+        ]
+      },
+      {
+        "statement": "Backward에서는 forward 부분 12개(9+3), 실제 backward 부분에서는 3개 줄었다",
+        "limits": "method 1 기준, forward 쪽 relaxation/cache 통합 포함",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "Backward method=1",
+          "forward 쪽 relaxation/cache 통합 포함"
+        ],
+        "observations": [
+          "split_pos_neg + bias accumulation: 2 → 1",
+          "레이어당 backward 단계 5 → 4회",
+          "method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e7",
+          "p84:e647"
+        ]
+      },
+      {
+        "statement": "backward_only에서는 커널이 45 → 33회로 26.7% 수준으로 가장 적게 줄었고, 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄었다",
+        "limits": "method 2 bound 기준, 비율 기준 가장 적게 감소",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "Backward-only method=2 bound",
+          "비율 기준"
+        ],
+        "observations": [
+          "45 → 33회(26.7% 수준)",
+          "단순 가중치, bias 복사 커널 6개 감소",
+          "부호 분리 커널 6개 감소",
+          "커널 비용도 다름"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p84:e647"
+        ]
+      },
+      {
+        "statement": "graph mode=1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회다",
+        "limits": "graph mode=1 기준, 이번 작업은 graph launch 횟수 대상이 아님",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "graph mode=1"
+        ],
+        "observations": [
+          "샘플당 cudaGraphLaunch infer 1회 + bound 1회, 총 2회"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p82:enh:e8"
+        ]
+      },
+      {
+        "statement": "787s → 630s로 157초 정도 줄었다(figure 기준 total elapsed)",
+        "limits": "figure 측정 기준, all eps × all data",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "figure 측정",
+          "all eps × all data"
+        ],
+        "observations": [
+          "787s → 630s",
+          "157초 정도 감소"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total elapsed",
+            "value": "630.94",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "figure 측정, all eps × all data",
+            "element_ids": [
+              "p83:e638"
+            ]
+          },
+          {
+            "metric": "total elapsed",
+            "value": "630",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "figure 측정, all eps × all data",
+            "element_ids": [
+              "p83:e639"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p83:e638",
+          "p83:e639"
+        ]
+      },
+      {
+        "statement": "forward total elapsed는 1029s → 668s",
+        "limits": "figure 측정 기준, all eps × all data",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "figure 측정",
+          "all eps × all data"
+        ],
+        "observations": [
+          "1029s → 668s"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total elapsed",
+            "value": "668.37",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "figure 측정, all eps × all data",
+            "element_ids": [
+              "p83:e641"
+            ]
+          },
+          {
+            "metric": "total elapsed",
+            "value": "668",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "figure 측정, all eps × all data",
+            "element_ids": [
+              "p83:e642"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p83:e641",
+          "p83:e642"
+        ]
+      },
+      {
+        "statement": "forward+backward total elapsed는 1138s → 758s",
+        "limits": "figure 측정 기준, all eps × all data",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "figure 측정",
+          "all eps × all data"
+        ],
+        "observations": [
+          "1138s → 758s"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total elapsed",
+            "value": "758.37",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "figure 측정, all eps × all data",
+            "element_ids": [
+              "p84:e644"
+            ]
+          },
+          {
+            "metric": "total elapsed",
+            "value": "758",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "figure 측정, all eps × all data",
+            "element_ids": [
+              "p84:e645"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p84:e644",
+          "p84:e645"
+        ]
+      },
+      {
+        "statement": "커널 횟수가 더 많이 줄면 더 시간도 줄어야 하지 않나? 왜 forward가 젤 많이 줄었나?",
+        "limits": "작성자 의문/해석, 실측 인과 아님",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "커널 횟수 감소 폭과 시간 감소 폭의 불일치 의문",
+          "forward가 가장 많이 줄어든 이유에 대한 질문"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p84:e646"
+        ]
+      },
+      {
+        "statement": "pinned memory 미적용 버전이 복사 속도 약 3배 빠르다",
+        "limits": "여러 번 측정 결과, 작은 전송 기준, CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할 가능성(확정 불가)",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "여러 번 측정",
+          "작은 전송",
+          "pinned memory 미적용 vs 적용 비교"
+        ],
+        "observations": [
+          "pinned memory 미적용 버전 복사 속도 약 3배 빠름",
+          "작은 전송에서는 CUDA 내부 staging 경로가 pinned direct-DMA 경로보다 유리할 가능성",
+          "내부 구현 직접 확인 불가로 확정 불가"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e624"
+        ]
+      },
+      {
+        "statement": "추론이 끝나기까지의 동기화(synchronize) 시간이 pinned memory 미적용 버전이 가장 빠르다",
+        "limits": "추론 과정 cuda stream synchronize: H2D - 추론 graph 실행 - D2H, 1번 H2D 복사 시간 영향 가능",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "추론 과정 cuda stream synchronize",
+          "H2D - 추론 graph 실행 - D2H"
+        ],
+        "observations": [
+          "동기화 시간이 pinned memory 미적용 버전이 가장 빠름",
+          "1번 H2D 복사 시간이 영향을 미칠 수 있음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e625"
+        ]
+      },
+      {
+        "statement": "cudaMemcpyAsync 호출 시간에서 pinned memory 적용 버전이 미적용 버전보다 빠르거나 느렸다",
+        "limits": "여러 번 측정 결과, 2copy → 1copy 변경이 크게 효과 보지 못함",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "여러 번 측정",
+          "cudaMemcpyAsync 호출 시간",
+          "2copy → 1copy 변경"
+        ],
+        "observations": [
+          "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느렸음",
+          "2copy → 1copy 변경이 크게 효과 보지 못함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e626"
+        ]
+      },
+      {
+        "statement": "작은 데이터 크기(현재 입력 기준 1Kib)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다",
+        "limits": "현재 입력 기준 1Kib, 고정 비용 관련 해석",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "현재 입력 기준 1Kib",
+          "staging buffer"
+        ],
+        "observations": [
+          "작은 데이터 크기를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e627"
+        ]
+      },
+      {
+        "statement": "pinned 적용 버전의 cudaMemcpyAsync가 더 빨라서 2copy→1copy로 가면서 고정 setup 비용이 줄긴 했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 됨",
+        "limits": "여러 번 측정 결과, 마지막 측정 기준 nopinned 더 빠름",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "여러 번 측정",
+          "마지막 측정",
+          "nopinned 더 빠름"
+        ],
+        "observations": [
+          "pinned 적용 버전 cudaMemcpyAsync가 더 빠름",
+          "2copy→1copy로 고정 setup 비용 감소 추정",
+          "마지막 측정에서 nopinned가 더 빠르게 나와 확신 불가"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e628"
+        ]
+      },
+      {
+        "statement": "pinned memory가 더 느린 이유 분석은 이 정도로 종료, 연구 목적이 아니고 너무 깊게 들어가면 다른 것도 못할 것 같음",
+        "limits": "분석 중단 결정, 연구 목적 아님",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "pinned memory 더 느린 이유 분석 중단",
+          "연구 목적 아님",
+          "깊게 들어가면 다른 작업 못함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e629"
+        ]
+      },
+      {
+        "statement": "backward_only는 왜 제일 빠른가?",
+        "limits": "질문/의제, 답변 아님",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "backward_only가 제일 빠른 이유에 대한 질문"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p81:e630"
+        ]
+      },
+      {
+        "statement": "pinned memory 입력층은 제거했으나 Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 놓았다",
+        "limits": "진행 사항, Graph manager 선택적 할당 가능 상태 유지",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "pinned memory 입력층 제거",
+          "Graph manager 선택적 할당 가능 유지"
+        ],
+        "observations": [
+          "pinned memory 입력층 제거",
+          "Graph manager에 필요에 따라 pinned memory 선택 할당 가능 상태 유지"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p84:e650"
+        ]
+      }
+    ],
+    "coverage": {
+      "p81": {
+        "status": "extracted",
+        "note": "pinned memory 비교 결론 및 분석 중단 결정, backward_only 속도 질문 포함"
+      },
+      "p82": {
+        "status": "extracted",
+        "note": "커널 퓨전 및 backward_only 메모리 복사 커널 제거, bound/전체 커널 횟수 감소표, graph mode=1 launch 횟수"
+      },
+      "p83": {
+        "status": "extracted",
+        "note": "total elapsed 630.94s 및 787s→630s, forward 668.37s 및 1029s→668s, phase breakdown/latency 수치"
+      },
+      "p84": {
+        "status": "extracted",
+        "note": "forward+backward 758.37s 및 1138s→758s, 커널 감소 구성 차이, forward가 제일 많이 줄어든 이유 의문, 진행 사항(pinned 입력층 제거)"
+      }
+    }
+  }
+}

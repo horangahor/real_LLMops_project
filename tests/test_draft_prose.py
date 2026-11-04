@@ -28,7 +28,7 @@ class StructuredClient(Client):
     def __call__(self, system, packet, schema, path):
         value = super().__call__(system, packet, schema, path)
         if ("generation_order" in schema["properties"] or "checks" in schema["properties"]
-                or "findings" in schema["properties"] or packet.get("operation") == "editorial_review"):
+                or "findings" in schema["properties"] or packet.get("operation") in ("editorial_review", "editorial_revision", "editorial_assembly")):
             return value
         def convert(scoped, part_schema):
             result = {}
@@ -201,14 +201,15 @@ class DraftProseTests(unittest.TestCase):
             self.assertEqual(engine.call(Path(tmp), "generate", "system" + SOURCE_PROTOCOL, compact_packet(packet), parts_schema(packet), cache_only=True), old)
             self.assertTrue((Path(tmp) / "generate-legacy-rejected.json").is_file())
 
-    def test_source_review_errors_are_not_overridden_by_valid_citation_format(self):
+    def test_valid_citations_do_not_erase_source_findings_after_revision_limit(self):
         with TemporaryDirectory() as tmp:
             client = StructuredClient()
             client.reject = "subsection-s0-p0"
-            with self.assertRaisesRegex(ValueError, "근거·필수 내용 검토 미통과"):
-                PlannedPaper(tmp, client).run(research())
-            self.assertEqual(sum(k == "review" for _, k, _ in client.events), 3)
-            self.assertFalse(any(s == "section-s0" for s, _, _ in client.events))
+            result = PlannedPaper(tmp, client).run(research())
+            self.assertEqual(sum(s == "subsection-s0-p0" and k == "review" for s, k, _ in client.events), 3)
+            self.assertTrue(any(s == "section-s0" for s, _, _ in client.events))
+            self.assertTrue(result["review"]["content_warnings"])
+            self.assertFalse(result["review"]["content_approved"])
 
     def test_split_generations_use_structured_paragraphs_and_preserve_evidence_coverage(self):
         data, _, contexts, _, _ = fixture()

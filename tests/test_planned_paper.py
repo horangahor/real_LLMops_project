@@ -42,12 +42,14 @@ class FakeClient:
     def __call__(self, system, packet, schema, path):
         self.calls.append((system, packet))
         properties = schema["properties"]
+        if packet.get("operation") in ("editorial_revision", "editorial_assembly"):
+            from review_test_support import editorial_reply
+            return editorial_reply(packet)
         if packet.get("operation") == "editorial_review":
             return {"issues": [{"section_id": packet["outline"][0]["id"], "paragraph_id": "none", "category": "flow",
                                 "severity": "error", "reason": "검토 미통과 시험"}] if self.reject else []}
         if "findings" in properties:
-            from review_test_support import confirmed_findings
-            return confirmed_findings(packet, schema)
+            raise AssertionError("Retired source-review agent must not be called")
         if "generation_order" in properties:
             return copy.deepcopy(self.plan)
         if "parts" in properties:
@@ -180,11 +182,18 @@ class PlannedPaperTests(unittest.TestCase):
                     engine.load_research(project_profile("generic"), research_json=source)
             extract.assert_not_called()
 
-    def test_unresolved_requirement_cannot_be_counted_as_evidence_backed_met(self):
+    def test_requirement_without_candidate_or_actual_used_support_is_not_counted_as_met(self):
         value = plan()
         value["sections"][0]["required_items"][0]["evidence_ids"] = []
+        fake = FakeClient(value)
+        def response(system, packet, schema, path):
+            raw = fake(system, packet, schema, path)
+            for row in raw.get("checks", []):
+                if row["item_id"] == "item0":
+                    row["evidence_ids"] = []
+            return raw
         with tempfile.TemporaryDirectory() as temporary:
-            result = PlannedPaper(temporary, FakeClient(value)).run(research())
+            result = PlannedPaper(temporary, response).run(research())
         check = next(c for c in result["review"]["checks"] if c["item_id"] == "item0")
         self.assertEqual(check["verdict"], "needs_check")
         self.assertIn("validation_note", check)

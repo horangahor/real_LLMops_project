@@ -1,0 +1,337 @@
+{
+  "ledger": {
+    "p9:e78": {
+      "state": "represented",
+      "fact_ids": [
+        "P0009F0001",
+        "P0009F0002",
+        "P0009R0F0001",
+        "P0009R0F0002",
+        "P0009R1F0001",
+        "P0009R1F0002"
+      ],
+      "note": "only_GPU → hybrid 변경점 표(함수별 GPU/CPU 전환, 복잡도, GPU 풀 구조체 축소)가 실제 필드에 보존됨."
+    },
+    "p9:e79": {
+      "state": "represented",
+      "fact_ids": [
+        "P0009R1F0004"
+      ],
+      "note": "이미지 플레이스홀더([image](/image/placeholder))만 존재하며 실제 그림 내용·캡션·측정값은 원문 부재로 한계 표기."
+    },
+    "p9:e80": {
+      "state": "represented",
+      "fact_ids": [
+        "P0009R1F0005"
+      ],
+      "note": "‘한 줄 요약’ 표제 자체는 독립 보존 가치가 낮아 별도 사실로 추출하지 않고 후속 문단(p9:e81)과 연결해 처리."
+    },
+    "p9:e81": {
+      "state": "represented",
+      "fact_ids": [
+        "P0009F0003",
+        "P0009R0F0003",
+        "P0009R1F0003"
+      ],
+      "note": "hybrid가 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 CPU for 문으로 되돌린 버전이며, 추가 없이 GPU 코드 삭제로 빨라진 사례로 정리된 내용이 보존됨."
+    }
+  },
+  "rescue_history": [
+    {
+      "missing": {
+        "p9:e79": "figure 요소이나 실제 이미지 내용이 보존되지 않음. 원문에는 ![image](/image/placeholder)만 존재하며, v3 설명에서 언급된 '어떤 함수인지' 관련 시각 정보는 추출되지 않음.",
+        "p9:e80": "실제 구조화된 작성 근거 연결이 없습니다. '한 줄 요약' 제목만 존재하며, 별도 연구 내용은 없음. 승인된 사실에는 직접 연결되지 않음."
+      },
+      "facts": [
+        {
+          "statement": "only_GPU와 hybrid 비교 표에서 hybrid는 only_GPU에서 GPU로 돌리던 함수 중 matmul(cuBLAS)만 GPU로 남기고 make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max를 CPU for 문으로 되돌린 구성이다.",
+          "limits": "표에 표기된 복잡도는 make_zero_matrix/make_zero_vector는 '-', make_eye는 O(n), mat_add/positive_part/negative_part/rowwise_scale/affine_min/affine_max는 O(n²), matmul은 O(n³)로 적혀 있다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p9:e78",
+              "page": 9,
+              "quote": "| 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: |\n| --- | --- | --- | --- |\n| 함수 | only_GPU | hybrid | 복잡도 |\n| make_zero_matri X | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_zero_vecto r | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_eye | GPU 커널 | CPU for 문 | O(n) |\n| mat_add | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| positive_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| negative_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n²) |\n| rowwise_scale | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| affine_min | GPU 커널 | CPU for 문 | O(n2) |\n| affine_max | GPU 커널 | CPU for 문 | O(n2) |\n| matmul | cuBLAS + 메모리풀 | cuBLAS + 메모리풀 (동 일) | O(n³) |\n| 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: |\n| ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) |",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0009R0F0001",
+          "support": "supported",
+          "support_note": "p9:e78 표의 함수별 only_GPU/hybrid 구성 및 복잡도 표기와 일치한다. make_zero_matrix/make_zero_vector는 '-', make_eye는 O(n), mat_add/positive_part/negative_part/rowwise_scale/affine_min/affine_max는 O(n²), matmul은 O(n³)로 적혀 있다. 다만 원문 표에는 'O(n2)' 표기가 일부 보이며, 이는 O(n²)로 해석한 것으로 보인다. 표에는 'matmul'이 'cuBLAS + 메모리풀 (동일)'로 기재되어 있어 'matmul(cuBLAS)만 GPU로 남긴다'는 진술과 부합한다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "GPU 풀 구조체는 only_GPU에서 d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당)였고, hybrid에서는 matmul 전용 d_A, d_B, d_C 3개로 축소되었다.",
+          "limits": "축소 이유는 이 문장만으로 정량적으로 설명되지 않는다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p9:e78",
+              "page": 9,
+              "quote": "| 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: |\n| --- | --- | --- | --- |\n| 함수 | only_GPU | hybrid | 복잡도 |\n| make_zero_matri X | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_zero_vecto r | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_eye | GPU 커널 | CPU for 문 | O(n) |\n| mat_add | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| positive_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| negative_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n²) |\n| rowwise_scale | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| affine_min | GPU 커널 | CPU for 문 | O(n2) |\n| affine_max | GPU 커널 | CPU for 문 | O(n2) |\n| matmul | cuBLAS + 메모리풀 | cuBLAS + 메모리풀 (동 일) | O(n³) |\n| 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: |\n| ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) |",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0009R0F0002",
+          "support": "supported",
+          "support_note": "p9:e78 하단 GPU 풀 구조체 설명(only_GPU: d_mat[4] + d_vec[2], hybrid: d_A, d_B, d_C 3개)과 일치한다. '축소 이유는 이 문장만으로 정량적으로 설명되지 않는다'는 한계 진술도 원문 근거에 비추어 타당하다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for 문으로 되돌린 버전이며, 새로 추가된 것 없이 GPU 코드를 삭제(CPU 회귀)해서 빨라진 사례로 정리되었다.",
+          "limits": "이 설명은 작성자의 해석으로 기록되어 있다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p9:e81",
+              "page": 9,
+              "quote": "hybrid 는 only_GPU 에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for\n문으로 되돌린 버전입니다. 새로 \"추가\"된 것은 없고, 오히려 GPU 코드를 **삭제(CPU로 회귀)**\n해서 빨라진 케이스입니다.",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0009R0F0003",
+          "support": "supported",
+          "support_note": "p9:e81 문단('hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for 문으로 되돌린 버전... GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스')과 일치한다. '작성자의 해석으로 기록되어 있다'는 한계 표시가 적절하다. 다만 '빨라진 사례'라는 결과 판단은 p9:e81의 서술에 의존하며, 별도 측정값/조건이 이 요소들에는 제시되지 않았다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "writing_role": "context_only"
+        },
+        {
+          "statement": "p9:e79는 figure 요소로 원문에는 ![image](/image/placeholder)만 존재하며, v3 설명에서 언급된 '어떤 함수인지' 관련 시각 정보는 추출되지 않았다.",
+          "limits": "실제 이미지 내용이 보존되지 않아 해당 시각 정보는 확인할 수 없다.",
+          "kind": "limitation",
+          "claim_status": "unclear",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p9:e79",
+              "page": 9,
+              "quote": "![image](/image/placeholder)",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0009R0F0004",
+          "support": "supported",
+          "support_note": "p9:e79는 figure 요소로 텍스트가 '![image](/image/placeholder)'만 존재한다. 따라서 '어떤 함수인지' 관련 시각 정보는 추출되지 않았다는 진술이 원문 상태와 일치한다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "p9:e80은 '한 줄 요약' 제목만 존재하며, 별도 연구 내용은 없어 승인된 사실에 직접 연결되지 않는다.",
+          "limits": "해당 요소에는 구조화된 작성 근거가 없다.",
+          "kind": "limitation",
+          "claim_status": "unclear",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p9:e80",
+              "page": 9,
+              "quote": "한 줄 요약",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0009R0F0005",
+          "support": "supported",
+          "support_note": "p9:e80은 '한 줄 요약' 제목만 존재하며 별도 연구 내용이 없다. 승인된 사실에 직접 연결되지 않는다는 진술이 원문 상태와 일치한다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "writing_role": "research_fact"
+        }
+      ]
+    },
+    {
+      "missing": {
+        "p9:e79": "실제 구조화된 작성 근거 연결이 없습니다. figure 요소는 이미지 플레이스홀더([image](/image/placeholder))로만 존재하며 실제 그림 내용·캡션·측정값은 원문에 없음. 연구 증거로 승격할 내용 없음.",
+        "p9:e80": "실제 구조화된 작성 근거 연결이 없습니다. ‘한 줄 요약’ 표제는 후속 문단(p9:e81)의 요약 내용과 연결되나, 표제 자체는 독립 보존 가치가 낮아 별도 사실로 추출하지 않음."
+      },
+      "facts": [
+        {
+          "statement": "only_GPU와 hybrid 비교 표에서 hybrid는 only_GPU에서 GPU로 돌리던 함수 중 matmul(cuBLAS)만 GPU로 남기고 make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max를 CPU for 문으로 되돌린 구성이다.",
+          "limits": "표에 표기된 복잡도는 make_zero_matrix/make_zero_vector는 '-', make_eye는 O(n), mat_add/positive_part/negative_part/rowwise_scale/affine_min/affine_max는 O(n²), matmul은 O(n³)로 적혀 있다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p9:e78",
+              "page": 9,
+              "quote": "| 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: |\n| --- | --- | --- | --- |\n| 함수 | only_GPU | hybrid | 복잡도 |\n| make_zero_matri X | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_zero_vecto r | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_eye | GPU 커널 | CPU for 문 | O(n) |\n| mat_add | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| positive_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| negative_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n²) |\n| rowwise_scale | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| affine_min | GPU 커널 | CPU for 문 | O(n2) |\n| affine_max | GPU 커널 | CPU for 문 | O(n2) |\n| matmul | cuBLAS + 메모리풀 | cuBLAS + 메모리풀 (동 일) | O(n³) |\n| 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: |\n| ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) |",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0009R1F0001",
+          "support": "supported",
+          "support_note": "표(p9:e78)의 함수별 only_GPU/hybrid 구성 및 복잡도 열과 일치한다. make_zero_matrix/make_zero_vector는 '-', make_eye는 O(n), mat_add/positive_part/negative_part/rowwise_scale/affine_min/affine_max는 O(n²), matmul은 O(n³)로 표기되어 있다. 단, 원문 표기상 O(n2)와 O(n²)가 혼용되어 있어 표기 통일성은 낮다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "GPU 풀 구조체는 only_GPU에서 d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당)였고, hybrid에서는 matmul 전용 d_A, d_B, d_C 3개로 축소되었다.",
+          "limits": "축소 이유는 이 문장만으로 정량적으로 설명되지 않는다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p9:e78",
+              "page": 9,
+              "quote": "| 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: |\n| --- | --- | --- | --- |\n| 함수 | only_GPU | hybrid | 복잡도 |\n| make_zero_matri X | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_zero_vecto r | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_eye | GPU 커널 | CPU for 문 | O(n) |\n| mat_add | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| positive_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| negative_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n²) |\n| rowwise_scale | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| affine_min | GPU 커널 | CPU for 문 | O(n2) |\n| affine_max | GPU 커널 | CPU for 문 | O(n2) |\n| matmul | cuBLAS + 메모리풀 | cuBLAS + 메모리풀 (동 일) | O(n³) |\n| 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: |\n| ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) |",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0009R1F0002",
+          "support": "supported",
+          "support_note": "표 하단 GPU 풀 구조체 설명(only_GPU: d_mat[4] + d_vec[2], hybrid: d_A, d_B, d_C 3개)과 일치한다. 축소 이유는 이 문장만으로 정량적으로 설명되지 않는다는 한계도 원문 범위 내에서 정확하다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for 문으로 되돌린 버전이며, 새로 추가된 것 없이 GPU 코드를 삭제(CPU 회귀)해서 빨라진 사례로 정리되었다.",
+          "limits": "이 설명은 작성자의 해석으로 기록되어 있다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p9:e81",
+              "page": 9,
+              "quote": "hybrid 는 only_GPU 에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for\n문으로 되돌린 버전입니다. 새로 \"추가\"된 것은 없고, 오히려 GPU 코드를 **삭제(CPU로 회귀)**\n해서 빨라진 케이스입니다.",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0009R1F0003",
+          "support": "supported",
+          "support_note": "p9:e81 문단 내용과 일치하며, '새로 추가된 것 없이 GPU 코드를 삭제(CPU 회귀)해서 빨라진 사례'라는 서술은 작성자의 해석으로 기록되어 있어 귀속이 보존되어 있다. 실측 인과·성능 수치로 승격할 근거는 이 요소 내에 없다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "writing_role": "context_only"
+        },
+        {
+          "statement": "p9:e79는 이미지 플레이스홀더([image](/image/placeholder))로만 존재하며 실제 그림 내용·캡션·측정값은 원문에 없다.",
+          "limits": "연구 증거로 승격할 내용 없음.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p9:e79",
+              "page": 9,
+              "quote": "![image](/image/placeholder)",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0009R1F0004",
+          "support": "supported",
+          "support_note": "p9:e79는 ![image](/image/placeholder)로만 존재하며 실제 그림 내용·캡션·측정값이 원문에 없다는 판단이 맞다. 연구 증거로 승격할 내용은 없다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "writing_role": "research_fact"
+        },
+        {
+          "statement": "p9:e80의 ‘한 줄 요약’ 표제는 후속 문단(p9:e81)의 요약 내용과 연결되나, 표제 자체는 독립 보존 가치가 낮아 별도 사실로 추출하지 않는다.",
+          "limits": "표제만 독립 보존하지 않음.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "rejected_measurements": [],
+          "sources": [
+            {
+              "element_id": "p9:e80",
+              "page": 9,
+              "quote": "한 줄 요약",
+              "origin": "standard_parse"
+            }
+          ],
+          "numeric_issues": [],
+          "id": "P0009R1F0005",
+          "support": "supported",
+          "support_note": "p9:e80 '한 줄 요약' 표제가 p9:e81 요약 내용과 연결된다는 점과 표제만 독립 보존하지 않는다는 판단이 원문 구조에 부합한다.",
+          "attribution_preserved": true,
+          "verification_conflicts": [],
+          "verification_missing_support": [],
+          "writing_role": "context_only"
+        }
+      ]
+    }
+  ]
+}

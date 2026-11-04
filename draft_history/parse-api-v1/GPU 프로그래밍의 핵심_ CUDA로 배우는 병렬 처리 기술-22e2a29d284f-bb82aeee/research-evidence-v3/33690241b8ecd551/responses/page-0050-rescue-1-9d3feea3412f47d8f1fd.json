@@ -1,0 +1,294 @@
+{
+  "request_fingerprint": "9d3feea3412f47d8f1fd60bca6b36523ca9e13210452d05bcfecfad345c2aea2",
+  "value": {
+    "facts": [
+      {
+        "statement": "switch문 안에서 ForwardBoundResult/BackwardBoundResult를 선언과 동시에 생성하도록 코드를 수정했다.",
+        "limits": "해당 수정은 switch 케이스별 중괄호 스코프 사용이 필요하며, 중괄호 없이 선언하면 컴파일 경고/오류가 발생할 수 있다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch(method) 내부 case 0/1에서 지역 변수로 선언",
+          "중괄호 스코프 사용"
+        ],
+        "observations": [
+          "switch 안에서 선언과 동시에 만들어지도록 변경",
+          "중괄호로 스코프를 덮어주지 않으면 안된다고 기록"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e351",
+          "p50:e352",
+          "p50:e353",
+          "p50:e354"
+        ]
+      },
+      {
+        "statement": "작성자는 switch 안에서 선언과 동시에 생성되도록 수정하는 방법을 시도했다.",
+        "limits": "수정 시도 사실만 기록되어 있으며, 수정 전/후 성능 비교 수치는 이 fact에 포함되지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch(case) 내부에서 지역 변수로 선언 및 초기화"
+        ],
+        "observations": [
+          "그래서 이런식으로 안에서 선언과 동시에 만들어지도록 해봤다"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e352"
+        ]
+      },
+      {
+        "statement": "작성자는 switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 안 된다고 기록했다.",
+        "limits": "C++ switch/case 스코프 규칙에 대한 작성자 경험 기반 설명이다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch 내부 case에서 지역 변수 선언",
+          "중괄호 스코프 사용"
+        ],
+        "observations": [
+          "참고로 switch 안의 선언문은 중괄호로 저렇게 덮어주지 않으면 안되더라"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e353"
+        ]
+      },
+      {
+        "statement": "nvcc 컴파일에서 warning #546-D(transfer of control bypasses initialization)와 error C2360/C2361(초기화가 case/default 레이블에 의해 생략)이 발생했다.",
+        "limits": "컴파일러 출력 텍스트 기반이며, 해당 빌드의 전체 옵션·환경과 정확히 일치하는지는 별도 확인이 필요하다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "nvcc 컴파일, -Xcompiler /utf-8, -Xlinker /STACK:134217728, -arch=sm_89",
+          "crown_test_all_data.cu"
+        ],
+        "observations": [
+          "warning #546-D: transfer of control bypasses initialization of: variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260)",
+          "error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략되었습니다",
+          "error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략되었습니다",
+          "error C2361: 'fwd' 초기화가 'default' 레이블에 의해 생략되었습니다"
+        ],
+        "parameters": [
+          {
+            "name": "compiler",
+            "value": "nvcc",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e354"
+            ]
+          },
+          {
+            "name": "Xcompiler",
+            "value": "/utf-8",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e354"
+            ]
+          },
+          {
+            "name": "Xlinker",
+            "value": "/STACK:134217728",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e354"
+            ]
+          },
+          {
+            "name": "arch",
+            "value": "sm_89",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e354"
+            ]
+          },
+          {
+            "name": "source_file",
+            "value": "crown_test_all_data.cu",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e354"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p50:e354"
+        ]
+      },
+      {
+        "statement": "작성자는 수정 후 결과를 보고 '준수한 결과'라며 2100s 초 나오는 문제도 원인 해결 완료라고 기록했다.",
+        "limits": "'2100s'는 텍스트상 언급 수치이며, 동일 페이지의 이미지 OCR에는 total elapsed 1634.61s가 기록되어 있어 수치 차이가 있다. 어떤 실행 조건(forward/backward, 인자 유무)에 대응하는지는 텍스트만으로 확정되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch 내부 중괄호 스코프로 구조체 선언 수정 적용 후"
+        ],
+        "observations": [
+          "음 .. 준수한 결과다",
+          "이러면 2100s 초 나오는 문제도 원인 해결 완료"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total elapsed time (텍스트 언급)",
+            "value": "2.1E+3",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "작성자가 '원인 해결 완료'로 언급한 기준 수치, 정확한 실행 조건 미확인",
+            "element_ids": [
+              "p50:e357"
+            ]
+          },
+          {
+            "metric": "total elapsed time (이미지 OCR)",
+            "value": "1634.61",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "이미지 출력 기준, eps=1.0e+00, F=40000, ratio=0.000, results saved to results_cuda.csv",
+            "element_ids": [
+              "p50:img2:e1"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p50:e357",
+          "p50:img2:e1"
+        ]
+      },
+      {
+        "statement": "작성자는 '하여튼 이렇게 해서 결과를 봤다'고 서술하며 코드 수정 후 결과를 확인했음을 기록했다.",
+        "limits": "전이적 연결 문장으로, 독립적인 연구 주장은 아니다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch 내부 중괄호 스코프로 fwd/bwd 선언 방식 수정 후"
+        ],
+        "observations": [
+          "'하여튼 이렇게 해서 결과를 봤다'"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e356"
+        ]
+      },
+      {
+        "statement": "fwd, bwd 초기화가 해당 레이블에 의해 생략되었다.. 즉 main 함수 scope의 선언문은 무조건 선언이 되어야하는데 레이블에 의해 그 부분이 생략되고 있으니 작은 scope를 만들어준 것.",
+        "limits": "작성자의 컴파일 오류 해석이며, 실제 컴파일러 동작과 일치하는지 별도 확인은 없다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch(method) 내부 case에서 main 함수 scope에 fwd/bwd를 선언했으나 중괄호 스코프 없이 작성한 상태"
+        ],
+        "observations": [
+          "fwd, bwd 초기화가 해당 레이블에 의해 생략되었다",
+          "main 함수 scope의 선언문은 무조건 선언이 되어야하는데 레이블에 의해 그 부분이 생략되고 있으니 작은 scope를 만들어준 것"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e355"
+        ]
+      },
+      {
+        "statement": "======================================================================",
+        "limits": "구분선 역할의 문자열로, 독립적인 연구 주장은 아니다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "======================================================================"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e358"
+        ]
+      },
+      {
+        "statement": "이미지 출력에서 eps=1.0e+00, T=0, F=40000, ratio=0.000이 표시되었다.",
+        "limits": "이미지 OCR 값이며, 실행 조건(forward/backward, 실행인자 유무)은 이미지 단독으로는 확정되지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "이미지 출력",
+          "eps=1.0e+00, T=0, F=40000, ratio=0.000"
+        ],
+        "observations": [
+          "eps= 1.0e+00: T= 0 F=40000 ratio=0.000"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1.0e+00",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:img2:e0"
+            ]
+          },
+          {
+            "name": "T",
+            "value": "0",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:img2:e0"
+            ]
+          },
+          {
+            "name": "F",
+            "value": "40000",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:img2:e0"
+            ]
+          },
+          {
+            "name": "ratio",
+            "value": "0.000",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:img2:e0"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p50:img2:e0"
+        ]
+      },
+      {
+        "statement": "results saved to results_cuda.csv",
+        "limits": "이미지 OCR 값이며, 결과 파일 저장 메시지",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "이미지 출력"
+        ],
+        "observations": [
+          "results saved to results_cuda.csv"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:img2:e2"
+        ]
+      }
+    ]
+  }
+}

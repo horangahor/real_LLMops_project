@@ -11,7 +11,7 @@ from pathlib import Path
 import requests
 
 from config import SOLAR_MODEL, UPSTAGE_API_KEY
-from document_parse import artifact_directory, filesystem_path, parse_document, write_json
+from document_parse import artifact_directory, filesystem_path, parse_document, write_json, write_json_optional
 from paper_outline import element_key, element_text
 from paper_plan import (BASE, STRINGS, VERSION, normalize_research, object_schema, plan_schema,
                         bind_plan_evidence, prepare_planning_research, project_profile, reference_catalog, validate_plan)
@@ -89,6 +89,8 @@ EDITOR = """검토 지적을 반영해 모든 write 장을 종합 편집한다. 
 
 
 def fingerprint(value):
+    from workspace_cache import canonical_cache_value
+    value = canonical_cache_value(value)
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
 
 
@@ -118,7 +120,7 @@ def request_json(system, packet, schema, path, api_key=None, inference_settings=
             row = {"json_attempt": attempt, "transport_attempt": transport_attempt,
                    "started_at": datetime.now(timezone.utc).isoformat()}
             audit["attempts"].append(row)
-            write_json(audit_path, audit)
+            write_json_optional(audit_path, audit)
             started = time.monotonic()
             try:
                 response = requests.post("https://api.upstage.ai/v1/chat/completions",
@@ -127,9 +129,9 @@ def request_json(system, packet, schema, path, api_key=None, inference_settings=
             except requests.RequestException as error:
                 row.update(request_error=type(error).__name__, elapsed_seconds=round(time.monotonic() - started, 3))
                 failure = {**row, "received_response": False}
-                write_json(native_path, failure)
-                write_json(native_path.with_name(native_path.stem + f"-transport-error-{time.time_ns()}.json"), failure)
-                write_json(audit_path, audit)
+                write_json_optional(native_path, failure)
+                write_json_optional(native_path.with_name(native_path.stem + f"-transport-error-{time.time_ns()}.json"), failure)
+                write_json_optional(audit_path, audit)
                 if isinstance(error, (requests.Timeout, requests.ConnectionError)) and transport_attempt < transport_retries:
                     time.sleep(1)
                     continue
@@ -138,12 +140,12 @@ def request_json(system, packet, schema, path, api_key=None, inference_settings=
                 raise RuntimeError(f"외부 API 응답을 받지 못했습니다. 요청={Path(path).name}, {detail}, "
                                    f"전송 시도 {transport_attempt + 1}회. 완료한 단계는 보존했으므로 같은 명령으로 재개할 수 있습니다.") from error
             row.update(http_status=response.status_code, elapsed_seconds=round(time.monotonic() - started, 3))
-            write_json(audit_path, audit)
             break
         native = response.json()
-        row["usage"] = native.get("usage", {})
-        write_json(audit_path, audit)
+        # Persist the received response before any nonessential audit update.
         write_json(native_path, native)
+        row["usage"] = native.get("usage", {})
+        write_json_optional(audit_path, audit)
         if response.status_code != 200:
             error = native.get("error", {})
             if isinstance(error, dict) and error.get("code") == "context_length_exceeded":
@@ -467,6 +469,9 @@ class PlannedPaper:
         workflow = run_hierarchical(self, folder, research, plan, contexts, catalog, progress)
         sections, drafts = workflow["sections"], workflow["drafts"]
         report, history = workflow["review"], workflow["review_history"]
+        # Bind the completed draft's warning snapshot to its hashed review.
+        # The standalone summary keeps changing as a later run resumes.
+        report["warning_summary"] = workflow["review_warnings"]
         write_json(folder / "review-history.json", history)
         draft = render_paper(plan, sections, research)
         write_json(folder / "sections.json", {"initial": drafts, "final": sections})
@@ -486,7 +491,12 @@ class PlannedPaper:
                    "input_fact_allocation": {"assigned": len(allocated), "total": len(research["facts"])},
                    "reference_guides_linked": {"linked": sum(bool(s["reference_ids"]) for s in eligible), "eligible": len(eligible)},
                    "structure_and_source_id_validation": "passed",
-                   "assessment": "LLM-assisted checks with source-ID/quote validation; not independent ground truth",
+                   "editorial_status": report.get("editorial_status"),
+                   "editorial_warnings": len(report.get("editorial_warnings", [])),
+                   "content_status": report.get("content_status"),
+                   "content_warnings": len(report.get("content_warnings", [])),
+                   "review_warnings_path": str(folder / "review-warnings.json"),
+                   "assessment": "Subsection evidence usage checks and editorial review; not independent ground truth",
                    "output_md_path": str(folder / "draft.md"), "review_path": str(folder / "review.json")}
         write_json(folder / "metrics.json", metrics)
         # Only application-owned runs become the reloadable default; custom validation folders remain separate.
@@ -499,7 +509,7 @@ class PlannedPaper:
             progress(100, "계획에 따른 초안·검토 기록 저장 완료")
         return {"draft_markdown": draft, "plan": plan, "sections": sections, "review": report,
                 "review_history": history, "research_evidence": research, "metrics": metrics, "run_dir": str(folder),
-                "workflow": workflow["workflow"]}
+                "workflow": workflow["workflow"], "review_warnings": workflow["review_warnings"]}
 
 
 def load_latest(base_dir=BASE):
@@ -517,9 +527,10 @@ def load_latest(base_dir=BASE):
     for name in ("plan", "review"):
         if entry.get(name + "_sha256") != hashlib.sha256((folder / (name + ".json")).read_bytes()).hexdigest():
             raise ValueError("저장된 작성 계획·검토 기록이 변경됐습니다.")
+    report = json.loads((folder / "review.json").read_text(encoding="utf-8"))
     return {"draft_markdown": path.read_text(encoding="utf-8"),
             "plan": json.loads((folder / "plan.json").read_text(encoding="utf-8")),
-            "review": json.loads((folder / "review.json").read_text(encoding="utf-8"))}
+            "review": report, "review_warnings": report.get("warning_summary")}
 
 
 def parts_schema(packet):
@@ -629,12 +640,15 @@ def validate_review(report, plan, sections):
         check["guideline_ids"] = list(item.get("guideline_ids", []))
         if not set(check["evidence_ids"]) <= set(section["evidence_ids"]):
             raise ValueError("검토가 해당 장에 없는 근거를 사용했습니다.")
-        if item["evidence_ids"] and not set(check["evidence_ids"]) <= set(item["evidence_ids"]):
-            raise ValueError("검토가 해당 필수 항목의 후보 근거 범위를 벗어났습니다.")
+        # Candidate allocation guides writing; it is not a second scope gate.
+        # The review plan already limits evidence to this section/subsection.
+        check["used_non_candidate_evidence_ids"] = [identifier for identifier in check["evidence_ids"]
+                                                    if identifier not in item["evidence_ids"]]
         section_cited = {identifier for group in re.findall(r"\[근거:\s*([^\]]+)\]", sections[section["id"]])
                          for identifier in re.split(r"[,，;·\s]+", group.strip()) if identifier}
         check["unused_candidate_evidence_ids"] = [identifier for identifier in item["evidence_ids"] if identifier not in section_cited]
-        if check["verdict"] == "met" and not item["evidence_ids"]:
+        has_support = bool(item["evidence_ids"] or check["evidence_ids"])
+        if check["verdict"] == "met" and not has_support:
             check["verdict"] = "needs_check"
             check["validation_note"] = "원문 근거가 배정되지 않은 항목의 충족 판정을 확인 필요로 낮췄습니다. 충족률 분모·분자에서 제외합니다."
         if check["verdict"] == "met":
@@ -642,7 +656,7 @@ def validate_review(report, plan, sections):
             # Check only evidence the reviewer says supports this actual text.
             missing_report_ids = set()
             if not check["evidence_ids"]:
-                missing_report_ids = set(item["evidence_ids"]) & section_cited
+                missing_report_ids = set(section["evidence_ids"]) & section_cited
             missing_body_ids = set()
             if "paragraph_quotes" in check:
                 cited = {identifier for text in check["paragraph_quotes"]
@@ -654,10 +668,10 @@ def validate_review(report, plan, sections):
                 # it back to the writer without inventing citations or approval.
                 check["model_verdict"] = "met"
                 check["verdict"] = "missing"
-                check["missing_review_evidence_ids"] = [key for key in item["evidence_ids"] if key in missing_report_ids]
-                check["missing_body_evidence_ids"] = [key for key in item["evidence_ids"] if key in missing_body_ids]
+                check["missing_review_evidence_ids"] = [key for key in section["evidence_ids"] if key in missing_report_ids]
+                check["missing_body_evidence_ids"] = [key for key in check["evidence_ids"] if key in missing_body_ids]
                 check["missing_section_evidence_ids"] = [key for key in check["evidence_ids"] if key not in section_cited]
-                check["unselected_cited_evidence_ids"] = [key for key in item["evidence_ids"]
+                check["unselected_cited_evidence_ids"] = [key for key in check["evidence_ids"]
                                                          if key in missing_body_ids and key in section_cited]
                 check["failure_owner"] = "writer" if check["missing_section_evidence_ids"] else "reviewer"
                 check["validation_note"] = ("검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다."
@@ -665,9 +679,9 @@ def validate_review(report, plan, sections):
                     "근거는 본문에 있으나 검토 응답의 문단 선택 또는 근거 목록이 불완전합니다. 본문 재작성 대상이 아닙니다.")
         if check["verdict"] == "met":
             if (not check["quote"] or check["quote"] not in sections[section["id"]] or
-                    not item["evidence_ids"] or not check["evidence_ids"]):
+                    not check["evidence_ids"]):
                 raise ValueError("충족 판정에 실제 본문 인용과 필수 근거가 없습니다.")
-        elif check["verdict"] == "incorrect" or (check["verdict"] == "missing" and item["evidence_ids"]):
+        elif check["verdict"] == "incorrect" or (check["verdict"] == "missing" and has_support):
             missing_ids = list(dict.fromkeys(check.get("missing_body_evidence_ids", []) + check.get("missing_review_evidence_ids", [])))
             reason = f"필수 내용 {key}: {check['verdict']}"
             if check.get("validation_note"):
@@ -702,7 +716,7 @@ def validate_review(report, plan, sections):
             raise ValueError("검토 지적에 해당 장 밖의 근거가 있습니다.")
         if issue["quote"] and issue["quote"] not in sections[section["id"]]:
             raise ValueError("검토 지적의 인용이 실제 장 본문에 없습니다.")
-    supported = {key for key, (_, item) in expected.items() if item["evidence_ids"]}
+    supported = {c["item_id"] for c in checks if expected[c["item_id"]][1]["evidence_ids"] or c["evidence_ids"]}
     met = sum(c["verdict"] == "met" and c["item_id"] in supported for c in checks)
     return {**report, "issues": issues, "approved": not any(i["severity"] == "error" for i in issues),
             "required_content_coverage": {"met": met, "total": len(supported), "value": met / len(supported) if supported else None},
@@ -710,6 +724,7 @@ def validate_review(report, plan, sections):
                                           for verdict in ("applied", "partial", "not_visible")},
                                       "total": len(reference_checks), "assessment": "LLM-assisted; human validation needed"},
             "evidence_policy": "candidate-pool-v1",
+            "evidence_scope_policy": "used-evidence-scope-v1",
             "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"}
 
 

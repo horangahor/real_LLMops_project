@@ -1,0 +1,208 @@
+{
+  "request_fingerprint": "373767894f62e96a1d5b72dbc30bde97c242f78ecbe0dafd49e84b97c9531b44",
+  "value": {
+    "facts": [
+      {
+        "statement": "각 추론, bound 계산, 검증에 끝마다 시간을 기록해서(E2E) 각각 시간을 측정하도록 하였다.",
+        "limits": "",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p54:e393"
+        ]
+      },
+      {
+        "statement": "코드에서 추론(network_forward) 후 t0~t1 구간, bound 계산 후 t1~t2 구간, 검증(Top-k 인증 판정) 후 t2~t3 구간의 시간을 std::chrono::high_resolution_clock::now()로 기록하여 각각 time_infer_total, time_bound_total, time_certify_total에 double 초 단위로 누적하도록 구현함.",
+        "limits": "측정은 단일 데이터 포인트(dataset[i]) 단위로 수행되며, 전체 92만 번 실행의 elapsed 타임과 미세한 오차가 존재함",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "추론(네트워크 정방향 통과) 후 bound 계산, bound 계산 후 검증(Top-k 인증 판정) 순서로 진행",
+          "case 0은 ForwardBoundResult(lirpa_forward_bound_imp1), case 1은 BackwardBoundResult(lirpa_backward_bound) 사용",
+          "각 case 안에서 직접 초기화하여 NRVO 적용, 4MB+ 구조체 복사 0회"
+        ],
+        "observations": [
+          "추론 시간 누적 변수: time_infer_total",
+          "bound 시간 누적 변수: time_bound_total",
+          "검증 시간 누적 변수: time_certify_total",
+          "Top-k 인증 판정 결과에 따라 t_count 또는 f_count 증가"
+        ],
+        "parameters": [
+          {
+            "name": "추론 시간 측정 구간",
+            "value": "t0 ~ t1",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "bound 시간 측정 구간",
+            "value": "t1 ~ t2",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "검증 시간 측정 구간",
+            "value": "t2 ~ t3",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "bound 계산 방법(case)",
+            "value": "0: ForwardBoundResult (lirpa_forward_bound_imp1), 1: BackwardBoundResult (lirpa_backward_bound)",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "Top-k 인증 판정 함수",
+            "value": "certify_topk(y0, final_lower, final_upper, k)",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e392"
+        ]
+      },
+      {
+        "statement": "elapsed 타임(92만 번 계산 시간)과 3개 누적 시간을 더한 값 사이에 미세한 오차가 있어, 3개 누적 시간을 더한 게 더 올바른 시간 같아서 그걸 넣기로 함.",
+        "limits": "오차의 구체적 수치나 원인은 제시되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "92만 번 forward/backward 실행 기준",
+          "추론·bound·검증 각각 누적 시간을 합산한 값 사용"
+        ],
+        "observations": [
+          "elapsed 타임과 3개 누적 시간 합 사이에 미세한 오차 존재",
+          "3개 누적 시간 합이 더 올바른 시간으로 간주됨"
+        ],
+        "parameters": [
+          {
+            "name": "사용하기로 한 시간 기준",
+            "value": "추론·bound·검증 3개 누적 시간의 합",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e394"
+            ]
+          },
+          {
+            "name": "비교 대상 시간",
+            "value": "elapsed 타임(92만 번 계산 시간)",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e394"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e394"
+        ]
+      },
+      {
+        "statement": "forward와 backward 각각 20번씩 측정 완료했으며, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정.",
+        "limits": "평균·분산 수치는 아직 슬라이드에 반영되지 않은 계획 단계",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward 20번, backward 20번 측정 완료",
+          "튀는 값(outlier) 존재 인정"
+        ],
+        "observations": [
+          "측정 횟수: forward 20번, backward 20번",
+          "튀는 값 존재",
+          "평균과 분산을 구해 슬라이드에 넣을 예정"
+        ],
+        "parameters": [
+          {
+            "name": "forward 측정 횟수",
+            "value": "20번",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e395"
+            ]
+          },
+          {
+            "name": "backward 측정 횟수",
+            "value": "20번",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e395"
+            ]
+          },
+          {
+            "name": "통계 지표 계획",
+            "value": "평균, 분산",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e395"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e395"
+        ]
+      },
+      {
+        "statement": "단일 데이터 측정 검증(b 과정)에서 먼저 warm up 코드를 넣음.",
+        "limits": "warm up의 구체적 영향 수치는 별도 측정·검증 완료되었으나 발표에서는 초기화 비용 관련 자투리로 처리 예정",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "단일 데이터 측정 대상",
+          "warm up 영향 측정 및 검증 완료"
+        ],
+        "observations": [
+          "warm up 코드를 먼저 넣음",
+          "교수님이 초기화 비용 때문일 것이라고 언급",
+          "발표에서는 자투리로 넣거나 생략 예정"
+        ],
+        "parameters": [
+          {
+            "name": "warm up 대상",
+            "value": "단일 데이터 측정",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e397",
+              "p54:e398"
+            ]
+          },
+          {
+            "name": "warm up 코드 삽입 시점",
+            "value": "측정 전 먼저 넣음",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e398"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e397",
+          "p54:e398"
+        ]
+      }
+    ]
+  }
+}

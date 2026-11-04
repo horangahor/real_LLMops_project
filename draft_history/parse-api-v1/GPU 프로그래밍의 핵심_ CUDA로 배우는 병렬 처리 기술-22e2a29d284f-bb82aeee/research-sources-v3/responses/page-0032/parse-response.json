@@ -1,0 +1,188 @@
+{
+  "api": "2.0",
+  "content": {
+    "html": "<p id='0' data-category='paragraph'>이후 <u>lirpa_forward_bound</u> 에서 사용하는 함수들을 커널 퓨전해서 성능을 개선해봄</p>\n<pre id='1'><code>Starting CROWN Verification (eps = 1e-06) mempool + warmup\ncalc success\nElapsed time: 22.342900 ms\nOutput Dimension: 16\n[Index] | Lower Bound | Upper Bound | Normal Pred (y)\n[0] | 0.081772 | 0.082159 | 0.081966\n[1] | 0.273538 | 0.273823 | 0.273680\n[2] | 0.102147 | 0.102482 | 0.102314\n[3] | 0.114244 | 0.114541 | 0.114393\n[4] | 2.670552 | 2.670843 | 2.670697\n[5] | 1.846574 | 1.846872 | 1.846723\n[6] | -1.714750 | -1.714490 | -1.714620\n[7] | -1.880139 | -1.879695 | -1.879916\n[8] | 0.706986 | 0.707275 | 0.707131\n[9] | -2.612086 | -2.611722 | -2.611904\n[10] | 0.003713 | 0.003976 | 0.003845\n[11] | 1.310476 | 1.310817 | 1.310646\n[12] | 2.049539 | 2.049839 | 2.049689\n[13] | -1.025923 | -1.025597 | -1.025760\n[14] | 1.082576 | 1.082852 | 1.082714\n[15] | -3.404772 | -3.404355 | -3.404563</code></pre>\n<p id='2' data-category='paragraph'>22ms 초반까지 나온다.</p>\n<p id='3' data-category='paragraph'>늦으면 28까지도 나오는데 , 보통은 24 중반정도</p>\n<h3 id='4'>그 외에도</h3>\n<ol id='5' data-category='list'><li>backward_bound_gpu에서 사용하는 affine 중복 계산 삭제 (커널 2개 함수 줄어듦)</li><li>backward_bound_gpu에서 사용하는 new_(upper, lower)_p를 복사하지 않고 swap 함수를 이용해서 포인터 스와핑 (std::swap 이용)</li><li>backward 에서 사용하는 행렬곱 커널 2개를 하나로 합친 커널 함수 만듦 , backward_matmul_pair_gpu ⇒ 22ms 보이는 비율이 늘었다.. 최저점(28ms)도 잘 안보이게 됐고 체감상, 효과가 있는듯</li><li>build_coeff_pair_fused_gpu 커널 퓨전</li><li>backward_bias_pair_fused_gpu 커널 퓨전</li></ol>",
+    "markdown": "이후 <u>lirpa_forward_bound</u> 에서 사용하는 함수들을 커널 퓨전해서 성능을 개선해봄\n\n```\nStarting CROWN Verification (eps = 1e-06) mempool + warmup\ncalc success\nElapsed time: 22.342900 ms\nOutput Dimension: 16\n[Index] | Lower Bound | Upper Bound | Normal Pred (y)\n[0] | 0.081772 | 0.082159 | 0.081966\n[1] | 0.273538 | 0.273823 | 0.273680\n[2] | 0.102147 | 0.102482 | 0.102314\n[3] | 0.114244 | 0.114541 | 0.114393\n[4] | 2.670552 | 2.670843 | 2.670697\n[5] | 1.846574 | 1.846872 | 1.846723\n[6] | -1.714750 | -1.714490 | -1.714620\n[7] | -1.880139 | -1.879695 | -1.879916\n[8] | 0.706986 | 0.707275 | 0.707131\n[9] | -2.612086 | -2.611722 | -2.611904\n[10] | 0.003713 | 0.003976 | 0.003845\n[11] | 1.310476 | 1.310817 | 1.310646\n[12] | 2.049539 | 2.049839 | 2.049689\n[13] | -1.025923 | -1.025597 | -1.025760\n[14] | 1.082576 | 1.082852 | 1.082714\n[15] | -3.404772 | -3.404355 | -3.404563\n```\n\n22ms 초반까지 나온다.\n\n늦으면 28까지도 나오는데 , 보통은 24 중반정도\n\n### 그 외에도\n\n1. backward_bound_gpu에서 사용하는 affine 중복 계산 삭제 (커널 2개 함수 줄어듦)\n2. backward_bound_gpu에서 사용하는 new_(upper, lower)_p를 복사하지 않고 swap 함수를 이용해서 포인터 스와핑 (std::swap 이용)\n3. backward 에서 사용하는 행렬곱 커널 2개를 하나로 합친 커널 함수 만듦 , backward_matmul_pair_gpu ⇒ 22ms 보이는 비율이 늘었다.. 최저점(28ms)도 잘 안보이게 됐고 체감상, 효과가 있는듯\n4. build_coeff_pair_fused_gpu 커널 퓨전\n5. backward_bias_pair_fused_gpu 커널 퓨전",
+    "text": "이후 lirpa_forward_bound 에서 사용하는 함수들을 커널 퓨전해서 성능을 개선해봄\nStarting CROWN Verification (eps = 1e-06) mempool + warmup\ncalc success\nElapsed time: 22.342900 ms\nOutput Dimension: 16\n[Index] | Lower Bound | Upper Bound | Normal Pred (y)\n[0] | 0.081772 | 0.082159 | 0.081966\n[1] | 0.273538 | 0.273823 | 0.273680\n[2] | 0.102147 | 0.102482 | 0.102314\n[3] | 0.114244 | 0.114541 | 0.114393\n[4] | 2.670552 | 2.670843 | 2.670697\n[5] | 1.846574 | 1.846872 | 1.846723\n[6] | -1.714750 | -1.714490 | -1.714620\n[7] | -1.880139 | -1.879695 | -1.879916\n[8] | 0.706986 | 0.707275 | 0.707131\n[9] | -2.612086 | -2.611722 | -2.611904\n[10] | 0.003713 | 0.003976 | 0.003845\n[11] | 1.310476 | 1.310817 | 1.310646\n[12] | 2.049539 | 2.049839 | 2.049689\n[13] | -1.025923 | -1.025597 | -1.025760\n[14] | 1.082576 | 1.082852 | 1.082714\n[15] | -3.404772 | -3.404355 | -3.404563\n22ms 초반까지 나온다.\n늦으면 28까지도 나오는데 , 보통은 24 중반정도\n그 외에도\n1. backward_bound_gpu에서 사용하는 affine 중복 계산 삭제 (커널 2개 함수 줄어듦)\n2. backward_bound_gpu에서 사용하는 new_(upper, lower)_p를 복사하지 않고 swap 함수를 이용해서 포인터 스와핑 (std::swap 이용)\n3. backward 에서 사용하는 행렬곱 커널 2개를 하나로 합친 커널 함수 만듦 , backward_matmul_pair_gpu ⇒ 22ms 보이는 비율이 늘었다.. 최저점(28ms)도 잘 안보이게 됐고 체감상, 효과가 있는듯\n4. build_coeff_pair_fused_gpu 커널 퓨전\n5. backward_bias_pair_fused_gpu 커널 퓨전"
+  },
+  "elements": [
+    {
+      "id": 0,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='0' data-category='paragraph'>이후 <u>lirpa_forward_bound</u> 에서 사용하는 함수들을 커널 퓨전해서 성능을 개선해봄</p>",
+        "markdown": "이후 <u>lirpa_forward_bound</u> 에서 사용하는 함수들을 커널 퓨전해서 성능을 개선해봄",
+        "text": "이후 lirpa_forward_bound 에서 사용하는 함수들을 커널 퓨전해서 성능을 개선해봄"
+      },
+      "coordinates": [
+        {
+          "x": 0.119,
+          "y": 0.085
+        },
+        {
+          "x": 0.804,
+          "y": 0.085
+        },
+        {
+          "x": 0.804,
+          "y": 0.101
+        },
+        {
+          "x": 0.119,
+          "y": 0.101
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "page": 1,
+      "category": "code",
+      "content": {
+        "html": "<pre id='1'><code>Starting CROWN Verification (eps = 1e-06) mempool + warmup\ncalc success\nElapsed time: 22.342900 ms\nOutput Dimension: 16\n[Index] | Lower Bound | Upper Bound | Normal Pred (y)\n[0] | 0.081772 | 0.082159 | 0.081966\n[1] | 0.273538 | 0.273823 | 0.273680\n[2] | 0.102147 | 0.102482 | 0.102314\n[3] | 0.114244 | 0.114541 | 0.114393\n[4] | 2.670552 | 2.670843 | 2.670697\n[5] | 1.846574 | 1.846872 | 1.846723\n[6] | -1.714750 | -1.714490 | -1.714620\n[7] | -1.880139 | -1.879695 | -1.879916\n[8] | 0.706986 | 0.707275 | 0.707131\n[9] | -2.612086 | -2.611722 | -2.611904\n[10] | 0.003713 | 0.003976 | 0.003845\n[11] | 1.310476 | 1.310817 | 1.310646\n[12] | 2.049539 | 2.049839 | 2.049689\n[13] | -1.025923 | -1.025597 | -1.025760\n[14] | 1.082576 | 1.082852 | 1.082714\n[15] | -3.404772 | -3.404355 | -3.404563</code></pre>",
+        "markdown": "```\nStarting CROWN Verification (eps = 1e-06) mempool + warmup\ncalc success\nElapsed time: 22.342900 ms\nOutput Dimension: 16\n[Index] | Lower Bound | Upper Bound | Normal Pred (y)\n[0] | 0.081772 | 0.082159 | 0.081966\n[1] | 0.273538 | 0.273823 | 0.273680\n[2] | 0.102147 | 0.102482 | 0.102314\n[3] | 0.114244 | 0.114541 | 0.114393\n[4] | 2.670552 | 2.670843 | 2.670697\n[5] | 1.846574 | 1.846872 | 1.846723\n[6] | -1.714750 | -1.714490 | -1.714620\n[7] | -1.880139 | -1.879695 | -1.879916\n[8] | 0.706986 | 0.707275 | 0.707131\n[9] | -2.612086 | -2.611722 | -2.611904\n[10] | 0.003713 | 0.003976 | 0.003845\n[11] | 1.310476 | 1.310817 | 1.310646\n[12] | 2.049539 | 2.049839 | 2.049689\n[13] | -1.025923 | -1.025597 | -1.025760\n[14] | 1.082576 | 1.082852 | 1.082714\n[15] | -3.404772 | -3.404355 | -3.404563\n```",
+        "text": "Starting CROWN Verification (eps = 1e-06) mempool + warmup\ncalc success\nElapsed time: 22.342900 ms\nOutput Dimension: 16\n[Index] | Lower Bound | Upper Bound | Normal Pred (y)\n[0] | 0.081772 | 0.082159 | 0.081966\n[1] | 0.273538 | 0.273823 | 0.273680\n[2] | 0.102147 | 0.102482 | 0.102314\n[3] | 0.114244 | 0.114541 | 0.114393\n[4] | 2.670552 | 2.670843 | 2.670697\n[5] | 1.846574 | 1.846872 | 1.846723\n[6] | -1.714750 | -1.714490 | -1.714620\n[7] | -1.880139 | -1.879695 | -1.879916\n[8] | 0.706986 | 0.707275 | 0.707131\n[9] | -2.612086 | -2.611722 | -2.611904\n[10] | 0.003713 | 0.003976 | 0.003845\n[11] | 1.310476 | 1.310817 | 1.310646\n[12] | 2.049539 | 2.049839 | 2.049689\n[13] | -1.025923 | -1.025597 | -1.025760\n[14] | 1.082576 | 1.082852 | 1.082714\n[15] | -3.404772 | -3.404355 | -3.404563"
+      },
+      "coordinates": [
+        {
+          "x": 0.126,
+          "y": 0.103
+        },
+        {
+          "x": 0.749,
+          "y": 0.103
+        },
+        {
+          "x": 0.749,
+          "y": 0.482
+        },
+        {
+          "x": 0.126,
+          "y": 0.482
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='2' data-category='paragraph'>22ms 초반까지 나온다.</p>",
+        "markdown": "22ms 초반까지 나온다.",
+        "text": "22ms 초반까지 나온다."
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.503
+        },
+        {
+          "x": 0.315,
+          "y": 0.503
+        },
+        {
+          "x": 0.315,
+          "y": 0.518
+        },
+        {
+          "x": 0.117,
+          "y": 0.518
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='3' data-category='paragraph'>늦으면 28까지도 나오는데 , 보통은 24 중반정도</p>",
+        "markdown": "늦으면 28까지도 나오는데 , 보통은 24 중반정도",
+        "text": "늦으면 28까지도 나오는데 , 보통은 24 중반정도"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.537
+        },
+        {
+          "x": 0.519,
+          "y": 0.537
+        },
+        {
+          "x": 0.519,
+          "y": 0.553
+        },
+        {
+          "x": 0.117,
+          "y": 0.553
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "page": 1,
+      "category": "heading1",
+      "sub_category": "h3",
+      "content": {
+        "html": "<h3 id='4'>그 외에도</h3>",
+        "markdown": "### 그 외에도",
+        "text": "그 외에도"
+      },
+      "coordinates": [
+        {
+          "x": 0.118,
+          "y": 0.606
+        },
+        {
+          "x": 0.202,
+          "y": 0.606
+        },
+        {
+          "x": 0.202,
+          "y": 0.621
+        },
+        {
+          "x": 0.118,
+          "y": 0.621
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "page": 1,
+      "category": "list",
+      "sub_category": "ol",
+      "content": {
+        "html": "<ol id='5' data-category='list'><li>backward_bound_gpu에서 사용하는 affine 중복 계산 삭제 (커널 2개 함수 줄어듦)</li><li>backward_bound_gpu에서 사용하는 new_(upper, lower)_p를 복사하지 않고 swap 함수를 이용해서 포인터 스와핑 (std::swap 이용)</li><li>backward 에서 사용하는 행렬곱 커널 2개를 하나로 합친 커널 함수 만듦 , backward_matmul_pair_gpu ⇒ 22ms 보이는 비율이 늘었다.. 최저점(28ms)도 잘 안보이게 됐고 체감상, 효과가 있는듯</li><li>build_coeff_pair_fused_gpu 커널 퓨전</li><li>backward_bias_pair_fused_gpu 커널 퓨전</li></ol>",
+        "markdown": "1. backward_bound_gpu에서 사용하는 affine 중복 계산 삭제 (커널 2개 함수 줄어듦)\n2. backward_bound_gpu에서 사용하는 new_(upper, lower)_p를 복사하지 않고 swap 함수를 이용해서 포인터 스와핑 (std::swap 이용)\n3. backward 에서 사용하는 행렬곱 커널 2개를 하나로 합친 커널 함수 만듦 , backward_matmul_pair_gpu ⇒ 22ms 보이는 비율이 늘었다.. 최저점(28ms)도 잘 안보이게 됐고 체감상, 효과가 있는듯\n4. build_coeff_pair_fused_gpu 커널 퓨전\n5. backward_bias_pair_fused_gpu 커널 퓨전\n",
+        "text": "1. backward_bound_gpu에서 사용하는 affine 중복 계산 삭제 (커널 2개 함수 줄어듦)\n2. backward_bound_gpu에서 사용하는 new_(upper, lower)_p를 복사하지 않고 swap 함수를 이용해서 포인터 스와핑 (std::swap 이용)\n3. backward 에서 사용하는 행렬곱 커널 2개를 하나로 합친 커널 함수 만듦 , backward_matmul_pair_gpu ⇒ 22ms 보이는 비율이 늘었다.. 최저점(28ms)도 잘 안보이게 됐고 체감상, 효과가 있는듯\n4. build_coeff_pair_fused_gpu 커널 퓨전\n5. backward_bias_pair_fused_gpu 커널 퓨전"
+      },
+      "coordinates": [
+        {
+          "x": 0.146,
+          "y": 0.641
+        },
+        {
+          "x": 0.856,
+          "y": 0.641
+        },
+        {
+          "x": 0.856,
+          "y": 0.779
+        },
+        {
+          "x": 0.146,
+          "y": 0.779
+        }
+      ]
+    }
+  ],
+  "model": "document-parse-260930",
+  "ocr": true,
+  "usage": {
+    "pages": 1,
+    "enhanced": [
+      1
+    ]
+  }
+}

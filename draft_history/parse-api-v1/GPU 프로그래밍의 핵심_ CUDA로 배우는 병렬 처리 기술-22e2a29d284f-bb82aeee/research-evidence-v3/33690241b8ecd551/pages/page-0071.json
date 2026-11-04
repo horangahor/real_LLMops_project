@@ -1,0 +1,769 @@
+{
+  "initial": [
+    {
+      "statement": "b는 3차원 batching을 만드는 과정이고 c는 최적화된 라이브러리를 쓰라는 것인가라는 질문에 대해, 방법 B는 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것(Custom Implementation)이고 방법 C는 가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리(cuBLAS)에 맡기는 것(Library Integration)이다.",
+      "limits": "방법 B와 C의 정의는 대화/AI 응답 기반 서술이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.",
+      "kind": "problem",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [],
+      "observations": [
+        "방법 B: 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것(Custom Implementation)",
+        "방법 C: 가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리(cuBLAS)에 맡기는 것(Library Integration)"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p71:e548",
+          "page": 71,
+          "quote": "b는 3차원 batching올 만드는 과정이고 c는 최적화된 라이브러리 써라 그런건가?",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p71:e552",
+          "page": 71,
+          "quote": "● 방법 B: \"내가 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것\" (Custom\nImplementation)\n● 방법 C: \"가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리( cuBLAS )에 맡기는\n것\" (Library Integration)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0071F0001"
+    },
+    {
+      "statement": "방법 B는 행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어서 3차원 배칭 커널을 작성하는 것이며, 장점은 알고리즘과 메모리를 100% 완벽히 통제할 수 있고, 아쉬운 점은 C++ CUDA 코드를 잘 짜도 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기 어렵다.",
+      "limits": "방법 B의 장단점 서술은 대화/AI 응답 기반이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.",
+      "kind": "problem",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [],
+      "observations": [
+        "행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어서 3차원 배칭 커널을 작성",
+        "장점: 알고리즘과 메모리를 100% 완벽히 통제 가능",
+        "아쉬운 점: 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어 어셈블리 성능을 손으로 따라잡기 어려움"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p71:e555",
+          "page": 71,
+          "quote": "● 행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 우리가 직접 blockIdx.z 를 넣\n어서 3차원 배칭 커널을 작성하는 것입니다.\n● 장점: 알고리즘과 메모리를 내가 100% 완벽히 통제할 수 있습니다.\n● 아쉬운 점: 우리가 아무리 C++ CUDA 코드를 잘 짜도, 엔비디아 본사 엔지니어들이 GPU 회\n로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기\n는 어렵습니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0071F0002"
+    },
+    {
+      "statement": "방법 C는 CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이고, 이 무거운 행렬 곱셈까지 굳이 손수 짤 필요가 없으니 엔비디아가 텐서 코어용으로 극한까지 깎아놓은 공식 라이브러리(cublasSgemmBatched)를 쓰자는 것이며, 핵심은 CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식이다.",
+      "limits": "CROWN 연산 시간의 80% 이상이 행렬 곱셈이라는 서술과 하이브리드 방식 설명은 대화/AI 응답 기반이며, 실제 측정값·구현 결과는 이 요소에서 확인되지 않는다.",
+      "kind": "problem",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [],
+      "observations": [
+        "CROWN 연산 시간의 80% 이상은 행렬 곱셈(A × W)",
+        "무거운 행렬 곱셈까지 굳이 손수 짤 필요가 없으니 엔비디아가 텐서 코어용으로 극한까지 깎아놓은 공식 라이브러리(cublasSgemmBatched)를 쓰자",
+        "CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌림",
+        "오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p71:e557",
+          "page": 71,
+          "quote": "● CROWN 연산 시간의 **80% 이상은 행렬 곱셈($A \\times W$)**입니다.\n● \"이 무거운 행렬 곱셈까지 굳이 우리가 손수 짤 필요가 있을까? 엔비디아가 텐서 코어용으로\n극한까지 깎아놓은 공식 라이브러리( cublasSgemmBatched 쓰자!\" 하는 것이 방법 C입니\n를(\n다.\n● 핵심: CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B\n의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식입\n니다. (파이토치가 내부적으로 동작하는 방식과 100% 동일)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0071F0003"
+    },
+    {
+      "statement": "결론은 B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것이다.",
+      "limits": "결론 서술은 대화/AI 응답 기반이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.",
+      "kind": "problem",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [],
+      "observations": [
+        "B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p71:e559",
+          "page": 71,
+          "quote": "\"B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱\n엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것\"\n바로 이 흐름으로 이해하시면 완벽합니다!",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0071F0004"
+    },
+    {
+      "statement": "방법 C는 CROWN 연산 시간의 80% 이상을 차지하는 행렬 곱셈(A×W)을 cuBLAS(cublasSgemmBatched)에 맡기고, CROWN 전용 연산(ReLU 완화 계수 계산 등)은 방법 B의 자체 3D 커널로 돌리는 하이브리드 방식이다.",
+      "limits": "80% 이상은 작성자가 제시한 비율이며, 실제 측정값·조건은 이 요소에서 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "CROWN 연산 시간의 80% 이상은 행렬 곱셈(A×W)",
+        "CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없음",
+        "방법 B의 자체 3D 커널로 CROWN 전용 연산 수행",
+        "무거운 행렬 곱셈만 cuBLAS(cublasSgemmBatched)로 교체",
+        "파이토치 내부 동작 방식과 100% 동일"
+      ],
+      "observations": [
+        "CROWN 연산 시간의 80% 이상이 행렬 곱셈",
+        "행렬 곱셈을 cuBLAS에 외주",
+        "CROWN 전용 연산은 자체 3D 커널로 수행",
+        "하이브리드 방식"
+      ],
+      "parameters": [
+        {
+          "name": "행렬 곱셈 비중",
+          "value": "80% 이상",
+          "value_kind": "text",
+          "element_ids": [
+            "p71:e557"
+          ]
+        },
+        {
+          "name": "사용 라이브러리",
+          "value": "cublasSgemmBatched",
+          "value_kind": "text",
+          "element_ids": [
+            "p71:e557"
+          ]
+        }
+      ],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p71:e557",
+          "page": 71,
+          "quote": "● CROWN 연산 시간의 **80% 이상은 행렬 곱셈($A \\times W$)**입니다.\n● \"이 무거운 행렬 곱셈까지 굳이 우리가 손수 짤 필요가 있을까? 엔비디아가 텐서 코어용으로\n극한까지 깎아놓은 공식 라이브러리( cublasSgemmBatched 쓰자!\" 하는 것이 방법 C입니\n를(\n다.\n● 핵심: CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B\n의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식입\n니다. (파이토치가 내부적으로 동작하는 방식과 100% 동일)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0071F0005"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "backward_only 측정에서 boun 평균이 약 2.5배인 이유는 final_affine까지 복사(true)하면서 한 번의 bound 계산에서 10번 발생하기 때문이다.",
+        "limits": "해당 서술은 측정 원인 추정이며, 실제 측정 조건·값은 동일 페이지의 다른 요소에서 확인된다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_only가 아직 graph로 안 만들었다고 해도 boun 평균이 2.5배 정도 된다",
+          "final_affine까지 복사하느라고(true) 한 번의 bound 계산에서 10번 일어남"
+        ],
+        "observations": [
+          "backward_only boun 평균이 약 2.5배",
+          "원인: final_affine까지 복사(true)로 인해 한 번의 bound 계산에서 10번 발생"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e561"
+        ]
+      },
+      {
+        "statement": "false로 다시 측정하면 memcpy가 6번으로 줄어든다.",
+        "limits": "memcpy 횟수 감소는 조건 변경(false)에 따른 추정/계획 서술이며, 실제 측정값은 동일 페이지의 다른 요소에서 확인된다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "false로 줘서 다시 측정해야 한다",
+          "memcpy 6번"
+        ],
+        "observations": [
+          "false 조건 재측정 시 memcpy 6번"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e562"
+        ]
+      },
+      {
+        "statement": "CROWN 검증 실행 결과(eps calc success, mempool + warmup)에서 Elapsed time은 2.1894 ms, Inference time은 0.1705 ms, Bound time은 2.0184 ms, Output Dimension은 16, eps는 1e-06이다.",
+        "limits": "해당 수치는 단일 실행 표시값이며, 평균·반복·표본 수 조건은 별도 표에서만 확인된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "Starting CROWN Verification",
+          "eps calc success",
+          "mempool + warmup"
+        ],
+        "observations": [
+          "Elapsed time: 2.1894 ms",
+          "Inference time: 0.1705 ms",
+          "Bound time: 2.0184 ms",
+          "Output Dimension: 16",
+          "eps: 1e-06"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "2.1894 ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "Starting CROWN Verification (eps calc success, mempool + warmup)",
+            "element_ids": [
+              "p72:e563"
+            ]
+          },
+          {
+            "metric": "Inference time",
+            "value": "0.1705 ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "Starting CROWN Verification (eps calc success, mempool + warmup)",
+            "element_ids": [
+              "p72:e563"
+            ]
+          },
+          {
+            "metric": "Bound time",
+            "value": "2.0184 ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "Starting CROWN Verification (eps calc success, mempool + warmup)",
+            "element_ids": [
+              "p72:e563"
+            ]
+          },
+          {
+            "metric": "Output Dimension",
+            "value": "16",
+            "value_kind": "scalar",
+            "unit": "",
+            "condition": "Starting CROWN Verification (eps calc success, mempool + warmup)",
+            "element_ids": [
+              "p72:e563"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "1e-06",
+            "value_kind": "scalar",
+            "unit": "",
+            "condition": "Starting CROWN Verification (eps calc success, mempool + warmup)",
+            "element_ids": [
+              "p72:e563"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p72:e563"
+        ]
+      },
+      {
+        "statement": "0.3ms가 줄며, 원래 2600초였으므로 약 2300초로 추정된다.",
+        "limits": "해당 서술은 감소량 추정이며, 실제 측정값은 동일 페이지의 다른 요소에서 확인된다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "0.3ms 줄긴 한다",
+          "원래 2600초였으니까 한 2300초?"
+        ],
+        "observations": [
+          "0.3ms 감소",
+          "원래 2600초 → 약 2300초 추정"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e564"
+        ]
+      },
+      {
+        "statement": "memcpy 10번에서 6번으로 줄어든 결과와 graph 적용 결과까지 나왔다.",
+        "limits": "해당 서술은 결과 요약이며, 실제 측정값은 동일 페이지의 다른 요소에서 확인된다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "memcpy 10번 ⇒ 6번 된 결과",
+          "graph 적용한 결과까지 나왔다"
+        ],
+        "observations": [
+          "memcpy 10번 → 6번 감소",
+          "graph 적용 결과 포함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e565"
+        ]
+      },
+      {
+        "statement": "측정 시간이 2578초에서 1543초로 줄었다.",
+        "limits": "해당 수치는 조건 변경 전후 요약이며, 실제 측정값은 동일 페이지의 다른 요소에서 확인된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "memcpy 10번 ⇒ 6번",
+          "graph 적용 결과까지 나왔다"
+        ],
+        "observations": [
+          "2578초 ⇒ 1543초"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total_s (감소 전)",
+            "value": "2578",
+            "value_kind": "scalar",
+            "unit": "초",
+            "condition": "memcpy 10번 기준",
+            "element_ids": [
+              "p72:e566"
+            ]
+          },
+          {
+            "metric": "total_s (감소 후)",
+            "value": "1543",
+            "value_kind": "scalar",
+            "unit": "초",
+            "condition": "memcpy 6번 기준",
+            "element_ids": [
+              "p72:e566"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p72:e566"
+        ]
+      },
+      {
+        "statement": "그래프를 적용했더니 787.8832s로 3가지 방법 중 가장 빠르며, avg 기준 forward는 1029s, forward+backward는 1138s이다.",
+        "limits": "해당 서술은 avg 기준 비교이며, 실제 측정값은 동일 페이지의 다른 요소에서 확인된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "그래프를 적용했더니 787.8832s",
+          "3가지 방법 중 가장 빠르다",
+          "avg 기준 forward 1029s",
+          "avg 기준 forward+backward 1138s"
+        ],
+        "observations": [
+          "graph 적용 시 787.8832s로 3가지 방법 중 가장 빠름",
+          "avg 기준 forward 1029s",
+          "avg 기준 forward+backward 1138s"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total_s (backward_only_cuda_graph)",
+            "value": "787.8832",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "backward_only_cuda_graph, N=40000, eps_count=23",
+            "element_ids": [
+              "p72:img2:e0"
+            ]
+          },
+          {
+            "metric": "avg total_s (forward)",
+            "value": "1029.827",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "평균(forward)",
+            "element_ids": [
+              "p72:img0:e0"
+            ]
+          },
+          {
+            "metric": "avg total_s (forward+backward)",
+            "value": "1138.49",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "평균(forward+backward)",
+            "element_ids": [
+              "p72:img0:e0"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p72:e567",
+          "p72:img0:e0",
+          "p72:img2:e0"
+        ]
+      },
+      {
+        "statement": "해야 할 일로 backward_only가 왜 가장 빠른지 천천히 조사하고, 발표자료용 기록으로 pinned memory 성능을 정확히 측정하려고 한다.",
+        "limits": "해당 서술은 향후 계획/조사 항목이며, 실제 측정 결과는 이 요소에서 확인되지 않는다.",
+        "kind": "problem",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "왜 backward_only가 가장 빠른가? ⇒ 일단 천천히 조사",
+          "이건 추가로 발표자료에 넣기 위해서 기록하는데 pinned memory의 성능을 정확히 측정해보려고 한다"
+        ],
+        "observations": [
+          "backward_only가 가장 빠른 이유 조사 예정",
+          "pinned memory 성능 정확 측정 예정(발표자료용 기록)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e570"
+        ]
+      },
+      {
+        "statement": "pinned memory 성능 측정을 위해 pinned memory 미적용, my_lirpa에 있는 입력 공간 하나(HostAlloc), 지금 하는 방식(HostRegister) 3가지를 측정하려고 한다.",
+        "limits": "해당 서술은 측정 계획이며, 실제 측정 결과는 이 요소에서 확인되지 않는다.",
+        "kind": "problem",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "pinned memory 미적용",
+          "my_lirpa에 있는 입력 공간 하나 (HostAlloc)",
+          "지금 하는 방식 (HostRegister)",
+          "3 가지를 측정해보려고 한다"
+        ],
+        "observations": [
+          "pinned memory 미적용",
+          "my_lirpa 입력 공간 하나(HostAlloc)",
+          "지금 하는 방식(HostRegister)",
+          "3가지 측정 예정"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e571",
+          "p72:e572"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p71:e548": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:e550": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:e551": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:e552": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:e553": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:e554": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:e555": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:e556": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:e557": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:e558": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:e559": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e1": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e2": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e3": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e4": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e5": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e6": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e7": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e8": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e9": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e10": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e11": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p71:enh:e12": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      }
+    },
+    "ledger_validation_error": "구조화된 사실 없이 수집 완료로 표시했습니다."
+  },
+  "facts": [
+    {
+      "statement": "b는 3차원 batching을 만드는 과정이고 c는 최적화된 라이브러리를 쓰라는 것인가라는 질문에 대해, 방법 B는 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것(Custom Implementation)이고 방법 C는 가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리(cuBLAS)에 맡기는 것(Library Integration)이다.",
+      "limits": "방법 B와 C의 정의는 대화/AI 응답 기반 서술이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.",
+      "kind": "problem",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [],
+      "observations": [
+        "방법 B: 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것(Custom Implementation)",
+        "방법 C: 가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리(cuBLAS)에 맡기는 것(Library Integration)"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p71:e548",
+          "page": 71,
+          "quote": "b는 3차원 batching올 만드는 과정이고 c는 최적화된 라이브러리 써라 그런건가?",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p71:e552",
+          "page": 71,
+          "quote": "● 방법 B: \"내가 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것\" (Custom\nImplementation)\n● 방법 C: \"가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리( cuBLAS )에 맡기는\n것\" (Library Integration)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0071F0001"
+    },
+    {
+      "statement": "방법 B는 행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어서 3차원 배칭 커널을 작성하는 것이며, 장점은 알고리즘과 메모리를 100% 완벽히 통제할 수 있고, 아쉬운 점은 C++ CUDA 코드를 잘 짜도 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기 어렵다.",
+      "limits": "방법 B의 장단점 서술은 대화/AI 응답 기반이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.",
+      "kind": "problem",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [],
+      "observations": [
+        "행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어서 3차원 배칭 커널을 작성",
+        "장점: 알고리즘과 메모리를 100% 완벽히 통제 가능",
+        "아쉬운 점: 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어 어셈블리 성능을 손으로 따라잡기 어려움"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p71:e555",
+          "page": 71,
+          "quote": "● 행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 우리가 직접 blockIdx.z 를 넣\n어서 3차원 배칭 커널을 작성하는 것입니다.\n● 장점: 알고리즘과 메모리를 내가 100% 완벽히 통제할 수 있습니다.\n● 아쉬운 점: 우리가 아무리 C++ CUDA 코드를 잘 짜도, 엔비디아 본사 엔지니어들이 GPU 회\n로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기\n는 어렵습니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0071F0002"
+    },
+    {
+      "statement": "방법 C는 CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이고, 이 무거운 행렬 곱셈까지 굳이 손수 짤 필요가 없으니 엔비디아가 텐서 코어용으로 극한까지 깎아놓은 공식 라이브러리(cublasSgemmBatched)를 쓰자는 것이며, 핵심은 CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식이다.",
+      "limits": "CROWN 연산 시간의 80% 이상이 행렬 곱셈이라는 서술과 하이브리드 방식 설명은 대화/AI 응답 기반이며, 실제 측정값·구현 결과는 이 요소에서 확인되지 않는다.",
+      "kind": "problem",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [],
+      "observations": [
+        "CROWN 연산 시간의 80% 이상은 행렬 곱셈(A × W)",
+        "무거운 행렬 곱셈까지 굳이 손수 짤 필요가 없으니 엔비디아가 텐서 코어용으로 극한까지 깎아놓은 공식 라이브러리(cublasSgemmBatched)를 쓰자",
+        "CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌림",
+        "오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p71:e557",
+          "page": 71,
+          "quote": "● CROWN 연산 시간의 **80% 이상은 행렬 곱셈($A \\times W$)**입니다.\n● \"이 무거운 행렬 곱셈까지 굳이 우리가 손수 짤 필요가 있을까? 엔비디아가 텐서 코어용으로\n극한까지 깎아놓은 공식 라이브러리( cublasSgemmBatched 쓰자!\" 하는 것이 방법 C입니\n를(\n다.\n● 핵심: CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B\n의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식입\n니다. (파이토치가 내부적으로 동작하는 방식과 100% 동일)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0071F0003"
+    },
+    {
+      "statement": "결론은 B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것이다.",
+      "limits": "결론 서술은 대화/AI 응답 기반이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.",
+      "kind": "problem",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [],
+      "observations": [
+        "B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p71:e559",
+          "page": 71,
+          "quote": "\"B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱\n엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것\"\n바로 이 흐름으로 이해하시면 완벽합니다!",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0071F0004"
+    },
+    {
+      "statement": "방법 C는 CROWN 연산 시간의 80% 이상을 차지하는 행렬 곱셈(A×W)을 cuBLAS(cublasSgemmBatched)에 맡기고, CROWN 전용 연산(ReLU 완화 계수 계산 등)은 방법 B의 자체 3D 커널로 돌리는 하이브리드 방식이다.",
+      "limits": "80% 이상은 작성자가 제시한 비율이며, 실제 측정값·조건은 이 요소에서 확인되지 않는다.",
+      "kind": "method",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [
+        "CROWN 연산 시간의 80% 이상은 행렬 곱셈(A×W)",
+        "CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없음",
+        "방법 B의 자체 3D 커널로 CROWN 전용 연산 수행",
+        "무거운 행렬 곱셈만 cuBLAS(cublasSgemmBatched)로 교체",
+        "파이토치 내부 동작 방식과 100% 동일"
+      ],
+      "observations": [
+        "CROWN 연산 시간의 80% 이상이 행렬 곱셈",
+        "행렬 곱셈을 cuBLAS에 외주",
+        "CROWN 전용 연산은 자체 3D 커널로 수행",
+        "하이브리드 방식"
+      ],
+      "parameters": [
+        {
+          "name": "행렬 곱셈 비중",
+          "value": "80% 이상",
+          "value_kind": "text",
+          "element_ids": [
+            "p71:e557"
+          ]
+        },
+        {
+          "name": "사용 라이브러리",
+          "value": "cublasSgemmBatched",
+          "value_kind": "text",
+          "element_ids": [
+            "p71:e557"
+          ]
+        }
+      ],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p71:e557",
+          "page": 71,
+          "quote": "● CROWN 연산 시간의 **80% 이상은 행렬 곱셈($A \\times W$)**입니다.\n● \"이 무거운 행렬 곱셈까지 굳이 우리가 손수 짤 필요가 있을까? 엔비디아가 텐서 코어용으로\n극한까지 깎아놓은 공식 라이브러리( cublasSgemmBatched 쓰자!\" 하는 것이 방법 C입니\n를(\n다.\n● 핵심: CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B\n의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식입\n니다. (파이토치가 내부적으로 동작하는 방식과 100% 동일)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0071F0005"
+    }
+  ]
+}

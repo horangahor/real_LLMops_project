@@ -1,0 +1,309 @@
+{
+  "request_fingerprint": "2664b5f7cd74a5f5bc8604e8a176fb1b767c7bb1b50f255112ab03ee096859d5",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "커널 퓨전을 backward_bound_gpu()에만 적용한 후 CROWN Verification 실행 로그에서 Elapsed time: 23.925200 ms가 측정되었다.",
+          "limits": "이 값은 단일 실행 로그의 측정값이며, 캡션(p31:e215)에 따르면 컴퓨터 사정에 따라 26ms까지 뛰는 변동도 존재한다. 정확한 단일 측정값이 아니라 '23ms 후반대'라는 범위 관찰과 함께 기록된 값이다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "커널 퓨전 적용",
+            "backward_bound_gpu()에만 진행",
+            "eps = 1e-06",
+            "mempool + warmup 포함",
+            "Output Dimension: 16"
+          ],
+          "observations": [],
+          "parameters": [
+            {
+              "name": "eps",
+              "value": "1e-06",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p31:e214",
+                "p31:review:e6"
+              ]
+            },
+            {
+              "name": "Output Dimension",
+              "value": "16",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p31:e214",
+                "p31:review:e6"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "Elapsed time",
+              "value": "23.925200",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "CROWN Verification 실행 로그 (커널 퓨전 후 backward_bound_gpu())",
+              "element_ids": [
+                "p31:e214",
+                "p31:review:e6"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p31:e214",
+            "p31:review:e6"
+          ]
+        },
+        {
+          "statement": "초기 CROWN Verification 실행 로그에서 Elapsed time: 38.580600 ms가 측정되었으며, 이는 '거의 40ms로 회귀'한 상태로 문제시되었다.",
+          "limits": "이 값은 cuSPARSE SpMV/SpMM을 포함한 상태에서 측정된 값으로, 작성자는 현재 모델 크기와 호출 패턴에서는 cuBLAS/cuSPARSE가 느려졌으므로 현 기준 코드에는 포함하지 않았다고 명시함. 공식 결과는 24ms dense baseline으로 유지해야 한다는 의견이 제시됨.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "cuSPARSE SpMV/SpMM 포함 상태",
+            "eps = 1e-06",
+            "mempool + warmup 포함",
+            "Output Dimension: 16",
+            "network_forward()가 전체 타이머에 포함됨"
+          ],
+          "observations": [
+            "38.580600ms는 거의 40ms로 회귀한 상태로 문제시됨",
+            "cuSPARSE 파이프라인이 완성된 상태가 아니며 SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가됨",
+            "모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 큼",
+            "SpMM 적용 후 38ms가 된 것은 오버헤드가 계산 이득보다 큰 상황"
+          ],
+          "parameters": [
+            {
+              "name": "eps",
+              "value": "1e-06",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p30:e202",
+                "p30:enh:e0"
+              ]
+            },
+            {
+              "name": "Output Dimension",
+              "value": "16",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p30:e202",
+                "p30:enh:e0"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "Elapsed time",
+              "value": "38.580600",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "CROWN Verification 실행 로그 (cuSPARSE 포함 초기 상태)",
+              "element_ids": [
+                "p30:e202",
+                "p30:enh:e0"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p30:e202",
+            "p30:enh:e0",
+            "p30:e203",
+            "p30:enh:e1",
+            "p30:e206",
+            "p30:enh:e8",
+            "p30:enh:e3",
+            "p30:enh:e5",
+            "p30:enh:e6"
+          ]
+        },
+        {
+          "statement": "lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전한 후 CROWN Verification 실행 로그에서 Elapsed time: 22.342900 ms가 측정되었다.",
+          "limits": "이 값은 단일 실행 로그의 측정값이며, 작성자에 따르면 늦으면 28ms까지도 나오지만 보통은 24 중반정도라고 함. 22ms 초반까지 나오는 경우도 있음.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "lirpa_forward_bound 함수들 커널 퓨전 적용",
+            "eps = 1e-06",
+            "mempool + warmup 포함",
+            "Output Dimension: 16"
+          ],
+          "observations": [
+            "22.342900ms 측정됨",
+            "22ms 초반까지 나옴",
+            "늦으면 28까지도 나오는데 보통은 24 중반정도"
+          ],
+          "parameters": [
+            {
+              "name": "eps",
+              "value": "1e-06",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p32:e217",
+                "p32:review:e1"
+              ]
+            },
+            {
+              "name": "Output Dimension",
+              "value": "16",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p32:e217",
+                "p32:review:e1"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "Elapsed time",
+              "value": "22.342900",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "CROWN Verification 실행 로그 (lirpa_forward_bound 커널 퓨전 후)",
+              "element_ids": [
+                "p32:e217",
+                "p32:review:e1"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p32:e217",
+            "p32:review:e1",
+            "p32:e218",
+            "p32:review:e2",
+            "p32:e219",
+            "p32:review:e3"
+          ]
+        },
+        {
+          "statement": "성능 저하의 원인으로 신경망 크기가 매우 작고, cuBlas/cuSparse 동작 방식에서 오버헤드가 발생했으며 이 또한 신경망이 작기 때문이라고 분석되었다.",
+          "limits": "이는 작성자의 원인 분석 내용이며, 실제 측정 데이터로 검증된 인과관계는 아님. cuBLAS/cuSPARSE는 실험했지만 현재 모델 크기와 호출 패턴에서는 느려졌으므로 현 기준 코드에는 포함하지 않은 상태임.",
+          "kind": "problem",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "현재 모델 크기가 작음",
+            "cuBLAS/cuSPARSE 실험 수행됨",
+            "현재 모델 크기와 호출 패턴에서 느려짐 확인"
+          ],
+          "observations": [
+            "신경망의 크기가 매우 작음",
+            "cuBlas, cuSparse의 동작 방식에서 오버헤드가 발생함",
+            "이 오버헤드도 신경망이 작기 때문에 발생함",
+            "cuBLAS와 cuSPARSE는 실험했지만 현재 모델 크기와 호출 패턴에서는 느려졌으므로 현 기준 코드에는 포함하지 않은 상태"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p30:e204",
+            "p30:enh:e2",
+            "p30:e206",
+            "p30:enh:e8",
+            "p31:e209",
+            "p31:review:e1"
+          ]
+        },
+        {
+          "statement": "커널 퓨전 및 최적화 기법으로 backward_bound_gpu()의 affine 중복 계산 삭제, 포인터 스와핑, 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu 함수 제작, build_coeff_pair_fused_gpu 커널 퓨전, backward_bias_pair_fused_gpu 커널 퓨전이 적용되었다.",
+          "limits": "이는 문서화된 구현 방법이며, backward_matmul_pair_gpu 적용 후 22ms 보이는 비율이 늘었고 최저점(28ms)도 잘 안 보이게 되었다고 체감상 효과가 있다고 평가됨.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "backward_bound_gpu() 대상 최적화",
+            "커널 퓨전 적용",
+            "affine 중복 계산 삭제",
+            "포인터 스와핑 (std::swap 이용)"
+          ],
+          "observations": [
+            "backward_bound_gpu에서 사용하는 affine 중복 계산 삭제 (커널 2개 함수 줄어듦)",
+            "backward_bound_gpu에서 사용하는 new_(upper, lower)_p를 복사하지 않고 swap 함수를 이용해서 포인터 스와핑 (std::swap 이용)",
+            "backward에서 사용하는 행렬곱 커널 2개를 하나로 합친 커널 함수 만듦, backward_matmul_pair_gpu ⇒ 22ms 보이는 비율이 늘었다.. 최저점(28ms)도 잘 안보이게 됐고 체감상, 효과가 있는듯",
+            "build_coeff_pair_fused_gpu 커널 퓨전",
+            "backward_bias_pair_fused_gpu 커널 퓨전"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p32:e222",
+            "p32:review:e5"
+          ]
+        },
+        {
+          "statement": "cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 것이 현재 주 측정에서 맞으며, 공식 결과는 24ms dense baseline으로 유지해야 한다는 의견이 제시되었다.",
+          "limits": "이는 AI 조언 또는 작성자 의견으로 보이며, 실제 측정된 공식 결과가 24ms라는 의미는 아님. 현재 측정된 값은 38.580600ms (cuSPARSE 포함) 또는 22.342900ms (커널 퓨전 후)임.",
+          "kind": "method",
+          "claim_status": "interpretation",
+          "source_origin": "ai_advice",
+          "conditions": [
+            "현재 주 측정 기준",
+            "cuSPARSE SpMV/SpMM 제외",
+            "기존 dense matvec/matmul 유지"
+          ],
+          "observations": [
+            "현재 주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞음",
+            "network_forward()는 전체 타이머에 포함되지만 현재 cuSPARSE pipeline이 완성된 상태가 아님",
+            "SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가됨",
+            "모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 큼",
+            "SpMM 적용 후 38ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황",
+            "공식 결과는 24ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 게 좋음"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p30:enh:e3",
+            "p30:enh:e4",
+            "p30:enh:e5",
+            "p30:enh:e6"
+          ]
+        },
+        {
+          "statement": "network_forward는 신경망의 일반 추론값을 출력하는데 아직 GPU 파이프라인이 아니라서 최적화가 안되어있다는 의견이 있다.",
+          "limits": "이는 작성자의 의견으로, 실제 GPU 파이프라인 최적화 여부나 성능에 대한 측정 데이터는 제시되지 않음.",
+          "kind": "limitation",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "network_forward 함수 존재",
+            "GPU 파이프라인 미완성 상태"
+          ],
+          "observations": [
+            "network_forward는 신경망의 일반 추론값을 출력함",
+            "아직 GPU 파이프라인이 아니라서 최적화가 안되어있음"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p30:e205",
+            "p30:enh:e7"
+          ]
+        },
+        {
+          "statement": "cuBLAS/cuSPARSE의 행렬곱 연산 함수에는 기본적인 형태 외에도 변형 함수들이 매우 많으며, sm 내의 분석과 함께 사용해야 하는 함수들이라 Nsight compute 분석 때 같이 진행하면 될 것이라는 의견이 있다.",
+          "limits": "이는 향후 실험 계획에 대한 제안이며, 실제 해당 함수들을 적용하여 성능을 측정한 결과는 아님.",
+          "kind": "limitation",
+          "claim_status": "planned",
+          "source_origin": "research_note",
+          "conditions": [
+            "cuBLAS/cuSPARSE 기본 행렬곱 연산 함수 사용 중",
+            "Nsight compute 분석 예정"
+          ],
+          "observations": [
+            "현재까지 cuBLAS, cuSparse에 있는 기본적인 형태의 행렬곱 연산 함수를 사용함",
+            "행렬곱에도 변형 함수들이 매우 많음",
+            "sm 내의 분석과 함께 사용해야 하는 함수들이라 Nsight compute 분석때 같이 진행하면 될 듯?"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p31:e210",
+            "p31:review:e2"
+          ]
+        }
+      ]
+    }
+  }
+}

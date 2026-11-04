@@ -1,0 +1,3424 @@
+{
+  "request_fingerprint": "54b7b8bb6172d45d8291d40ddd6384625826df186d02031cba4dca0d0c578b8e",
+  "value": {
+    "title": "연구 자료 사실 수집 결과",
+    "facts": [
+      {
+        "statement": "커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 수정했다.",
+        "limits": "cpu 계산 오버헤드가 더 큰 것 같고 시간이 늘었다는 관측이 함께 기록됨",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "cpu 계산 오버헤드가 더 큰 것 같고 시간이 늘었다는 관측"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p60:e462",
+          "p60:enh:e2",
+          "p60:enh:e3"
+        ]
+      },
+      {
+        "statement": "cudaMemcpyAsync로 h_final_lower, d_final_lower, out_bytes, cudaMemcpyDeviceToHost, stream을 사용하고 cudaMemcpyAsync로 h_final_upper, d_final_upper, out_bytes, cudaMemcpyDeviceToHost, stream을 사용한 뒤 cudaStreamSynchronize(stream)을 호출한다.",
+        "limits": "out_bytes는 sizeof(int) + (size_t)out_dim * sizeof(float)로 계산하며 16개 노드 * 두 개의 바운드 해서 총 32 (* 4byte)만 가져오려는 의도가 기록됨",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "out_bytes = sizeof(int) + (size_t)out_dim * sizeof(float)",
+          "cudaMemcpyAsync 사용",
+          "cudaStreamSynchronize(stream) 호출"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "out_bytes",
+            "value": "sizeof(int) + (size_t)out_dim * sizeof(float)",
+            "value_kind": "range",
+            "element_ids": [
+              "p60:enh:e4"
+            ]
+          },
+          {
+            "name": "cudaMemcpyAsync 대상",
+            "value": "h_final_lower, d_final_lower, out_bytes, cudaMemcpyDeviceToHost, stream",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e4"
+            ]
+          },
+          {
+            "name": "cudaMemcpyAsync 대상2",
+            "value": "h_final_upper, d_final_upper, out_bytes, cudaMemcpyDeviceToHost, stream",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e4"
+            ]
+          },
+          {
+            "name": "동기화",
+            "value": "cudaStreamSynchronize(stream)",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e4"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e4"
+        ]
+      },
+      {
+        "statement": "dataset_pinned는 false로 초기화하고 N > 0이면 cudaHostRegister(dataset.data(), (size_t)N * sizeof(Vector), cudaHostRegisterDefault)를 호출해 성공 시 dataset_pinned를 true로 설정한다.",
+        "limits": "실패 시 cudaGetErrorString(reg_err)을 출력하며 skipped 통지를 남긴다",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "N > 0일 때 cudaHostRegister 호출",
+          "cudaHostRegisterDefault 플래그 사용"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "dataset_pinned 초기값",
+            "value": "false",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          },
+          {
+            "name": "cudaHostRegister 크기",
+            "value": "(size_t)N * sizeof(Vector)",
+            "value_kind": "range",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          },
+          {
+            "name": "cudaHostRegister 플래그",
+            "value": "cudaHostRegisterDefault",
+            "value_kind": "text",
+            "element_ids": [
+              "p60:enh:e0"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e0"
+        ]
+      },
+      {
+        "statement": "실시간 PCIe H2D 전송 최적화를 위해 Host Memory Pinning(cudaHostRegister)을 사용해 GPU가 CPU 메모리에 직접 접근할 수 있도록 하며 데이터셋 전송 속도를 향상시켰다.",
+        "limits": "실제 상황 최대한 재현을 위한 목적(5, 6G 환경에서의 실시간 입력 속도를 최대한 재현하기 위함)이 함께 기록됨",
+        "kind": "setup",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaHostRegister 사용"
+        ],
+        "observations": [
+          "실제 상황 최대한 재현을 위한 목적(5, 6G 환경에서의 실시간 입력 속도를 최대한 재현하기 위함)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p60:enh:e0"
+        ]
+      },
+      {
+        "statement": "forward_cuda_graph의 전체 시간은 983s 정도이고, 아래의 1055는 cpu에서 필요한 만큼만 계산한 뒤 복사한 시간이며 72초 차이가 나고 더 늦어졌다.",
+        "limits": "측정값 출처는 차트/로그 기반이며 정확한 비교 조건은 추가 확인 필요",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward_cuda_graph 전체 시간 약 983s",
+          "cpu에서 필요한 만큼만 계산 후 복사한 시간 1055"
+        ],
+        "observations": [
+          "72초 차이",
+          "더 늦어짐"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "forward_cuda_graph 전체 시간",
+            "value": "983",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "forward_cuda_graph",
+            "element_ids": [
+              "p60:e466",
+              "p60:enh:e9"
+            ]
+          },
+          {
+            "metric": "cpu에서 필요한 만큼만 계산 후 복사한 시간",
+            "value": "1055",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "cpu 계산 후 복사",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e9"
+            ]
+          },
+          {
+            "metric": "시간 차이",
+            "value": "72",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "두 방식 비교",
+            "element_ids": [
+              "p60:e467",
+              "p60:enh:e10"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p60:e466",
+          "p60:e467",
+          "p60:enh:e9",
+          "p60:enh:e10"
+        ]
+      },
+      {
+        "statement": "total elapsed는 1055.28s이고 Phase Timing Breakdown(all eps × all data)에서 infer는 131.799s(12.5%), bound는 920.844s(87.3%), certify는 1,597s(0.2%)이다.",
+        "limits": "평가 샘플이 10만개밖에 안되는 이유는 표본 측정으로 하려고 한 것임",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "total elapsed 1055.28s",
+          "all eps × all data 기준"
+        ],
+        "observations": [
+          "평가 샘플이 10만개밖에 안되는 이유는 표본 측정으로 하려고 함"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "total elapsed",
+            "value": "1055.28",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "전체 elapsed",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "infer 시간",
+            "value": "131.799",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "all eps × all data",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "infer 비율",
+            "value": "12.5",
+            "value_kind": "range",
+            "unit": "%",
+            "condition": "all eps × all data",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "bound 시간",
+            "value": "920.844",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "all eps × all data",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "bound 비율",
+            "value": "87.3",
+            "value_kind": "range",
+            "unit": "%",
+            "condition": "all eps × all data",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "certify 시간",
+            "value": "1597",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "all eps × all data",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "certify 비율",
+            "value": "0.2",
+            "value_kind": "range",
+            "unit": "%",
+            "condition": "all eps × all data",
+            "element_ids": [
+              "p61:e468"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p61:e468"
+        ]
+      },
+      {
+        "statement": "Real-Time Single-Sample(B=1) Latency Analysis에서 Evaluated Samples는 100000, Min Latency는 1092.30 us, Mean Latency는 1145.24 us(1.15 ms), Median(P50)은 1136.80 us, P95 Tail Latency는 1179,00 us, P99 Tail Latency는 1311.90 us, Max Latency는 7830.90 us, Jitter(StdDev)는 60.33 us, Throughput은 873.18 samples/sec, Pure GPU Execution은 953.70 us(last sample)이다.",
+        "limits": "results saved to results_cuda.csv, timing log appended to timing_log_crown.csv",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "B=1 단일 샘플",
+          "Evaluated Samples 100000"
+        ],
+        "observations": [
+          "results saved to results_cuda.csv",
+          "timing log appended to timing_log_crown.csv"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Evaluated Samples",
+            "value": "100000",
+            "value_kind": "range",
+            "unit": "samples",
+            "condition": "B=1 단일 샘플",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Min Latency",
+            "value": "1092.30",
+            "value_kind": "range",
+            "unit": "us",
+            "condition": "B=1 단일 샘플",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Mean Latency",
+            "value": "1145.24",
+            "value_kind": "range",
+            "unit": "us",
+            "condition": "B=1 단일 샘플",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Mean Latency",
+            "value": "1.15",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "B=1 단일 샘플",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Median(P50)",
+            "value": "1136.80",
+            "value_kind": "range",
+            "unit": "us",
+            "condition": "B=1 단일 샘플",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "P95 Tail Latency",
+            "value": "1179.00",
+            "value_kind": "range",
+            "unit": "us",
+            "condition": "B=1 단일 샘플",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "P99 Tail Latency",
+            "value": "1311.90",
+            "value_kind": "range",
+            "unit": "us",
+            "condition": "B=1 단일 샘플",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Max Latency",
+            "value": "7830.90",
+            "value_kind": "range",
+            "unit": "us",
+            "condition": "B=1 단일 샘플",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Jitter(StdDev)",
+            "value": "60.33",
+            "value_kind": "range",
+            "unit": "us",
+            "condition": "B=1 단일 샘플",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Throughput",
+            "value": "873.18",
+            "value_kind": "range",
+            "unit": "samples/sec",
+            "condition": "B=1 단일 샘플",
+            "element_ids": [
+              "p61:e468"
+            ]
+          },
+          {
+            "metric": "Pure GPU Execution",
+            "value": "953.70",
+            "value_kind": "range",
+            "unit": "us",
+            "condition": "last sample",
+            "element_ids": [
+              "p61:e468"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p61:e468"
+        ]
+      },
+      {
+        "statement": "cudaEvent를 추가해서 그런 걸 수도 있고 일단 시스템 인자 넣어서 제어해보는 중이다.",
+        "limits": "원인 확정 아님, 제어 시도 중 상태",
+        "kind": "setup",
+        "claim_status": "hypothesis",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaEvent 추가"
+        ],
+        "observations": [
+          "시스템 인자 넣어서 제어해보는 중"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e470"
+        ]
+      },
+      {
+        "statement": "measure_gpu는 argc > 8 && strlen(argv[8]) > 0이면 std::atoi(argv[8])로 설정하고 아니면 1이며, 0은 비활성화(Off, 드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(전체 루프 오버헤드 0초 + 맨 마지막 Pure GPU 시간 리포트, 기본값), 2는 매 샘플마다 측정(All samples, 92만 번 전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)이다.",
+        "limits": "argc/argv 기반 시스템 인자 제어 방식",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "argc > 8 && strlen(argv[8]) > 0",
+          "기본값 1"
+        ],
+        "observations": [
+          "호출당 20~50us 드라이버 오버헤드 발생 주의"
+        ],
+        "parameters": [
+          {
+            "name": "measure_gpu 기본값",
+            "value": "1",
+            "value_kind": "text",
+            "element_ids": [
+              "p61:e471"
+            ]
+          },
+          {
+            "name": "measure_gpu=0 의미",
+            "value": "비활성화(Off, 드라이버 오버헤드 0, 최고 속도)",
+            "value_kind": "text",
+            "element_ids": [
+              "p61:e471"
+            ]
+          },
+          {
+            "name": "measure_gpu=1 의미",
+            "value": "마지막 샘플만 1회 측정(전체 루프 오버헤드 0초 + 맨 마지막 Pure GPU 시간 리포트, 기본값)",
+            "value_kind": "text",
+            "element_ids": [
+              "p61:e471"
+            ]
+          },
+          {
+            "name": "measure_gpu=2 의미",
+            "value": "매 샘플마다 측정(All samples, 92만 번 전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)",
+            "value_kind": "text",
+            "element_ids": [
+              "p61:e471"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p61:e471"
+        ]
+      },
+      {
+        "statement": "원인 후보로는 1. cudaMemcpy로 복사할 메모리 계산 cpu 계산 때문, 2. cudaEvent 커널 측정 때문, 3. 진짜 gpu 클럭 때문이 제시되었다.",
+        "limits": "원인 확정 아님, 후보 목록",
+        "kind": "setup",
+        "claim_status": "hypothesis",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e473"
+        ]
+      },
+      {
+        "statement": "커밋 이전 버전(graph만 적용한 버전)을 돌려봤고 역시 그게 더 빠르다.",
+        "limits": "비교 대상은 graph만 적용한 이전 커밋 버전",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "graph만 적용한 버전"
+        ],
+        "observations": [
+          "더 빠름"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e475"
+        ]
+      },
+      {
+        "statement": "topk 속도는 빨라졌고 이건 빼먹을 수 있을지도 모른다.",
+        "limits": "확실한 채택 여부 미확정",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e477"
+        ]
+      },
+      {
+        "statement": "빼먹을 부분 정리로 1. 데이터셋 pinnedMemory, 2. 검증(heap -> stack) 배열, 3. cudaEvent는 결국 필요(Nsight Compute 분석 하려면)가 제시되었다.",
+        "limits": "정리 목록이며 실행 확정 아님",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e479"
+        ]
+      },
+      {
+        "statement": "결국 지워볼 만한 곳은 cpu를 통해서 필요한 만큼만 계산하는 부분이며 이 부분밖에 없다.",
+        "limits": "대안 범위가 제한적이라는 관측",
+        "kind": "setup",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p61:e480"
+        ]
+      },
+      {
+        "statement": "평균으로 측정을 해봤다.",
+        "limits": "어떤 대상에 대한 평균인지 구체적 조건 별도 확인 필요",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p62:e481"
+        ]
+      },
+      {
+        "statement": "cudaGraph만 적용된 버전이 있고, 이게 pinned Memory 추가 + cudaEvent 제어 + 필요한 만큼 계산해서 D2H memcpy + certify topk 자료구조 스택화이다.",
+        "limits": "비교 대상 버전 구성 설명",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaGraph만 적용된 버전"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p62:e482",
+          "p62:e483"
+        ]
+      },
+      {
+        "statement": "graph와 비교해서 단일 스트림 입력 복사 최적화를 이야기 하자면 forward에선 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에 대해 20초 차이 나며, backward를 보면 total 시간이 비슷하고 그 이유는 infer에서 깎아먹은 20초를 bound에서 graph보다 20초 빨리 수행하고 있다.",
+        "limits": "infer_s 20초 차이, bound에서 20초 빨리 수행은 관측 기반 해석",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "graph 단일 적용 vs 비교 버전",
+          "forward/backward 구분"
+        ],
+        "observations": [
+          "infer에서 20초 차이",
+          "bound에서 graph보다 20초 빨리 수행"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "infer_s 시간 차이",
+            "value": "20",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "graph 단일 적용 vs 비교 버전",
+            "element_ids": [
+              "p62:e485"
+            ]
+          },
+          {
+            "metric": "bound 시간 차이",
+            "value": "20",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "graph보다 빨리 수행",
+            "element_ids": [
+              "p62:e485"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p62:e485"
+        ]
+      },
+      {
+        "statement": "그래서 일단 유지하기로 했다.",
+        "limits": "결정 사항이며 추가 최적화 가능성은 별도 논의",
+        "kind": "setup",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p62:e486"
+        ]
+      },
+      {
+        "statement": "굳이 하자면 infer는 어차피 계산이 필요없을 것 같긴해서(벡터라서 크지 않다는 점) 크기 계산을 주석처리한다던가, certify에서는 잘 모르겠고 다시 heap으로 바꿔야하나 고민된다.",
+        "limits": "확정 실행이 아닌 가정적 제안",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p62:e487"
+        ]
+      },
+      {
+        "statement": "10주차 세미나 이후 생각해볼 것으로 1. backward_only CUDA로 구현하기 ⇒ 커널 구현 완료, 최적화 적용 여부 탐색중, 2. cudaGraph에 대한 원리 자세히 알아보기, 3. 찬희씨와 소통해서 auto lirpa 모델 얘기하기 ⇒ 얘기 했고 repo 받았다, 데이터셋, 모델은 동일하다고 한다, 4. 오늘(9월 21일) 16시, (다음주?) 화요일 오후 7시 반? 미팅, 5. 배칭 + 다중 스트림 관련해서 실제 환경과의 괴리? ⇒ 다만 얻은것은 일단 gpu 자원이 남는다는 것, 그리고 단일 스트림과 단일 데이터 복사가 현재 큰 병목을 만들고 있다는 것, 6. 컴파일러 팀에 모델 공유하기 ⇒ 공유 완료가 기록되었다.",
+        "limits": "미팅 시간 등 일부 정보는 미확정 표현 포함",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "gpu 자원이 남는다는 것",
+          "단일 스트림과 단일 데이터 복사가 현재 큰 병목을 만들고 있다는 것"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p63:e490"
+        ]
+      },
+      {
+        "statement": "발표와 관련해서는 7. 발표를 탑다운으로 구성 - 코드는 필요한 만큼만(내가 설명하려는 핵심에 필요할 경우에만..), 핵심적인 문제에 대해서(추상화 할 필요가 있음)가 기록되었다.",
+        "limits": "발표 구성 관련 메모",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p63:e492"
+        ]
+      },
+      {
+        "statement": "일단 repo를 받아서 실행해보자며 https://github.com/horangahor/antenna_auto_lirpa가 제시되었다.",
+        "limits": "실행 시도 제안",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p63:e493"
+        ]
+      },
+      {
+        "statement": "적용해볼만한 최적화 기법으로 1. 공유 메모리 타일링(Shared Memory Tiling): 현재 행렬곱 커널은 글로벌 메모리에서 직접 원소를 읽으며 L1 공유 메모리(__shared__)에 타일 단위로 올려 재사용하면 글로벌 메모리 대역폭 병목을 더 줄일 수 있다, 2. 루프 언롤링(#pragma unroll): 행렬곱 내부 루프의 분기 검사 비용을 줄이고 명령어 병렬성(ILP) 증대, 3. 고속 내장 수학 함수(Fast Math / Intrinsics): 컴파일러 옵션 -use_fast_math 또는 __expf() 등 하드웨어 전용 특수 함수 사용이 기록되었다.",
+        "limits": "고려 대상 기법이며 적용 결과 아님",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p63:e495",
+          "p63:e496",
+          "p63:e497",
+          "p63:e498"
+        ]
+      },
+      {
+        "statement": "그리고 명시적으로는 안해본 것으로 1. warp divergence(스레드 분기 최소화), 2. 비동기 스트림, 3. 블록 사이즈 계산, 4. 메모리 coalescing, 5. 타일링(위에서 언급함)이 기록되었다.",
+        "limits": "미시도 항목 목록",
+        "kind": "setup",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p63:e501"
+        ]
+      },
+      {
+        "statement": "auto_lirpa 결과가 나왔고 포워드 + 백워드 결과로 [auto_LiRPA Verification Results]가 제시되었다.",
+        "limits": "결과 존재 사실만 기록",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p63:e503",
+          "p63:e504"
+        ]
+      },
+      {
+        "statement": "eps=1e-06에서 T=39969, F=31, ratio=0.999, time=5.04s이고 eps=1e-05에서 T=39709, F=291, ratio=0.993, time=4.63s이며 eps=0.0001에서 T=37026, F=2974, ratio=0.926, time=4.65s이고 eps=0.0002에서 T=34353, F=5647, ratio=0.859, time=4.64s이며 eps=0.0003에서 T=31826, F=8174, ratio=0.796, time=4.63s이고 eps=0.0004에서 T=29375, F=10625, ratio=0.734, time=4.62s이며 eps=0.0005에서 T=27170, F=12830, ratio=0.679, time=4.65s이고 eps=0.0006에서 T=25103, F=14897, ratio=0.628, time=4.71s이며 eps=0.0007에서 T=23179, F=16821, ratio=0.579, time=4.72s이고 eps=0.0008에서 T=21323, F=18677, ratio=0.533, time=4.77s이며 eps=0.0009에서 T=19656, F=20344, ratio=0.491, time=4.68s이고 eps=0.001에서 T=18128, F=21872, ratio=0.453, time=4.62s이며 eps=0.002에서 T=7461, F=32539, ratio=0.187, time=4.64s이고 eps=0.003에서 T=2754, F=37246, ratio=0.069, time=4.61s이며 eps=0.004에서 T=945, F=39055, ratio=0.024, time=4.63s이고 eps=0.005에서 T=286, F=39714, ratio=0.007, time=4.61s이며 eps=0.006에서 T=71, F=39929, ratio=0.002, time=4.62s이고 eps=0.007에서 T=24, F=39976, ratio=0.001, time=4.60s이고 eps=0.008에서 T=3, F=39997, ratio=0.000, time=4.57s이며 eps=0.009에서 T=1, F=39999, ratio=0.000, time=4.66s이고 eps=0.01에서 T=0, F=40000, ratio=0.000, time=4.66s이며 eps=0.1에서 T=0, F=40000, ratio=0.000, time=4.67s이고 eps=1.0에서 T=0, F=40000, ratio=0.000, time=4.67s이다.",
+        "limits": "auto_LiRPA 포워드+백워드 결과 표 기준",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps별 auto_LiRPA 검증 결과"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "eps",
+            "value": "1e-06",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "39969",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "31",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.999",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "5.04",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "1e-05",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "39709",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "291",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.993",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.63",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0001",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "37026",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "2974",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.926",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.65",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0002",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "34353",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "5647",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.859",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.64",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0003",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "31826",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0003",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "8174",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0003",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.796",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0003",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.63",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0003",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0004",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "29375",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0004",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "10625",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0004",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.734",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0004",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.62",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0004",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0005",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "27170",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0005",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "12830",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0005",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.679",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0005",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.65",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0005",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0006",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "25103",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0006",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "14897",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0006",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.628",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0006",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.71",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0006",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0007",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "23179",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0007",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "16821",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0007",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.579",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0007",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.72",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0007",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0008",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "21323",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0008",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "18677",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0008",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.533",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0008",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.77",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0008",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0009",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "19656",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0009",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "20344",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0009",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.491",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0009",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.68",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0009",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.001",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "18128",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.001",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "21872",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.001",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.453",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.001",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.62",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.001",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.002",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "7461",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.002",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "32539",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.002",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.187",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.002",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.64",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.002",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.003",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "2754",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.003",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "37246",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.003",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.069",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.003",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.61",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.003",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.004",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "945",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.004",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "39055",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.004",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.024",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.004",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.63",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.004",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.005",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "286",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.005",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "39714",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.005",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.007",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.005",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.61",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.005",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.006",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "71",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.006",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "39929",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.006",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.002",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.006",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.62",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.006",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.007",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "24",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.007",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "39976",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.007",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.001",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.007",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.60",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.007",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.008",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "3",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.008",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "39997",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.008",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.008",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.57",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.008",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.009",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "1",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.009",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "39999",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.009",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.009",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.66",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.009",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.01",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "0",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.01",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "40000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.01",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.01",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.66",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.01",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.1",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "0",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.1",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "40000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.1",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.1",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.67",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.1",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "1.0",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "0",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1.0",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "40000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1.0",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1.0",
+            "element_ids": [
+              "p64:e505"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.67",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=1.0",
+            "element_ids": [
+              "p64:e505"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p64:e505"
+        ]
+      },
+      {
+        "statement": "EPS별 연산 시간의 합산(Sum of EPS times)은 107.30s이고 전체 프로그램 총 소요 시간(Overall elapsed)은 107.32s이다.",
+        "limits": "포워드+백워드 결과 기준",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "auto_LiRPA 검증 결과"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Sum of EPS times",
+            "value": "107.30",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e507"
+            ]
+          },
+          {
+            "metric": "Overall elapsed",
+            "value": "107.32",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "auto_LiRPA 검증",
+            "element_ids": [
+              "p64:e507"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p64:e507"
+        ]
+      },
+      {
+        "statement": "포워드 결과로 [auto_LiRPA Verification Results]가 제시되었고 eps=1e-06에서 T=39969, F=31, ratio=0.999, time=5.32s이며 eps=1e-05에서 T=39709, F=291, ratio=0.993, time=5.03s이고 eps=0.0001에서 T=37026, F=2974, ratio=0.926, time=4.95s이며 eps=0.0002에서 T=34349, F=5651, ratio=0.859, time=4.98s이다.",
+        "limits": "포워드 결과 표 일부",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "auto_LiRPA 포워드 검증"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "eps",
+            "value": "1e-06",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "39969",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "31",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.999",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "5.32",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "1e-05",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "39709",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "291",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.993",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "5.03",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0001",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "37026",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "2974",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.926",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.95",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0002",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "34349",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "5651",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.859",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p64:e511"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.98",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p64:e511"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p64:e511"
+        ]
+      },
+      {
+        "statement": "eps=0.0003에서 T=31813, F=8187, ratio=0.795, time=5.00s이고 eps=0.0004에서 T=29366, F=10634, ratio=0.734, time=5.02s이며 eps=0.0005에서 T=27153, F=12847, ratio=0.679, time=5.09s이고 eps=0.0006에서 T=25086, F=14914, ratio=0.627, time=5.10s이며 eps=0.0007에서 T=23154, F=16846, ratio=0.579, time=4.99s이고 eps=0.0008에서 T=21288, F=18712, ratio=0.532, time=4.97s이며 eps=0.0009에서 T=19623, F=20377, ratio=0.491, time=4.97s이고 eps=0.001에서 T=18073, F=21927, ratio=0.452, time=5.00s이며 eps=0.002에서 T=7380, F=32620, ratio=0.184, time=4.92s이고 eps=0.003에서 T=2695, F=37305, ratio=0.067, time=4.93s이며 eps=0.004에서 T=905, F=39095, ratio=0.023, time=4.90s이고 eps=0.005에서 T=269, F=39731, ratio=0.007, time=4.94s이며 eps=0.006에서 T=67, F=39933, ratio=0.002, time=4.97s이고 eps=0.007에서 T=20, F=39980, ratio=0.001, time=4.91s이고 eps=0.008에서 T=2, F=39998, ratio=0.000, time=4.92s이며 eps=0.009에서 T=0, F=40000, ratio=0.000, time=4.94s이고 eps=0.01에서 T=0, F=40000, ratio=0.000, time=4.94s이며 eps=0.1에서 T=0, F=40000, ratio=0.000, time=4.97s이고 eps=1.0에서 T=0, F=40000, ratio=0.000, time=4.99s이다.",
+        "limits": "포워드 결과 표 나머지 행",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "auto_LiRPA 포워드 검증"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "eps",
+            "value": "0.0003",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "31813",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0003",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "8187",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0003",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.795",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0003",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "5.00",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0003",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0004",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "29366",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0004",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "10634",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0004",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.734",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0004",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "5.02",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0004",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0005",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "27153",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0005",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "12847",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0005",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.679",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0005",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "5.09",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0005",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0006",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "25086",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0006",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "14914",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0006",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.627",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0006",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "5.10",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0006",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0007",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "23154",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0007",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "16846",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0007",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.579",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0007",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.99",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0007",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0008",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "21288",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0008",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "18712",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0008",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.532",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0008",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.97",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0008",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0009",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "19623",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0009",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "20377",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0009",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.491",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0009",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.97",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0009",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.001",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "18073",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.001",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "21927",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.001",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.452",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.001",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "5.00",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.001",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.002",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "7380",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.002",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "32620",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.002",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.184",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.002",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.92",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.002",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.003",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "2695",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.003",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "37305",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.003",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.067",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.003",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.93",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.003",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.004",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "905",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.004",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "39095",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.004",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.023",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.004",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.90",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.004",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.005",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "269",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.005",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "39731",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.005",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.007",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.005",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.94",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.005",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.006",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "67",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.006",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "39933",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.006",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.002",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.006",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.97",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.006",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.007",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "20",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.007",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "39980",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.007",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.001",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.007",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.91",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.007",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.008",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "2",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.008",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "39998",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.008",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.008",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.92",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.008",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.009",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "0",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.009",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "40000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.009",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.009",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.94",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.009",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.01",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "0",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.01",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "40000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.01",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.01",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.94",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.01",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.1",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "0",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.1",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "40000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.1",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.1",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.97",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.1",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "1.0",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "0",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1.0",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "40000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1.0",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.000",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1.0",
+            "element_ids": [
+              "p65:e512"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "4.99",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=1.0",
+            "element_ids": [
+              "p65:e512"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p65:e512"
+        ]
+      },
+      {
+        "statement": "EPS별 연산 시간의 합산(Sum of EPS times)은 114.77s이고 전체 프로그램 총 소요 시간(Overall elapsed)은 114.78s이다.",
+        "limits": "포워드 결과 기준",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "auto_LiRPA 포워드 검증"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Sum of EPS times",
+            "value": "114.77",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e514"
+            ]
+          },
+          {
+            "metric": "Overall elapsed",
+            "value": "114.78",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "auto_LiRPA 포워드",
+            "element_ids": [
+              "p65:e514"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p65:e514"
+        ]
+      },
+      {
+        "statement": "results saved to C:\\Users\\user\\Desktop\\antenna_auto_lirpa\\antenna_lirpa\\results\\autolirpa_results_forward.csv이다.",
+        "limits": "저장 경로 사실만 기록",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p65:e517"
+        ]
+      },
+      {
+        "statement": "백워드_only 결과로 [auto_LiRPA Verification Results]가 제시되었고 eps=1e-06에서 T=39969, F=31, ratio=0.999, time=1.09s이며 eps=1e-05에서 T=39709, F=291, ratio=0.993, time=1.56s이고 eps=0.0001에서 T=37026, F=2974, ratio=0.926, time=2.67s이며 eps=0.0002에서 T=34353, F=5647, ratio=0.859, time=2.54s이다.",
+        "limits": "백워드_only 결과 표 일부",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "auto_LiRPA 백워드_only 검증"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "eps",
+            "value": "1e-06",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 백워드_only",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "39969",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "31",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.999",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "1.09",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=1e-06",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "1e-05",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 백워드_only",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "39709",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "291",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.993",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "1.56",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=1e-05",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0001",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 백워드_only",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "37026",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "2974",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.926",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "2.67",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0001",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "eps",
+            "value": "0.0002",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "auto_LiRPA 백워드_only",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "T",
+            "value": "34353",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "F",
+            "value": "5647",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "ratio",
+            "value": "0.859",
+            "value_kind": "range",
+            "unit": "",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p65:e520"
+            ]
+          },
+          {
+            "metric": "time",
+            "value": "2.54",
+            "value_kind": "range",
+            "unit": "s",
+            "condition": "eps=0.0002",
+            "element_ids": [
+              "p65:e520"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p65:e520"
+        ]
+      }
+    ],
+    "coverage": {
+      "p61": {
+        "status": "extracted",
+        "note": "단일 샘플 지연시간 측정, cudaEvent 제어 인자, 원인 후보, graph만 적용한 버전 비교, 빼먹을 부분 정리, cpu 계산 부분 삭제 검토 등을 수집함"
+      },
+      "p62": {
+        "status": "extracted",
+        "note": "평균 측정 시도, cudaGraph만 적용된 버전 구성, forward/backward 비교 해석, 유지 결정, infer/certify 관련 가정적 제안을 수집함"
+      },
+      "p63": {
+        "status": "extracted",
+        "note": "10주차 세미나 이후 생각할 항목, 발표 구성, repo 실행 제안, 적용해볼 최적화 기법, 미시도 항목, auto_lirpa 결과 존재를 수집함"
+      },
+      "p64": {
+        "status": "extracted",
+        "note": "auto_LiRPA 포워드+백워드 eps별 결과 표와 합산 시간, 포워드 결과 표 일부를 수집함"
+      }
+    }
+  }
+}

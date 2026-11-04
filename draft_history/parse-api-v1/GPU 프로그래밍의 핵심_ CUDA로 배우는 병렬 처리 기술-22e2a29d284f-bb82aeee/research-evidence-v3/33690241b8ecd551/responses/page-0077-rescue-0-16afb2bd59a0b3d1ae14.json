@@ -1,0 +1,180 @@
+{
+  "request_fingerprint": "16afb2bd59a0b3d1ae14f9d078be4e6e4b6dbf1348fba19aa1fb8c287bf28555",
+  "value": {
+    "facts": [
+      {
+        "statement": "AI 조언에서는 1,028 Byte(1 KB) 데이터가 CPU 입장에서 매우 작은 크기이며, CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝난다고 설명하였다.",
+        "limits": "이 설명은 외부 AI 조언(gemini)에 기반한 하드웨어 동작 해석이며, 실측된 CPU 복사 시간이 아니다. 0.00003 ms는 원문에 20~30 ns와 함께 제시된 값이나, 독립적인 실측값이 아닌 환산 제시이다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "1,028 Byte(1 KB) 데이터 크기",
+          "CPU L1 캐시 → 드라이버 내부 버퍼 복사"
+        ],
+        "observations": [
+          "1,028 Byte는 CPU 입장에서 너무나 작은 크기",
+          "CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝남",
+          "걸어서 옆집 가는 것과 같음"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "CPU L1 캐시에서 드라이버 내부 버퍼로 1,028 Byte 복사 시간",
+            "value": "20",
+            "value_kind": "range",
+            "unit": "ns",
+            "condition": "하한",
+            "element_ids": [
+              "p77:e600"
+            ]
+          },
+          {
+            "metric": "CPU L1 캐시에서 드라이버 내부 버퍼로 1,028 Byte 복사 시간",
+            "value": "30",
+            "value_kind": "range",
+            "unit": "ns",
+            "condition": "상한",
+            "element_ids": [
+              "p77:e600"
+            ]
+          },
+          {
+            "metric": "CPU L1 캐시에서 드라이버 내부 버퍼로 1,028 Byte 복사 시간",
+            "value": "0.00003",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "원문에 ns와 함께 제시된 ms 환산값",
+            "element_ids": [
+              "p77:e600"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p77:e600",
+          "p77:enh:e6"
+        ]
+      },
+      {
+        "statement": "AI 조언에서는 Pinned Memory가 CPU를 거치지 않고 PCIe 버스의 GPU DMA 엔진(Copy Engine)을 가동하며, PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1~2 마이크로초(0.0015 ms)가 걸린다고 설명하였다.",
+        "limits": "이 설명은 외부 AI 조언에 기반한 하드웨어 동작 해석이며, 실측된 DMA 셋업 오버헤드가 아니다. 0.0015 ms는 원문에 1~2 μs와 함께 제시된 값이나 독립적인 실측값이 아닌 환산 제시이다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "Pinned Memory 사용",
+          "PCIe 버스 GPU DMA 엔진(Copy Engine) 가동"
+        ],
+        "observations": [
+          "Pinned Memory는 CPU를 거치지 않고 PCIe 버스의 GPU DMA 엔진(Copy Engine)을 가동",
+          "PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1~2 마이크로초(0.0015 ms)가 걸림",
+          "옆집(1KB) 가는데 KTX(DMA 엔진) 예매하고 탑승 수속 밟느라 오히려 시간이 더 걸린 것"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "PCIe DMA 엔진 명령 패킷/트랜잭션 셋업 하드웨어 오버헤드",
+            "value": "1",
+            "value_kind": "range",
+            "unit": "μs",
+            "condition": "하한",
+            "element_ids": [
+              "p77:e602"
+            ]
+          },
+          {
+            "metric": "PCIe DMA 엔진 명령 패킷/트랜잭션 셋업 하드웨어 오버헤드",
+            "value": "2",
+            "value_kind": "range",
+            "unit": "μs",
+            "condition": "상한",
+            "element_ids": [
+              "p77:e602"
+            ]
+          },
+          {
+            "metric": "PCIe DMA 엔진 명령 패킷/트랜잭션 셋업 하드웨어 오버헤드",
+            "value": "0.0015",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "원문에 μs와 함께 제시된 ms 환산값",
+            "element_ids": [
+              "p77:e602"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p77:e602",
+          "p77:enh:e8"
+        ]
+      },
+      {
+        "statement": "AI 조언에서는 92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 μs)가 누적되어 infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것이라고 설명하였다.",
+        "limits": "92만 번 루프 횟수는 AI 조언에서 언급된 값이며, 해당 실험의 실제 루프 횟수로 확인되지 않았다. 132초 vs 119초는 실제 측정값(p76:e591 infer 132.586s, p76:e593 infer 119.466s)을 반올림하여 인용한 것이다. DMA 셋업 오버헤드 누적이 13초 차이의 원인이라는 인과 설명은 AI 조언의 해석이며 실측으로 검증되지 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "92만 번 루프",
+          "DMA 셋업 오버헤드(1~2 μs) 누적",
+          "infer 단계"
+        ],
+        "observations": [
+          "92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 μs)가 누적됨",
+          "infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸림"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "DMA 셋업 오버헤드 누적 루프 횟수",
+            "value": "920000",
+            "value_kind": "scalar",
+            "unit": "loops",
+            "condition": "AI 조언에서 언급된 루프 횟수",
+            "element_ids": [
+              "p77:e603"
+            ]
+          },
+          {
+            "metric": "infer 단계 Pinned Memory와 No-Pin 간 시간 차이",
+            "value": "13",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "AI 조언 주장 차이값 (132초 - 119초)",
+            "element_ids": [
+              "p77:e603"
+            ]
+          },
+          {
+            "metric": "Pinned Memory(cudaHostAlloc) infer 단계 시간",
+            "value": "132",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "AI 조언에서 인용한 값 (실측 132.586s 반올림)",
+            "element_ids": [
+              "p77:e603",
+              "p76:e591"
+            ]
+          },
+          {
+            "metric": "No-Pin(Pageable) infer 단계 시간",
+            "value": "119",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "AI 조언에서 인용한 값 (실측 119.466s 반올림)",
+            "element_ids": [
+              "p77:e603",
+              "p76:e593"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p77:e603",
+          "p77:enh:e9",
+          "p76:e591",
+          "p76:e593"
+        ]
+      }
+    ]
+  }
+}

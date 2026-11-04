@@ -1,0 +1,129 @@
+[
+  {
+    "attempt": 0,
+    "validation_error": "본문 칸은 제목 없는 문단이어야 합니다.",
+    "previous_response": {
+      "parts": {
+        "p0": "### 2.2 신경망·데이터·실행 조건\n\n본 연구의 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망은 Fully Connected 구조의 256-491-491-16 모델이다. 입력 벡터 길이는 NR × Ng = 256이고, 층별 뉴런 수는 N(0)=256, N(1)=491, N(2)=491, N(3)=16이다. 입력은 256개(16×16), 출력은 16개이며 히든 계층은 2개이다[근거:E00011][근거:E00012].\n\n실행 조건은 eps=1e-06, 테스트 데이터 1개, 출력 차원 16을 기준으로 CROWN 알고리즘을 돌려 16개 출력을 뽑는 것을 1차 목표로 설정하였다[근거:E00013]. 이때 my_lirpa.cu에 실제 신경망을 로드(기존에는 가상 신경망을 사용)하고, 새로운 crown_test.cu를 만들어 작성하기로 하였다[근거:E00014][근거:E00015]. 모델 파일 로드 시에는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악하였고, .pickle로 된 데이터셋을 CUDA로 읽어오기 위해 .bin 파일로 변환하였다(테스트 단계이므로 입력 256개 1세트만 변환). 이후 GPU에 신경망을 로드(Memcpy)하고 CROWN을 호출하였다[근거:E00016].\n\n실행 방식은 CROWN의 3가지 방법인 forward, forward+backward, backward_only를 대상으로 하였고, 배치 사이즈는 1이다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였으며, 이는 기존 신경망 검증팀의 구현과 시간을 비교하기 위한 목적이다[근거:U531b24e3633dee74c4f7][근거:U8602da87af586b3567f6]. 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적이며, Forward 테스트와 Backward 테스트는 각각 40000개의 데이터에 대해서만 수행되었다[근거:E00164][근거:E00219].\n\nauto_LiRPA 실행은 python autolirpa_topk_robustness.py --data-path \"경로/데이터.pickle\" --device cuda --batch-size 1024 방식으로 실행되었고, 배치 사이즈를 1024로 하였다(그리고 싱글 스트림인듯)[근거:E00249]. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이고, warm up은 초기에 적용되었다[근거:U531b24e3633dee74c4f7]. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과·비율이 얼마나 차이 나는지이며, 모두 동일하였다[근거:U8602da87af586b3567f6].\n\n최적화 과정에서는 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 결합한 뒤, matmul만 GPU로, 나머지를 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 결합 방식을 바꾸었다. v2 적용 방안에서는 cuBLAS 예열(더미 matmul 호출로 초기화), 가중치(W) GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하도록 memcpy 범위를 줄이는 방식이 추가로 결합되었다[근거:H85ca0e507c4e_88][근거:H85ca0e507c4e_89]. 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다[근거:Hcdbfb7147ce4_2][근거:Hcdbfb7147ce4_9][근거:Hcdbfb7147ce4_10][근거:Hcdbfb7147ce4_11][근거:Hcdbfb7147ce4_12].\n\n측정 방식은 시간 측정 시작 후 신경망 정방향 통과 및 CROWN을 수행하고, Elapsed time, 단계별 시간(Inference time, Bound time 등), Real-Time Single-Sample (B=1) Latency 등을 기록하였다. cudaGraph만 적용된 버전 등 버전 구분도 일부 기록되었다[근거:Hefd7e87bb735_62]. 공정한 측정을 위해 GPU 클록 상태를 확인하고(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1) 및 그래픽 클록 고정(sudo nvidia-smi -lgc 1410)을 통해 클록 저하·스로틀링을 통제하며, 스로틀링 원인(온도·전력·API 간헐적 지연)과 해결(냉각 개선·전력 제한 확인·백그라운드 작업 확인)을 구분하였다[근거:Hefd7e87bb735_66]. 평균/총 시간만 보면 No-Pin이 더 빨라 보이지만, 지터(표준편차)와 최대 지연시간(WCET)에서는 Pinned가 더 안정적이며, 이는 OS 페이징·백그라운드 작업·드라이버 버퍼 락 경합이 No-Pin에서 간헐적 지연을 유발하기 때문이다[근거:Hefd7e87bb735_65]. cudaHostRegister와 cudaHostAlloc(hostAlloc)은 cudaStreamSynchronize(323μs / 322μs), cudaMemcpyAsync(5.188μs / 5.351μs), memcpy 복사 시간(1.117μs / 1.142μs) 수준에서 유사하게 측정되고, noPinning은 cudaStreamSynchronize 314μs, cudaMemcpyAsync 4.932μs, memcpy 복사 시간 340ns로 측정되어, 평균값(n=920000) 기준으로 각 방식의 동기화·복사 비용 차이가 나타났다[근거:Hefd7e87bb735_67].\n\n한편 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않다는 점도 함께 확인된다[근거:Hefd7e87bb735_58]."
+      }
+    }
+  },
+  {
+    "checks": [
+      {
+        "item_id": "S2_R2",
+        "verdict": "met",
+        "paragraph_ids": [
+          "S2_p1",
+          "S2_p2",
+          "S2_p3",
+          "S2_p4",
+          "S2_p5",
+          "S2_p6",
+          "S2_p7"
+        ],
+        "evidence_ids": [
+          "E00011",
+          "E00012",
+          "E00013",
+          "E00014",
+          "E00015",
+          "E00016",
+          "E00164",
+          "E00219",
+          "E00249",
+          "E00257",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00376",
+          "U531b24e3633dee74c4f7",
+          "U8602da87af586b3567f6",
+          "H40849fcc17fe_1",
+          "Hcdbfb7147ce4_2",
+          "H85ca0e507c4e_88",
+          "H85ca0e507c4e_89",
+          "Hefd7e87bb735_58",
+          "Hefd7e87bb735_62",
+          "Hcdbfb7147ce4_7",
+          "Hcdbfb7147ce4_9",
+          "Hcdbfb7147ce4_10",
+          "Hcdbfb7147ce4_12",
+          "Hefd7e87bb735_63",
+          "Hcdbfb7147ce4_11",
+          "Hefd7e87bb735_66",
+          "Hefd7e87bb735_65",
+          "Hefd7e87bb735_67"
+        ],
+        "quote": "본 연구의 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망은 Fully Connected 구조의 256-491-491-16 모델이다. 입력 벡터 길이는 NR × Ng = 256이고, 층별 뉴런 수는 N(0)=256, N(1)=491, N(2)=491, N(3)=16이다. 입력은 256개(16×16), 출력은 16개이며 히든 계층은 2개이다[근거:E00011][근거:E00012].",
+        "paragraph_quotes": [
+          "본 연구의 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망은 Fully Connected 구조의 256-491-491-16 모델이다. 입력 벡터 길이는 NR × Ng = 256이고, 층별 뉴런 수는 N(0)=256, N(1)=491, N(2)=491, N(3)=16이다. 입력은 256개(16×16), 출력은 16개이며 히든 계층은 2개이다[근거:E00011][근거:E00012].",
+          "실행 조건은 eps=1e-06, 테스트 데이터 1개, 출력 차원 16을 기준으로 CROWN 알고리즘을 돌려 16개 출력을 뽑는 것을 1차 목표로 설정하였다[근거:E00013]. 이때 my_lirpa.cu에 실제 신경망을 로드(기존에는 가상 신경망을 사용)하고, 새로운 crown_test.cu를 만들어 작성하기로 하였다[근거:E00014][근거:E00015]. 모델 파일 로드 시에는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악하였고, .pickle로 된 데이터셋을 CUDA로 읽어오기 위해 .bin 파일로 변환하였다(테스트 단계이므로 입력 256개 1세트만 변환). 이후 GPU에 신경망을 로드(Memcpy)하고 CROWN을 호출하였다[근거:E00016].",
+          "실행 방식은 CROWN의 3가지 방법인 forward, forward+backward, backward_only를 대상으로 하였고, 배치 사이즈는 1이다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였으며, 이는 기존 신경망 검증팀의 구현과 시간을 비교하기 위한 목적이다[근거:U531b24e3633dee74c4f7][근거:U8602da87af586b3567f6]. 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적이며, Forward 테스트와 Backward 테스트는 각각 40000개의 데이터에 대해서만 수행되었다[근거:E00164][근거:E00219].",
+          "auto_LiRPA 실행은 python autolirpa_topk_robustness.py --data-path \"경로/데이터.pickle\" --device cuda --batch-size 1024 방식으로 실행되었고, 배치 사이즈를 1024로 하였다(그리고 싱글 스트림인듯)[근거:E00249]. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이고, warm up은 초기에 적용되었다[근거:U531b24e3633dee74c4f7]. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과·비율이 얼마나 차이 나는지이며, 모두 동일하였다[근거:U8602da87af586b3567f6].",
+          "최적화 과정에서는 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 결합한 뒤, matmul만 GPU로, 나머지를 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 결합 방식을 바꾸었다. v2 적용 방안에서는 cuBLAS 예열(더미 matmul 호출로 초기화), 가중치(W) GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하도록 memcpy 범위를 줄이는 방식이 추가로 결합되었다[근거:H85ca0e507c4e_88][근거:H85ca0e507c4e_89]. 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다[근거:Hcdbfb7147ce4_2][근거:Hcdbfb7147ce4_9][근거:Hcdbfb7147ce4_10][근거:Hcdbfb7147ce4_11][근거:Hcdbfb7147ce4_12].",
+          "측정 방식은 시간 측정 시작 후 신경망 정방향 통과 및 CROWN을 수행하고, Elapsed time, 단계별 시간(Inference time, Bound time 등), Real-Time Single-Sample (B=1) Latency 등을 기록하였다. cudaGraph만 적용된 버전 등 버전 구분도 일부 기록되었다[근거:Hefd7e87bb735_62]. 공정한 측정을 위해 GPU 클록 상태를 확인하고(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1) 및 그래픽 클록 고정(sudo nvidia-smi -lgc 1410)을 통해 클록 저하·스로틀링을 통제하며, 스로틀링 원인(온도·전력·API 간헐적 지연)과 해결(냉각 개선·전력 제한 확인·백그라운드 작업 확인)을 구분하였다[근거:Hefd7e87bb735_66]. 평균/총 시간만 보면 No-Pin이 더 빨라 보이지만, 지터(표준편차)와 최대 지연시간(WCET)에서는 Pinned가 더 안정적이며, 이는 OS 페이징·백그라운드 작업·드라이버 버퍼 락 경합이 No-Pin에서 간헐적 지연을 유발하기 때문이다[근거:Hefd7e87bb735_65]. cudaHostRegister와 cudaHostAlloc(hostAlloc)은 cudaStreamSynchronize(323μs / 322μs), cudaMemcpyAsync(5.188μs / 5.351μs), memcpy 복사 시간(1.117μs / 1.142μs) 수준에서 유사하게 측정되고, noPinning은 cudaStreamSynchronize 314μs, cudaMemcpyAsync 4.932μs, memcpy 복사 시간 340ns로 측정되어, 평균값(n=920000) 기준으로 각 방식의 동기화·복사 비용 차이가 나타났다[근거:Hefd7e87bb735_67].",
+          "한편 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않다는 점도 함께 확인된다[근거:Hefd7e87bb735_58]."
+        ],
+        "guideline_ids": [
+          "ref1_methods_required_3"
+        ]
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "S2",
+        "reference_id": "ref1_methods",
+        "verdict": "applied",
+        "paragraph_ids": [
+          "S2_p1",
+          "S2_p2",
+          "S2_p3",
+          "S2_p4"
+        ],
+        "reason": "ref1_methods의 데이터 구성·모델 구조·실행 설정 서술 원칙을 신경망 구조(256-491-491-16), 입력 조건(eps=1e-06, 테스트 데이터, 출력 차원 16), 실행 조건(forward/forward+backward/backward_only, 데이터셋·eps_list 출처)으로 반영함.",
+        "quote": "본 연구의 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망은 Fully Connected 구조의 256-491-491-16 모델이다. 입력 벡터 길이는 NR × Ng = 256이고, 층별 뉴런 수는 N(0)=256, N(1)=491, N(2)=491, N(3)=16이다. 입력은 256개(16×16), 출력은 16개이며 히든 계층은 2개이다[근거:E00011][근거:E00012].",
+        "paragraph_quotes": [
+          "본 연구의 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망은 Fully Connected 구조의 256-491-491-16 모델이다. 입력 벡터 길이는 NR × Ng = 256이고, 층별 뉴런 수는 N(0)=256, N(1)=491, N(2)=491, N(3)=16이다. 입력은 256개(16×16), 출력은 16개이며 히든 계층은 2개이다[근거:E00011][근거:E00012].",
+          "실행 조건은 eps=1e-06, 테스트 데이터 1개, 출력 차원 16을 기준으로 CROWN 알고리즘을 돌려 16개 출력을 뽑는 것을 1차 목표로 설정하였다[근거:E00013]. 이때 my_lirpa.cu에 실제 신경망을 로드(기존에는 가상 신경망을 사용)하고, 새로운 crown_test.cu를 만들어 작성하기로 하였다[근거:E00014][근거:E00015]. 모델 파일 로드 시에는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악하였고, .pickle로 된 데이터셋을 CUDA로 읽어오기 위해 .bin 파일로 변환하였다(테스트 단계이므로 입력 256개 1세트만 변환). 이후 GPU에 신경망을 로드(Memcpy)하고 CROWN을 호출하였다[근거:E00016].",
+          "실행 방식은 CROWN의 3가지 방법인 forward, forward+backward, backward_only를 대상으로 하였고, 배치 사이즈는 1이다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였으며, 이는 기존 신경망 검증팀의 구현과 시간을 비교하기 위한 목적이다[근거:U531b24e3633dee74c4f7][근거:U8602da87af586b3567f6]. 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적이며, Forward 테스트와 Backward 테스트는 각각 40000개의 데이터에 대해서만 수행되었다[근거:E00164][근거:E00219].",
+          "auto_LiRPA 실행은 python autolirpa_topk_robustness.py --data-path \"경로/데이터.pickle\" --device cuda --batch-size 1024 방식으로 실행되었고, 배치 사이즈를 1024로 하였다(그리고 싱글 스트림인듯)[근거:E00249]. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이고, warm up은 초기에 적용되었다[근거:U531b24e3633dee74c4f7]. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과·비율이 얼마나 차이 나는지이며, 모두 동일하였다[근거:U8602da87af586b3567f6]."
+        ]
+      },
+      {
+        "section_id": "S2",
+        "reference_id": "ref2_methods",
+        "verdict": "applied",
+        "paragraph_ids": [
+          "S2_p5",
+          "S2_p6",
+          "S2_p7"
+        ],
+        "reason": "ref2_methods의 비교 구성·실행 경로·측정 구간 정의 원칙을 GPU OPTIMIZED/HYBRID/MEMPOOL+warmup/cudaGraph/Pinned vs No-Pin 등 비교 구성과 측정 구간(Elapsed time, 단계별 시간, Real-Time Single-Sample Latency 등)으로 반영함.",
+        "quote": "최적화 과정에서는 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 결합한 뒤, matmul만 GPU로, 나머지를 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 결합 방식을 바꾸었다. v2 적용 방안에서는 cuBLAS 예열(더미 matmul 호출로 초기화), 가중치(W) GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하도록 memcpy 범위를 줄이는 방식이 추가로 결합되었다[근거:H85ca0e507c4e_88][근거:H85ca0e507c4e_89]. 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다[근거:Hcdbfb7147ce4_2][근거:Hcdbfb7147ce4_9][근거:Hcdbfb7147ce4_10][근거:Hcdbfb7147ce4_11][근거:Hcdbfb7147ce4_12].",
+        "paragraph_quotes": [
+          "최적화 과정에서는 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 결합한 뒤, matmul만 GPU로, 나머지를 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 결합 방식을 바꾸었다. v2 적용 방안에서는 cuBLAS 예열(더미 matmul 호출로 초기화), 가중치(W) GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하도록 memcpy 범위를 줄이는 방식이 추가로 결합되었다[근거:H85ca0e507c4e_88][근거:H85ca0e507c4e_89]. 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다[근거:Hcdbfb7147ce4_2][근거:Hcdbfb7147ce4_9][근거:Hcdbfb7147ce4_10][근거:Hcdbfb7147ce4_11][근거:Hcdbfb7147ce4_12].",
+          "측정 방식은 시간 측정 시작 후 신경망 정방향 통과 및 CROWN을 수행하고, Elapsed time, 단계별 시간(Inference time, Bound time 등), Real-Time Single-Sample (B=1) Latency 등을 기록하였다. cudaGraph만 적용된 버전 등 버전 구분도 일부 기록되었다[근거:Hefd7e87bb735_62]. 공정한 측정을 위해 GPU 클록 상태를 확인하고(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1) 및 그래픽 클록 고정(sudo nvidia-smi -lgc 1410)을 통해 클록 저하·스로틀링을 통제하며, 스로틀링 원인(온도·전력·API 간헐적 지연)과 해결(냉각 개선·전력 제한 확인·백그라운드 작업 확인)을 구분하였다[근거:Hefd7e87bb735_66]. 평균/총 시간만 보면 No-Pin이 더 빨라 보이지만, 지터(표준편차)와 최대 지연시간(WCET)에서는 Pinned가 더 안정적이며, 이는 OS 페이징·백그라운드 작업·드라이버 버퍼 락 경합이 No-Pin에서 간헐적 지연을 유발하기 때문이다[근거:Hefd7e87bb735_65]. cudaHostRegister와 cudaHostAlloc(hostAlloc)은 cudaStreamSynchronize(323μs / 322μs), cudaMemcpyAsync(5.188μs / 5.351μs), memcpy 복사 시간(1.117μs / 1.142μs) 수준에서 유사하게 측정되고, noPinning은 cudaStreamSynchronize 314μs, cudaMemcpyAsync 4.932μs, memcpy 복사 시간 340ns로 측정되어, 평균값(n=920000) 기준으로 각 방식의 동기화·복사 비용 차이가 나타났다[근거:Hefd7e87bb735_67].",
+          "한편 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않다는 점도 함께 확인된다[근거:Hefd7e87bb735_58]."
+        ]
+      }
+    ],
+    "issues": [],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 1,
+      "total": 1,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 2,
+      "partial": 0,
+      "not_visible": 0,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "assessment": "LLM assisted; quotes and IDs checked; not independent scientific verification"
+  }
+]

@@ -1,0 +1,167 @@
+{
+  "request_fingerprint": "fd7af07a837c75cb4e512710828c6eac69ce866f00fde06b338bccc7cfc047a3",
+  "value": {
+    "additions": [
+      {
+        "statement": "p79:e621은 CUDA 공식 가이드 인용이 아니라, 사용자 질문에 대한 외부 조언/해석 형태로 DMA 셋업 동작과 No-Pin CPU 캐시 복사 동작을 설명한 요소이다.",
+        "limits": "이 요소는 인용 출처나 실측 결과를 제시하지 않으며, CUDA 공식 가이드의 직접 인용으로 볼 근거가 없다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "요소 텍스트가 \"코드는 수정하지말고 DMA 셋업을 매번해?\"라는 질문에 답하는 형식이며, cudaMemcpyAsync와 cudaGraphLaunch 배치에 대한 해석을 제시함",
+          "Pinned와 No-Pin의 드라이버 내부 동작을 각각 서술함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p79:e621"
+        ]
+      },
+      {
+        "statement": "p79:e621은 Pinned Memory의 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드를 호출 1회당 약 1.0~1.5 μs로, No-Pin의 CPU L1/L2 캐시 복사를 1,028바이트 기준 0.02~0.05 μs(20~50 ns)로 설명하며, 이를 DMA 셋업보다 30~50배 빠르다고 서술한다.",
+        "limits": "이 수치들은 실측 결과가 아니라 외부 조언/해석으로 제시되었다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "Pinned Memory",
+          "No-Pin",
+          "1,028바이트"
+        ],
+        "observations": [
+          "Pinned: 하드웨어 DMA 디스크립터 생성 및 큐 제출 오버헤드가 호출 1회당 약 1.0~1.5 μs",
+          "No-Pin: 최신 CPU의 L1/L2 캐시에서 1,028바이트 복사는 0.02~0.05 μs면 끝남",
+          "DMA 셋업보다 30~50배 빠름"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Pinned DMA 디스크립터 생성 및 큐 제출 오버헤드(설명값)",
+            "value": "1",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pinned Memory, 호출 1회당",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "Pinned DMA 디스크립터 생성 및 큐 제출 오버헤드(설명값)",
+            "value": "1.5",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pinned Memory, 호출 1회당",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+            "value": "0.02",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "No-Pin, 최신 CPU",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+            "value": "0.05",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "No-Pin, 최신 CPU",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+            "value": "20",
+            "value_kind": "scalar",
+            "unit": "ns",
+            "condition": "No-Pin, 최신 CPU",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+            "value": "50",
+            "value_kind": "scalar",
+            "unit": "ns",
+            "condition": "No-Pin, 최신 CPU",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "DMA 셋업 대비 No-Pin CPU 캐시 복사 속도 배율(설명값)",
+            "value": "30",
+            "value_kind": "scalar",
+            "unit": "배",
+            "condition": "No-Pin vs Pinned",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "DMA 셋업 대비 No-Pin CPU 캐시 복사 속도 배율(설명값)",
+            "value": "50",
+            "value_kind": "scalar",
+            "unit": "배",
+            "condition": "No-Pin vs Pinned",
+            "element_ids": [
+              "p79:e621"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p79:e621"
+        ]
+      },
+      {
+        "statement": "p79:e621은 No-Pin(일반 Pageable 메모리)에서 OS 페이징 메모리의 물리 주소가 언제든 바뀔 수 있어 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없고, 드라이버가 하드웨어 DMA 대신 CPU의 L1/L2 캐시를 이용해 내부 임시 버퍼로 memcpy하며, 이후 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 함께 보낸다고 설명한다.",
+        "limits": "이 설명은 외부 조언/해석이며 실측 결과로 확인되지 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "No-Pin",
+          "Pageable 메모리"
+        ],
+        "observations": [
+          "OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있어 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없음",
+          "드라이버가 하드웨어 DMA를 부르지 않고 CPU의 L1/L2 캐시를 이용해 내부 임시 버퍼로 memcpy함",
+          "이후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 함께 보냄"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p79:e621"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [
+      0
+    ],
+    "ledger": {
+      "p79:e621": {
+        "state": "represented",
+        "fact_refs": [
+          1,
+          2,
+          3
+        ],
+        "note": "기존 facts[0]은 이 요소를 CUDA 공식 가이드 인용처럼 취급했으나, 실제 element는 외부 조언/해석이며 인용 출처가 없다. 따라서 기존 facts[0]을 invalid로 처리하고, 요소의 실제 내용을 보존하는 additions 3건으로 대체한다.",
+        "addition_refs": [
+          0,
+          1,
+          2
+        ]
+      }
+    }
+  }
+}

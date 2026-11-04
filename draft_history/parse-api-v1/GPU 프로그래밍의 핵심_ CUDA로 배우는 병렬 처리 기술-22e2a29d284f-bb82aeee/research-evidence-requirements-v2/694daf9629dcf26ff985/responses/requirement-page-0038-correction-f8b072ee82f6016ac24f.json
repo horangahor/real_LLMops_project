@@ -1,0 +1,373 @@
+{
+  "request_fingerprint": "f8b072ee82f6016ac24f1b2cd7dfc4a2b6fbfddb284ef2a6d496f913c29b4cf5",
+  "value": {
+    "facts": [
+      {
+        "statement": "network_forward(추론) 중간 복사 제거가 적용할 대상으로 정리되었다.",
+        "limits": "현재 페이지는 적용 대상 항목만 기록하며, 실제 제거 구현 결과나 성능 수치는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "적용 대상 정리",
+          "network_forward(추론) 중간 복사 제거"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e257"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "적용 대상 항목 기록"
+      },
+      {
+        "statement": "커널 함수 호출에 net.act[l]을 사용했으나, 이 활성화 함수 관련 값은 메모리풀에 올려 관리한 적이 없다.",
+        "limits": "현재 페이지는 사용 방식과 관리 이력 부재만 기록하며, 실제 성능·정확도 영향은 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 함수 호출에 net.act[l] 사용",
+          "net.act[l]은 메모리풀에 올려 관리한 적 없음",
+          "활성화 함수 관련 값"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e259"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "커널 호출 인자 사용 방식 기록"
+      },
+      {
+        "statement": "CPU는 net.act[l]이 가리키는 메모리 주소를 GPU에 넘겨주는 것이 아니라, CPU 메모리에서 net.act[l]의 값(예: Relu면 0, Sigmoid면 1)을 읽은 뒤 그 숫자 자체를 GPU 커널 발사 시 매개변수 주머니(Constant Memory / Registers)에 넣어 함께 전달한다.",
+        "limits": "현재 페이지는 인자 전달 방식에 대한 설명만 기록하며, 실제 측정 결과나 성능 영향은 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 호출 시 net.act[l] 사용",
+          "CPU가 net.act[l] 값을 읽어 GPU 커널 매개변수로 전달",
+          "Constant Memory / Registers에 값 포함"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e261"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "CUDA 커널 인자 전달 방식 설명"
+      },
+      {
+        "statement": "ActivationType은 단순한 enum(내부적으로 4바이트짜리 정수)이므로 별도 cudaMalloc이나 cudaMemcpy가 필요 없고, 커널 런칭 시 값이 자동으로 GPU로 넘어가 속도 저하도 없다.",
+        "limits": "현재 페이지는 enum 인자 전달의 특성과 속도 저하 부재에 대한 설명만 기록하며, 실제 측정 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "ActivationType은 enum(내부적으로 4바이트 정수)",
+          "별도 cudaMalloc/cudaMemcpy 불필요",
+          "커널 런칭 시 값이 자동으로 GPU로 전달",
+          "속도 저하 없음"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e262",
+          "p38:e263"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "enum 인자 전달 특성 기록"
+      },
+      {
+        "statement": "크기가 큰 배열이나 구조체 내부 데이터는 값으로 넘기면 문제가 되므로 포인터(*d_out, *g_pool.d_weight)를 사용해 cudaMemcpy로 올려두고 주소만 넘겨준다.",
+        "limits": "현재 페이지는 큰 데이터와 작은 값의 전달 방식 차이에 대한 설명만 기록하며, 실제 측정 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "큰 배열/구조체 내부 데이터는 값으로 전달 시 문제",
+          "포인터(*d_out, *g_pool.d_weight) 사용",
+          "cudaMemcpy로 올려두고 주소만 전달"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e263",
+          "p38:e264"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "포인터 전달과 값 전달 구분 설명"
+      },
+      {
+        "statement": "용량이 큰 덩어리는 포인터로 넘기고, 작은 숫자나 열거형(Enum)은 값으로 전달할 수 있다.",
+        "limits": "현재 페이지는 전달 방식 구분 요약만 기록하며, 실제 측정 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "큰 덩어리는 포인터로 전달",
+          "작은 숫자/Enum은 값으로 전달 가능"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e264"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "전달 방식 구분 요약"
+      },
+      {
+        "statement": "CUDA 커널 괄호 안에 들어가는 매개변수(Argument)들은 GPU 메모리 할당·복사 규칙의 예외이며, 포인터(배열)는 반드시 GPU 메모리여야 하지만 int·float·double·enum 같은 단일 숫자는 CPU 변수를 그대로 써도 된다.",
+        "limits": "현재 페이지는 커널 인자 규칙에 대한 설명만 기록하며, 실제 측정 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 괄호 안 매개변수는 GPU 메모리 할당·복사 규칙의 예외",
+          "포인터(배열)는 반드시 GPU 메모리",
+          "int·float·double·enum 등 단일 숫자는 CPU 변수 사용 가능"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e266"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "커널 인자 규칙 설명"
+      },
+      {
+        "statement": "apply_activation_gpu<<<blocksPerGrid, 256>>>(net.act[1], d_out); 호출 예시에서 net.act[1]은 CPU 메모리에 있는 단순 정수(Enum)값이고, d_out은 cudaMalloc된 GPU 메모리 주소여야 한다.",
+        "limits": "현재 페이지는 호출 예시와 인자 유형별 요구사항만 기록하며, 실제 실행 결과나 성능 수치는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "apply_activation_gpu<<<blocksPerGrid, 256>>>(net.act[1], d_out) 호출 예시",
+          "net.act[1]은 CPU 메모리의 Enum 값",
+          "d_out은 cudaMalloc된 GPU 메모리 주소"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:img0:e2",
+          "p39:e266"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "커널 호출 예시와 인자 요구사항 기록"
+      },
+      {
+        "statement": "포인터 변수는 memcpy를 사용해 올려야 하며, 참조할 크기가 매우 커서 CPU가 내용을 전부 직접 복사해 커널 함수의 매개변수 주머니에 넣을 수 없다.",
+        "limits": "현재 페이지는 포인터 전달 방식과 그 이유만 기록하며, 실제 측정 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "포인터 변수는 memcpy로 올려야 함",
+          "참조할 크기가 매우 큼",
+          "CPU가 내용을 전부 복사해 매개변수 주머니에 넣을 수 없음"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e267"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "포인터 전달 방식 설명"
+      },
+      {
+        "statement": "값만 나오는 경우 4~8바이트까지는 CPU가 직접 참조해 값을 전달할 수 있다.",
+        "limits": "현재 페이지는 작은 값 전달 가능 범위에 대한 설명만 기록하며, 실제 측정 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "값만 나오는 경우",
+          "4~8바이트까지는 CPU가 직접 참조해 값 전달 가능"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e268"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "작은 값 전달 범위 설명"
+      }
+    ],
+    "existing_links": [
+      {
+        "fact_id": "E00028",
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "element_ids": [
+          "p38:e257",
+          "p38:e259",
+          "p38:e261",
+          "p38:e262",
+          "p38:e263",
+          "p38:e264",
+          "p38:img0:e2",
+          "p38:img0:e1",
+          "p38:img0:e0",
+          "p38:e258"
+        ]
+      },
+      {
+        "fact_id": "E00034",
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "element_ids": [
+          "p38:e257",
+          "p38:e259",
+          "p38:e261",
+          "p38:e262",
+          "p38:e263",
+          "p38:e264",
+          "p38:img0:e2",
+          "p38:img0:e1",
+          "p38:img0:e0",
+          "p38:e258"
+        ]
+      },
+      {
+        "fact_id": "E00024",
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "element_ids": [
+          "p38:e257",
+          "p38:e259",
+          "p38:e261",
+          "p38:e262",
+          "p38:e263",
+          "p38:e264",
+          "p38:img0:e2",
+          "p38:img0:e1",
+          "p38:img0:e0",
+          "p38:e258"
+        ]
+      },
+      {
+        "fact_id": "E00025",
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "element_ids": [
+          "p38:e257",
+          "p38:e259",
+          "p38:e261",
+          "p38:e262",
+          "p38:e263",
+          "p38:e264",
+          "p38:img0:e2",
+          "p38:img0:e1",
+          "p38:img0:e0",
+          "p38:e258"
+        ]
+      },
+      {
+        "fact_id": "E00026",
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "element_ids": [
+          "p38:e257",
+          "p38:e259",
+          "p38:e261",
+          "p38:e262",
+          "p38:e263",
+          "p38:e264",
+          "p38:img0:e2",
+          "p38:img0:e1",
+          "p38:img0:e0",
+          "p38:e258"
+        ]
+      },
+      {
+        "fact_id": "E00036",
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "element_ids": [
+          "p38:e257",
+          "p38:e259",
+          "p38:e261",
+          "p38:e262",
+          "p38:e263",
+          "p38:e264",
+          "p38:img0:e2",
+          "p38:img0:e1",
+          "p38:img0:e0",
+          "p38:e258"
+        ]
+      },
+      {
+        "fact_id": "E00037",
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "element_ids": [
+          "p38:e257",
+          "p38:e259",
+          "p38:e261",
+          "p38:e262",
+          "p38:e263",
+          "p38:e264",
+          "p38:img0:e2",
+          "p38:img0:e1",
+          "p38:img0:e0",
+          "p38:e258"
+        ]
+      }
+    ]
+  }
+}

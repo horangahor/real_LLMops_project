@@ -1,0 +1,33 @@
+{
+  "id": "9ea1e91e-cd99-4aa6-a284-597639f7c1f2",
+  "object": "chat.completion",
+  "created": 1793823640,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": [{\"text\": \"최적화 과정에서 개별 기법의 효과를 분리해 보려는 시도가 여러 차례 있었으나, 각 기법의 기여도는 체계적으로 분리된 ablation으로 정리되지 않았다. v1-1에서 벡터연산 3가지(vec_add, sub, mat)를 CPU로 돌려 300ms를 확인했지만, 메모리 풀과 cuBLAS 예열이 갖춰지지 않은 상태에서는 CPU로 함수를 돌릴수록 결국 v0 결과와 같아져 정확한 비교가 어렵다고 판단했다. 이후 메모리 풀과 warmup 조합만으로 거의 200ms가 단축되어 이 조합이 효과적이라고 보았으나, memcpy 병목을 잡아야 CPU보다 빨라질 수 있다고 보았다. 신경망이 매우 작아 cuBLAS·cuSparse 동작 방식에서 오버헤드가 발생했고, 이 역시 신경망이 작기 때문으로 분석했다. 가중치를 미리 GPU에 올려 memcpy를 줄이려 했으나 my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 거의 없었고, 500회 누적에서도 5~10ms 정도 우세에 그쳐 큰 의미를 두지 않았다. 영벡터 만들기를 다시 GPU로 해보니 3~5ms 정도 시간이 늘어나 CPU로 두는 편이 낫다고 판단했다. 한편 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 같은 측정 조건은 원문에 직접 명시되어 있지 않으며, 구성 요소 단위 성능(forward/backward/forward+backward)의 명시적 순위나 전체 처리 성능의 명시적 순위, 그리고 두 순위 간 차이·불일치 비교 역시 원문에서 확인되지 않는다.\", \"evidence_ids\": [\"Hefd7e87bb735_53\", \"Hefd7e87bb735_54\", \"Hefd7e87bb735_55\", \"Hefd7e87bb735_56\", \"Hefd7e87bb735_57\", \"Hefd7e87bb735_58\", \"Hcdbfb7147ce4_7\", \"Hcdbfb7147ce4_8\", \"Hcdbfb7147ce4_9\"]}]}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 22269,
+    "completion_tokens": 435,
+    "total_tokens": 22704,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

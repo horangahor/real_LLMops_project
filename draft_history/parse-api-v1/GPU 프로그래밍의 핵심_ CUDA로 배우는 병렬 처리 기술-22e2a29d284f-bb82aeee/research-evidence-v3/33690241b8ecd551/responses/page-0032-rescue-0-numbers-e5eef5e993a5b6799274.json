@@ -1,0 +1,268 @@
+{
+  "request_fingerprint": "e5eef5e993a5b6799274a301aad35f61ae83cfafe014011b39f6713ec771fd9a",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "CROWN 검증에서 신경망 크기가 매우 작아 cuBlas, cuSparse 동작 방식의 오버헤드가 발생한다고 분석하였다.",
+          "limits": "신경망 크기 작음과 오버헤드 간 인과관계는 작성자의 해석이며 정량적 비교 수치는 제시되지 않았다.",
+          "kind": "problem",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p31:e208",
+            "p31:e209",
+            "p31:review:e0",
+            "p31:review:e1"
+          ]
+        },
+        {
+          "statement": "현재까지 cuBlas, cuSparse의 기본적인 행렬곱 연산 함수를 사용했으며 행렬곱 변형 함수가 매우 많아 추가 실험 여지가 있다고 기록하였다.",
+          "limits": "변형 함수 사용은 Nsight compute 분석 시 sm 내 분석과 함께 진행할 예정으로, 실제 적용 결과는 아직 없다.",
+          "kind": "limitation",
+          "claim_status": "planned",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p31:e210",
+            "p31:review:e2"
+          ]
+        },
+        {
+          "statement": "backward_bound_gpu()에만 먼저 커널 퓨전을 진행했으며, 23ms 후반대까지 나오는 것으로 관찰되었다.",
+          "limits": "단일 실행 결과이며 컴퓨터 사정에 따라 26ms까지 뛰는 경우도 있다고 함께 기술되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "backward_bound_gpu() 커널 퓨전 적용",
+            "eps = 1e-06",
+            "mempool + warmup",
+            "Output Dimension 16"
+          ],
+          "observations": [
+            "23ms 후반대"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "Elapsed time",
+              "value": "23.925200",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "backward_bound_gpu() 커널 퓨전 적용 후 CROWN Verification 실행",
+              "element_ids": [
+                "p31:e214",
+                "p31:review:e6"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p31:e212",
+            "p31:e213",
+            "p31:e214",
+            "p31:e215",
+            "p31:review:e3",
+            "p31:review:e4",
+            "p31:review:e5",
+            "p31:review:e6",
+            "p31:review:e7"
+          ]
+        },
+        {
+          "statement": "lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전하여 성능을 개선했으며, Elapsed time 22.342900 ms가 측정되었다.",
+          "limits": "단일 실행 결과이며 변동 범위(22ms 초반~28ms, 보통 24 중반)는 별도 관찰에서 기술되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "lirpa_forward_bound 함수들 커널 퓨전 적용",
+            "eps = 1e-06",
+            "mempool + warmup",
+            "Output Dimension 16"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "Elapsed time",
+              "value": "22.342900",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "lirpa_forward_bound 함수들 커널 퓨전 적용 후 CROWN Verification 실행",
+              "element_ids": [
+                "p32:e217",
+                "p32:review:e1"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p32:e216",
+            "p32:e217",
+            "p32:e218",
+            "p32:e219",
+            "p32:review:e0",
+            "p32:review:e1",
+            "p32:review:e2",
+            "p32:review:e3"
+          ]
+        },
+        {
+          "statement": "lirpa_forward_bound 함수들 커널 퓨전 후 22ms 초반까지 나오는 것으로 관찰되었으며, 늦으면 28ms까지 나오고 보통은 24 중반 정도라고 기록하였다.",
+          "limits": "범위 관찰이며 구체적인 단일 측정값 22.342900 ms는 별도 요소에서 확인된다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "lirpa_forward_bound 함수들 커널 퓨전 적용 후"
+          ],
+          "observations": [
+            "22ms 초반",
+            "늦으면 28ms",
+            "보통 24 중반"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p32:e218",
+            "p32:e219",
+            "p32:review:e2",
+            "p32:review:e3"
+          ]
+        },
+        {
+          "statement": "backward_bound_gpu에서 affine 중복 계산을 삭제하여 커널 2개 함수가 줄어들었다.",
+          "limits": "해당 변경의 정량적 성능 영향은 별도로 측정되지 않았다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p32:e222",
+            "p32:review:e5"
+          ]
+        },
+        {
+          "statement": "backward_bound_gpu에서 new_(upper, lower)_p를 복사하지 않고 std::swap 함수를 이용해 포인터 스와핑하였다.",
+          "limits": "해당 변경의 정량적 성능 영향은 별도로 측정되지 않았다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p32:e222",
+            "p32:review:e5"
+          ]
+        },
+        {
+          "statement": "backward에서 사용하는 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu 커널 함수를 만들었으며, 22ms 보이는 비율이 늘고 최저점(28ms)도 잘 안 보이게 되어 체감상 효과가 있는 것으로 기록하였다.",
+          "limits": "성능 영향은 정량적 측정값이 아닌 체감 및 비율 변화로 기술되었다.",
+          "kind": "method",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "22ms 보이는 비율 증가",
+            "최저점(28ms) 잘 안 보임",
+            "체감상 효과 있음"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p32:e222",
+            "p32:review:e5"
+          ]
+        },
+        {
+          "statement": "build_coeff_pair_fused_gpu 커널 퓨전을 진행하였다.",
+          "limits": "해당 변경의 정량적 성능 영향은 별도로 측정되지 않았다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p32:e222",
+            "p32:review:e5"
+          ]
+        },
+        {
+          "statement": "backward_bias_pair_fused_gpu 커널 퓨전을 진행하였다.",
+          "limits": "해당 변경의 정량적 성능 영향은 별도로 측정되지 않았다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p32:e222",
+            "p32:review:e5"
+          ]
+        },
+        {
+          "statement": "5번까지 적용 후 최고 성능이 나왔으며, Elapsed time 22.157400 ms가 측정되었다.",
+          "limits": "5번 항목(affine 중복 계산 삭제, 포인터 스와핑, backward_matmul_pair_gpu, build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu) 적용 후 측정값이다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "5번 항목 모두 적용",
+            "eps = 1e-06",
+            "mempool + warmup",
+            "Output Dimension 16"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "Elapsed time",
+              "value": "22.157400",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "5번 항목 모두 적용 후 CROWN Verification 실행",
+              "element_ids": [
+                "p33:e223"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p33:e223",
+            "p33:e224"
+          ]
+        },
+        {
+          "statement": " 계속해서 1개의 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전을 모두 진행하였다.",
+          "limits": "진행 중인 작업으로 최종 완료 여부나 추가 성능 측정 결과는 제시되지 않았다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p33:e225"
+          ]
+        }
+      ],
+      "1": []
+    }
+  }
+}

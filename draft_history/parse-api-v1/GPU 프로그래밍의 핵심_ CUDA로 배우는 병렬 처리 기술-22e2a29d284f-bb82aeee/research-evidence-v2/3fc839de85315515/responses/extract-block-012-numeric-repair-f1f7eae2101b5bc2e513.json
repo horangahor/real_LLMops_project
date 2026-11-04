@@ -1,0 +1,251 @@
+{
+  "request_fingerprint": "f1f7eae2101b5bc2e513af0ceb51f2f16e52e9e8ae445fd9396609cde69269c9",
+  "value": {
+    "repairs": {
+      "r0": [
+        {
+          "statement": "코드를 바꿔 실행인자 기반으로 forward/backward를 선택하도록 수정한 뒤 backward 실행 결과가 2164s로 기록되었다.",
+          "limits": "측정은 해당 코드 수정 이후 실행 기준이며, 수정 전 backward 결과(1560.37s)와 비교된다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "backward bound",
+            "실행인자 기반 method 선택",
+            "eps_list sweep",
+            "N개 데이터"
+          ],
+          "observations": [
+            "total elapsed: 2164s (약 600초 증가)"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total_elapsed_seconds",
+              "value": "2164",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "backward, 실행인자 기반 method 선택, eps_list sweep, N개 데이터",
+              "element_ids": [
+                "p48:e344"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p48:e344",
+            "p49:e345"
+          ]
+        },
+        {
+          "statement": "작성자는 backward 실행 시간이 약 600초(10분) 증가한 원인을 switch문 바깥에 선언된 CROWN 결과 구조체의 값에 의한 복사 때문으로 추정했다.",
+          "limits": "원인은 작성자 해석이며 실제 프로파일링 수치로 확인된 것은 아니다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "switch문 바깥에 ForwardBoundResult/BackwardBoundResult 선언",
+            "반복문 내부에서 CROWN 결과 대입",
+            "값에 의한 복사"
+          ],
+          "observations": [
+            "구조체 전체를 복사하느라고 느려졌다는 해석",
+            "92만 번 복사하면 꽤 크다는 언급"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p49:e346",
+            "p49:e349",
+            "p49:e350"
+          ]
+        },
+        {
+          "statement": "switch문 바깥에서 fwd/bwd를 선언하면 transfer of control이 초기화를 우회한다는 경고와 함께 초기화가 case/default 레이블에 의해 생략되었다는 컴파일 오류가 발생했다.",
+          "limits": "컴파일러 진단 메시지는 nvcc 컴파일 과정에서 발생한 것으로 기록되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "nvcc 컴파일",
+            "switch(method) 바깥에 fwd/bwd 선언",
+            "case 0/1 및 default 레이블"
+          ],
+          "observations": [
+            "warning #546-D: transfer of control bypasses initialization of variable fwd/bwd",
+            "error C2360/C2361: fwd/bwd 초기화가 case/default 레이블에 의해 생략됨"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p50:e354",
+            "p50:e355"
+          ]
+        }
+      ],
+      "r1": [
+        {
+          "statement": "작성자는 switch문 바깥에 선언된 CROWN 결과 구조체의 값에 의한 복사가 반복문 내부에서 매번 발생하여 성능 저하의 원인이라고 추정했다.",
+          "limits": "원인은 작성자 해석이며 실제 프로파일링 수치로 확인된 것은 아니다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "switch문 바깥에 ForwardBoundResult/BackwardBoundResult 선언",
+            "반복문 내부에서 CROWN 결과 대입",
+            "값에 의한 복사"
+          ],
+          "observations": [
+            "구조체 전체를 복사하느라고 느려졌다는 해석",
+            "92만 번 복사하면 꽤 크다는 언급"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p49:e346",
+            "p49:e349",
+            "p49:e350"
+          ]
+        },
+        {
+          "statement": "switch문 바깥에서 fwd/bwd를 선언하면 transfer of control이 초기화를 우회한다는 경고와 함께 초기화가 case/default 레이블에 의해 생략되었다는 컴파일 오류가 발생했다.",
+          "limits": "컴파일러 진단 메시지는 nvcc 컴파일 과정에서 발생한 것으로 기록되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "nvcc 컴파일",
+            "switch(method) 바깥에 fwd/bwd 선언",
+            "case 0/1 및 default 레이블"
+          ],
+          "observations": [
+            "warning #546-D: transfer of control bypasses initialization of variable fwd/bwd",
+            "error C2360/C2361: fwd/bwd 초기화가 case/default 레이블에 의해 생략됨"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p50:e354",
+            "p50:e355"
+          ]
+        }
+      ],
+      "r2": [
+        {
+          "statement": "switch문 바깥에서 fwd/bwd를 선언하면 transfer of control이 초기화를 우회한다는 경고와 함께 초기화가 case/default 레이블에 의해 생략되었다는 컴파일 오류가 발생했다.",
+          "limits": "컴파일러 진단 메시지는 nvcc 컴파일 과정에서 발생한 것으로 기록되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "nvcc 컴파일",
+            "switch(method) 바깥에 fwd/bwd 선언",
+            "case 0/1 및 default 레이블"
+          ],
+          "observations": [
+            "warning #546-D: transfer of control bypasses initialization of variable fwd/bwd",
+            "error C2360/C2361: fwd/bwd 초기화가 case/default 레이블에 의해 생략됨"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p50:e354",
+            "p50:e355"
+          ]
+        },
+        {
+          "statement": "작성자는 switch문 바깥에 선언된 CROWN 결과 구조체의 값에 의한 복사가 반복문 내부에서 매번 발생하여 성능 저하의 원인이라고 추정했다.",
+          "limits": "원인은 작성자 해석이며 실제 프로파일링 수치로 확인된 것은 아니다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "switch문 바깥에 ForwardBoundResult/BackwardBoundResult 선언",
+            "반복문 내부에서 CROWN 결과 대입",
+            "값에 의한 복사"
+          ],
+          "observations": [
+            "구조체 전체를 복사하느라고 느려졌다는 해석",
+            "92만 번 복사하면 꽤 크다는 언급"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p49:e346",
+            "p49:e349",
+            "p49:e350"
+          ]
+        }
+      ],
+      "r3": [
+        {
+          "statement": "실행인자가 있는 forward를 실행했을 때 전체 소요 시간이 1360.22s로 기록되었다.",
+          "limits": "실행인자 있는 forward 기준 결과이며, eps=9.0e-05/1.0e-02/1.0e-01/1.0e+00 조건에서 측정되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "forward bound",
+            "실행인자 있음",
+            "eps_list sweep"
+          ],
+          "observations": [
+            "total elapsed: 1360.22s",
+            "F=40000 ratio=0.000"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total_elapsed_seconds",
+              "value": "1360.22",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "forward, 실행인자 있음, eps=9.0e-05/1.0e-02/1.0e-01/1.0e+00",
+              "element_ids": [
+                "p52:e375"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p52:e375",
+            "p52:e376",
+            "p52:e377"
+          ]
+        },
+        {
+          "statement": "실행인자가 있는 forward를 실행했을 때 전체 소요 시간이 1360.22s로 기록되었다.",
+          "limits": "실행인자 있는 forward 기준 결과이며, eps=9.0e-05/1.0e-02/1.0e-01/1.0e+00 조건에서 측정되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "forward bound",
+            "실행인자 있음",
+            "eps_list sweep"
+          ],
+          "observations": [
+            "total elapsed: 1360.22s",
+            "F=40000 ratio=0.000"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total_elapsed_seconds",
+              "value": "1360.22",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "forward, 실행인자 있음, eps=9.0e-05/1.0e-02/1.0e-01/1.0e+00",
+              "element_ids": [
+                "p52:e375"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p52:e375",
+            "p52:e376",
+            "p52:e377"
+          ]
+        }
+      ]
+    }
+  }
+}

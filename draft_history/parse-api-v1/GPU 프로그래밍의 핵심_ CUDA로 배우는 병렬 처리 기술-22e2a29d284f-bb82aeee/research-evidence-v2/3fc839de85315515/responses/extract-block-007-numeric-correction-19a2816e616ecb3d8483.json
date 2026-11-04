@@ -1,0 +1,581 @@
+{
+  "request_fingerprint": "19a2816e616ecb3d8483cc6fe0ba7f67fe2fee700689b29efb8e75b72319002f",
+  "value": {
+    "title": "CROWN Verification GPU 최적화 실험 기록 (cuSPARSE/spMM/커널 퓨전)",
+    "facts": [
+      {
+        "statement": "cuSparse 도입 여부를 확인하기 위해 실험적으로 적용해봤다.",
+        "limits": "도입 목적과 적용 범위는 실험적 시도 수준이며, 최종 채택 여부는 이후 실험 결과에 따라 달라졌다.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CROWN Verification (eps = 1e-06)",
+          "cuSparse 도입 검토"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:e191",
+          "p28:enh:e0"
+        ]
+      },
+      {
+        "statement": "cuSparse를 이용해 벡터 곱(spMV)만 적용해보는 상황을 먼저 시도했고, 이후 빠르면 spMM(Sparse 행렬곱) 도입을 검토하기로 했다.",
+        "limits": "spMV 적용 후 spMM 도입 검토는 이후 단계의 방향 제시이며, 실제 spMM 적용 결과는 별도 실험으로 확인된다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse spMV 적용",
+          "spMM 도입 검토"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:e194",
+          "p28:enh:e5"
+        ]
+      },
+      {
+        "statement": "spMV만 적용한 상황에서 결과가 27ms 정도로 나와 이전보다 느려졌다.",
+        "limits": "27ms는 해당 실행 출력 기준이며, 비교 기준 시점은 이전 24ms대 baseline으로 언급된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse spMV 적용",
+          "CROWN Verification (eps = 1e-06)"
+        ],
+        "observations": [
+          "Elapsed time: 27.107400 ms",
+          "Output Dimension: 16"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "27.107400",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuSparse spMV 적용 후 CROWN Verification (eps = 1e-06)",
+            "element_ids": [
+              "p28:e192",
+              "p28:e195",
+              "p28:enh:e1",
+              "p28:enh:e6"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p28:e192",
+          "p28:e195",
+          "p28:enh:e1",
+          "p28:enh:e6"
+        ]
+      },
+      {
+        "statement": "혹시 몰라서 spMM까지 도입한 후 결과를 확인했다.",
+        "limits": "spMM 도입 후 결과는 다음 페이지/요소에서 별도로 확인되며, 여기서는 시도 사실만 기록된다.",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMM 도입 후 결과 확인"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p29:e201",
+          "p29:enh:e7"
+        ]
+      },
+      {
+        "statement": "spMM까지 도입한 후 Elapsed time이 38.580600 ms로 거의 40ms로 회귀했다.",
+        "limits": "원문에서는 '거의 40ms'로 표현하며, 38.580600 ms는 해당 실행 출력값이다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMM까지 도입 후",
+          "CROWN Verification (eps = 1e-06)"
+        ],
+        "observations": [
+          "Elapsed time: 38.580600 ms",
+          "Output Dimension: 16"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "38.580600",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "spMM 도입 후 CROWN Verification (eps = 1e-06)",
+            "element_ids": [
+              "p30:e202",
+              "p30:enh:e0"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p29:e201",
+          "p30:e202",
+          "p30:e203",
+          "p30:enh:e0",
+          "p30:enh:e1",
+          "p30:enh:e7"
+        ]
+      },
+      {
+        "statement": "spMM 도입 후 거의 40ms로 회귀한 상황에 대해 이러면 안된다고 평가했다.",
+        "limits": "이는 작성자 해석/의견이며, 실측값 자체와 구분해 기록한다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMM 도입 후 38.580600 ms"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e203",
+          "p30:enh:e1"
+        ]
+      },
+      {
+        "statement": "신경망이 너무 작아서 그런 것일 수 있다는 의견이 있었다.",
+        "limits": "원인 설명은 의견/가설 성격이며, 확정적 실측 결과로 바꾸지 않는다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMM 도입 후 느려진 상황"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e204",
+          "p30:enh:e2"
+        ]
+      },
+      {
+        "statement": "network_forward는 신경망의 일반 추론값을 출력하는데 아직 GPU 파이프라인이 아니라서 최적화가 안되어 있다는 점이 언급됐다.",
+        "limits": "최적화 미완료 상태에 대한 설명이며, 특정 수치 개선의 원인으로 단정하지 않는다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "network_forward GPU 파이프라인 미완성"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e205",
+          "p30:enh:e7"
+        ]
+      },
+      {
+        "statement": "cuBLAS와 cuSPARSE는 실험했지만 현재 모델 크기와 호출 패턴에서는 느려졌으므로 현 기준 코드에는 포함하지 않은 상태이며, 후에 다시 도입해보는 시도가 필요하다고 기록했다.",
+        "limits": "현재 코드 기준 제외 상태와 향후 재시도 필요성은 문서화 내용이며, 실제 재도입 결과는 아직 없다.",
+        "kind": "limitation",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuBLAS/cuSPARSE 실험 후 느려짐",
+          "현재 모델 크기/호출 패턴"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p30:e206",
+          "p30:enh:e8"
+        ]
+      },
+      {
+        "statement": "원인 분석으로 신경망 크기가 매우 작고, cuBlas/cuSparse 동작 방식에서 오버헤드가 생겼다는 점이 제시됐다.",
+        "limits": "원인 분석은 목록 형태의 해석이며, 각 항목의 정량적 근거는 별도로 제시되지 않는다.",
+        "kind": "limitation",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "원인 분석"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e208",
+          "p31:e209"
+        ]
+      },
+      {
+        "statement": "현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱에도 변형 함수들이 많아 Nsight compute 분석과 함께 진행할 여지가 있다고 기록했다.",
+        "limits": "변형 함수 활용은 향후 진행 가능성/계획 성격이며, 실제 적용 결과는 아니다.",
+        "kind": "limitation",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "기본 행렬곱 함수 사용",
+          "변형 함수 검토 가능성"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e210"
+        ]
+      },
+      {
+        "statement": "커널 퓨전을 진행했으며, 먼저 backward_bound_gpu()에만 진행했다.",
+        "limits": "커널 퓨전 적용 범위는 backward_bound_gpu() 우선 진행으로 한정된다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 퓨전",
+          "backward_bound_gpu() 우선 적용"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e212"
+        ]
+      },
+      {
+        "statement": "커널 퓨전 후 23ms 후반대까지는 나오는 듯하다고 기록했다.",
+        "limits": "정확한 단일 측정값이 아니라 '23ms 후반대'라는 범위로 표현된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 퓨전",
+          "backward_bound_gpu()에만 진행"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time (범위)",
+            "value": "23",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "커널 퓨전 후 backward_bound_gpu()",
+            "element_ids": [
+              "p31:e213"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p31:e213"
+        ]
+      },
+      {
+        "statement": "커널 퓨전 후 CROWN Verification 실행에서 Elapsed time 23.925200 ms가 출력됐다.",
+        "limits": "해당 값은 특정 실행 출력값이며, 변동 범위는 이후 요소에서 추가로 언급된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 퓨전 후",
+          "CROWN Verification (eps = 1e-06)"
+        ],
+        "observations": [
+          "Elapsed time: 23.925200 ms",
+          "Output Dimension: 16"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "23.925200",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "커널 퓨전 후 CROWN Verification (eps = 1e-06)",
+            "element_ids": [
+              "p31:e214",
+              "p31:e215"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p31:e214",
+          "p31:e215"
+        ]
+      },
+      {
+        "statement": "컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 건 23ms 정도가 보인다는 점이라고 부연했다.",
+        "limits": "변동 범위 언급은 체감/조건 의존적 설명이며, 대표 측정값과 구분해 기록한다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "커널 퓨전 후 성능 변동"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p31:e215"
+        ]
+      },
+      {
+        "statement": "이후 lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해서 성능을 개선했다.",
+        "limits": "lirpa_forward_bound 함수 대상 커널 퓨전은 이후 단계의 개선 시도로 기록된다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "lirpa_forward_bound 함수들 커널 퓨전"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e216"
+        ]
+      },
+      {
+        "statement": "lirpa_forward_bound 함수들 커널 퓨전 후 Elapsed time이 22.342900 ms로 22ms 초반까지 나왔다.",
+        "limits": "해당 실행 출력값 기준이며, 변동 범위는 이후 요소에서 추가로 언급된다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "lirpa_forward_bound 함수들 커널 퓨전",
+          "CROWN Verification (eps = 1e-06)"
+        ],
+        "observations": [
+          "Elapsed time: 22.342900 ms",
+          "Output Dimension: 16"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "22.342900",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "lirpa_forward_bound 함수들 커널 퓨전 후 CROWN Verification (eps = 1e-06)",
+            "element_ids": [
+              "p32:e217",
+              "p32:e218"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p32:e216",
+          "p32:e217",
+          "p32:e218"
+        ]
+      },
+      {
+        "statement": "lirpa_forward_bound 커널 퓨전 후 늦으면 28까지도 나오는데 보통은 24 중반 정도라고 기록했다.",
+        "limits": "범위/빈도 설명은 체감 및 조건 의존적 서술이며, 단일 고정값으로 바꾸지 않는다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "lirpa_forward_bound 커널 퓨전 후 변동"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e219"
+        ]
+      },
+      {
+        "statement": "그 외에도 backward_bound_gpu 관련 여러 개선을 진행했다.",
+        "limits": "아래 세부 항목들은 동일 개선 흐름의 개별 항목으로 나눠 기록한다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_bound_gpu 개선"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e221",
+          "p32:e222"
+        ]
+      },
+      {
+        "statement": "backward_bound_gpu에서 사용하는 affine 중복 계산을 삭제해 커널 2개 함수가 줄어들었다.",
+        "limits": "중복 계산 삭제로 커널 함수 수가 줄어든 점은 문서화 내용이며, 별도 정량 측정은 제시되지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "affine 중복 계산 삭제"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e222"
+        ]
+      },
+      {
+        "statement": "backward_bound_gpu에서 사용하는 new_(upper, lower)_p를 복사하지 않고 swap 함수를 이용해 포인터 스와핑(std::swap 이용)했다.",
+        "limits": "포인터 스와핑 방식 변경은 구현 기록으로 남긴다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "new_(upper, lower)_p 포인터 스와핑",
+          "std::swap 이용"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e222"
+        ]
+      },
+      {
+        "statement": "backward에서 사용하는 행렬곱 커널 2개를 하나로 합친 커널 함수를 만들었고, backward_matmul_pair_gpu에서 22ms 보이는 비율이 늘었으며 최저점(28ms)도 잘 안 보이게 됐고 체감상 효과가 있는 듯했다.",
+        "limits": "효과 평가는 체감/비율 중심의 해석이며, 단일 고정 측정값으로 일반화하지 않는다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward 행렬곱 커널 2개 통합",
+          "backward_matmul_pair_gpu"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e222"
+        ]
+      },
+      {
+        "statement": "build_coeff_pair_fused_gpu 커널 퓨전을 진행했다.",
+        "limits": "커널 퓨전 적용 대상 중 하나로 기록한다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "build_coeff_pair_fused_gpu 커널 퓨전"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e222"
+        ]
+      },
+      {
+        "statement": "backward_bias_pair_fused_gpu 커널 퓨전을 진행했다.",
+        "limits": "커널 퓨전 적용 대상 중 하나로 기록한다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_bias_pair_fused_gpu 커널 퓨전"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p32:e222"
+        ]
+      },
+      {
+        "statement": "5번까지 적용하고 최고 성능이 나왔다.",
+        "limits": "여기서 5번은 앞서 나열된 개선 항목들의 누적 적용 결과로 언급되며, 특정 단일 수치보다는 최고 성능 도달 사실로 기록한다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "개선 항목 5번까지 적용"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p33:e224"
+        ]
+      },
+      {
+        "statement": "계속해서 1개의 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전을 모두 진행했다.",
+        "limits": "커널 호출 수 감소를 목표로 한 추가 퓨전 진행은 진행 방향/범위 설명으로 기록한다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "1개 커널 호출 감소 목표",
+          "커널 퓨전 모두 진행"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p33:e225"
+        ]
+      },
+      {
+        "statement": "개선 누적 후 CROWN Verification 실행에서 Elapsed time 22.157400 ms가 출력됐다.",
+        "limits": "해당 값은 특정 실행 출력값이며, 이전 단계 대비 개선 흐름의 한 지점으로 기록한다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "개선 누적 후",
+          "CROWN Verification (eps = 1e-06)"
+        ],
+        "observations": [
+          "Elapsed time: 22.157400 ms",
+          "Output Dimension: 16"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "22.157400",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "개선 누적 후 CROWN Verification (eps = 1e-06)",
+            "element_ids": [
+              "p33:e223"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p33:e223",
+          "p33:e224",
+          "p33:e225"
+        ]
+      }
+    ],
+    "coverage": {
+      "p29": {
+        "status": "extracted",
+        "note": "spMM 도입 후 결과 확인 시도와 cuSPARSE 관련 의견/조언이 함께 있는 페이지로, 실험 시도 사실과 제3자 조언을 구분해 수집했다."
+      },
+      "p30": {
+        "status": "extracted",
+        "note": "spMM 도입 후 38.580600 ms 출력과 회귀 평가, network_forward 최적화 미완료 언급, cuBLAS/cuSPARSE 제외 상태 기록이 있어 연구 사실 중심으로 수집했다."
+      },
+      "p31": {
+        "status": "extracted",
+        "note": "원인 분석, 변형 함수 검토 여지, backward_bound_gpu 우선 커널 퓨전, 23.925200 ms 출력 및 변동 언급이 있어 방법/결과를 나눠 수집했다."
+      },
+      "p32": {
+        "status": "extracted",
+        "note": "lirpa_forward_bound 커널 퓨전, 22.342900 ms 출력, 변동 범위 언급, backward_bound_gpu 관련 세부 개선 항목들이 있어 개별 방법/결과로 분리해 수집했다."
+      }
+    }
+  }
+}

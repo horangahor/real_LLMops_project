@@ -1,0 +1,597 @@
+{
+  "request_fingerprint": "8de452dff3b76d679bb57d633a69af28040062d8a46d32a7d3d46b3cd4f01a87",
+  "value": {
+    "repairs": {
+      "1": [
+        {
+          "statement": "작성자는 코드가 거의 600초(약 10분) 느려졌다고 기록했다.",
+          "limits": "정확한 기준 시점이나 비교 대상이 명시되지 않은 체감/관측 기반 진술이다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "CUDA CROWN sweep 실행"
+          ],
+          "observations": [
+            "거의 600초== 10분 느려졌다"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p49:e345"
+          ]
+        },
+        {
+          "statement": "작성자는 성능 저하의 원인이 switch 스코프 바깥에 CROWN 결과 구조체를 선언하고 반복문 내부에서 CROWN 결과를 담는 부분에 있다고 보았다.",
+          "limits": "작성자의 문제 위치 추정이며, 실제 프로파일링 결과는 제시되지 않았다.",
+          "kind": "method",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "switch 스코프 바깥에 ForwardBoundResult/BackwardBoundResult 구조체 선언",
+            "반복문 내부에서 CROWN 결과 할당"
+          ],
+          "observations": [
+            "문 제가 이부분에 있다고 한다"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p49:e348"
+          ]
+        },
+        {
+          "statement": "작성자는 해당 구조체가 값에 의한 복사(value copy)로 동작하며, 92만 번 복사하면 꽤 크다고 설명했다.",
+          "limits": "복사본 개수 92만 번은 작성자의 추정이며, 구조체 크기나 실제 복사 비용은 별도 측정되지 않았다.",
+          "kind": "method",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "값에 의한 복사 메커니즘",
+            "반복문 내 구조체 복사"
+          ],
+          "observations": [
+            "값에 의한 복사란 말이다",
+            "그 구조체를 전부 복사하느라고 그렇다는 것이다",
+            "92만번 복사하면 꽤 크다"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p49:e349",
+            "p49:e350"
+          ]
+        },
+        {
+          "statement": "작성자는 switch 안에서 선언과 동시에 생성되도록 수정하는 방법을 시도했다.",
+          "limits": "수정 시도 사실만 기록되어 있으며, 수정 전/후 성능 비교 수치는 이 fact에 포함되지 않는다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "switch(case) 내부에서 지역 변수로 선언 및 초기화"
+          ],
+          "observations": [
+            "그래서 이런식으로 안에서 선언과 동시에 만들어지도록 해봤다"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p50:e352"
+          ]
+        },
+        {
+          "statement": "작성자는 switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 안 된다고 기록했다.",
+          "limits": "C++ switch/case 스코프 규칙에 대한 작성자 경험 기반 설명이다.",
+          "kind": "method",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "switch 내부 case에서 지역 변수 선언",
+            "중괄호 스코프 사용"
+          ],
+          "observations": [
+            "참고로 switch 안의 선언문은 중괄호로 저렇게 덮어주지 않으면 안되더라"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p50:e353"
+          ]
+        },
+        {
+          "statement": "nvcc 컴파일에서 warning #546-D(transfer of control bypasses initialization)와 error C2360/C2361(초기화가 case/default 레이블에 의해 생략)이 발생했다.",
+          "limits": "컴파일러 출력 텍스트 기반이며, 해당 빌드의 전체 옵션·환경과 정확히 일치하는지는 별도 확인이 필요하다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "nvcc 컴파일, -Xcompiler /utf-8, -Xlinker /STACK:134217728, -arch=sm_89",
+            "crown_test_all_data.cu"
+          ],
+          "observations": [
+            "warning #546-D: transfer of control bypasses initialization of: variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260)",
+            "error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략되었습니다",
+            "error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략되었습니다",
+            "error C2361: 'fwd' 초기화가 'default' 레이블에 의해 생략되었습니다"
+          ],
+          "parameters": [
+            {
+              "name": "compiler",
+              "value": "nvcc",
+              "value_kind": "text",
+              "element_ids": [
+                "p50:e354"
+              ]
+            },
+            {
+              "name": "Xcompiler",
+              "value": "/utf-8",
+              "value_kind": "text",
+              "element_ids": [
+                "p50:e354"
+              ]
+            },
+            {
+              "name": "Xlinker",
+              "value": "/STACK:134217728",
+              "value_kind": "text",
+              "element_ids": [
+                "p50:e354"
+              ]
+            },
+            {
+              "name": "arch",
+              "value": "sm_89",
+              "value_kind": "text",
+              "element_ids": [
+                "p50:e354"
+              ]
+            },
+            {
+              "name": "source_file",
+              "value": "crown_test_all_data.cu",
+              "value_kind": "text",
+              "element_ids": [
+                "p50:e354"
+              ]
+            }
+          ],
+          "measurements": [],
+          "element_ids": [
+            "p50:e354"
+          ]
+        },
+        {
+          "statement": "작성자는 fwd, bwd 초기화가 해당 레이블에 의해 생략되었고, main 함수 scope의 선언문은 무조건 선언이 되어야 하는데 레이블에 의해 생략되고 있으니 작은 scope(중괄호)를 만들어준 것이라고 설명했다.",
+          "limits": "컴파일 오류 원인에 대한 작성자 해석이며, C++의 switch/case 스코프 규칙에 근거한 설명이다.",
+          "kind": "method",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "switch(method) 내부 case 0/1에서 지역 변수로 선언",
+            "중괄호 스코프 사용"
+          ],
+          "observations": [
+            "fwd, bwd 초기화가 해당 레이블에 의해 생략되었다고 설명",
+            "main 함수 scope의 선언문은 무조건 선언이 되어야 하는데 레이블에 의해 생략되고 있으니 작은 scope를 만들어준 것이라고 설명"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p50:e355"
+          ]
+        },
+        {
+          "statement": "작성자는 수정 후 결과를 보고 '준수한 결과'라며 2100s 초 나오는 문제도 원인 해결 완료라고 기록했다.",
+          "limits": "'2100s'는 텍스트상 언급 수치이며, 동일 페이지의 이미지 OCR에는 total elapsed 1634.61s가 기록되어 있어 수치 차이가 있다. 어떤 실행 조건(forward/backward, 인자 유무)에 대응하는지는 텍스트만으로 확정되지 않는다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "switch 내부 중괄호 스코프로 구조체 선언 수정 적용 후"
+          ],
+          "observations": [
+            "음 .. 준수한 결과다",
+            "이러면 2100s 초 나오는 문제도 원인 해결 완료"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total elapsed time (텍스트 언급)",
+              "value": "2100",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "작성자가 '원인 해결 완료'로 언급한 기준 수치, 정확한 실행 조건 미확인",
+              "element_ids": [
+                "p50:e357"
+              ]
+            },
+            {
+              "metric": "total elapsed time (이미지 OCR)",
+              "value": "1634.61",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "이미지 출력 기준, eps=1.0e+00, F=40000, ratio=0.000, results saved to results_cuda.csv",
+              "element_ids": [
+                "p50:img2:e1"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p50:e357",
+            "p50:img2:e0",
+            "p50:img2:e1",
+            "p50:img2:e2"
+          ]
+        },
+        {
+          "statement": "실행인자 없이 돌렸을 때 total elapsed 1560.37s가 출력되었다.",
+          "limits": "이미지 출력 기준 값이며, forward/backward 구분 및 eps_list 구성은 이미지 단독으로는 확정되지 않는다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "실행인자 없이 실행",
+            "eps= 1.0e-01, eps= 1.0e+00, T=0, F=40000, ratio=0.000 출력"
+          ],
+          "observations": [
+            "total elapsed: 1560.37s",
+            "results saved to results_cuda.csv"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total elapsed time",
+              "value": "1560.37",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "실행인자 없는 버전 출력, eps=1.0e-01 및 1.0e+00, F=40000, ratio=0.000",
+              "element_ids": [
+                "p51:e360"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p51:e360"
+          ]
+        },
+        {
+          "statement": "작성자는 1560s도 나왔으며 100초 정도 차이나는 이유를 의문으로 기록했다.",
+          "limits": "비교 대상이 되는 이전 수치가 무엇인지 명시되지 않았다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "실행인자 없는 버전 실행"
+          ],
+          "observations": [
+            "1560s도 나왔단 말이지",
+            "이건 뭐지? 100초 정도 차이나는 건..…..?"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p51:e361",
+            "p51:e362"
+          ]
+        },
+        {
+          "statement": "작성자는 갑자기 2187초, 1636초가 뜨는 등 실행마다 시간이 달라지는 현상을 기록했다.",
+          "limits": "각 수치가 forward/backward 중 무엇인지, 실행인자 유무가 무엇인지는 이 문장만으로는 확정되지 않는다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "여러 차례 실행"
+          ],
+          "observations": [
+            "갑자기 또 2187초 뜨냐… 뭐지..…? 또 1636초.."
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total elapsed time (언급)",
+              "value": "2187",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "작성자 언급 수치, 조건 미확인",
+              "element_ids": [
+                "p51:e363"
+              ]
+            },
+            {
+              "metric": "total elapsed time (언급)",
+              "value": "1636",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "작성자 언급 수치, 조건 미확인",
+              "element_ids": [
+                "p51:e363"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p51:e363"
+          ]
+        },
+        {
+          "statement": "이미지 출력에서 total elapsed 1342.47s가 측정되었다.",
+          "limits": "이미지 OCR 값이며, 해당 실행이 forward인지 backward인지, 실행인자 유무 등 정확한 조건은 이미지 단독으로는 확정되지 않는다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "CUDA CROWN sweep 실행 출력 이미지",
+            "eps= 1.0e-01, eps= 1.0e+00, T=0, F=40000, ratio=0.000 출력"
+          ],
+          "observations": [
+            "total elapsed: 1342.47s",
+            "results saved to results_cuda.csv"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total elapsed time",
+              "value": "1342.47",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "이미지 출력 기준, eps=1.0e-01 및 1.0e+00, F=40000, ratio=0.000",
+              "element_ids": [
+                "p51:e364"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p51:e364"
+          ]
+        },
+        {
+          "statement": "작성자는 forward가 갑자기 1342s까지 떨어졌으며, 앞서 말했던 값에 의한 복사 해결 때문일 수 있다고 추측했다.",
+          "limits": "인과 관계는 작성자 추측이며, 실제 검증 결과는 제시되지 않았다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "forward 실행",
+            "값에 의한 복사 수정 적용 가능성"
+          ],
+          "observations": [
+            "forward는 갑자기 또 1342s 까지도 떨어지네.. 뭐냐 도대체 크아악",
+            "아마 이건 앞서 말했던 값에 의한 복사를 해결해서?"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total elapsed time (forward 언급)",
+              "value": "1342",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "작성자 언급 forward 실행, 값에 의한 복사 해결 영향 추측",
+              "element_ids": [
+                "p51:e365"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p51:e365"
+          ]
+        },
+        {
+          "statement": "이미지 출력에서 total elapsed 1561.72s가 측정되었다.",
+          "limits": "이미지 OCR 값이며, 실행인자 없는 버전 backward라고 작성자가 별도로 언급한 맥락(p51:e367)과 연결된다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "실행인자 없는 버전 backward로 언급됨",
+            "eps= 1.0e-01, eps= 1.0e+00, T=0, F=40000, ratio=0.000 출력"
+          ],
+          "observations": [
+            "total elapsed: 1561.72s",
+            "results saved to results_cuda.csv"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total elapsed time",
+              "value": "1561.72",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "실행인자 없는 버전 backward 출력, eps=1.0e-01 및 1.0e+00, F=40000, ratio=0.000",
+              "element_ids": [
+                "p51:e366"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p51:e366"
+          ]
+        },
+        {
+          "statement": "작성자는 실행인자 없는 버전 backward와 forward를 구분하여 기록했다.",
+          "limits": "구분은 작성자 라벨링에 기반한다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "실행인자 없는 버전"
+          ],
+          "observations": [
+            "(이게 실행인자 없는 버전 backward)",
+            "(근데 실행인자 없는 버전 forward)?????? 이건 또 실행인자 있는게 더 빨라"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p51:e367",
+            "p51:e369"
+          ]
+        },
+        {
+          "statement": "이미지 출력에서 total elapsed 1460.60s가 측정되었다.",
+          "limits": "이미지 OCR 값이며, 실행인자 없는 버전 forward라고 작성자가 언급한 맥락(p51:e369)과 연결된다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "실행인자 없는 버전 forward로 언급됨",
+            "eps= 1.0e-01, eps= 1.0e+00, T=0, F=40000, ratio=0.000 출력"
+          ],
+          "observations": [
+            "total elapsed: 1460.60s",
+            "results saved to results_cuda.csv"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total elapsed time",
+              "value": "1460.60",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "실행인자 없는 버전 forward 출력, eps=1.0e-01 및 1.0e+00, F=40000, ratio=0.000",
+              "element_ids": [
+                "p51:e368"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p51:e368"
+          ]
+        },
+        {
+          "statement": "이미지 출력에서 total elapsed 1564.18s가 측정되었다.",
+          "limits": "이미지 OCR 값이며, 다시 실행 인자 있는 backward라고 작성자가 언급한 맥락(p51:e371)과 연결된다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "다시 실행 인자 있는 backward로 언급됨",
+            "eps= 1.0e-01, eps= 1.0e+00, T=0, F=40000, ratio=0.000 출력"
+          ],
+          "observations": [
+            "total elapsed: 1564.18s",
+            "results saved to results_cuda.csv"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total elapsed time",
+              "value": "1564.18",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "실행 인자 있는 backward 출력, eps=1.0e-01 및 1.0e+00, F=40000, ratio=0.000",
+              "element_ids": [
+                "p51:e370"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p51:e370"
+          ]
+        },
+        {
+          "statement": "작성자는 다시 실행 인자 있는 backward가 1564s 정도로 비슷하다고 기록했다.",
+          "limits": "비교 기준은 직전 실행인자 없는 backward(1561.72s)로 보인다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "실행 인자 있는 backward"
+          ],
+          "observations": [
+            "다시 실행 인자 있는 backward",
+            "1564s 정도로 비슷하다"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "total elapsed time (backward, 실행인자 있음)",
+              "value": "1564",
+              "value_kind": "range",
+              "unit": "s",
+              "condition": "실행 인자 있는 backward, 실행인자 없는 backward(1561.72s)와 유사",
+              "element_ids": [
+                "p51:e372"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p51:e372"
+          ]
+        },
+        {
+          "statement": "코드 구조상 eps_list에 대한 이중 루프에서 네트워크 정방향 통과 후 method에 따라 lirpa_forward_bound_imp1(imp1) 또는 lirpa_backward_bound를 호출하고, certify_topk로 Top-k 인증 판정(t_count/f_count)을 수행한다.",
+          "limits": "첫 번째 요소(p49:e347)의 코드에는 lirpa_forward_bound_imp1과 case 0에서 fwd.final_lower/upper 사용, 두 번째 요소(p50:e351)의 코드에는 lirpa_forward_bound_impl과 case 내부 선언 방식이 서로 다르게 보인다. 동일 파일의 전후 버전/수정 전후일 가능성이 있으나 정확한 버전 관계는 확인되지 않았다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "eps × 데이터 이중 루프",
+            "method 0: forward bound, method 1: backward bound",
+            "certify_topk 판정"
+          ],
+          "observations": [
+            "eps_list 이중 루프",
+            "network_forward 후 switch(method)로 bound 계산",
+            "case 0: lirpa_forward_bound_imp1/impl, case 1: lirpa_backward_bound",
+            "certify_topk(y0, final_lower, final_upper, k)로 t_count/f_count 증가"
+          ],
+          "parameters": [
+            {
+              "name": "method 0",
+              "value": "lirpa_forward_bound_imp1 (p49) / lirpa_forward_bound_impl (p50)",
+              "value_kind": "text",
+              "element_ids": [
+                "p49:e347",
+                "p50:e351"
+              ]
+            },
+            {
+              "name": "method 1",
+              "value": "lirpa_backward_bound",
+              "value_kind": "text",
+              "element_ids": [
+                "p49:e347",
+                "p50:e351"
+              ]
+            },
+            {
+              "name": "certify_topk 인자",
+              "value": "y0, final_lower, final_upper, k",
+              "value_kind": "text",
+              "element_ids": [
+                "p50:e351"
+              ]
+            }
+          ],
+          "measurements": [],
+          "element_ids": [
+            "p49:e347",
+            "p50:e351"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "statement": "작성자는 코드가 거의 600초(약 10분) 느려졌다고 기록했다.",
+          "limits": "정확한 기준 시점이나 비교 대상이 명시되지 않은 체감/관측 기반 진술이다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "CUDA CROWN sweep 실행"
+          ],
+          "observations": [
+            "거의 600초== 10분 느려졌다"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p49:e345"
+          ]
+        }
+      ]
+    }
+  }
+}

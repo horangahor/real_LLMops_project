@@ -1,0 +1,211 @@
+{
+  "stage": "section-S_intro",
+  "approved": true,
+  "review_kind": "editorial",
+  "items": [],
+  "paragraphs": {
+    "S_intro_p2": {
+      "section_id": "S_intro",
+      "text": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 데 실용적 중요성이 크지만, 검증 연산 자체의 계산 부담이 커서 실제 적용 맥락을 제약한다. 특히 CROWN 검증은 CPU 환경에서 수행 시간이 매우 느리고, 기존 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황에 머물러 있어 실시간 환경에서의 대규모 연산을 충족하기 어렵다는 문제가 제기된다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 이러한 맥락에서 본 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현하고 최적화하여, 네트워크 환경을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 본 연구의 목표와 기여 방향은 다음과 같이 정리된다. 첫째, CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산 등)에 blockIdx.z를 적용해 3차원 배칭 커널을 직접 작성하는 Custom Implementation 방식(방법 B)을 검토한다. 이 방식은 알고리즘과 메모리를 100% 통제할 수 있다는 장점이 있으나, 엔비디아 엔지니어가 하드웨어 레벨까지 튜닝한 텐서 코어 어셈블리 성능을 손으로 따라잡기 어렵다는 한계가 있다. 둘째, CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이라는 점에 착안해, 가장 무거운 행렬 곱셈만 엔비디아 공식 최적화 라이브러리(cuBLAS, cublasSgemmBatched)에 맡기고 CROWN 전용 연산은 방법 B의 자체 3D 커널로 유지하는 하이브리드 방식(방법 C)을 검토한다. 셋째, 방법 B로 전체 파이프라인을 3차원 텐서 구조로 만든 뒤 가장 무거운 행렬곱 엔진만 방법 C(cuBLAS)로 갈아 끼우는 결합 흐름을 설계 방향으로 삼는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 종합하면, 본 연구는 CROWN 검증을 GPU 기반으로 병렬화·최적화하여 실시간 환경 대응 가능성을 탐색하는 데 목표를 두며, Custom Implementation과 Library Integration의 하이브리드 구성, 그리고 GPU OPTIMIZED 및 HYBRID 실행 방식의 검토를 기여 방향으로 제시한다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 남는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d]"
+    },
+    "S_intro_p4": {
+      "section_id": "S_intro",
+      "text": "실제 실행 결과로는 GPU OPTIMIZED 모드(cuBLAS + Pool)에서 CROWN Verification의 Elapsed time이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100ms 줄어든 값이지만 여전히 CPU보다 느리다고 평가되었다. 이에 따라 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 추가로 시도하는 흐름이 이어졌다. 다만 이 수치는 단일 실행 결과이며, CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. [근거:E00027,E00029,E00030] 이후 측정 정밀도를 높이기 위해 GPU 클록 고정, Persistence mode 설정 같은 환경 통제 방법이 검토되었다. cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12 μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐지만, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 구간에서 역전 현상이 나타났다. [근거:E00277,E00278,E00280,E00281,E00282,E00283,E00284,E00286] 기록자는 cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해, 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 남겼다. [근거:E00279]"
+    },
+    "S_intro_p6": {
+      "section_id": "S_intro",
+      "text": "기존 CPU 중심 CROWN 검증은 오프라인 환경에서는 제한적으로 빠른 결과를 낼 수 있었지만, 실시간 환경에서 요구되는 대규모 연산을 지속적으로 충족하기 어렵다는 한계가 있었다. 이에 본 연구는 CUDA 기반 CROWN 검증의 GPU 병렬화와 실시간성 최적화에 초점을 두고, GPU 환경에서 검증 연산이 실제 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:U209b56cf1c8267aea36d,E00029]"
+    }
+  },
+  "issues": [
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p2",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적에서 문제 제기, CUDA 구현 동기, 실시간성 기준, 메모리 전송 방식 비교, WCET·지터 수치, 절의 범위 한계까지 한 문단에 밀집되어 정보 밀도와 설명 순서가 과도하다고 지적되었으나, 현재 본문에서도 Pinned/Pinned 메모리 비교와 WCET·지터 수치가 그대로 남아 있어 서론 도입부의 초점이 분산되는 문제가 해결되지 않았다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 데 실용적 중요성이 크지만, 검증 연산 자체의 계산 부담이 커서 실제 적용 맥락을 제약한다. 특히 CROWN 검증은 CPU 환경에서 수행 시간이 매우 느리고, 기존 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황에 머물러 있어 실시간 환경에서의 대규모 연산을 충족하기 어렵다는 문제가 제기된다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 이러한 맥락에서 본 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현하고 최적화하여, 네트워크 환경을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 본 연구의 목표와 기여 방향은 다음과 같이 정리된다. 첫째, CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산 등)에 blockIdx.z를 적용해 3차원 배칭 커널을 직접 작성하는 Custom Implementation 방식(방법 B)을 검토한다. 이 방식은 알고리즘과 메모리를 100% 통제할 수 있다는 장점이 있으나, 엔비디아 엔지니어가 하드웨어 레벨까지 튜닝한 텐서 코어 어셈블리 성능을 손으로 따라잡기 어렵다는 한계가 있다. 둘째, CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이라는 점에 착안해, 가장 무거운 행렬 곱셈만 엔비디아 공식 최적화 라이브러리(cuBLAS, cublasSgemmBatched)에 맡기고 CROWN 전용 연산은 방법 B의 자체 3D 커널로 유지하는 하이브리드 방식(방법 C)을 검토한다. 셋째, 방법 B로 전체 파이프라인을 3차원 텐서 구조로 만든 뒤 가장 무거운 행렬곱 엔진만 방법 C(cuBLAS)로 갈아 끼우는 결합 흐름을 설계 방향으로 삼는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 종합하면, 본 연구는 CROWN 검증을 GPU 기반으로 병렬화·최적화하여 실시간 환경 대응 가능성을 탐색하는 데 목표를 두며, Custom Implementation과 Library Integration의 하이브리드 구성, 그리고 GPU OPTIMIZED 및 HYBRID 실행 방식의 검토를 기여 방향으로 제시한다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 남는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p2",
+      "category": "terminology",
+      "severity": "warning",
+      "reason": "이전 지적에서 Pinned Memory와 cudaHostRegister, No Pinning이 같은 문단에서 혼용되며 용어 관계가 정리되지 않는다고 지적되었으나, 현재 본문에서도 cudaHostRegister를 Pinned Memory와 별도로 나열하는 방식이 유지되어 용어 계층이 여전히 불명확하다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 데 실용적 중요성이 크지만, 검증 연산 자체의 계산 부담이 커서 실제 적용 맥락을 제약한다. 특히 CROWN 검증은 CPU 환경에서 수행 시간이 매우 느리고, 기존 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황에 머물러 있어 실시간 환경에서의 대규모 연산을 충족하기 어렵다는 문제가 제기된다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 이러한 맥락에서 본 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현하고 최적화하여, 네트워크 환경을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 본 연구의 목표와 기여 방향은 다음과 같이 정리된다. 첫째, CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산 등)에 blockIdx.z를 적용해 3차원 배칭 커널을 직접 작성하는 Custom Implementation 방식(방법 B)을 검토한다. 이 방식은 알고리즘과 메모리를 100% 통제할 수 있다는 장점이 있으나, 엔비디아 엔지니어가 하드웨어 레벨까지 튜닝한 텐서 코어 어셈블리 성능을 손으로 따라잡기 어렵다는 한계가 있다. 둘째, CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이라는 점에 착안해, 가장 무거운 행렬 곱셈만 엔비디아 공식 최적화 라이브러리(cuBLAS, cublasSgemmBatched)에 맡기고 CROWN 전용 연산은 방법 B의 자체 3D 커널로 유지하는 하이브리드 방식(방법 C)을 검토한다. 셋째, 방법 B로 전체 파이프라인을 3차원 텐서 구조로 만든 뒤 가장 무거운 행렬곱 엔진만 방법 C(cuBLAS)로 갈아 끼우는 결합 흐름을 설계 방향으로 삼는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 종합하면, 본 연구는 CROWN 검증을 GPU 기반으로 병렬화·최적화하여 실시간 환경 대응 가능성을 탐색하는 데 목표를 두며, Custom Implementation과 Library Integration의 하이브리드 구성, 그리고 GPU OPTIMIZED 및 HYBRID 실행 방식의 검토를 기여 방향으로 제시한다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 남는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d]"
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p2",
+      "category": "style",
+      "severity": "warning",
+      "reason": "이전 지적에서 ‘치명적인 지연 스파이크’, ‘어떤 상황에서도 ~ 넘지 않는’ 같은 단정적 표현이 서론 어조를 강하게 만든다고 지적되었으나, 현재 본문에서도 유사한 강한 표현이 남아 있어 문제 제기의 강도와 근거 제시 순서가 맞지 않는다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 데 실용적 중요성이 크지만, 검증 연산 자체의 계산 부담이 커서 실제 적용 맥락을 제약한다. 특히 CROWN 검증은 CPU 환경에서 수행 시간이 매우 느리고, 기존 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황에 머물러 있어 실시간 환경에서의 대규모 연산을 충족하기 어렵다는 문제가 제기된다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 이러한 맥락에서 본 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현하고 최적화하여, 네트워크 환경을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 본 연구의 목표와 기여 방향은 다음과 같이 정리된다. 첫째, CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산 등)에 blockIdx.z를 적용해 3차원 배칭 커널을 직접 작성하는 Custom Implementation 방식(방법 B)을 검토한다. 이 방식은 알고리즘과 메모리를 100% 통제할 수 있다는 장점이 있으나, 엔비디아 엔지니어가 하드웨어 레벨까지 튜닝한 텐서 코어 어셈블리 성능을 손으로 따라잡기 어렵다는 한계가 있다. 둘째, CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이라는 점에 착안해, 가장 무거운 행렬 곱셈만 엔비디아 공식 최적화 라이브러리(cuBLAS, cublasSgemmBatched)에 맡기고 CROWN 전용 연산은 방법 B의 자체 3D 커널로 유지하는 하이브리드 방식(방법 C)을 검토한다. 셋째, 방법 B로 전체 파이프라인을 3차원 텐서 구조로 만든 뒤 가장 무거운 행렬곱 엔진만 방법 C(cuBLAS)로 갈아 끼우는 결합 흐름을 설계 방향으로 삼는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 종합하면, 본 연구는 CROWN 검증을 GPU 기반으로 병렬화·최적화하여 실시간 환경 대응 가능성을 탐색하는 데 목표를 두며, Custom Implementation과 Library Integration의 하이브리드 구성, 그리고 GPU OPTIMIZED 및 HYBRID 실행 방식의 검토를 기여 방향으로 제시한다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 남는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d]"
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p4",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "이전 지적에서 S_intro_p2와 S_intro_p4가 ‘CPU 중심 CROWN 검증의 오프라인 한정성’과 ‘실시간 대규모 연산 충족 어려움’을 거의 같은 문장으로 반복한다고 지적되었으나, 현재 본문에서도 두 문단이 같은 문제 상황을 재진술하여 서론 내 중복이 해소되지 않았다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "실제 실행 결과로는 GPU OPTIMIZED 모드(cuBLAS + Pool)에서 CROWN Verification의 Elapsed time이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100ms 줄어든 값이지만 여전히 CPU보다 느리다고 평가되었다. 이에 따라 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 추가로 시도하는 흐름이 이어졌다. 다만 이 수치는 단일 실행 결과이며, CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. [근거:E00027,E00029,E00030] 이후 측정 정밀도를 높이기 위해 GPU 클록 고정, Persistence mode 설정 같은 환경 통제 방법이 검토되었다. cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12 μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐지만, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 구간에서 역전 현상이 나타났다. [근거:E00277,E00278,E00280,E00281,E00282,E00283,E00284,E00286] 기록자는 cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해, 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 남겼다. [근거:E00279]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p6",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적에서 GPU 클록 고정, Persistence mode, cudaHostRegister와 No Pinning의 단계별 시간 비교, Bound/Infer 역전 현상까지 한 문단에 밀집되어 서론에서 측정 세부사항이 문제 제기와 목표보다 앞선다고 지적되었으나, 현재 본문에서도 환경 통제와 단계별 성능 역전이 같은 밀도로 남아 있어 문제가 해결되지 않았다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "기존 CPU 중심 CROWN 검증은 오프라인 환경에서는 제한적으로 빠른 결과를 낼 수 있었지만, 실시간 환경에서 요구되는 대규모 연산을 지속적으로 충족하기 어렵다는 한계가 있었다. 이에 본 연구는 CUDA 기반 CROWN 검증의 GPU 병렬화와 실시간성 최적화에 초점을 두고, GPU 환경에서 검증 연산이 실제 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:U209b56cf1c8267aea36d,E00029]"
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p6",
+      "category": "style",
+      "severity": "warning",
+      "reason": "이전 지적에서 ‘매우 명확하고 흥미로운 3가지 기술적 이유’처럼 기록자의 주관적 평가가 본문에 남아 학술적 서론 문체와 거리가 있다고 지적되었으나, 현재 본문에서도 이유가 실제로 제시되지 않은 상태에서 유사한 표현이 유지되어 글의 톤이 불안정하다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "기존 CPU 중심 CROWN 검증은 오프라인 환경에서는 제한적으로 빠른 결과를 낼 수 있었지만, 실시간 환경에서 요구되는 대규모 연산을 지속적으로 충족하기 어렵다는 한계가 있었다. 이에 본 연구는 CUDA 기반 CROWN 검증의 GPU 병렬화와 실시간성 최적화에 초점을 두고, GPU 환경에서 검증 연산이 실제 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:U209b56cf1c8267aea36d,E00029]"
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "none",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적에서 서론 전체가 배경·문제·기존 한계·목표와 기여보다 결과와 측정 이야기가 앞서거나 중복된다고 지적되었고, 초기 실험 수치와 메모리 전송 비교, 단계별 역전 현상을 어디까지 다룰지 범위를 먼저 정리해야 한다고 하였으나, 현재 본문에서도 초기 실행 결과, 측정 정밀도 통제, 단계별 역전 현상이 여러 문단에 분산·반복되어 구조적 문제가 해소되지 않았다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "",
+      "original_severity": "error",
+      "deferred": true
+    }
+  ],
+  "editorial_status": "needs_attention",
+  "editorial_warnings": [
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p2",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적에서 문제 제기, CUDA 구현 동기, 실시간성 기준, 메모리 전송 방식 비교, WCET·지터 수치, 절의 범위 한계까지 한 문단에 밀집되어 정보 밀도와 설명 순서가 과도하다고 지적되었으나, 현재 본문에서도 Pinned/Pinned 메모리 비교와 WCET·지터 수치가 그대로 남아 있어 서론 도입부의 초점이 분산되는 문제가 해결되지 않았다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 데 실용적 중요성이 크지만, 검증 연산 자체의 계산 부담이 커서 실제 적용 맥락을 제약한다. 특히 CROWN 검증은 CPU 환경에서 수행 시간이 매우 느리고, 기존 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황에 머물러 있어 실시간 환경에서의 대규모 연산을 충족하기 어렵다는 문제가 제기된다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 이러한 맥락에서 본 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현하고 최적화하여, 네트워크 환경을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 본 연구의 목표와 기여 방향은 다음과 같이 정리된다. 첫째, CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산 등)에 blockIdx.z를 적용해 3차원 배칭 커널을 직접 작성하는 Custom Implementation 방식(방법 B)을 검토한다. 이 방식은 알고리즘과 메모리를 100% 통제할 수 있다는 장점이 있으나, 엔비디아 엔지니어가 하드웨어 레벨까지 튜닝한 텐서 코어 어셈블리 성능을 손으로 따라잡기 어렵다는 한계가 있다. 둘째, CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이라는 점에 착안해, 가장 무거운 행렬 곱셈만 엔비디아 공식 최적화 라이브러리(cuBLAS, cublasSgemmBatched)에 맡기고 CROWN 전용 연산은 방법 B의 자체 3D 커널로 유지하는 하이브리드 방식(방법 C)을 검토한다. 셋째, 방법 B로 전체 파이프라인을 3차원 텐서 구조로 만든 뒤 가장 무거운 행렬곱 엔진만 방법 C(cuBLAS)로 갈아 끼우는 결합 흐름을 설계 방향으로 삼는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 종합하면, 본 연구는 CROWN 검증을 GPU 기반으로 병렬화·최적화하여 실시간 환경 대응 가능성을 탐색하는 데 목표를 두며, Custom Implementation과 Library Integration의 하이브리드 구성, 그리고 GPU OPTIMIZED 및 HYBRID 실행 방식의 검토를 기여 방향으로 제시한다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 남는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-S_intro"
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p2",
+      "category": "terminology",
+      "severity": "warning",
+      "reason": "이전 지적에서 Pinned Memory와 cudaHostRegister, No Pinning이 같은 문단에서 혼용되며 용어 관계가 정리되지 않는다고 지적되었으나, 현재 본문에서도 cudaHostRegister를 Pinned Memory와 별도로 나열하는 방식이 유지되어 용어 계층이 여전히 불명확하다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 데 실용적 중요성이 크지만, 검증 연산 자체의 계산 부담이 커서 실제 적용 맥락을 제약한다. 특히 CROWN 검증은 CPU 환경에서 수행 시간이 매우 느리고, 기존 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황에 머물러 있어 실시간 환경에서의 대규모 연산을 충족하기 어렵다는 문제가 제기된다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 이러한 맥락에서 본 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현하고 최적화하여, 네트워크 환경을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 본 연구의 목표와 기여 방향은 다음과 같이 정리된다. 첫째, CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산 등)에 blockIdx.z를 적용해 3차원 배칭 커널을 직접 작성하는 Custom Implementation 방식(방법 B)을 검토한다. 이 방식은 알고리즘과 메모리를 100% 통제할 수 있다는 장점이 있으나, 엔비디아 엔지니어가 하드웨어 레벨까지 튜닝한 텐서 코어 어셈블리 성능을 손으로 따라잡기 어렵다는 한계가 있다. 둘째, CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이라는 점에 착안해, 가장 무거운 행렬 곱셈만 엔비디아 공식 최적화 라이브러리(cuBLAS, cublasSgemmBatched)에 맡기고 CROWN 전용 연산은 방법 B의 자체 3D 커널로 유지하는 하이브리드 방식(방법 C)을 검토한다. 셋째, 방법 B로 전체 파이프라인을 3차원 텐서 구조로 만든 뒤 가장 무거운 행렬곱 엔진만 방법 C(cuBLAS)로 갈아 끼우는 결합 흐름을 설계 방향으로 삼는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 종합하면, 본 연구는 CROWN 검증을 GPU 기반으로 병렬화·최적화하여 실시간 환경 대응 가능성을 탐색하는 데 목표를 두며, Custom Implementation과 Library Integration의 하이브리드 구성, 그리고 GPU OPTIMIZED 및 HYBRID 실행 방식의 검토를 기여 방향으로 제시한다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 남는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d]",
+      "stage": "section-S_intro"
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p2",
+      "category": "style",
+      "severity": "warning",
+      "reason": "이전 지적에서 ‘치명적인 지연 스파이크’, ‘어떤 상황에서도 ~ 넘지 않는’ 같은 단정적 표현이 서론 어조를 강하게 만든다고 지적되었으나, 현재 본문에서도 유사한 강한 표현이 남아 있어 문제 제기의 강도와 근거 제시 순서가 맞지 않는다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 데 실용적 중요성이 크지만, 검증 연산 자체의 계산 부담이 커서 실제 적용 맥락을 제약한다. 특히 CROWN 검증은 CPU 환경에서 수행 시간이 매우 느리고, 기존 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황에 머물러 있어 실시간 환경에서의 대규모 연산을 충족하기 어렵다는 문제가 제기된다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 이러한 맥락에서 본 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현하고 최적화하여, 네트워크 환경을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 본 연구의 목표와 기여 방향은 다음과 같이 정리된다. 첫째, CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산 등)에 blockIdx.z를 적용해 3차원 배칭 커널을 직접 작성하는 Custom Implementation 방식(방법 B)을 검토한다. 이 방식은 알고리즘과 메모리를 100% 통제할 수 있다는 장점이 있으나, 엔비디아 엔지니어가 하드웨어 레벨까지 튜닝한 텐서 코어 어셈블리 성능을 손으로 따라잡기 어렵다는 한계가 있다. 둘째, CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이라는 점에 착안해, 가장 무거운 행렬 곱셈만 엔비디아 공식 최적화 라이브러리(cuBLAS, cublasSgemmBatched)에 맡기고 CROWN 전용 연산은 방법 B의 자체 3D 커널로 유지하는 하이브리드 방식(방법 C)을 검토한다. 셋째, 방법 B로 전체 파이프라인을 3차원 텐서 구조로 만든 뒤 가장 무거운 행렬곱 엔진만 방법 C(cuBLAS)로 갈아 끼우는 결합 흐름을 설계 방향으로 삼는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d] 종합하면, 본 연구는 CROWN 검증을 GPU 기반으로 병렬화·최적화하여 실시간 환경 대응 가능성을 탐색하는 데 목표를 두며, Custom Implementation과 Library Integration의 하이브리드 구성, 그리고 GPU OPTIMIZED 및 HYBRID 실행 방식의 검토를 기여 방향으로 제시한다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 남는다. [근거:E00348,E00101,E00294,E00296,U209b56cf1c8267aea36d]",
+      "stage": "section-S_intro"
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p4",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "이전 지적에서 S_intro_p2와 S_intro_p4가 ‘CPU 중심 CROWN 검증의 오프라인 한정성’과 ‘실시간 대규모 연산 충족 어려움’을 거의 같은 문장으로 반복한다고 지적되었으나, 현재 본문에서도 두 문단이 같은 문제 상황을 재진술하여 서론 내 중복이 해소되지 않았다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "실제 실행 결과로는 GPU OPTIMIZED 모드(cuBLAS + Pool)에서 CROWN Verification의 Elapsed time이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100ms 줄어든 값이지만 여전히 CPU보다 느리다고 평가되었다. 이에 따라 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 추가로 시도하는 흐름이 이어졌다. 다만 이 수치는 단일 실행 결과이며, CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. [근거:E00027,E00029,E00030] 이후 측정 정밀도를 높이기 위해 GPU 클록 고정, Persistence mode 설정 같은 환경 통제 방법이 검토되었다. cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12 μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐지만, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 구간에서 역전 현상이 나타났다. [근거:E00277,E00278,E00280,E00281,E00282,E00283,E00284,E00286] 기록자는 cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해, 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 남겼다. [근거:E00279]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-S_intro"
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p6",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적에서 GPU 클록 고정, Persistence mode, cudaHostRegister와 No Pinning의 단계별 시간 비교, Bound/Infer 역전 현상까지 한 문단에 밀집되어 서론에서 측정 세부사항이 문제 제기와 목표보다 앞선다고 지적되었으나, 현재 본문에서도 환경 통제와 단계별 성능 역전이 같은 밀도로 남아 있어 문제가 해결되지 않았다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "기존 CPU 중심 CROWN 검증은 오프라인 환경에서는 제한적으로 빠른 결과를 낼 수 있었지만, 실시간 환경에서 요구되는 대규모 연산을 지속적으로 충족하기 어렵다는 한계가 있었다. 이에 본 연구는 CUDA 기반 CROWN 검증의 GPU 병렬화와 실시간성 최적화에 초점을 두고, GPU 환경에서 검증 연산이 실제 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:U209b56cf1c8267aea36d,E00029]",
+      "stage": "section-S_intro"
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "S_intro_p6",
+      "category": "style",
+      "severity": "warning",
+      "reason": "이전 지적에서 ‘매우 명확하고 흥미로운 3가지 기술적 이유’처럼 기록자의 주관적 평가가 본문에 남아 학술적 서론 문체와 거리가 있다고 지적되었으나, 현재 본문에서도 이유가 실제로 제시되지 않은 상태에서 유사한 표현이 유지되어 글의 톤이 불안정하다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "기존 CPU 중심 CROWN 검증은 오프라인 환경에서는 제한적으로 빠른 결과를 낼 수 있었지만, 실시간 환경에서 요구되는 대규모 연산을 지속적으로 충족하기 어렵다는 한계가 있었다. 이에 본 연구는 CUDA 기반 CROWN 검증의 GPU 병렬화와 실시간성 최적화에 초점을 두고, GPU 환경에서 검증 연산이 실제 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:U209b56cf1c8267aea36d,E00029]",
+      "stage": "section-S_intro"
+    },
+    {
+      "section_id": "S_intro",
+      "paragraph_id": "none",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적에서 서론 전체가 배경·문제·기존 한계·목표와 기여보다 결과와 측정 이야기가 앞서거나 중복된다고 지적되었고, 초기 실험 수치와 메모리 전송 비교, 단계별 역전 현상을 어디까지 다룰지 범위를 먼저 정리해야 한다고 하였으나, 현재 본문에서도 초기 실행 결과, 측정 정밀도 통제, 단계별 역전 현상이 여러 문단에 분산·반복되어 구조적 문제가 해소되지 않았다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-S_intro"
+    }
+  ],
+  "editorial_completion": {
+    "policy": "editorial-provenance-v2",
+    "status": "needs_attention",
+    "revisions": 2,
+    "reason": "revision_limit"
+  },
+  "inherited_content_coverage": {
+    "met": 3,
+    "total": 3,
+    "value": 1.0,
+    "scope": "inherited_subsection_reviews",
+    "rechecked": false
+  }
+}

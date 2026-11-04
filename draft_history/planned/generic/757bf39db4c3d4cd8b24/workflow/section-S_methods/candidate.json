@@ -1,0 +1,275 @@
+{
+  "sections": {
+    "S_methods": {
+      "parts": {
+        "p0": "본 연구의 평가 대상은 최광훈 안테나 선택 신경망을 CROWN으로 검증하는 C++ 프로그램이다. 이 신경망은 Fully Connected 구조이며, 입력 뉴런 수 N(0)=256, 1층 N(1)=491, 2층 N(2)=491, 출력 뉴런 수 N(3)=16으로 구성된다. 입력 벡터 길이는 NR × Ng = 256이며, 이는 16×16 형태로 이해할 수 있다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조하여 모델.bin 구조를 파악하였다. [근거:E00011,E00012,E00013,E00163,E00016] 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었으며, 신경망 크기는 256-491-491-16이고 배치 사이즈는 1이다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지를 기준으로 하였으며, 확인 결과 모두 동일하였다. [근거:U531b24e3633dee74c4f7,U8602da87af586b3567f6] Forward 테스트와 Backward 테스트는 각각 40,000개의 데이터에 대해서만 수행되었다. 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적 때문이다. [근거:E00164,E00219,U3e01c50082e40f98631d]",
+        "p1": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)로 컴파일이 가능하다. 초기 구상 단계에서는 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 device, 즉 GPU에서 동작하는 kernel 함수로 바꾸는 방향을 검토했다. 포팅 대상으로는 mat_add처럼 배열을 통한 연산을 먼저 확인했고, mat_add는 여러 번 호출되어 메모리 할당과 해제가 반복되므로 비효율적이라고 판단했으나 최적화는 나중에 진행하기로 했다. [근거:E00001,E00002,E00005] 컴파일 및 라이브러리 구성에서는 컴파일 옵션에 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. -l은 라이브러리를 링크하라는 옵션이고, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이다. my_lirpa_op.cu에서 GPU 최적화 행렬곱 함수인 cublasDgemm()를 사용하기 때문에 이 라이브러리를 연결해줘야 하며, CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되어 별도 설치는 필요하지 않다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다. [근거:E00024,E00025,E00026,E00034] 메모리 및 가중치 처리 구성에서는 FullyConnectedNetwork 구조체에 GPU 메모리 주소를 저장할 수 있는 포인터 배열(d_W)을 미리 만들어 두고, 이 포인터 배열의 크기를 MAX_LAYERS 기준으로 설정했다. 이 방식은 신경망이 작으면 공간이 낭비될 수 있다. 가중치를 GPU에 사전 업로드하는 함수 pre_upload_weights_to_gpu를 구현해 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 GPU 메모리를 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하여 net->d_W[i]에 저장했다. double보다 float의 접근 속도가 더 빠르다고 알려져 있으나, 행렬·벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰려면 전체 구조를 바꿔야 한다. [근거:E00323,E00042,E00324] 최적화 구성 단계에서는 메모리풀에 cuBLAS를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBLAS를 활용하도록 한 v1-1-1-1(my_lirpa_mempool_cuBlas.cu)이 구성되었다. 이후 실행 환경에서는 CPU에서 GPU로 신경망 메모리를 어떻게 나누어 복사하는지에 대한 질문이 있었고, GPU 메모리 사용량을 확인하는 방법으로 Nsight System이 제시되었다. 프로파일러에서는 GPU VRAM 사용량이 310.00 MiB로 표시되었으나, 메모리 풀의 행렬·벡터를 기준으로 계산한 약 114MB와 차이가 있어 이상하다고 기록되었다. CUDA 실행 시 CUDA Context가 생성되어 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하고 VRAM을 사용하므로, 런타임 오버헤드를 감안하면 프로파일러에 보이는 VRAM 사용량이 코드 계산값보다 작을 수 있다고 해석되었다. [근거:E00054,E00087,E00088,E00089] CUDA 포팅 및 최적화 구성은 CROWN 검증의 forward, forward+backward, backward_only 세 실행 방식을 GPU에서 구동하도록 옮기는 과정에서 발생한 컴파일 제약과 커널 실행 구조를 정리한 것이다. switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 또한 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 관찰이 있었다. 현재 작성자의 방식은 Z축=1(단일 슬라이스)로, 그리드 크기가 dim3 grid(num_blocks, 1, 1)이며 한 번에 샘플 1개만 연산한다. 1024개를 처리하려면 CPU가 커널을 1,024번 계속 발사해야 하므로 CPU가 커널을 쏘느라 지치고 GPU는 샘플 1장씩 받아 감질나는 구조가 된다. [근거:E00353,E00354,E00376]",
+        "p2": "실행 방식은 CROWN의 forward, forward+backward, backward_only를 대상으로 진행했으며, 신경망 크기와 배치 사이즈는 1로 두고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용해 시간을 비교했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었다. 측정 환경 설정으로는 초기화 지연 제거를 위해 Persistence mode를 활성화(sudo nvidia-smi -pm 1)하고, 클록 확인(nvidia-smi -q -d CLOCK)과 클록 고정(sudo nvidia-smi -lgc 1410)을 사용했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라 CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00094,E00096,E00097,E00174,E00202,E00205,E00206,E00207,E00208,E00366] 실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다. CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다. [근거:E00017,E00095] 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다. 이후 GPU 클록을 고정하고 다시 실험하기로 하여, RAII 방식으로 GPU 클록을 자동 잠금·해제하는 ScopedGpuClockLock 구조체를 작성했고, 기본 클록 목표값은 2475 MHz로 설정했다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. [근거:E00203,E00281,E00284,E00286] 클록 고정 실험은 CUDA 강의 19장의 GPU 클록 고정을 참고해 진행했으며, 이후 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 실행했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00283,E00282,E00287] 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했으며, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍고 추론 시간을 계산하는 방식을 사용했다. elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있으나, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 했다. 각 forward와 backward는 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생기기도 했다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00206,E00207,E00208] 측정 제어와 관련해서는 measure_gpu 시스템 인자가 cudaEvent 하드웨어 타이머 측정을 제어하며, 0은 비활성화(드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(기본값), 2는 매 샘플마다 측정(전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 정의된다. 보완 실행 항목으로는 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며(교수님은 초기화 비용 때문으로 언급), sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측도 있었다. [근거:E00221,E00184,E00202]"
+      }
+    }
+  },
+  "review": {
+    "review_policy": "editorial-v1",
+    "review_kind": "editorial",
+    "issues": [
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p2",
+        "category": "duplication",
+        "severity": "warning",
+        "reason": "이전 지적대로 평가 대상 신경망 구조(256-491-491-16), 배치 사이즈 1, 데이터셋·eps_list 출처, 실행 방식 3종, warm up·클록 고정 시점, 정확도 비교 결과가 p4·p6과 거의 동일하게 반복된다. p2는 평가 대상과 입력 조건의 핵심 조건만 남기고 나머지는 후속 문단으로 이관해야 한다는 요구가 아직 해결되지 않았다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "본 연구의 평가 대상은 최광훈 안테나 선택 신경망을 CROWN으로 검증하는 C++ 프로그램이다. 이 신경망은 Fully Connected 구조이며, 입력 뉴런 수 N(0)=256, 1층 N(1)=491, 2층 N(2)=491, 출력 뉴런 수 N(3)=16으로 구성된다. 입력 벡터 길이는 NR × Ng = 256이며, 이는 16×16 형태로 이해할 수 있다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조하여 모델.bin 구조를 파악하였다. [근거:E00011,E00012,E00013,E00163,E00016] 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었으며, 신경망 크기는 256-491-491-16이고 배치 사이즈는 1이다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지를 기준으로 하였으며, 확인 결과 모두 동일하였다. [근거:U531b24e3633dee74c4f7,U8602da87af586b3567f6] Forward 테스트와 Backward 테스트는 각각 40,000개의 데이터에 대해서만 수행되었다. 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적 때문이다. [근거:E00164,E00219,U3e01c50082e40f98631d]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p2",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "평가 대상·입력 조건 문단임에도 모델 파일 구조 파악(CustomToLirpa.py 참조)과 실행 방식 3종 구분이 먼저 나와 소절 목적(평가 대상과 입력 조건)과 순서가 맞지 않는다는 이전 지적이 그대로 남아 있다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "본 연구의 평가 대상은 최광훈 안테나 선택 신경망을 CROWN으로 검증하는 C++ 프로그램이다. 이 신경망은 Fully Connected 구조이며, 입력 뉴런 수 N(0)=256, 1층 N(1)=491, 2층 N(2)=491, 출력 뉴런 수 N(3)=16으로 구성된다. 입력 벡터 길이는 NR × Ng = 256이며, 이는 16×16 형태로 이해할 수 있다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조하여 모델.bin 구조를 파악하였다. [근거:E00011,E00012,E00013,E00163,E00016] 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었으며, 신경망 크기는 256-491-491-16이고 배치 사이즈는 1이다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지를 기준으로 하였으며, 확인 결과 모두 동일하였다. [근거:U531b24e3633dee74c4f7,U8602da87af586b3567f6] Forward 테스트와 Backward 테스트는 각각 40,000개의 데이터에 대해서만 수행되었다. 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적 때문이다. [근거:E00164,E00219,U3e01c50082e40f98631d]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p4",
+        "category": "duplication",
+        "severity": "warning",
+        "reason": "CUDA 포팅 및 최적화 구성 절에서 cuBLAS 링크(-lcublas), cublasDgemm 사용, GPU 메모리 사전 업로드(pre_upload_weights_to_gpu), 메모리풀·Nsight System 관찰, switch 문 스코프 문제, Z축=1·그리드 구성 등 서로 다른 층위의 내용이 하나의 문단에 섞여 정리 기준이 약하다는 이전 지적이 해결되지 않았다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)로 컴파일이 가능하다. 초기 구상 단계에서는 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 device, 즉 GPU에서 동작하는 kernel 함수로 바꾸는 방향을 검토했다. 포팅 대상으로는 mat_add처럼 배열을 통한 연산을 먼저 확인했고, mat_add는 여러 번 호출되어 메모리 할당과 해제가 반복되므로 비효율적이라고 판단했으나 최적화는 나중에 진행하기로 했다. [근거:E00001,E00002,E00005] 컴파일 및 라이브러리 구성에서는 컴파일 옵션에 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. -l은 라이브러리를 링크하라는 옵션이고, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이다. my_lirpa_op.cu에서 GPU 최적화 행렬곱 함수인 cublasDgemm()를 사용하기 때문에 이 라이브러리를 연결해줘야 하며, CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되어 별도 설치는 필요하지 않다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다. [근거:E00024,E00025,E00026,E00034] 메모리 및 가중치 처리 구성에서는 FullyConnectedNetwork 구조체에 GPU 메모리 주소를 저장할 수 있는 포인터 배열(d_W)을 미리 만들어 두고, 이 포인터 배열의 크기를 MAX_LAYERS 기준으로 설정했다. 이 방식은 신경망이 작으면 공간이 낭비될 수 있다. 가중치를 GPU에 사전 업로드하는 함수 pre_upload_weights_to_gpu를 구현해 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 GPU 메모리를 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하여 net->d_W[i]에 저장했다. double보다 float의 접근 속도가 더 빠르다고 알려져 있으나, 행렬·벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰려면 전체 구조를 바꿔야 한다. [근거:E00323,E00042,E00324] 최적화 구성 단계에서는 메모리풀에 cuBLAS를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBLAS를 활용하도록 한 v1-1-1-1(my_lirpa_mempool_cuBlas.cu)이 구성되었다. 이후 실행 환경에서는 CPU에서 GPU로 신경망 메모리를 어떻게 나누어 복사하는지에 대한 질문이 있었고, GPU 메모리 사용량을 확인하는 방법으로 Nsight System이 제시되었다. 프로파일러에서는 GPU VRAM 사용량이 310.00 MiB로 표시되었으나, 메모리 풀의 행렬·벡터를 기준으로 계산한 약 114MB와 차이가 있어 이상하다고 기록되었다. CUDA 실행 시 CUDA Context가 생성되어 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하고 VRAM을 사용하므로, 런타임 오버헤드를 감안하면 프로파일러에 보이는 VRAM 사용량이 코드 계산값보다 작을 수 있다고 해석되었다. [근거:E00054,E00087,E00088,E00089] CUDA 포팅 및 최적화 구성은 CROWN 검증의 forward, forward+backward, backward_only 세 실행 방식을 GPU에서 구동하도록 옮기는 과정에서 발생한 컴파일 제약과 커널 실행 구조를 정리한 것이다. switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 또한 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 관찰이 있었다. 현재 작성자의 방식은 Z축=1(단일 슬라이스)로, 그리드 크기가 dim3 grid(num_blocks, 1, 1)이며 한 번에 샘플 1개만 연산한다. 1024개를 처리하려면 CPU가 커널을 1,024번 계속 발사해야 하므로 CPU가 커널을 쏘느라 지치고 GPU는 샘플 1장씩 받아 감질나는 구조가 된다. [근거:E00353,E00354,E00376]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p4",
+        "category": "terminology",
+        "severity": "warning",
+        "reason": "‘컴파일 및 라이브러리 구성’, ‘메모리 및 가중치 처리 구성’, ‘최적화 구성 단계’처럼 구성 명칭이 문장 내 소제목처럼 삽입되어 절 전체의 소제목 체계와 문체 통일성이 떨어진다는 이전 지적이 남아 있다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)로 컴파일이 가능하다. 초기 구상 단계에서는 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 device, 즉 GPU에서 동작하는 kernel 함수로 바꾸는 방향을 검토했다. 포팅 대상으로는 mat_add처럼 배열을 통한 연산을 먼저 확인했고, mat_add는 여러 번 호출되어 메모리 할당과 해제가 반복되므로 비효율적이라고 판단했으나 최적화는 나중에 진행하기로 했다. [근거:E00001,E00002,E00005] 컴파일 및 라이브러리 구성에서는 컴파일 옵션에 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. -l은 라이브러리를 링크하라는 옵션이고, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이다. my_lirpa_op.cu에서 GPU 최적화 행렬곱 함수인 cublasDgemm()를 사용하기 때문에 이 라이브러리를 연결해줘야 하며, CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되어 별도 설치는 필요하지 않다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다. [근거:E00024,E00025,E00026,E00034] 메모리 및 가중치 처리 구성에서는 FullyConnectedNetwork 구조체에 GPU 메모리 주소를 저장할 수 있는 포인터 배열(d_W)을 미리 만들어 두고, 이 포인터 배열의 크기를 MAX_LAYERS 기준으로 설정했다. 이 방식은 신경망이 작으면 공간이 낭비될 수 있다. 가중치를 GPU에 사전 업로드하는 함수 pre_upload_weights_to_gpu를 구현해 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 GPU 메모리를 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하여 net->d_W[i]에 저장했다. double보다 float의 접근 속도가 더 빠르다고 알려져 있으나, 행렬·벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰려면 전체 구조를 바꿔야 한다. [근거:E00323,E00042,E00324] 최적화 구성 단계에서는 메모리풀에 cuBLAS를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBLAS를 활용하도록 한 v1-1-1-1(my_lirpa_mempool_cuBlas.cu)이 구성되었다. 이후 실행 환경에서는 CPU에서 GPU로 신경망 메모리를 어떻게 나누어 복사하는지에 대한 질문이 있었고, GPU 메모리 사용량을 확인하는 방법으로 Nsight System이 제시되었다. 프로파일러에서는 GPU VRAM 사용량이 310.00 MiB로 표시되었으나, 메모리 풀의 행렬·벡터를 기준으로 계산한 약 114MB와 차이가 있어 이상하다고 기록되었다. CUDA 실행 시 CUDA Context가 생성되어 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하고 VRAM을 사용하므로, 런타임 오버헤드를 감안하면 프로파일러에 보이는 VRAM 사용량이 코드 계산값보다 작을 수 있다고 해석되었다. [근거:E00054,E00087,E00088,E00089] CUDA 포팅 및 최적화 구성은 CROWN 검증의 forward, forward+backward, backward_only 세 실행 방식을 GPU에서 구동하도록 옮기는 과정에서 발생한 컴파일 제약과 커널 실행 구조를 정리한 것이다. switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 또한 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 관찰이 있었다. 현재 작성자의 방식은 Z축=1(단일 슬라이스)로, 그리드 크기가 dim3 grid(num_blocks, 1, 1)이며 한 번에 샘플 1개만 연산한다. 1024개를 처리하려면 CPU가 커널을 1,024번 계속 발사해야 하므로 CPU가 커널을 쏘느라 지치고 GPU는 샘플 1장씩 받아 감질나는 구조가 된다. [근거:E00353,E00354,E00376]"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p6",
+        "category": "duplication",
+        "severity": "warning",
+        "reason": "실행 방식, 신경망 크기·배치 사이즈, 데이터셋·eps_list 출처, warm up·클록 고정 시점, 정확도 비교 결과가 p2와 반복되고, 클록 고정 절차(Persistence mode, -lgc, 목표 클록)와 cudaMemcpyAsync 관련 설명도 p6 내부에서 두 번 등장한다는 이전 지적이 그대로 남아 있다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "실행 방식은 CROWN의 forward, forward+backward, backward_only를 대상으로 진행했으며, 신경망 크기와 배치 사이즈는 1로 두고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용해 시간을 비교했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었다. 측정 환경 설정으로는 초기화 지연 제거를 위해 Persistence mode를 활성화(sudo nvidia-smi -pm 1)하고, 클록 확인(nvidia-smi -q -d CLOCK)과 클록 고정(sudo nvidia-smi -lgc 1410)을 사용했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라 CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00094,E00096,E00097,E00174,E00202,E00205,E00206,E00207,E00208,E00366] 실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다. CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다. [근거:E00017,E00095] 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다. 이후 GPU 클록을 고정하고 다시 실험하기로 하여, RAII 방식으로 GPU 클록을 자동 잠금·해제하는 ScopedGpuClockLock 구조체를 작성했고, 기본 클록 목표값은 2475 MHz로 설정했다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. [근거:E00203,E00281,E00284,E00286] 클록 고정 실험은 CUDA 강의 19장의 GPU 클록 고정을 참고해 진행했으며, 이후 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 실행했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00283,E00282,E00287] 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했으며, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍고 추론 시간을 계산하는 방식을 사용했다. elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있으나, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 했다. 각 forward와 backward는 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생기기도 했다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00206,E00207,E00208] 측정 제어와 관련해서는 measure_gpu 시스템 인자가 cudaEvent 하드웨어 타이머 측정을 제어하며, 0은 비활성화(드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(기본값), 2는 매 샘플마다 측정(전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 정의된다. 보완 실행 항목으로는 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며(교수님은 초기화 비용 때문으로 언급), sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측도 있었다. [근거:E00221,E00184,E00202]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p6",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "실행 및 측정 방식 문단임에도 측정 기준 수립, 클록 고정 실험, cudaMemcpyAsync 설명, 측정 제어(measure_gpu) 등 실행 조건·측정 조건·제어 인자가 뒤섞여 ‘실행’과 ‘측정’의 경계가 불분명하다는 이전 지적이 해결되지 않았다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "실행 방식은 CROWN의 forward, forward+backward, backward_only를 대상으로 진행했으며, 신경망 크기와 배치 사이즈는 1로 두고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용해 시간을 비교했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었다. 측정 환경 설정으로는 초기화 지연 제거를 위해 Persistence mode를 활성화(sudo nvidia-smi -pm 1)하고, 클록 확인(nvidia-smi -q -d CLOCK)과 클록 고정(sudo nvidia-smi -lgc 1410)을 사용했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라 CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00094,E00096,E00097,E00174,E00202,E00205,E00206,E00207,E00208,E00366] 실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다. CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다. [근거:E00017,E00095] 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다. 이후 GPU 클록을 고정하고 다시 실험하기로 하여, RAII 방식으로 GPU 클록을 자동 잠금·해제하는 ScopedGpuClockLock 구조체를 작성했고, 기본 클록 목표값은 2475 MHz로 설정했다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. [근거:E00203,E00281,E00284,E00286] 클록 고정 실험은 CUDA 강의 19장의 GPU 클록 고정을 참고해 진행했으며, 이후 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 실행했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00283,E00282,E00287] 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했으며, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍고 추론 시간을 계산하는 방식을 사용했다. elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있으나, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 했다. 각 forward와 backward는 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생기기도 했다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00206,E00207,E00208] 측정 제어와 관련해서는 measure_gpu 시스템 인자가 cudaEvent 하드웨어 타이머 측정을 제어하며, 0은 비활성화(드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(기본값), 2는 매 샘플마다 측정(전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 정의된다. 보완 실행 항목으로는 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며(교수님은 초기화 비용 때문으로 언급), sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측도 있었다. [근거:E00221,E00184,E00202]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p6",
+        "category": "terminology",
+        "severity": "warning",
+        "reason": "‘측정 기준’, ‘측정 환경 설정’, ‘측정 방식’, ‘측정 제어’ 등 측정 관련 표현이 여러 층위로 반복되지만 문단 내 구분 기준이 일관되지 않아 용어 체계를 정리해야 한다는 이전 지적이 남아 있다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "실행 방식은 CROWN의 forward, forward+backward, backward_only를 대상으로 진행했으며, 신경망 크기와 배치 사이즈는 1로 두고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용해 시간을 비교했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었다. 측정 환경 설정으로는 초기화 지연 제거를 위해 Persistence mode를 활성화(sudo nvidia-smi -pm 1)하고, 클록 확인(nvidia-smi -q -d CLOCK)과 클록 고정(sudo nvidia-smi -lgc 1410)을 사용했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라 CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00094,E00096,E00097,E00174,E00202,E00205,E00206,E00207,E00208,E00366] 실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다. CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다. [근거:E00017,E00095] 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다. 이후 GPU 클록을 고정하고 다시 실험하기로 하여, RAII 방식으로 GPU 클록을 자동 잠금·해제하는 ScopedGpuClockLock 구조체를 작성했고, 기본 클록 목표값은 2475 MHz로 설정했다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. [근거:E00203,E00281,E00284,E00286] 클록 고정 실험은 CUDA 강의 19장의 GPU 클록 고정을 참고해 진행했으며, 이후 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 실행했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00283,E00282,E00287] 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했으며, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍고 추론 시간을 계산하는 방식을 사용했다. elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있으나, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 했다. 각 forward와 backward는 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생기기도 했다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00206,E00207,E00208] 측정 제어와 관련해서는 measure_gpu 시스템 인자가 cudaEvent 하드웨어 타이머 측정을 제어하며, 0은 비활성화(드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(기본값), 2는 매 샘플마다 측정(전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 정의된다. 보완 실행 항목으로는 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며(교수님은 초기화 비용 때문으로 언급), sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측도 있었다. [근거:E00221,E00184,E00202]"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "세 소절 사이에 평가 조건·데이터셋·실행 방식·warm up·클록 고정·정확도 비교가 반복되어 절 전체의 정보 배치가 중복된다는 이전 지적이 해결되지 않았다. 각 소절이 담당할 범위를 명확히 나누고 공통 조건은 한 곳에서만 정의해야 한다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "",
+        "original_severity": "error",
+        "deferred": true
+      }
+    ],
+    "approved": true,
+    "checks": [],
+    "reference_checks": [
+      {
+        "section_id": "S_methods",
+        "reference_id": "ref1_methods",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p2",
+          "S_methods_p3",
+          "S_methods_p4"
+        ],
+        "reason": "ref1_methods의 방법 서술 방식(실험 준비·조건 통제 → 플랫폼 제시 → 데이터 구성·분할 → 기준 구조 → 변형 → 학습·검증 절차)을 CUDA 포팅·신경망 구조·메모리 방식·측정 구간 구성으로 대체하려는 적응 의도는 확인된다. 그러나 ref1_methods_required_3(데이터셋 규모와 분할 방식)은 본 연구의 실제 근거에서 데이터셋 규모(40,000개 테스트, 10만개 평가 샘플, 92만개 언급)는 일부 확인되나 분할 방식(훈련/검증/테스트 분할 비율 등)은 원문에 직접 제시되지 않아 완전히 충족되지 않는다.",
+        "quote": "본 연구의 평가 대상은 최광훈 안테나 선택 신경망을 CROWN으로 검증하는 C++ 프로그램이다. 이 신경망은 Fully Connected 구조이며, 입력 뉴런 수 N(0)=256, 1층 N(1)=491, 2층 N(2)=491, 출력 뉴런 수 N(3)=16으로 구성된다. 입력 벡터 길이는 NR × Ng = 256이며, 이는 16×16 형태로 이해할 수 있다. CROWN 알고리즘의 입력으로는 테스트 데이터 1개와 eps=10⁻⁶을 사용하여 16개 출력을 추출하는 것을 1차 목표로 설정하였다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조하여 모델.bin 구조를 파악하였다. [근거:E00011,E00012,E00013,E00163,E00016]",
+        "paragraph_quotes": [
+          "본 연구의 평가 대상은 최광훈 안테나 선택 신경망을 CROWN으로 검증하는 C++ 프로그램이다. 이 신경망은 Fully Connected 구조이며, 입력 뉴런 수 N(0)=256, 1층 N(1)=491, 2층 N(2)=491, 출력 뉴런 수 N(3)=16으로 구성된다. 입력 벡터 길이는 NR × Ng = 256이며, 이는 16×16 형태로 이해할 수 있다. CROWN 알고리즘의 입력으로는 테스트 데이터 1개와 eps=10⁻⁶을 사용하여 16개 출력을 추출하는 것을 1차 목표로 설정하였다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조하여 모델.bin 구조를 파악하였다. [근거:E00011,E00012,E00013,E00163,E00016]",
+          "입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었으며, GPU 클록 고정은 연구 일지에서 확인된 바와 같이 나중에 고정된 사항이고, warm up은 초기에 적용되었다. 신경망 크기는 256-491-491-16이며, 배치 사이즈는 1이다. 실행 방식은 CROWN의 세 가지 방법, 즉 forward, forward+backward, backward_only로 구분된다. 데이터셋은 기존 신경망 검증팀의 구현과 시간을 비교하기 위한 목적이므로, 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용하였다. [근거:U531b24e3633dee74c4f7,U8602da87af586b3567f6]",
+          "Forward 테스트와 Backward 테스트는 각각 40,000개의 데이터에 대해서만 수행되었다. 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적 때문이다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지를 기준으로 하였으며, 확인 결과 모두 동일하였다. [근거:E00164,E00219,U3e01c50082e40f98631d]",
+          "auto-LiRPA / 3D Grid 방식에서는 그리드 크기를 dim3 grid(num_blocks_x, num_blocks_y, 1024)로 설정하여 Z축(배치 축)을 1024로 만들고, 1024개 샘플을 하나의 3D 큐브(텐서)로 GPU 메모리에 적재한다. Z축은 0~1023번 샘플의 배치 축을 의미한다. [근거:E00264]"
+        ],
+        "inherited": true
+      }
+    ],
+    "editorial_warnings": [
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p2",
+        "category": "duplication",
+        "severity": "warning",
+        "reason": "이전 지적대로 평가 대상 신경망 구조(256-491-491-16), 배치 사이즈 1, 데이터셋·eps_list 출처, 실행 방식 3종, warm up·클록 고정 시점, 정확도 비교 결과가 p4·p6과 거의 동일하게 반복된다. p2는 평가 대상과 입력 조건의 핵심 조건만 남기고 나머지는 후속 문단으로 이관해야 한다는 요구가 아직 해결되지 않았다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "본 연구의 평가 대상은 최광훈 안테나 선택 신경망을 CROWN으로 검증하는 C++ 프로그램이다. 이 신경망은 Fully Connected 구조이며, 입력 뉴런 수 N(0)=256, 1층 N(1)=491, 2층 N(2)=491, 출력 뉴런 수 N(3)=16으로 구성된다. 입력 벡터 길이는 NR × Ng = 256이며, 이는 16×16 형태로 이해할 수 있다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조하여 모델.bin 구조를 파악하였다. [근거:E00011,E00012,E00013,E00163,E00016] 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었으며, 신경망 크기는 256-491-491-16이고 배치 사이즈는 1이다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지를 기준으로 하였으며, 확인 결과 모두 동일하였다. [근거:U531b24e3633dee74c4f7,U8602da87af586b3567f6] Forward 테스트와 Backward 테스트는 각각 40,000개의 데이터에 대해서만 수행되었다. 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적 때문이다. [근거:E00164,E00219,U3e01c50082e40f98631d]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "section-S_methods"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p2",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "평가 대상·입력 조건 문단임에도 모델 파일 구조 파악(CustomToLirpa.py 참조)과 실행 방식 3종 구분이 먼저 나와 소절 목적(평가 대상과 입력 조건)과 순서가 맞지 않는다는 이전 지적이 그대로 남아 있다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "본 연구의 평가 대상은 최광훈 안테나 선택 신경망을 CROWN으로 검증하는 C++ 프로그램이다. 이 신경망은 Fully Connected 구조이며, 입력 뉴런 수 N(0)=256, 1층 N(1)=491, 2층 N(2)=491, 출력 뉴런 수 N(3)=16으로 구성된다. 입력 벡터 길이는 NR × Ng = 256이며, 이는 16×16 형태로 이해할 수 있다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조하여 모델.bin 구조를 파악하였다. [근거:E00011,E00012,E00013,E00163,E00016] 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었으며, 신경망 크기는 256-491-491-16이고 배치 사이즈는 1이다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지를 기준으로 하였으며, 확인 결과 모두 동일하였다. [근거:U531b24e3633dee74c4f7,U8602da87af586b3567f6] Forward 테스트와 Backward 테스트는 각각 40,000개의 데이터에 대해서만 수행되었다. 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적 때문이다. [근거:E00164,E00219,U3e01c50082e40f98631d]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "section-S_methods"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p4",
+        "category": "duplication",
+        "severity": "warning",
+        "reason": "CUDA 포팅 및 최적화 구성 절에서 cuBLAS 링크(-lcublas), cublasDgemm 사용, GPU 메모리 사전 업로드(pre_upload_weights_to_gpu), 메모리풀·Nsight System 관찰, switch 문 스코프 문제, Z축=1·그리드 구성 등 서로 다른 층위의 내용이 하나의 문단에 섞여 정리 기준이 약하다는 이전 지적이 해결되지 않았다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)로 컴파일이 가능하다. 초기 구상 단계에서는 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 device, 즉 GPU에서 동작하는 kernel 함수로 바꾸는 방향을 검토했다. 포팅 대상으로는 mat_add처럼 배열을 통한 연산을 먼저 확인했고, mat_add는 여러 번 호출되어 메모리 할당과 해제가 반복되므로 비효율적이라고 판단했으나 최적화는 나중에 진행하기로 했다. [근거:E00001,E00002,E00005] 컴파일 및 라이브러리 구성에서는 컴파일 옵션에 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. -l은 라이브러리를 링크하라는 옵션이고, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이다. my_lirpa_op.cu에서 GPU 최적화 행렬곱 함수인 cublasDgemm()를 사용하기 때문에 이 라이브러리를 연결해줘야 하며, CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되어 별도 설치는 필요하지 않다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다. [근거:E00024,E00025,E00026,E00034] 메모리 및 가중치 처리 구성에서는 FullyConnectedNetwork 구조체에 GPU 메모리 주소를 저장할 수 있는 포인터 배열(d_W)을 미리 만들어 두고, 이 포인터 배열의 크기를 MAX_LAYERS 기준으로 설정했다. 이 방식은 신경망이 작으면 공간이 낭비될 수 있다. 가중치를 GPU에 사전 업로드하는 함수 pre_upload_weights_to_gpu를 구현해 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 GPU 메모리를 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하여 net->d_W[i]에 저장했다. double보다 float의 접근 속도가 더 빠르다고 알려져 있으나, 행렬·벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰려면 전체 구조를 바꿔야 한다. [근거:E00323,E00042,E00324] 최적화 구성 단계에서는 메모리풀에 cuBLAS를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBLAS를 활용하도록 한 v1-1-1-1(my_lirpa_mempool_cuBlas.cu)이 구성되었다. 이후 실행 환경에서는 CPU에서 GPU로 신경망 메모리를 어떻게 나누어 복사하는지에 대한 질문이 있었고, GPU 메모리 사용량을 확인하는 방법으로 Nsight System이 제시되었다. 프로파일러에서는 GPU VRAM 사용량이 310.00 MiB로 표시되었으나, 메모리 풀의 행렬·벡터를 기준으로 계산한 약 114MB와 차이가 있어 이상하다고 기록되었다. CUDA 실행 시 CUDA Context가 생성되어 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하고 VRAM을 사용하므로, 런타임 오버헤드를 감안하면 프로파일러에 보이는 VRAM 사용량이 코드 계산값보다 작을 수 있다고 해석되었다. [근거:E00054,E00087,E00088,E00089] CUDA 포팅 및 최적화 구성은 CROWN 검증의 forward, forward+backward, backward_only 세 실행 방식을 GPU에서 구동하도록 옮기는 과정에서 발생한 컴파일 제약과 커널 실행 구조를 정리한 것이다. switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 또한 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 관찰이 있었다. 현재 작성자의 방식은 Z축=1(단일 슬라이스)로, 그리드 크기가 dim3 grid(num_blocks, 1, 1)이며 한 번에 샘플 1개만 연산한다. 1024개를 처리하려면 CPU가 커널을 1,024번 계속 발사해야 하므로 CPU가 커널을 쏘느라 지치고 GPU는 샘플 1장씩 받아 감질나는 구조가 된다. [근거:E00353,E00354,E00376]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "section-S_methods"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p4",
+        "category": "terminology",
+        "severity": "warning",
+        "reason": "‘컴파일 및 라이브러리 구성’, ‘메모리 및 가중치 처리 구성’, ‘최적화 구성 단계’처럼 구성 명칭이 문장 내 소제목처럼 삽입되어 절 전체의 소제목 체계와 문체 통일성이 떨어진다는 이전 지적이 남아 있다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)로 컴파일이 가능하다. 초기 구상 단계에서는 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 device, 즉 GPU에서 동작하는 kernel 함수로 바꾸는 방향을 검토했다. 포팅 대상으로는 mat_add처럼 배열을 통한 연산을 먼저 확인했고, mat_add는 여러 번 호출되어 메모리 할당과 해제가 반복되므로 비효율적이라고 판단했으나 최적화는 나중에 진행하기로 했다. [근거:E00001,E00002,E00005] 컴파일 및 라이브러리 구성에서는 컴파일 옵션에 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. -l은 라이브러리를 링크하라는 옵션이고, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이다. my_lirpa_op.cu에서 GPU 최적화 행렬곱 함수인 cublasDgemm()를 사용하기 때문에 이 라이브러리를 연결해줘야 하며, CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되어 별도 설치는 필요하지 않다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다. [근거:E00024,E00025,E00026,E00034] 메모리 및 가중치 처리 구성에서는 FullyConnectedNetwork 구조체에 GPU 메모리 주소를 저장할 수 있는 포인터 배열(d_W)을 미리 만들어 두고, 이 포인터 배열의 크기를 MAX_LAYERS 기준으로 설정했다. 이 방식은 신경망이 작으면 공간이 낭비될 수 있다. 가중치를 GPU에 사전 업로드하는 함수 pre_upload_weights_to_gpu를 구현해 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 GPU 메모리를 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하여 net->d_W[i]에 저장했다. double보다 float의 접근 속도가 더 빠르다고 알려져 있으나, 행렬·벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰려면 전체 구조를 바꿔야 한다. [근거:E00323,E00042,E00324] 최적화 구성 단계에서는 메모리풀에 cuBLAS를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBLAS를 활용하도록 한 v1-1-1-1(my_lirpa_mempool_cuBlas.cu)이 구성되었다. 이후 실행 환경에서는 CPU에서 GPU로 신경망 메모리를 어떻게 나누어 복사하는지에 대한 질문이 있었고, GPU 메모리 사용량을 확인하는 방법으로 Nsight System이 제시되었다. 프로파일러에서는 GPU VRAM 사용량이 310.00 MiB로 표시되었으나, 메모리 풀의 행렬·벡터를 기준으로 계산한 약 114MB와 차이가 있어 이상하다고 기록되었다. CUDA 실행 시 CUDA Context가 생성되어 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하고 VRAM을 사용하므로, 런타임 오버헤드를 감안하면 프로파일러에 보이는 VRAM 사용량이 코드 계산값보다 작을 수 있다고 해석되었다. [근거:E00054,E00087,E00088,E00089] CUDA 포팅 및 최적화 구성은 CROWN 검증의 forward, forward+backward, backward_only 세 실행 방식을 GPU에서 구동하도록 옮기는 과정에서 발생한 컴파일 제약과 커널 실행 구조를 정리한 것이다. switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 또한 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 관찰이 있었다. 현재 작성자의 방식은 Z축=1(단일 슬라이스)로, 그리드 크기가 dim3 grid(num_blocks, 1, 1)이며 한 번에 샘플 1개만 연산한다. 1024개를 처리하려면 CPU가 커널을 1,024번 계속 발사해야 하므로 CPU가 커널을 쏘느라 지치고 GPU는 샘플 1장씩 받아 감질나는 구조가 된다. [근거:E00353,E00354,E00376]",
+        "stage": "section-S_methods"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p6",
+        "category": "duplication",
+        "severity": "warning",
+        "reason": "실행 방식, 신경망 크기·배치 사이즈, 데이터셋·eps_list 출처, warm up·클록 고정 시점, 정확도 비교 결과가 p2와 반복되고, 클록 고정 절차(Persistence mode, -lgc, 목표 클록)와 cudaMemcpyAsync 관련 설명도 p6 내부에서 두 번 등장한다는 이전 지적이 그대로 남아 있다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "실행 방식은 CROWN의 forward, forward+backward, backward_only를 대상으로 진행했으며, 신경망 크기와 배치 사이즈는 1로 두고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용해 시간을 비교했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었다. 측정 환경 설정으로는 초기화 지연 제거를 위해 Persistence mode를 활성화(sudo nvidia-smi -pm 1)하고, 클록 확인(nvidia-smi -q -d CLOCK)과 클록 고정(sudo nvidia-smi -lgc 1410)을 사용했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라 CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00094,E00096,E00097,E00174,E00202,E00205,E00206,E00207,E00208,E00366] 실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다. CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다. [근거:E00017,E00095] 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다. 이후 GPU 클록을 고정하고 다시 실험하기로 하여, RAII 방식으로 GPU 클록을 자동 잠금·해제하는 ScopedGpuClockLock 구조체를 작성했고, 기본 클록 목표값은 2475 MHz로 설정했다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. [근거:E00203,E00281,E00284,E00286] 클록 고정 실험은 CUDA 강의 19장의 GPU 클록 고정을 참고해 진행했으며, 이후 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 실행했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00283,E00282,E00287] 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했으며, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍고 추론 시간을 계산하는 방식을 사용했다. elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있으나, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 했다. 각 forward와 backward는 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생기기도 했다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00206,E00207,E00208] 측정 제어와 관련해서는 measure_gpu 시스템 인자가 cudaEvent 하드웨어 타이머 측정을 제어하며, 0은 비활성화(드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(기본값), 2는 매 샘플마다 측정(전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 정의된다. 보완 실행 항목으로는 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며(교수님은 초기화 비용 때문으로 언급), sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측도 있었다. [근거:E00221,E00184,E00202]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "section-S_methods"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p6",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "실행 및 측정 방식 문단임에도 측정 기준 수립, 클록 고정 실험, cudaMemcpyAsync 설명, 측정 제어(measure_gpu) 등 실행 조건·측정 조건·제어 인자가 뒤섞여 ‘실행’과 ‘측정’의 경계가 불분명하다는 이전 지적이 해결되지 않았다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "실행 방식은 CROWN의 forward, forward+backward, backward_only를 대상으로 진행했으며, 신경망 크기와 배치 사이즈는 1로 두고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용해 시간을 비교했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었다. 측정 환경 설정으로는 초기화 지연 제거를 위해 Persistence mode를 활성화(sudo nvidia-smi -pm 1)하고, 클록 확인(nvidia-smi -q -d CLOCK)과 클록 고정(sudo nvidia-smi -lgc 1410)을 사용했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라 CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00094,E00096,E00097,E00174,E00202,E00205,E00206,E00207,E00208,E00366] 실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다. CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다. [근거:E00017,E00095] 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다. 이후 GPU 클록을 고정하고 다시 실험하기로 하여, RAII 방식으로 GPU 클록을 자동 잠금·해제하는 ScopedGpuClockLock 구조체를 작성했고, 기본 클록 목표값은 2475 MHz로 설정했다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. [근거:E00203,E00281,E00284,E00286] 클록 고정 실험은 CUDA 강의 19장의 GPU 클록 고정을 참고해 진행했으며, 이후 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 실행했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00283,E00282,E00287] 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했으며, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍고 추론 시간을 계산하는 방식을 사용했다. elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있으나, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 했다. 각 forward와 backward는 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생기기도 했다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00206,E00207,E00208] 측정 제어와 관련해서는 measure_gpu 시스템 인자가 cudaEvent 하드웨어 타이머 측정을 제어하며, 0은 비활성화(드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(기본값), 2는 매 샘플마다 측정(전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 정의된다. 보완 실행 항목으로는 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며(교수님은 초기화 비용 때문으로 언급), sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측도 있었다. [근거:E00221,E00184,E00202]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "section-S_methods"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "S_methods_p6",
+        "category": "terminology",
+        "severity": "warning",
+        "reason": "‘측정 기준’, ‘측정 환경 설정’, ‘측정 방식’, ‘측정 제어’ 등 측정 관련 표현이 여러 층위로 반복되지만 문단 내 구분 기준이 일관되지 않아 용어 체계를 정리해야 한다는 이전 지적이 남아 있다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "실행 방식은 CROWN의 forward, forward+backward, backward_only를 대상으로 진행했으며, 신경망 크기와 배치 사이즈는 1로 두고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용해 시간을 비교했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었다. 측정 환경 설정으로는 초기화 지연 제거를 위해 Persistence mode를 활성화(sudo nvidia-smi -pm 1)하고, 클록 확인(nvidia-smi -q -d CLOCK)과 클록 고정(sudo nvidia-smi -lgc 1410)을 사용했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라 CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00094,E00096,E00097,E00174,E00202,E00205,E00206,E00207,E00208,E00366] 실행 및 측정은 CPU 전용 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 비교하는 방식으로 진행했으며, 이 비교의 목적은 GPU 가속 효과를 확인하는 데 있었다. CPU 전용 실행 파일은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe를 사용했고, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘린 뒤 컴파일이 되었다. [근거:E00017,E00095] 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다. 이후 GPU 클록을 고정하고 다시 실험하기로 하여, RAII 방식으로 GPU 클록을 자동 잠금·해제하는 ScopedGpuClockLock 구조체를 작성했고, 기본 클록 목표값은 2475 MHz로 설정했다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. [근거:E00203,E00281,E00284,E00286] 클록 고정 실험은 CUDA 강의 19장의 GPU 클록 고정을 참고해 진행했으며, 이후 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 실행했다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. [근거:E00283,E00282,E00287] 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했으며, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍고 추론 시간을 계산하는 방식을 사용했다. elapsed 타임(92만 번 계산 시간)과 미세한 오차가 있으나, 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 했다. 각 forward와 backward는 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생기기도 했다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. [근거:E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00206,E00207,E00208] 측정 제어와 관련해서는 measure_gpu 시스템 인자가 cudaEvent 하드웨어 타이머 측정을 제어하며, 0은 비활성화(드라이버 오버헤드 0, 최고 속도), 1은 마지막 샘플만 1회 측정(기본값), 2는 매 샘플마다 측정(전체 정밀 측정, 호출당 20~50us 드라이버 오버헤드 발생 주의)로 정의된다. 보완 실행 항목으로는 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며(교수님은 초기화 비용 때문으로 언급), sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측도 있었다. [근거:E00221,E00184,E00202]",
+        "stage": "section-S_methods"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "세 소절 사이에 평가 조건·데이터셋·실행 방식·warm up·클록 고정·정확도 비교가 반복되어 절 전체의 정보 배치가 중복된다는 이전 지적이 해결되지 않았다. 각 소절이 담당할 범위를 명확히 나누고 공통 조건은 한 곳에서만 정의해야 한다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "section-S_methods"
+      }
+    ],
+    "editorial_status": "needs_attention",
+    "required_content_coverage": {
+      "met": 3,
+      "total": 3,
+      "value": 1.0,
+      "scope": "inherited_subsection_reviews",
+      "rechecked": false
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 1,
+      "not_visible": 0,
+      "total": 1,
+      "scope": "inherited_subsection_reviews",
+      "rechecked": false
+    },
+    "assessment": "Editorial quality only; content/reference judgments are inherited from child reviews.",
+    "revision_result": "unchanged",
+    "editorial_completion": {
+      "policy": "editorial-fixed-slots-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "unchanged"
+    }
+  }
+}

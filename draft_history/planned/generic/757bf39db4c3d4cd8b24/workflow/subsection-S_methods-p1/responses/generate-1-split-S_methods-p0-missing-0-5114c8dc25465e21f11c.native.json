@@ -1,0 +1,33 @@
+{
+  "id": "471eae25-9188-4668-b185-5fb5e17ecf23",
+  "object": "chat.completion",
+  "created": 1793793301,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"parts\": {\n    \"p0\": [\n      {\n        \"text\": \"평가 대상은 CROWN을 구현한 C++ 프로그램이며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용했다. 신경망 크기는 256-491-491-16이고 배치 사이즈는 1로 설정했다. 실행 방식은 CROWN의 세 가지 방법(forward, forward+backward, backward_only)을 대상으로 했으며, 정확도 지표는 기존 신경망 검증팀 프로그램과 검증 결과·비율이 얼마나 차이 나는지로 확인했고 모두 동일했다. GPU 클록 고정은 연구 일지에서 확인된 대로 나중에 고정된 사항이며, warm up은 초기에 이루어졌다.\",\n        \"evidence_ids\": [\"E00252\", \"E00257\", \"E00263\"]\n      },\n      {\n        \"text\": \"현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32 연산기)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 배치 사이즈 64일 때 약 424초가 걸렸으며, 현재 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들어 각 스트림이 GPU 메모리를 차지하는 방식이다. 배치 사이즈를 512로 하면 메모리를 넘지 않지만 느리며, 그 이유는 각 스트림마다 CPU가 돌아가면서 다음 커널을 런치해줘야 해서 1024개의 스트림이 각각 CPU가 다음 커널을 런치해줄 때까지 기다리고 있기 때문이다.\",\n        \"evidence_ids\": [\"E00252\", \"E00253\", \"E00257\"]\n      },\n      {\n        \"text\": \"스트림 수를 64개 정도로 줄이고 배치 사이즈를 1024로 하는 방안은 의미가 없다고 판단했으며, 그 이유는 하나의 스트림이 하나의 입력을 처리하므로 동시에 돌릴 수 있는 데이터가 64개라는 뜻이고 16번씩 나눠서 처리하게 되기 때문이다. 초기 데이터 H2D 비용은 확실히 줄지만, 연산 병목은 스트림이 64개라 한 번에 64개밖에 대응하지 못하는 제약이 있다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다.\",\n        \"evidence_ids\": [\"E00254\", \"E00255\", \"E00263\"]\n      },\n      {\n        \"text\": \"현재 작성자는 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 현재 커널은 2차원이라 fp32 코어로만 수행 중이다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. auto_lirpa가 빠른 이유에 대한 고민이 기록되어 있으며, 이는 이후 페이지(p68)에서 커널 런치 횟수 감소와 관련된 설명으로 이어진다.\",\n        \"evidence_ids\": [\"E00256\", \"E00260\", \"E00261\"]\n      },\n      {\n        \"text\": \"차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. auto-LiRPA / 3D Grid 방식은 그리드 크기를 dim3 grid(num_blocks_x, num_blocks_y, 1024)로 설정하여 Z축(배치 축)을 1024로 만들고, 1024개 샘플을 하나의 3D 큐브(텐서)로 GPU 메모리에 적재한다. 3D Grid 방식에서는 CPU가 커널을 단 1번만 발사하고, GPU의 56개 SM들이 1024층을 나누어 동시에 연산하여 7,168개 GPU 코어가 1024개 샘플을 동시에 연산한다.\",\n        \"evidence_ids\": [\"E00262\", \"E00264\", \"E00265\"]\n      },\n      {\n        \"text\": \"측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용한다. 현재 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행한다. cuda 강의 19장의 GPU 클록 고정을 참고했다. GPU 클록을 고정하고 다시 실험해보기로 했으며, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했다. 클록을 2800Mhz로 고정하고 돌린 결과(기존 HostRegister)를 확인했다.\",\n        \"evidence_ids\": [\"E00281\", \"E00282\", \"E00283\", \"E00284\", \"E00286\"]\n      },\n      {\n        \"text\": \"cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이이다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고(예상대로 DMA 효과), Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 추론(Infer) 단계에서 시간이 느려졌으며, 이에 대해 기록자가 '일단 추론에서 좀 시간이 느려지긴 했다..'라고 기록했다.\",\n        \"evidence_ids\": [\"E00277\", \"E00278\", \"E00280\"]\n      },\n      {\n        \"text\": \"cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해, 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. No-Pin(일반 메모리)일 때 CPU는 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 전혀 나지 않는다.\",\n        \"evidence_ids\": [\"E00279\", \"E00287\", \"E00288\"]\n      },\n      {\n        \"text\": \"데이터가 수 MB~수백 MB일 때 데이터가 커지면 CPU 복사 속도가 감당이 안 되며, 이때는 DMA의 고속 대역폭(1224GB/s)이 압도적이어서 Pinned Memory가 일반 메모리보다 23배 빠르다. 우리 데이터처럼 1KB일 때는 대역폭은 아무 의미가 없고 셋업 지연시간(Latency)이 지배한다. 1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory는 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin(일반 메모리)은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 약 0.02~0.05μs(20~50ns)에 복사가 끝나 DMA 셋업보다 30~50배 빠르다.\",\n        \"evidence_ids\": [\"E00290\", \"E00291\", \"E00297\"]\n      }\n    ]\n  }\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 42578,
+    "completion_tokens": 1804,
+    "total_tokens": 44382,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

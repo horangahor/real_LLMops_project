@@ -1,0 +1,284 @@
+{
+  "request_fingerprint": "193032e56e469e3e6ebfe77a155e72fd7804cd44b04e416691beba74865fc22e",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "v1-1-2에서 가중치만 GPU에 미리 업로드하는 방식을 시도했으며, 관련 코드는 my_lirpa_mempool_preload_on_gpu.cu에 있다.",
+          "limits": "측정된 elapsed time은 149~155ms 범위로 보고되었다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p11:e96"
+          ]
+        },
+        {
+          "statement": "FullyConnectedNetwork 구조체에 GPU 사전 로드된 가중치 포인터를 저장하는 double* d_W[MAX_LAYERS] 배열이 추가되었다.",
+          "limits": "포인터 배열 크기는 MAX_LAYERS를 기준으로 하므로, 신경망이 이보다 작으면 공간이 낭비될 수 있다고 언급되었다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p11:e97",
+            "p11:e98"
+          ]
+        },
+        {
+          "statement": "float가 double보다 접근 속도가 빠르다고 알려져 있으나, 행렬·벡터 구조체 등이 전부 double 기준이므로 float 포인터를 사용하려면 전체적으로 수정이 필요하다고 언급되었다.",
+          "limits": "실제 float 전환 실험이 수행되었는지는 명시되지 않았다.",
+          "kind": "limitation",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p11:e99"
+          ]
+        },
+        {
+          "statement": "pre_upload_weights_to_gpu 함수는 각 레이어마다 cudaMalloc으로 MAX_DIM * MAX_DIM * sizeof(double) 크기의 GPU 메모리를 할당하고, cudaMemcpy2D로 호스트의 net->W[i]를 디바이스의 net->d_W[i]로 복사한다.",
+          "limits": "코드상 MAX_DIM과 MAX_DIM * sizeof(double)이 행·열 스트라이드로 사용되었다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "net->num_layers만큼 반복",
+            "cudaMemcpyHostToDevice 방향 사용"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p12:e100"
+          ]
+        },
+        {
+          "statement": "GPU에서 할당한 메모리는 net->d_W[i]에 저장되어 이후 해당 메모리를 가져다 쓸 수 있도록 의도되었다.",
+          "limits": "이후 matmul 함수에서 d_W를 실제로 활용했는지는 별도 확인이 필요하다고 저자가 의문을 제기했다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p12:e101",
+            "p13:e105"
+          ]
+        },
+        {
+          "statement": "MODE: MEMPOOL + Weights PRELOAD ON GPU로 실행한 CROWN Verification 예시에서 elapsed time은 149.820400 ms, Output Dimension은 16으로 기록되었다.",
+          "limits": "이 실행은 eps = 1e-06 조건에서 수행되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "eps = 1e-06",
+            "MEMPOOL + Weights PRELOAD ON GPU 모드"
+          ],
+          "observations": [
+            "Output Dimension: 16",
+            "Index 0~15에 대한 Lower Bound, Upper Bound, Normal Pred(y) 값이 출력됨"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "elapsed_time",
+              "value": "149.8204",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "MEMPOOL + Weights PRELOAD ON GPU 실행 예시",
+              "element_ids": [
+                "p12:e102"
+              ]
+            },
+            {
+              "metric": "output_dimension",
+              "value": "16",
+              "value_kind": "scalar",
+              "unit": "dimension",
+              "condition": "동일 실행",
+              "element_ids": [
+                "p12:e102"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p12:e102",
+            "p12:e103"
+          ]
+        },
+        {
+          "statement": "bias까지 미리 업로드하는 테스트를 수행했으나, bias는 Vector이고 약 4KB 정도밖에 되지 않아 CPU가 연산하기에도 무리가 없는 수준이므로 성능 개선에 큰 의미가 없었다고 평가되었다.",
+          "limits": "관련 코드는 crown_test_mempool_preload_on_gpu_plus_bias.cu로 언급되었다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p12:e104",
+            "p13:e105"
+          ]
+        },
+        {
+          "statement": "저자는 가중치를 미리 로드해놓고 정작 matmul 함수에서 활용하지 않았는데 어떻게 시간이 줄어들었는지 의문을 제기했다.",
+          "limits": "이 의문은 preload 버전의 시간 감소 원인을 추적하는 계기가 되었다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p13:e105"
+          ]
+        },
+        {
+          "statement": "preload를 하면서 GPU가 웜업되는 것이 시간 감소의 원인으로 식별되었다.",
+          "limits": "이는 저자의 추론이며, mempool 버전과 preload 버전의 측정 구간 차이를 근거로 한다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p13:e106"
+          ]
+        },
+        {
+          "statement": "mempool 버전은 GPU 메모리풀 할당(ensure_pool() → 첫 cudaMalloc)까지 시간에 포함되어 측정되고, mempool_preload 버전은 가중치를 시간 측정 전에 미리 로드하여 해당 시간이 제외된다.",
+          "limits": "두 버전 간 측정 구간 차이가 존재한다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p13:e107"
+          ]
+        },
+        {
+          "statement": "50ms 감소의 실제 원인은 CUDA 컨텍스트 초기화 웜업 효과로 설명되었다: pre_upload_weights_to_gpu가 t_start 이전에 cudaMalloc과 cudaMemcpy를 호출하면, 이 시점에 CUDA 드라이버가 처음 깨어나면서 1) GPU 컨텍스트 초기화(CUDA 드라이버 로드), 2) GPU 클럭 부스팅(저전력 → 최대 성능 주파수로 전환), 3) JIT 컴파일(커널 코드 첫 번째 컴파일)이 발생한다.",
+          "limits": "이 세 가지 초기화 비용이 전부 타이머 구간 밖으로 빠져나가게 된다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "pre_upload_weights_to_gpu가 t_start 이전에 cudaMalloc과 cudaMemcpy를 호출함"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p13:e108"
+          ]
+        },
+        {
+          "statement": "mempool 버전에서는 ensure_pool() → 첫 번째 cudaMalloc이 t_start 안에 들어있어 초기화 비용이 전부 측정에 포함된다. 따라서 mempool 버전은 [초기화 50ms] + [실제 연산] = 측정됨, preload 버전은 [초기화 50ms] + [실제 연산] = 초기화는 타이머 밖으로 계산된다.",
+          "limits": "이는 저자의 추론이며, d_W를 활용해서 빨라진 것이 아니라고 설명되었다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "mempool 버전: ensure_pool()의 첫 cudaMalloc이 t_start 안에 포함됨",
+            "preload 버전: pre_upload_weights_to_gpu가 t_start 이전에 호출됨"
+          ],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p13:e108"
+          ]
+        },
+        {
+          "statement": "first_try에서 warmup_cublas()를 명시적으로 두었던 것도 동일한 GPU 웜업 이유 때문이라고 언급되었다.",
+          "limits": "warmup_cublas()의 구체적인 구현이나 측정 결과는 이 요소에서 제공되지 않았다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p13:e108"
+          ]
+        },
+        {
+          "statement": "v1-1-2의 50ms 감소는 preload 자체 때문이 아니라 GPU warmup 때문에 줄어든 것으로 결론지어졌다.",
+          "limits": "이는 저자의 최종 해석이며, preload의 실제 연산 성능 향상 효과와는 별개로 설명된다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p13:e109"
+          ]
+        },
+        {
+          "statement": "CROWN Verification 실행 예시(eps = 1e-06)에서 elapsed time 228.585200 ms, Output Dimension 16이 기록되었다.",
+          "limits": "이 실행은 preload나 mempool 관련 모드가 명시되지 않은 별도의 실행 예시로 보인다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "eps = 1e-06"
+          ],
+          "observations": [
+            "Output Dimension: 16",
+            "Index 0~15에 대한 Lower Bound, Upper Bound, Normal Pred(y) 값이 출력됨"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "elapsed_time",
+              "value": "228.5852",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "CROWN Verification 실행 예시 (모드 명시 없음)",
+              "element_ids": [
+                "p11:e95"
+              ]
+            },
+            {
+              "metric": "output_dimension",
+              "value": "16",
+              "value_kind": "scalar",
+              "unit": "dimension",
+              "condition": "동일 실행",
+              "element_ids": [
+                "p11:e95"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p11:e95"
+          ]
+        }
+      ]
+    }
+  }
+}

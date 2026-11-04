@@ -1,0 +1,137 @@
+{
+  "request_fingerprint": "39e4e518b63475f792b9305f22fc5b5e8ce0fcda0fc031a8dec6aa889d907547",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "실행 시간 비교는 CPU 전용 반복 버전, mempool 및 warmup을 적용한 GPU 버전, 그리고 이후 backward GPU 파이프라인 완성 버전을 중심으로 정리하였다. mempool과 warmup을 함께 적용한 경우 Elapsed time이 약 103.74 ms로 관찰되어, 연구 기록상 “이제 거의 CPU와 비슷해졌다”는 수준으로 접근한 것으로 서술된다[근거:H85ca0e507c4e_30]. 반면 CPU ONLY iteration ver에서는 약 193.67 ms가 측정되었고, 이는 기존 backward 대비 약 93 ms 정도 느린 결과로 기록되었다[근거:H85ca0e507c4e_31]. 이 CPU 버전은 backward_only 구조체를 새로 도입해야 했고, lirpa_backward_only_iteration_array의 구조가 기존 lirpa_forward_backward_fc_array와 달라 새로운 함수와 기본 자료구조 등이 필요했다는 구현 맥락과 함께 언급된다[근거:H85ca0e507c4e_32]. 이후 backward GPU 파이프라인이 완성되어 실행 결과가 확인되었으며[근거:H85ca0e507c4e_33], 실시간성 확인을 위해서는 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 요구가 함께 제시되었다[근거:H85ca0e507c4e_34].",
+          "evidence_ids": [
+            "H85ca0e507c4e_30",
+            "H85ca0e507c4e_31",
+            "H85ca0e507c4e_32",
+            "H85ca0e507c4e_33",
+            "H85ca0e507c4e_34"
+          ]
+        },
+        {
+          "text": "실행 시간 차이는 단순 버전 비교뿐 아니라 메모리 전달 방식과 커널 구성 변경의 영향을 함께 받았다. forward-backward 간 전달되는 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제하고, forward 중간 결과를 CPU 메모리에 복사할지 여부를 플래그로 제어하면 memcpy가 현저히 줄어든다고 기록되었다[근거:H85ca0e507c4e_35]. bias도 메모리 풀에서 관리하도록 한 뒤에는 21~23 ms 범위, 특히 21 ms 근처에서 비교적 안정적으로 동작했으며, NVTX 구간 내 memcpy 호출이 109회에서 94회로 15회 감소했다고 서술된다[근거:H85ca0e507c4e_36]. 또한 backward_bound_gpu에서는 기존에 GPU 계산 결과 → CPU → affine_min/max(GPU) → 최종결과처럼 GPU→CPU→GPU→CPU 복사가 발생했으나, affine_min/max까지 backward_bound_gpu 내에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다고 정리된다[근거:H85ca0e507c4e_38].",
+          "evidence_ids": [
+            "H85ca0e507c4e_35",
+            "H85ca0e507c4e_36",
+            "H85ca0e507c4e_38"
+          ]
+        },
+        {
+          "text": "구성 요소별 역할 관점에서는 backward_only가 아직 그래프로 만들지 않은 상태에서도 bound 평균이 forward 대비 약 2.5배 수준으로 측정되었다는 관찰이 있다[근거:H85ca0e507c4e_44]. backward_only에서 final_affine까지 복사(true)로 인해 한 번의 bound 계산에서 memcpy가 10회 발생했고, 이를 false로 바꾸면 6회로 줄었다는 비교도 함께 기록되었다[근거:H85ca0e507c4e_45]. 그래프를 적용한 뒤에는 backward_only가 787.8832 s로 측정되어, 평균 기준 forward 1029 s, forward+backward 1138 s보다 빨랐다고 서술된다[근거:H85ca0e507c4e_46]. 배치 사이즈 64일 때 약 424초가 소요되었고, 배치 사이즈만큼 동일한 수의 독립 스트림을 만드는 방식은 각 스트림이 GPU 메모리를 차지하여 배치 사이즈 1024에서는 GPU 메모리 초과로 이어질 수 있다고 설명된다[근거:H85ca0e507c4e_47]. 현재 C++ 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들고 각 스트림이 GPU 메모리를 점유하는 방식이며[근거:H85ca0e507c4e_48], 단일 샘플 연산 커널을 64개 스트림에 각각 런치하고 일반 CUDA 코어(FP32 연산기)만 사용하므로 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다고 기록되었다[근거:H85ca0e507c4e_49].",
+          "evidence_ids": [
+            "H85ca0e507c4e_44",
+            "H85ca0e507c4e_45",
+            "H85ca0e507c4e_46",
+            "H85ca0e507c4e_47",
+            "H85ca0e507c4e_48",
+            "H85ca0e507c4e_49"
+          ]
+        },
+        {
+          "text": "방법 B는 행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어 3차원 배칭 커널을 작성하는 방식이고, 방법 C는 CROWN 연산 시간의 80% 이상을 차지하는 행렬 곱셈만 cuBLAS(cublasSgemmBatched)로 교체하는 하이브리드 방식이다[근거:H85ca0e507c4e_51]. 방법 C에서는 CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 처리하고, 무거운 행렬 곱셈만 cuBLAS로 교체한다고 설명된다[근거:H85ca0e507c4e_52]. 메모리 방식 비교에서는 cudaHostRegister(HostRegister), cudaHostAlloc(HostAlloc), No Pinning(일반 메모리) 세 가지를 측정하려고 한 것으로 기록된다[근거:H85ca0e507c4e_53]. cudaHostAlloc은 매 루프마다 *pinned_in = dataset[i];(1,028바이트)를 92만 번 수행하며 약 8.64초의 CPU 메모리 복사 지연이 누적되었다고 서술된다[근거:H85ca0e507c4e_54]. 단일 샘플 처리 시간(약 840 μs) 중 85% 이상(약 716 μs)이 순수 GPU 커널 연산(CROWN 역전파 행렬 계산) 시간이라는 점도 함께 제시되었다[근거:H85ca0e507c4e_56].",
+          "evidence_ids": [
+            "H85ca0e507c4e_51",
+            "H85ca0e507c4e_52",
+            "H85ca0e507c4e_53",
+            "H85ca0e507c4e_54",
+            "H85ca0e507c4e_56"
+          ]
+        },
+        {
+          "text": "Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80 s로 No Pinning 663.17 s보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18 s로 No Pinning 111.92 s보다 15.26초 느렸다고 기록된다[근거:H85ca0e507c4e_57]. 이 차이는 GPU 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 재측정한 맥락에서도 함께 언급된다[근거:H85ca0e507c4e_58]. 결합 방식 관점에서도 현재 C++ 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들고 각 스트림이 하나의 입력을 처리하며 GPU 메모리를 점유하는 방식으로 설명되며[근거:H85ca0e507c4e_59], 현재 C++ 멀티스트림 방식은 단일 샘플 연산 커널을 64개 스트림에 각각 런치하고 1024개 처리에 수만 번의 커널 호출가 필요하다고 정리된다[근거:H85ca0e507c4e_60]. 방법 B는 CROWN의 모든 커널에 직접 blockIdx.z를 넣어 3차원 배칭 커널로 결합하고[근거:H85ca0e507c4e_62], 방법 C는 CROWN 전용 연산은 방법 B의 자체 3D 커널로 돌리면서 무거운 행렬 곱셈만 cuBLAS(cublasSgemmBatched)로 교체하는 하이브리드 방식으로 결합한다고 서술된다[근거:H85ca0e507c4e_63].",
+          "evidence_ids": [
+            "H85ca0e507c4e_57",
+            "H85ca0e507c4e_58",
+            "H85ca0e507c4e_59",
+            "H85ca0e507c4e_60",
+            "H85ca0e507c4e_62",
+            "H85ca0e507c4e_63"
+          ]
+        },
+        {
+          "text": "결합 방식에서는 backward_only에서 final_affine까지 복사(true) 시 한 번의 bound 계산에서 memcpy가 10회 발생했고, false로 변경 시 6회로 줄었다는 비교가 다시 제시된다[근거:H85ca0e507c4e_64]. 상호작용 효과로는 cudaHostAlloc에서 CPU 루프 내 복사 오버헤드가 그대로 반영되어 약 8.64초의 CPU 메모리 복사 지연이 누적되었다고 기록된다[근거:H85ca0e507c4e_66]. No Pinning과 Pinned 메모리의 차이가 크지 않은 이유는 입력 크기가 1 KB로 극히 작고, GPU 연산 시간이 전체의 85% 이상을 차지해 전송 방식 영향이 미미하기 때문이라고 설명된다[근거:H85ca0e507c4e_67]. cudaHostRegister가 No Pinning보다 전체 11초(1.4%) 느리게 측정된 것은 Bound 단계에서는 Register가 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 15.26초 역전되었기 때문이라고 서술된다[근거:H85ca0e507c4e_68]. 또한 backward_only가 그래프로 만들지 않았어도 bound 평균이 forward 대비 약 2.5배 수준으로 측정되었다는 관찰이 상호작용 효과 관점에서도 다시 언급되며[근거:H85ca0e507c4e_69], 그래프 적용 후 backward_only가 787.8832 s로 forward(1029 s), forward+backward(1138 s)보다 빨랐다는 결과도 함께 기록된다[근거:H85ca0e507c4e_70]. GPU 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 재측정한 사항도 상호작용 효과 맥락에서 다시 제시된다[근거:H85ca0e507c4e_71].",
+          "evidence_ids": [
+            "H85ca0e507c4e_64",
+            "H85ca0e507c4e_66",
+            "H85ca0e507c4e_67",
+            "H85ca0e507c4e_68",
+            "H85ca0e507c4e_69",
+            "H85ca0e507c4e_70",
+            "H85ca0e507c4e_71"
+          ]
+        },
+        {
+          "text": "Host Alloc(Pinned Memory) 결과와 nopin(Pageable Memory) 결과는 별도 측정 블록으로 나누어 비교했으며, 각 블록은 Real-Time Single-Sample(B=1) Latency Analysis와 Phase Timing Breakdown을 포함한다[근거:H85ca0e507c4e_72]. Pinned Memory는 PCIe DMA 엔진(Copy Engine)을 통해 GPU로 전송하는 경로로 설명되고, No-Pin(Pageable)은 CPU가 드라이버 내부 스테이징 버퍼로 동기식 memcpy를 수행하는 경로로 설명된다[근거:H85ca0e507c4e_74]. 작은 전송(1 KB)에서는 DMA 셋업 오버헤드 누적 때문에 Pinned가 infer 단계에서 더 느리게 측정될 수 있다고 측정·비교 블록과 함께 서술된다[근거:H85ca0e507c4e_75]. 가중치를 GPU에 사전 업로드하여 memcpy를 줄이려는 시도는 측정 결과 큰 의미 있는 차이를 만들지 못했다고 기록되었다[근거:H85ca0e507c4e_78].",
+          "evidence_ids": [
+            "H85ca0e507c4e_72",
+            "H85ca0e507c4e_74",
+            "H85ca0e507c4e_75",
+            "H85ca0e507c4e_78"
+          ]
+        },
+        {
+          "text": "W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고 cuSPARSE handle 및 CSR descriptor를 유지한 뒤, network_forward()의 dense matvec를 cuSPARSE SpMV로 교체했으나 기존 matmul은 아직 유지했다고 기록된다[근거:H85ca0e507c4e_79]. cuSPARSE SpMV/SpMM을 network_forward()의 W*x에만 부분 적용했을 때는 descriptor·buffer 처리 비용과 매 호출마다 cusparseDnVec 생성·삭제, buffer size 계산, layer마다 D2H→CPU vec_add→H2D 수행이 추가되어 전체 24 ms 중 일부만 영향을 받는 구간에 오버헤드가 더해졌다고 설명된다[근거:H85ca0e507c4e_80]. forward-backward 간 전달되는 alpha/beta 값을 메모리 풀에 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가해 forward에서 GPU에 저장하며, backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하고 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합한 변경도 기록된다[근거:H85ca0e507c4e_81].",
+          "evidence_ids": [
+            "H85ca0e507c4e_79",
+            "H85ca0e507c4e_80",
+            "H85ca0e507c4e_81"
+          ]
+        },
+        {
+          "text": "초기화만 하면 forward, backward의 bound 계산 시간은 비슷하며(약 0.2 ms 차이), Nvidia warm up 가이드라인을 세워 실제 사이클 시간만 측정하고 warm up을 한 번 하며 CV를 통해 스파이크·분산을 규명하기로 했고, 추론·bound 계산·검증 3가지 값을 나눠서 측정했다고 서술된다[근거:H85ca0e507c4e_83]. 실시간 PCIe H2D 전송 최적화를 위해 Host Memory Pinning(cudaHostRegister)을 적용해 일반 메모리를 복사 없이 pinned Memory로 승격시켜 GPU가 CPU 메모리에 직접 접근할 수 있도록 했으며, 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 고쳤다고 기록된다[근거:H85ca0e507c4e_84]. CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거해, 3-layer 네트워크 기준으로 Forward method=0 bound 27→18회(9회 감소), Backward method=1 bound 전체 46→31회(15회 감소), Backward-only method=2 bound 전체 45→33회(12회 감소)가 되었고, graph mode=1에서 샘플 1개 전체 기준으로 Forward 33→24회(9회 감소), Backward 52→37회(15회 감소), Backward-only 51→39회(12회 감소)가 되었다고 정리된다[근거:H85ca0e507c4e_85].",
+          "evidence_ids": [
+            "H85ca0e507c4e_83",
+            "H85ca0e507c4e_84",
+            "H85ca0e507c4e_85"
+          ]
+        },
+        {
+          "text": "방법 B는 행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어서 3차원 배칭 커널을 작성하는 방식이고, 방법 C는 CROWN 연산 시간의 80% 이상이 행렬 곱셈(A×W)이므로 가장 무거운 행렬 곱셈만 cuBLAS(cuBlasSgemmBatched)에 맡기고 CROWN 전용 연산(ReLU 완화 계수 계산 등)은 방법 B의 자체 3D 커널로 돌리는 하이브리드 방식이다[근거:H85ca0e507c4e_86]. Pinned Memory는 데이터가 충분히 클 때 빠르다는 전제 조건이 있으며, 1,028 Byte(1 KB) 수준에서는 No-Pin(일반 메모리)이 더 빠를 수 있는데, 이는 CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝나는 반면, Pinned Memory는 PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작하는 하드웨어 오버헤드만 약 1~2 마이크로초(0.0015 ms)가 걸려 작은 데이터에서는 DMA 셋업 오버헤드가 누적되어 infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 사례가 있었다고 서술된다[근거:H85ca0e507c4e_87].",
+          "evidence_ids": [
+            "H85ca0e507c4e_86",
+            "H85ca0e507c4e_87"
+          ]
+        },
+        {
+          "text": "구성 요소별 역할로는 cuBLAS는 NVIDIA GPU에서 선형대수 연산을 가속하는 라이브러리이며, 메모리 풀은 함수 호출마다의 메모리 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 사용된다고 설명된다[근거:H85ca0e507c4e_88]. 결합 방식으로는 초기에는 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 결합되었다가, 이후 matmul만 GPU로, 나머지를 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 결합 방식을 바꾸었다고 기록된다[근거:H85ca0e507c4e_89]. forward+backward 결합은 정방향과 backward 바운드를 함께 실행하는 방식으로 측정되며, backward_only는 backward 바운드만 실행하는 방식으로 측정되고, CUDA 그래프(cudaGraph) 적용 버전도 별도로 측정된다고 서술된다[근거:H85ca0e507c4e_92].",
+          "evidence_ids": [
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_89",
+            "H85ca0e507c4e_92"
+          ]
+        },
+        {
+          "text": "상호작용 효과로는 backward_only가 forward+backward보다 빠르게 관측되었고, forward가 가장 느리게 관측되었으며, 이는 일반적인 예상(forward < forward+backward < backward_only)과 다른 실행 결과로 기록되었다[근거:H85ca0e507c4e_93]. CUDA 그래프 적용 후 전체 소요 시간이 감소하였고(예: 787s → 630s, 1029s → 668s), Phase breakdown에서 bound 단계가 전체 elapsed의 대부분을 차지하고 infer 단계가 그 다음, certify 단계가 가장 작은 비중을 차지한다고 서술된다[근거:H85ca0e507c4e_94]. 구성 요소별 역할로는 pinned Memory 추가, cudaEvent 제어, 필요한 만큼 계산해서 D2H memcpy, certify topk 자료구조 스택화가 각각 구성 요소로 언급된다[근거:H85ca0e507c4e_95].",
+          "evidence_ids": [
+            "H85ca0e507c4e_93",
+            "H85ca0e507c4e_94",
+            "H85ca0e507c4e_95"
+          ]
+        },
+        {
+          "text": "상호작용 효과로는 forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술된다[근거:H85ca0e507c4e_97]. 위 이유로 일단 유지하기로 했다고 기록되어 있으나, 이는 실행 결과 해석·판단의 서술이지 구성 요소 간 상호작용의 측정 구조 자체를 직접 기술한 것은 아니라고 정리된다[근거:H85ca0e507c4e_98].",
+          "evidence_ids": [
+            "H85ca0e507c4e_97",
+            "H85ca0e507c4e_98"
+          ]
+        },
+        {
+          "text": "구조 차이는 함수별 실행 위치(GPU 커널 vs CPU for 문)와 GPU 메모리 풀 구조에서 나타난다고 기록된다[근거:H40849fcc17fe_1]. 기준 모델(forward bound)과 변형 모델(backward bound)은 bound 계산 방식(forward/backward)에서 차이가 있으며, 측정 결과 두 bound 계산 시간은 warmup 이후 약 0.2 ms 차이로 비슷하게 나타났다고 서술된다[근거:H40849fcc17fe_3]. 변형 모델에서는 배칭(batching) 및 cudaGraph 캡처 등 실행 구조 변경이 적용되었고, 준비된 실험 환경에서 단일 스트림 대비 약 3배 시간 단축(25분 → 8분)이 보고되었다고 기록된다[근거:H40849fcc17fe_4]. 기준 모델은 CROWN 알고리즘에서 출력한 16개 값에 대해 신경망 기준 또는 lower_bound/upper_bound 기준으로 8개 출력 노드를 선택하는 구조를 사용한다고 설명된다[근거:H40849fcc17fe_6]. 변형 모델 중 하나는 메모리 풀(할당/해제 제거)과 memcpy 비용 제거를 적용한 버전으로, 고정된 가중치(W)와 편향(B) 값을 사용한다고 기록된다[근거:H40849fcc17fe_7]. 또 다른 변형 모델은 cuBlas, cuSparse 라이브러리를 도입하고 메모리 풀을 사용하며, matvec/matmul 연산을 cuBlas로 수행하도록 변경되었다고 서술된다[근거:H40849fcc17fe_8].",
+          "evidence_ids": [
+            "H40849fcc17fe_1",
+            "H40849fcc17fe_3",
+            "H40849fcc17fe_4",
+            "H40849fcc17fe_6",
+            "H40849fcc17fe_7",
+            "H40849fcc17fe_8"
+          ]
+        }
+      ]
+    }
+  }
+}

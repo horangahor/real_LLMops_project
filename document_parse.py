@@ -2,8 +2,10 @@
 
 import hashlib
 import json
+import logging
 import os
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -28,18 +30,46 @@ def filesystem_path(path):
     return Path("\\\\?\\" + absolute)
 
 
+class JsonWriteError(OSError):
+    """A complete JSON is recoverable even when its destination stays locked."""
+
+    def __init__(self, destination, temporary_path, cause):
+        self.destination = destination
+        self.temporary_path = temporary_path
+        self.original_error = cause
+        super().__init__(cause.errno, f"JSON 파일 교체에 실패했습니다. 임시 데이터는 보존했습니다: {temporary_path}. 원인: {cause}", str(destination))
+
+
 def write_json(path, value):
+    payload = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
     path = filesystem_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
                                      suffix=".tmp", delete=False) as stream:
         temporary = Path(stream.name)
-        json.dump(value, stream, ensure_ascii=False, indent=2)
-        stream.write("\n")
+        stream.write(payload)
+    # Windows scanners/editors may briefly hold a handle that denies replace.
+    # Retry the same complete temporary file; never truncate the destination.
+    delays = (.1, .2, .4, .8)
+    for attempt in range(len(delays) + 1):
+        try:
+            os.replace(temporary, path)
+            return
+        except OSError as error:
+            transient = isinstance(error, PermissionError) or getattr(error, "winerror", None) in (5, 32, 33)
+            if not transient or attempt == len(delays):
+                raise JsonWriteError(path, temporary, error) from error
+            time.sleep(delays[attempt])
+
+
+def write_json_optional(path, value):
+    """Failure to save diagnostics must not interrupt the work being recorded."""
     try:
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
+        write_json(path, value)
+        return True
+    except OSError as error:
+        logging.getLogger(__name__).warning("보조 기록을 저장하지 못했습니다: %s", error)
+        return False
 
 
 def validate_parse(document):

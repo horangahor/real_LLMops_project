@@ -1,0 +1,93 @@
+{
+  "request_fingerprint": "0c0c59c5500897f5db670d68d3bcb7361fb488c1cca10ed19b68eff376670ca1",
+  "value": {
+    "issues": [
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p31",
+        "reason": "근거 H85ca0e507c4e_23의 관측값(22,157400 ms)과 달리 본문은 '이 적용 이후 22,157400 ms가 관찰되었고'라고 서술해, 5번까지 적용 후 관측된 최고 성능 시점의 수치를 앞선 최적화 적용 직후의 결과로 귀속을 변경함.",
+        "evidence_ids": [
+          "H85ca0e507c4e_23"
+        ]
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p31",
+        "reason": "근거 H85ca0e507c4e_35에는 memcpy 감소·플래그 도입에 대한 관측값이 없고, H85ca0e507c4e_36의 관측(memcpy 109→94번, 15번 감소)은 bias 메모리 풀 관리 관련임. 본문은 두 근거를 섞어 'alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제하여, forward 중간 결과를 CPU(메모리)에 복사(memcpy)하는 여부의 플래그를 도입하면 memcpy가 현저히 줄어든다'로 서술해 근거 없는 인과·효과를 만듦.",
+        "evidence_ids": [
+          "H85ca0e507c4e_35",
+          "H85ca0e507c4e_36"
+        ]
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p31",
+        "reason": "근거 H85ca0e507c4e_81은 alpha/beta 메모리 풀·GPU 버퍼 직접 사용·D2D 복사 4회→1회 통합을 서술하나, 본문은 이를 H85ca0e507c4e_35·H85ca0e507c4e_36의 플래그·memcpy 감소 서술과 섞어 귀속을 변경함.",
+        "evidence_ids": [
+          "H85ca0e507c4e_35",
+          "H85ca0e507c4e_36",
+          "H85ca0e507c4e_81"
+        ]
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p31",
+        "reason": "근거 H85ca0e507c4e_83은 warmup·CV·3가지 값 분리 측정 계획/의도를 서술하나 관측 결과가 아니며, 본문은 이를 '초기화만 하면 forward, backward의 bound 계산 시간은 비슷하며(약 0.2ms 차이)'라는 관측처럼 섞어 서술함.",
+        "evidence_ids": [
+          "H85ca0e507c4e_83"
+        ]
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p31",
+        "reason": "근거 H85ca0e507c4e_84는 cudaHostRegister 적용·복사 크기 축소 시도를 서술하나 'cpu 계산 오버헤드가 더 큰 것 같기도 하고 시간이 늘었음'이라는 관측도 포함함. 본문은 이를 성공적인 실시간 PCIe H2D 전송 최적화처럼 서술해 관측된 시간 증가 및 불확실성을 누락함.",
+        "evidence_ids": [
+          "H85ca0e507c4e_84"
+        ]
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p31",
+        "reason": "근거 H85ca0e507c4e_85는 커널 런치 횟수 감소 수치를 제공하나, 본문은 이를 'CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거해'라는 식으로 방법 B·C 결합 서술(H85ca0e507c4e_86)과 인접 배치해, 커널 퓨전/제거의 효과를 방법 B·C의 3D 배칭·cuBLAS 하이브리드 결합과 혼동하게 만듦.",
+        "evidence_ids": [
+          "H85ca0e507c4e_85",
+          "H85ca0e507c4e_86"
+        ]
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p31",
+        "reason": "근거 H85ca0e507c4e_86은 방법 B·C의 개념·구도 및 장단점(서술/관찰)을 제공하나, 본문은 이를 H85ca0e507c4e_85의 커널 런치 횟수 감소 관측과 같은 문맥에서 결합해 방법 B·C가 실제 구현된 결합 방식인 것처럼 귀속을 변경함. 이는 introduction_Q2의 '방법 B·C는 실제 구현 내용이 아니라 배칭 속도 개선 확인 과정에서 나온 방법' 지시와도 충돌함.",
+        "evidence_ids": [
+          "H85ca0e507c4e_85",
+          "H85ca0e507c4e_86"
+        ]
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p31",
+        "reason": "근거 H85ca0e507c4e_87은 Pinned가 작은 전송(1KB)에서 DMA 셋업 오버헤드 누적으로 infer 단계에서 더 느릴 수 있다는 서술과 13초 차이 사례(132초 vs 119초)를 제공함. 본문은 이를 'Pinned Memory는 데이터가 충분히 클 때 빠르다는 전제 조건이 있으며, 1,028 Byte(1 KB) 수준에서는 No-Pin(일반 메모리)이 더 빠를 수 있는데'로 일반 규칙처럼 서술해 근거의 사례·조건 성격을 확장함.",
+        "evidence_ids": [
+          "H85ca0e507c4e_87"
+        ]
+      },
+      {
+        "section_id": "S_evaluation",
+        "severity": "error",
+        "paragraph_id": "S_evaluation_p31",
+        "reason": "근거 H85ca0e507c4e_88은 cuBLAS·메모리 풀·가중치 사전 업로드·CPU 벡터 연산의 역할 설명을 제공하나, 본문은 이를 '구성 요소별 역할' 관측 항목들 사이에 배치해 역할 설명을 관측 결과처럼 서술하고, H85ca0e507c4e_88의 증거 한계(가중치 사전 업로드 효과가 제한적임)를 반영하지 않음.",
+        "evidence_ids": [
+          "H85ca0e507c4e_88"
+        ]
+      }
+    ]
+  }
+}

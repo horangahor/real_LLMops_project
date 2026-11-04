@@ -1,0 +1,202 @@
+{
+  "request_fingerprint": "c366e89a6bf663e3984ef6cd2dbef5906cd1137d50e6c0d608e3fc10b9049d91",
+  "value": {
+    "decisions": {
+      "P0077F0005": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "No-Pin(일반 메모리)에서는 CPU가 직접 복사하며, 1,028 Byte는 CPU 입장에서 너무 작은 크기라서 CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝난다고 설명되었다.",
+            "limits": "이 수치와 설명은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "1,028 Byte(1 KB)",
+              "No-Pin(일반 메모리)"
+            ],
+            "observations": [
+              "CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝남",
+              "걸어서 옆집 가는 것과 같음"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "CPU L1 캐시→드라이버 내부 버퍼 복사 시간(설명값)",
+                "value": "2E+1",
+                "value_kind": "scalar",
+                "unit": "ns",
+                "condition": "No-Pin, 1,028 Byte",
+                "element_ids": [
+                  "p77:e600",
+                  "p77:enh:e6"
+                ]
+              },
+              {
+                "metric": "CPU L1 캐시→드라이버 내부 버퍼 복사 시간(설명값)",
+                "value": "3E+1",
+                "value_kind": "scalar",
+                "unit": "ns",
+                "condition": "No-Pin, 1,028 Byte",
+                "element_ids": [
+                  "p77:e600",
+                  "p77:enh:e6"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p77:e600",
+              "p77:enh:e6"
+            ]
+          }
+        ],
+        "reason": "원문 p77:e600(표준 파싱) 및 p77:enh:e6(향상된 페이지 이미지)에 '1,028 Byte는 CPU 입장에서 너무나 작은 크기입니다. CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝납니다. 걸어서 옆집 가는 것과 같습니다.'라고 명시되어 있어, 20~30 ns 및 0.00003 ms 수치는 원문에서 직접 확인된다. 따라서 numeric_issues의 '조건·관찰의 원문 미확인 수치: 1'은 해소되었으며, approved_candidates가 없으므로 원문으로 복구하여 repair한다. 수정안은 연구 내용 자체를 서술하며, 수치 출처는 reason에 기술한다."
+      },
+      "P0077R0F0009": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "Gemini는 이 결과가 측정 오류가 아니라 CUDA와 컴퓨터 구조에서 유명한 '초소형 데이터(1 KB)의 역설'이 정직하게 나타난 것이라고 설명했다. (원문 p76:e594의 '왜 nopin이 더 빠른가? ⇒ gemini 대답' 프롬프트에 대한 응답으로 p77:e596에 기술됨)",
+            "limits": "이 설명은 Gemini AI의 조언/해석이며, 실측 결과로 확인된 사실이 아니다. 원문에서 '⇒ gemini 대답'으로 시작되어 p77:e596부터 이어지는 분석 전체가 Gemini의 응답으로 보인다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "1,028 Byte(1 KB) 데이터",
+              "Host Alloc vs No-Pin 결과"
+            ],
+            "observations": [
+              "측정이 잘못된 것이 아니라, CUDA와 컴퓨터 구조에서 매우 유명한 '초소형 데이터(1 KB)의 역설'이 정직하게 나타난 것"
+            ],
+            "parameters": [],
+            "measurements": [],
+            "element_ids": [
+              "p77:e596",
+              "p77:enh:e1"
+            ]
+          }
+        ],
+        "reason": "원문 p77:e597(표준 파싱) 및 p77:enh:e3(향상된 페이지 이미지)에 '왜 1,028 Byte(1 KB)에서 No-Pin(일반 메모리)이 더 빠른지'라는 문장이 존재하여 1,028 Byte 수치는 원문에서 직접 확인된다. 또한 p77:e596/p77:enh:e1에는 '측정이 잘못된 것이 아니라, CUDA와 컴퓨터 구조에서 매우 유명한 초소형 데이터(1 KB)의 역설이 정직하게 나타난 것'이라는 문장이 존재한다. 따라서 numeric_issues의 '조건·관찰의 원문 미확인 수치: 1,028'은 해소되었다. 승인된 후보 P0077F0001은 '작성자는 ... 정리했다'로 귀속을 표기했으나, 원문 p77:e596은 p76:e594의 '⇒ gemini 대답' 프롬프트에 대한 Gemini의 응답이므로 'Gemini는 설명했다' 귀속이 원문에 더 충실하다. 또한 P0077F0001은 조건이 비어 있어 P0077R0F0009와 완전히 중복되지 않으므로 duplicate가 아닌 repair로 처리한다."
+      },
+      "P0077R0F0011": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "Gemini는 1,028 Byte(1 KB)가 CPU 입장에서 매우 작은 크기이며, CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝난다고 설명했다.",
+            "limits": "이 수치(20~30ns, 0.00003ms)와 설명은 Gemini AI의 조언/해석이며, 실측 결과로 확인되지는 않았다. 원문에서 '걸어서 옆집 가는 것과 같습니다'라는 비유가 함께 제시되었다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "1,028 Byte(1 KB)",
+              "CPU L1 캐시",
+              "드라이버 내부 버퍼",
+              "No-Pin(일반 메모리)"
+            ],
+            "observations": [
+              "1,028 Byte는 CPU 입장에서 너무나 작은 크기",
+              "CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝남",
+              "걸어서 옆집 가는 것과 같음"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "CPU L1 캐시 → 드라이버 내부 버퍼 복사 시간(설명값)",
+                "value": "2E+1",
+                "value_kind": "scalar",
+                "unit": "ns",
+                "condition": "No-Pin, 1,028 Byte",
+                "element_ids": [
+                  "p77:e600",
+                  "p77:enh:e6"
+                ]
+              },
+              {
+                "metric": "CPU L1 캐시 → 드라이버 내부 버퍼 복사 시간(설명값)",
+                "value": "3E+1",
+                "value_kind": "scalar",
+                "unit": "ns",
+                "condition": "No-Pin, 1,028 Byte",
+                "element_ids": [
+                  "p77:e600",
+                  "p77:enh:e6"
+                ]
+              },
+              {
+                "metric": "CPU L1 캐시 → 드라이버 내부 버퍼 복사 시간(설명값)",
+                "value": "0.00003",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "No-Pin, 1,028 Byte",
+                "element_ids": [
+                  "p77:e600",
+                  "p77:enh:e6"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p77:e600",
+              "p77:enh:e6"
+            ]
+          }
+        ],
+        "reason": "원문 p77:e600(표준 파싱) 및 p77:enh:e6(향상된 페이지 이미지)에 '1,028 Byte는 CPU 입장에서 너무나 작은 크기입니다. CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝납니다. 걸어서 옆집 가는 것과 같습니다.'라고 명시되어 있어, 20~30 ns, 0.00003 ms, 1,028 Byte 수치는 모두 원문에서 직접 확인된다. 따라서 numeric_issues의 'statement의 원문 미확인 수치: 1' 및 '조건·관찰의 원문 미확인 수치: 1'은 해소되었다. 승인된 후보가 없으므로 원문으로 복구하여 repair한다. P0077F0005와 동일한 원문(p77:e600/p77:enh:e6)을 공유하나 statement 표현과 conditions 구성이 다르므로 별도 사실로 유지한다."
+      },
+      "P0077R0F0013": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "Gemini는 92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2μs)가 누적되어 infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것이라고 설명했다.",
+            "limits": "이 설명은 Gemini AI의 조언/해석이며, '92만 번의 루프', '132초 vs 119초' 등의 수치와 인과 관계는 실측 결과로 확인되지 않았다. 132초/119초는 p76:e591/p76:e593의 infer 페이즈 값(132,586초/119,466초)과 단위 표기가 달라 원문 표기를 그대로 보존한다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "92만 번의 루프",
+              "DMA 셋업 오버헤드 누적",
+              "infer 단계"
+            ],
+            "observations": [
+              "92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2μs)가 누적됨",
+              "infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "infer 단계 추가 소요 시간(설명값)",
+                "value": "13",
+                "value_kind": "scalar",
+                "unit": "초",
+                "condition": "Host Alloc vs No-Pin infer 비교",
+                "element_ids": [
+                  "p77:e603",
+                  "p77:enh:e9"
+                ]
+              },
+              {
+                "metric": "루프 횟수(설명값)",
+                "value": "920000",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "DMA 셋업 오버헤드 누적 루프",
+                "element_ids": [
+                  "p77:e603",
+                  "p77:enh:e9"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p77:e603",
+              "p77:enh:e9"
+            ]
+          }
+        ],
+        "reason": "두 가지 오류가 있다. (1) rejected_measurements에 등록된 '루프 횟수 920000'은 원문 p77:e603의 '92만 번의 루프'에 의해 확인 가능하다(92만 = 920,000). (2) numeric_issues의 'limits의 원문 미확인 수치: 132,586, 119,466'은 실제로 p76:e591(Host Alloc infer: 132,586s) 및 p76:e593(nopin infer: 119,466s)에 존재하는 실측값이다. 승인된 후보 P0077F0004는 루프 횟수 rejected_measurement가 없고 limits에 132,586/119,466을 언급하지 않아 P0077R0F0013과 완전히 중복되지 않으므로 repair로 처리한다. 루프 횟수 920,000은 원문에서 확인되므로 rejected_measurements에서 해제하고, 132,586/119,466은 limits에 원문 출처(p76:e591/p76:e593)와 함께 보존한다. numeric_issues는 모두 해소되었으므로 빈 배열로 설정한다. 수정안은 연구 내용 자체를 서술하며, 수치 출처와 검증 결과는 reason에 기술한다."
+      }
+    }
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "request_fingerprint": "ed0f39648cc8f461f2c475c937ddd3c99ba89bf566f14eac1c5fcbe42c982b55",
+  "value": {
+    "additions": [
+      {
+        "statement": "방법 B는 행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어서 3차원 배칭 커널을 작성하는 방식이며, 장점은 알고리즘과 메모리를 100% 완벽히 통제할 수 있다는 점이고, 아쉬운 점은 C++ CUDA 코드를 잘 짜도 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기 어렵다는 점이다.",
+        "limits": "방법 B의 장점·아쉬운 점은 작성자의 해석이며, 실제 성능 비교·측정 결과는 이 요소에서 확인되지 않는다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어서 3차원 배칭 커널을 작성",
+          "장점: 알고리즘과 메모리를 100% 완벽히 통제 가능",
+          "아쉬운 점: 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기 어려움"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e555"
+        ]
+      },
+      {
+        "statement": "방법 C는 CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이라는 점을 근거로, 무거운 행렬 곱셈을 엔비디아의 공식 최적화 라이브러리(cublasSgemmBatched)로 맡기고, CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌리는 하이브리드 방식이다. 이는 파이토치가 내부적으로 동작하는 방식과 100% 동일하다고 서술되어 있다.",
+        "limits": "80% 이상이라는 수치와 파이토치 동작 방식과의 동일성 서술은 작성자의 정리이며, 실제 측정 구간·정밀도·실험 조건은 이 요소에서 확인되지 않는다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "CROWN 연산 시간의 80% 이상은 행렬 곱셈(A × W)",
+          "무거운 행렬 곱셈을 엔비디아의 공식 최적화 라이브러리(cublasSgemmBatched)로 교체",
+          "CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 방법 B의 자체 3D 커널로 유지",
+          "오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식",
+          "파이토치가 내부적으로 동작하는 방식과 100% 동일"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e557"
+        ]
+      },
+      {
+        "statement": "결론은 B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 흐름으로 이해한다는 것이다.",
+        "limits": "결론 서술은 작성자의 정리이며, 실제 구현 결과·성능 수치는 이 요소에서 확인되지 않는다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어둠",
+          "그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼움"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e559"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p70:e546": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "3D Grid 방식의 Z축=1024, 그리드 크기, CPU 1번 발사, GPU 56개 SM 동시 연산 서술이 facts[0]에 반영됨.",
+        "addition_refs": []
+      },
+      "p70:e547": {
+        "state": "represented",
+        "fact_refs": [
+          1
+        ],
+        "note": "추후 최적화 방안 문서의 방법 1, B와 C의 역할 서술이 facts[1]에 반영됨.",
+        "addition_refs": []
+      }
+    }
+  }
+}

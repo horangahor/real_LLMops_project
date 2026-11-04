@@ -1,0 +1,355 @@
+{
+  "api": "2.0",
+  "content": {
+    "html": "<h1 id='0'>v1-1-3 : crown_test_preload_fix , 미리 로드한 W 가중치를 제대로 활용하도록 고침</h1>\n<p id='1' data-category='paragraph'><b>변경점</b></p>\n<p id='2' data-category='paragraph'>신경망에 GPU 주소를 저장하던 <b>double *</b> 타입을 <b>Matrix *</b> 타입으로 고침</p>\n<p id='3' data-category='caption'>(이하는 실제로 주소를 활용하도록 바꾼 함수들)</p>\n<table id='4'><tr><th>변경 위치</th><th>내용</th><th>절약 효과/레이어</th></tr><tr><td>d_W 타입</td><td>double* → Matrix*</td><td>커널에 바로 전달 가능</td></tr><tr><td>positive_part(W,d_W)</td><td>W 복사 스킵</td><td>2MB 절약</td></tr><tr><td>negative_part(W,d_W)</td><td>W 복사 스킵</td><td>2MB 절약</td></tr><tr><td>matmul(A, W,d_W)</td><td>B행렬 복사 스킵(backward)</td><td>2MB × 2회 = 4MB 절약</td></tr><tr><td>matvec(W, x,d_W)</td><td>A행렬 복사 스킵(forward)</td><td>2MB 절약</td></tr></table>\n<p id='5' data-category='paragraph'>그리고 pre_upload_weights_to_gpu 도 memcpy2D 사용이 아니라 Matrix를 할당, 복사하도록 바꿈</p>\n<p id='6' data-category='paragraph'>근데 my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 없어서 100번씩 돌려서 누적시간을 봐보기로 했다..</p>\n<p id='7' data-category='paragraph'>.. 여기도 별로 성능 차이 안남</p>\n<p id='8' data-category='paragraph'>500 회 정도 하니까 5~10ms 정도 우세함..</p>\n<p id='9' data-category='paragraph'>결국 가중치를 미리 로드해서 <b>memcpy</b>를 줄이겠다는 건.. 크게 의미를 못미친다.</p>\n<p id='10' data-category='paragraph'>다시 my_lirpa_mempool.cu로 롤백(v1-1-1)</p>\n<h2 id='11'>v1-1-1-1 : 메모리풀에 cuBlas 도입 및 matvec, matmul을 기존 나의 계산이 아닌 cuBlas를 활용하도록 함 //my_lirpa_mempool_cuBlas.cu</h2>",
+    "markdown": "# v1-1-3 : crown_test_preload_fix , 미리 로드한 W 가중치를 제대로 활용하도록 고침\n\n**변경점**\n\n신경망에 GPU 주소를 저장하던 **double *** 타입을 **Matrix *** 타입으로 고침\n\n(이하는 실제로 주소를 활용하도록 바꾼 함수들)\n\n| 변경 위치 | 내용 | 절약 효과/레이어 |\n| --- | --- | --- |\n| d_W 타입 | double* → Matrix* | 커널에 바로 전달 가능 |\n| positive_part(W,d_W) | W 복사 스킵 | 2MB 절약 |\n| negative_part(W,d_W) | W 복사 스킵 | 2MB 절약 |\n| matmul(A, W,d_W) | B행렬 복사 스킵(backward) | 2MB × 2회 = 4MB 절약 |\n| matvec(W, x,d_W) | A행렬 복사 스킵(forward) | 2MB 절약 |\n\n\n그리고 pre_upload_weights_to_gpu 도 memcpy2D 사용이 아니라 Matrix를 할당, 복사하도록 바꿈\n\n근데 my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 없어서 100번씩 돌려서 누적시간을 봐보기로 했다..\n\n.. 여기도 별로 성능 차이 안남\n\n500 회 정도 하니까 5~10ms 정도 우세함..\n\n결국 가중치를 미리 로드해서 **memcpy**를 줄이겠다는 건.. 크게 의미를 못미친다.\n\n다시 my_lirpa_mempool.cu로 롤백(v1-1-1)\n\n## v1-1-1-1 : 메모리풀에 cuBlas 도입 및 matvec, matmul을 기존 나의 계산이 아닌 cuBlas를 활용하도록 함 //my_lirpa_mempool_cuBlas.cu",
+    "text": "v1-1-3 : crown_test_preload_fix , 미리 로드한 W 가중치를 제대로 활용하도록 고침\n변경점\n신경망에 GPU 주소를 저장하던 double * 타입을 Matrix * 타입으로 고침\n(이하는 실제로 주소를 활용하도록 바꾼 함수들)\n| 변경 위치 | 내용 | 절약 효과/레이어 |\n| --- | --- | --- |\n| d_W 타입 | double* → Matrix* | 커널에 바로 전달 가능 |\n| positive_part(W,d_W) | W 복사 스킵 | 2MB 절약 |\n| negative_part(W,d_W) | W 복사 스킵 | 2MB 절약 |\n| matmul(A, W,d_W) | B행렬 복사 스킵(backward) | 2MB × 2회 = 4MB 절약 |\n| matvec(W, x,d_W) | A행렬 복사 스킵(forward) | 2MB 절약 |\n\n그리고 pre_upload_weights_to_gpu 도 memcpy2D 사용이 아니라 Matrix를 할당, 복사하도록 바꿈\n근데 my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 없어서 100번씩 돌려서 누적시간을 봐보기로 했다..\n.. 여기도 별로 성능 차이 안남\n500 회 정도 하니까 5~10ms 정도 우세함..\n결국 가중치를 미리 로드해서 memcpy를 줄이겠다는 건.. 크게 의미를 못미친다.\n다시 my_lirpa_mempool.cu로 롤백(v1-1-1)\nv1-1-1-1 : 메모리풀에 cuBlas 도입 및 matvec, matmul을 기존 나의 계산이 아닌 cuBlas를 활용하도록 함 //my_lirpa_mempool_cuBlas.cu"
+  },
+  "elements": [
+    {
+      "id": 0,
+      "page": 1,
+      "category": "heading1",
+      "content": {
+        "html": "<h1 id='0'>v1-1-3 : crown_test_preload_fix , 미리 로드한 W 가중치를 제대로 활용하도록 고침</h1>",
+        "markdown": "# v1-1-3 : crown_test_preload_fix , 미리 로드한 W 가중치를 제대로 활용하도록 고침",
+        "text": "v1-1-3 : crown_test_preload_fix , 미리 로드한 W 가중치를 제대로 활용하도록 고침"
+      },
+      "coordinates": [
+        {
+          "x": 0.115,
+          "y": 0.119
+        },
+        {
+          "x": 0.8,
+          "y": 0.119
+        },
+        {
+          "x": 0.8,
+          "y": 0.137
+        },
+        {
+          "x": 0.115,
+          "y": 0.137
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='1' data-category='paragraph'><b>변경점</b></p>",
+        "markdown": "**변경점**",
+        "text": "변경점"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.154
+        },
+        {
+          "x": 0.177,
+          "y": 0.154
+        },
+        {
+          "x": 0.177,
+          "y": 0.169
+        },
+        {
+          "x": 0.116,
+          "y": 0.169
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='2' data-category='paragraph'>신경망에 GPU 주소를 저장하던 <b>double *</b> 타입을 <b>Matrix *</b> 타입으로 고침</p>",
+        "markdown": "신경망에 GPU 주소를 저장하던 **double *** 타입을 **Matrix *** 타입으로 고침",
+        "text": "신경망에 GPU 주소를 저장하던 double * 타입을 Matrix * 타입으로 고침"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.171
+        },
+        {
+          "x": 0.709,
+          "y": 0.171
+        },
+        {
+          "x": 0.709,
+          "y": 0.187
+        },
+        {
+          "x": 0.116,
+          "y": 0.187
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "page": 1,
+      "category": "caption",
+      "content": {
+        "html": "<p id='3' data-category='caption'>(이하는 실제로 주소를 활용하도록 바꾼 함수들)</p>",
+        "markdown": "(이하는 실제로 주소를 활용하도록 바꾼 함수들)",
+        "text": "(이하는 실제로 주소를 활용하도록 바꾼 함수들)"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.205
+        },
+        {
+          "x": 0.519,
+          "y": 0.205
+        },
+        {
+          "x": 0.519,
+          "y": 0.222
+        },
+        {
+          "x": 0.116,
+          "y": 0.222
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "page": 1,
+      "category": "table",
+      "content": {
+        "html": "<table id='4'><tr><th>변경 위치</th><th>내용</th><th>절약 효과/레이어</th></tr><tr><td>d_W 타입</td><td>double* → Matrix*</td><td>커널에 바로 전달 가능</td></tr><tr><td>positive_part(W,d_W)</td><td>W 복사 스킵</td><td>2MB 절약</td></tr><tr><td>negative_part(W,d_W)</td><td>W 복사 스킵</td><td>2MB 절약</td></tr><tr><td>matmul(A, W,d_W)</td><td>B행렬 복사 스킵(backward)</td><td>2MB × 2회 = 4MB 절약</td></tr><tr><td>matvec(W, x,d_W)</td><td>A행렬 복사 스킵(forward)</td><td>2MB 절약</td></tr></table>",
+        "markdown": "| 변경 위치 | 내용 | 절약 효과/레이어 |\n| --- | --- | --- |\n| d_W 타입 | double* → Matrix* | 커널에 바로 전달 가능 |\n| positive_part(W,d_W) | W 복사 스킵 | 2MB 절약 |\n| negative_part(W,d_W) | W 복사 스킵 | 2MB 절약 |\n| matmul(A, W,d_W) | B행렬 복사 스킵(backward) | 2MB × 2회 = 4MB 절약 |\n| matvec(W, x,d_W) | A행렬 복사 스킵(forward) | 2MB 절약 |\n",
+        "text": "| 변경 위치 | 내용 | 절약 효과/레이어 |\n| --- | --- | --- |\n| d_W 타입 | double* → Matrix* | 커널에 바로 전달 가능 |\n| positive_part(W,d_W) | W 복사 스킵 | 2MB 절약 |\n| negative_part(W,d_W) | W 복사 스킵 | 2MB 절약 |\n| matmul(A, W,d_W) | B행렬 복사 스킵(backward) | 2MB × 2회 = 4MB 절약 |\n| matvec(W, x,d_W) | A행렬 복사 스킵(forward) | 2MB 절약 |\n"
+      },
+      "coordinates": [
+        {
+          "x": 0.12,
+          "y": 0.224
+        },
+        {
+          "x": 0.687,
+          "y": 0.224
+        },
+        {
+          "x": 0.687,
+          "y": 0.503
+        },
+        {
+          "x": 0.12,
+          "y": 0.503
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='5' data-category='paragraph'>그리고 pre_upload_weights_to_gpu 도 memcpy2D 사용이 아니라 Matrix를 할당, 복사하도록 바꿈</p>",
+        "markdown": "그리고 pre_upload_weights_to_gpu 도 memcpy2D 사용이 아니라 Matrix를 할당, 복사하도록 바꿈",
+        "text": "그리고 pre_upload_weights_to_gpu 도 memcpy2D 사용이 아니라 Matrix를 할당, 복사하도록 바꿈"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.522
+        },
+        {
+          "x": 0.783,
+          "y": 0.522
+        },
+        {
+          "x": 0.783,
+          "y": 0.556
+        },
+        {
+          "x": 0.116,
+          "y": 0.556
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='6' data-category='paragraph'>근데 my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 없어서 100번씩 돌려서 누적시간을 봐보기로 했다..</p>",
+        "markdown": "근데 my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 없어서 100번씩 돌려서 누적시간을 봐보기로 했다..",
+        "text": "근데 my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 없어서 100번씩 돌려서 누적시간을 봐보기로 했다.."
+      },
+      "coordinates": [
+        {
+          "x": 0.115,
+          "y": 0.574
+        },
+        {
+          "x": 0.871,
+          "y": 0.574
+        },
+        {
+          "x": 0.871,
+          "y": 0.606
+        },
+        {
+          "x": 0.115,
+          "y": 0.606
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='7' data-category='paragraph'>.. 여기도 별로 성능 차이 안남</p>",
+        "markdown": ".. 여기도 별로 성능 차이 안남",
+        "text": ".. 여기도 별로 성능 차이 안남"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.609
+        },
+        {
+          "x": 0.364,
+          "y": 0.609
+        },
+        {
+          "x": 0.364,
+          "y": 0.624
+        },
+        {
+          "x": 0.116,
+          "y": 0.624
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='8' data-category='paragraph'>500 회 정도 하니까 5~10ms 정도 우세함..</p>",
+        "markdown": "500 회 정도 하니까 5~10ms 정도 우세함..",
+        "text": "500 회 정도 하니까 5~10ms 정도 우세함.."
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.643
+        },
+        {
+          "x": 0.467,
+          "y": 0.643
+        },
+        {
+          "x": 0.467,
+          "y": 0.659
+        },
+        {
+          "x": 0.116,
+          "y": 0.659
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='9' data-category='paragraph'>결국 가중치를 미리 로드해서 <b>memcpy</b>를 줄이겠다는 건.. 크게 의미를 못미친다.</p>",
+        "markdown": "결국 가중치를 미리 로드해서 **memcpy**를 줄이겠다는 건.. 크게 의미를 못미친다.",
+        "text": "결국 가중치를 미리 로드해서 memcpy를 줄이겠다는 건.. 크게 의미를 못미친다."
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.677
+        },
+        {
+          "x": 0.787,
+          "y": 0.677
+        },
+        {
+          "x": 0.787,
+          "y": 0.695
+        },
+        {
+          "x": 0.116,
+          "y": 0.695
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='10' data-category='paragraph'>다시 my_lirpa_mempool.cu로 롤백(v1-1-1)</p>",
+        "markdown": "다시 my_lirpa_mempool.cu로 롤백(v1-1-1)",
+        "text": "다시 my_lirpa_mempool.cu로 롤백(v1-1-1)"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.712
+        },
+        {
+          "x": 0.473,
+          "y": 0.712
+        },
+        {
+          "x": 0.473,
+          "y": 0.73
+        },
+        {
+          "x": 0.116,
+          "y": 0.73
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "page": 1,
+      "category": "heading1",
+      "sub_category": "h2",
+      "content": {
+        "html": "<h2 id='11'>v1-1-1-1 : 메모리풀에 cuBlas 도입 및 matvec, matmul을 기존 나의 계산이 아닌 cuBlas를 활용하도록 함 //my_lirpa_mempool_cuBlas.cu</h2>",
+        "markdown": "## v1-1-1-1 : 메모리풀에 cuBlas 도입 및 matvec, matmul을 기존 나의 계산이 아닌 cuBlas를 활용하도록 함 //my_lirpa_mempool_cuBlas.cu",
+        "text": "v1-1-1-1 : 메모리풀에 cuBlas 도입 및 matvec, matmul을 기존 나의 계산이 아닌 cuBlas를 활용하도록 함 //my_lirpa_mempool_cuBlas.cu"
+      },
+      "coordinates": [
+        {
+          "x": 0.115,
+          "y": 0.747
+        },
+        {
+          "x": 0.85,
+          "y": 0.747
+        },
+        {
+          "x": 0.85,
+          "y": 0.782
+        },
+        {
+          "x": 0.115,
+          "y": 0.782
+        }
+      ]
+    }
+  ],
+  "model": "document-parse-260930",
+  "ocr": true,
+  "usage": {
+    "pages": 1,
+    "enhanced": [
+      1
+    ]
+  }
+}

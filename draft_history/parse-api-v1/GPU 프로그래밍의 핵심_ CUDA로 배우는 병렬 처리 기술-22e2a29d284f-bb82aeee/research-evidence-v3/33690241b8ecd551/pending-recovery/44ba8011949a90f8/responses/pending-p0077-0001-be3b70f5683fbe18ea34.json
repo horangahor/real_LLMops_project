@@ -1,0 +1,211 @@
+{
+  "request_fingerprint": "be3b70f5683fbe18ea3489ea9cd3728002ec9826e7f705fa914a3ddd16e9a6b6",
+  "value": {
+    "decisions": {
+      "P0078R0F0003": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "Pinned Memory는 CPU를 거치지 않고 PCIe 버스의 GPU DMA 엔진(Copy Engine)을 가동하며, PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1~2 마이크로초(0.0015 ms)가 걸린다고 설명되었다.",
+            "limits": "이 수치와 설명은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "Pinned Memory",
+              "GPU DMA 엔진(Copy Engine)"
+            ],
+            "observations": [
+              "PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1~2 마이크로초(0.0015 ms)가 걸림",
+              "옆집(1KB) 가는데 KTX(DMA 엔진) 예매하고 탑승 수속 밟느라 오히려 시간이 더 걸린 것"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "PCIe DMA 엔진 셋업 하드웨어 오버헤드(설명값)",
+                "value": "1",
+                "value_kind": "scalar",
+                "unit": "us",
+                "condition": "Pinned Memory",
+                "element_ids": [
+                  "p77:e602",
+                  "p77:enh:e8"
+                ]
+              },
+              {
+                "metric": "PCIe DMA 엔진 셋업 하드웨어 오버헤드(설명값)",
+                "value": "2",
+                "value_kind": "scalar",
+                "unit": "us",
+                "condition": "Pinned Memory",
+                "element_ids": [
+                  "p77:e602",
+                  "p77:enh:e8"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p77:e602",
+              "p77:enh:e8"
+            ]
+          }
+        ],
+        "reason": "대상 팩트(P0078R0F0003)의 source_origin은 'research_note'로 기재되어 있으나, 원문(p77:e602)은 연구 노트 자체 서술이 아니라 Gemini AI의 조언/해석 문맥에서 제시된 내용이다. 승인된 후보(P0077F0003, P0077R0F0012)는 source_origin을 'ai_advice'로 적절히 귀속시키고 있으며, 원문에 'PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1~2 마이크로초(0.0015ms)가 걸립니다'라는 문장과 KTX 비유가 존재하여 텍스트 충실성이 충족된다. 대상 팩트의 source_origin을 'ai_advice'로 정정하고, kind를 'method'에서 'result'로, claim_status를 'interpretation'으로 유지하며, 측정값을 범위(1~2μs)에서 개별 스칼라값(1μs, 2μs)으로 정규화한다."
+      },
+      "P0078R0F0004": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "No-Pin(일반 Pageable 메모리)에서는 OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없고, 드라이버가 하드웨어 DMA를 부르지 않고 CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로 memcpy를 해버리며, 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 0.02~0.05 μs(20~50 나노초)면 끝나서 DMA 셋업보다 30~50배 빠르고, 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보낸다고 설명되었다.",
+            "limits": "이 설명과 수치는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "No-Pin",
+              "Pageable 메모리",
+              "1,028 바이트"
+            ],
+            "observations": [
+              "OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없음",
+              "드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로 memcpy를 해버림",
+              "최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 0.02~0.05 μs(20~50 나노초)면 끝남",
+              "DMA 셋업보다 30~50배 빠름",
+              "그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냄"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+                "value": "0.02",
+                "value_kind": "scalar",
+                "unit": "us",
+                "condition": "No-Pin, 최신 CPU",
+                "element_ids": [
+                  "p79:e621"
+                ]
+              },
+              {
+                "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+                "value": "0.05",
+                "value_kind": "scalar",
+                "unit": "us",
+                "condition": "No-Pin, 최신 CPU",
+                "element_ids": [
+                  "p79:e621"
+                ]
+              },
+              {
+                "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+                "value": "20",
+                "value_kind": "scalar",
+                "unit": "ns",
+                "condition": "No-Pin, 최신 CPU",
+                "element_ids": [
+                  "p79:e621"
+                ]
+              },
+              {
+                "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+                "value": "50",
+                "value_kind": "scalar",
+                "unit": "ns",
+                "condition": "No-Pin, 최신 CPU",
+                "element_ids": [
+                  "p79:e621"
+                ]
+              },
+              {
+                "metric": "DMA 셋업 대비 속도 배율(설명값)",
+                "value": "30",
+                "value_kind": "scalar",
+                "unit": "배",
+                "condition": "No-Pin vs Pinned",
+                "element_ids": [
+                  "p79:e621"
+                ]
+              },
+              {
+                "metric": "DMA 셋업 대비 속도 배율(설명값)",
+                "value": "50",
+                "value_kind": "scalar",
+                "unit": "배",
+                "condition": "No-Pin vs Pinned",
+                "element_ids": [
+                  "p79:e621"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p79:e621"
+            ]
+          }
+        ],
+        "reason": "대상 팩트(P0078R0F0004)는 p77:e600의 '0.00003 ms' 표기와 p79:e621의 '0.02~0.05 μs (20~50 나노초)'를 혼합하여 0.00002~0.00005 ms라는 원문 미확인 수치를 생성했다. p77:e600은 '0.00003 ms'만을 표기했으며 이는 20~30 ns 범위의 상한값에 해당한다. 승인된 후보(P0079F0004, P0079F0002)는 p79:e621의 정확한 설명값(0.02~0.05 μs, 20~50 ns, DMA 셋업보다 30~50배 빠름)을 source_origin 'ai_advice'로 적절히 귀속하고 있다. 대상 팩트를 p79:e621 기준으로 재구성하여 원문 미확인 수치(0.00002, 0.00005)를 제거하고, No-Pin의 CPU L1/L2 캐시 복사 메커니즘 전체 설명(①~③단계)을 포함한다."
+      },
+      "P0078R0F0005": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 μs)가 누적되어 infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것이라고 설명되었다.",
+            "limits": "132초 vs 119초, 92만 번 루프, 1~2 μs 누적은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "92만 번의 루프",
+              "infer 단계"
+            ],
+            "observations": [
+              "92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 μs)가 누적되다 보니, infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "infer 단계 시간 차이(설명값)",
+                "value": "13",
+                "value_kind": "scalar",
+                "unit": "s",
+                "condition": "Pinned vs No-Pin, 92만 번 루프",
+                "element_ids": [
+                  "p77:e603",
+                  "p77:enh:e9"
+                ]
+              },
+              {
+                "metric": "Pinned infer 단계 시간(설명값)",
+                "value": "132",
+                "value_kind": "scalar",
+                "unit": "s",
+                "condition": "Pinned, 92만 번 루프",
+                "element_ids": [
+                  "p77:e603",
+                  "p77:enh:e9"
+                ]
+              },
+              {
+                "metric": "No-Pin infer 단계 시간(설명값)",
+                "value": "119",
+                "value_kind": "scalar",
+                "unit": "s",
+                "condition": "No-Pin, 92만 번 루프",
+                "element_ids": [
+                  "p77:e603",
+                  "p77:enh:e9"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p77:e603",
+              "p77:enh:e9"
+            ]
+          }
+        ],
+        "reason": "대상 팩트(P0078R0F0005)의 source_origin은 'research_note'로 기재되어 있으나, 원문(p77:e603)의 '92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2μs)가 누적되다 보니, infer 단계에서 정확히 13초(132초 VS 119초)가 더 걸린 것입니다'라는 문장은 Gemini AI의 조언/해석 문맥에서 제시된 내용이다. 승인된 후보(P0077F0004)는 source_origin을 'ai_advice'로 적절히 귀속시키고 있으며, 원문에 해당 문장이 존재하여 텍스트 충실성이 충족된다. 132초와 119초는 각각 cudaHostAlloc infer(132.586s, p76:e591)와 nopin infer(119.466s, p76:e593)의 반올림 값과 정합한다. 대상 팩트의 source_origin을 'ai_advice'로 정정하고, kind를 'method'에서 'result'로 변경하며, 측정값을 개별 스칼라값으로 정규화한다."
+      }
+    }
+  }
+}

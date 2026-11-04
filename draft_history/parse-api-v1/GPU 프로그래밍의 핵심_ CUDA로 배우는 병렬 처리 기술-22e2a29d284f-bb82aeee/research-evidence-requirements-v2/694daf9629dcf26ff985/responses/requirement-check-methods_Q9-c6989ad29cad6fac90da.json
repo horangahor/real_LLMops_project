@@ -1,0 +1,20 @@
+{
+  "request_fingerprint": "c6989ad29cad6fac90dade708fe25e623a6616c7af317462918eeb71e48ee49b",
+  "value": {
+    "status": "partial",
+    "evidence_ids": [
+      "E00036",
+      "E00174",
+      "E00311",
+      "E00315",
+      "E00321",
+      "E00339"
+    ],
+    "missing_fields": [
+      "배치 설정",
+      "실행 방식",
+      "평가 입력 구성"
+    ],
+    "reason": "공통 고정 요소는 GPU OPTIMIZED 모드 이후 CPU보다 느린 문제, matmul만 GPU로 실행하는 하이브리드 방식 시도, eps=1e-06, Output Dimension 16, 3-layer 네트워크 기준 CUDA kernel launch만 계수(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외), graph mode 1에서 샘플당 cudaGraphLaunch infer 1회 + bound 1회 총 2회 유지, pinned memory 입력층 제거(Graph manager에는 선택 할당 가능 유지), memcpy 호출 횟수 66→56개 감소 등으로 일부 확인된다. 그러나 배치 설정(데이터셋 배칭 방식 판단, pinned Memory 지정, cudaMemcpyAsync 사용 등은 언급되나 공통 고정 배치 구성은 불명확), 실행 방식(method=0/1 분기, eps_list 이중 루프 등은 있으나 공통 실행 방식 통제 전반), 평가 입력 구성(네트워크/입력 사양 등)의 구체적 통제 내용은 현재 사실만으로는 충분하지 않다."
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "request_fingerprint": "8016d2a5f23f5088343ca2fc0ea11cf08b5155d37c909b83f1d16d5c803282c3",
+  "value": {
+    "decisions": {
+      "P0082F0013": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "Backward에서 split_pos_neg + bias accumulation이 2회에서 1회로, 레이어당 backward 단계가 5회에서 4회로 감소했으며, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소했다. 이는 3-layer 네트워크 기준, CUDA kernel launch만 집계한 값이다.",
+            "limits": "3-layer 네트워크 기준, CUDA kernel launch만 집계(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외), Backward method=1 기준, forward 쪽 relaxation/cache 통합 포함",
+            "kind": "result",
+            "claim_status": "documented_method",
+            "source_origin": "research_note",
+            "conditions": [
+              "3-layer 네트워크",
+              "CUDA kernel launch만 집계",
+              "H2D/D2H memcpy 제외",
+              "cudaStreamSynchronize 제외",
+              "cudaGraphLaunch 제외",
+              "Backward method=1",
+              "forward 쪽 relaxation/cache 통합 포함"
+            ],
+            "observations": [
+              "split_pos_neg + bias accumulation: 2 → 1",
+              "레이어당 backward 단계 5 → 4회",
+              "method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소"
+            ],
+            "parameters": [],
+            "measurements": [],
+            "element_ids": [
+              "p82:enh:e7"
+            ]
+          }
+        ],
+        "reason": "기존 numeric_issues에서 limits의 '3-layer 네트워크 기준'과 조건·관찰의 수치들이 원문 미확인으로 표시되었으나, 실제 원문 p82:enh:e1('3-layer 네트워크 기준으로 계산하면 다음과 같아.'), p82:enh:e2('H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하고 CUDA kernel launch만 센 값이야.'), p82:enh:e7(관찰 수치들)에서 모두 확인됨. 승인 후보 P0082F0022와 핵심 관찰(split_pos_neg + bias accumulation 2→1, 레이어당 backward 단계 5→4회, method 1 총 15회 감소)이 일치하며, 추가 조건(3-layer, CUDA kernel launch만 집계)도 인접 원문(p82:enh:e1, p82:enh:e2)에서 확인되어 승인 근거의 소스 컨텍스트에 포함됨."
+      },
+      "P0083R0F0008": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "CROWN 3가지 방법의 커널 퓨전 및 backward_only 메모리 복사 커널 제거 결과, 3-layer 네트워크 기준 CUDA kernel launch만 카운트(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외) 시 bound 내 횟수: Forward method=0 27→18회(9회 감소), Backward method=1 전체 46→31회(15회 감소), Backward-only method=2 전체 45→33회(12회 감소)",
+            "limits": "3-layer 네트워크 기준, CUDA kernel launch만 집계(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외)",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "3-layer 네트워크 기준",
+              "H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외",
+              "CUDA kernel launch만 카운트"
+            ],
+            "observations": [
+              "Forward method=0 bound: 27회 → 18회, 9회 감소",
+              "Backward method=1 bound 전체: 46회 → 31회, 15회 감소",
+              "Backward-only method=2 bound 전체: 45회 → 33회, 12회 감소"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "Forward bound kernel count (before)",
+                "value": "27",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "3-layer 네트워크, CUDA kernel launch만 카운트",
+                "element_ids": [
+                  "p82:enh:e3"
+                ]
+              },
+              {
+                "metric": "Forward bound kernel count (after)",
+                "value": "18",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "3-layer 네트워크, CUDA kernel launch만 카운트",
+                "element_ids": [
+                  "p82:enh:e3"
+                ]
+              },
+              {
+                "metric": "Forward bound kernel reduction",
+                "value": "9",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "3-layer 네트워크, CUDA kernel launch만 카운트",
+                "element_ids": [
+                  "p82:enh:e3"
+                ]
+              },
+              {
+                "metric": "Backward bound kernel count (before)",
+                "value": "46",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "3-layer 네트워크, CUDA kernel launch만 카운트",
+                "element_ids": [
+                  "p82:enh:e3"
+                ]
+              },
+              {
+                "metric": "Backward bound kernel count (after)",
+                "value": "31",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "3-layer 네트워크, CUDA kernel launch만 카운트",
+                "element_ids": [
+                  "p82:enh:e3"
+                ]
+              },
+              {
+                "metric": "Backward bound kernel reduction",
+                "value": "15",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "3-layer 네트워크, CUDA kernel launch만 카운트",
+                "element_ids": [
+                  "p82:enh:e3"
+                ]
+              },
+              {
+                "metric": "Backward-only bound kernel count (before)",
+                "value": "45",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "3-layer 네트워크, CUDA kernel launch만 카운트",
+                "element_ids": [
+                  "p82:enh:e3"
+                ]
+              },
+              {
+                "metric": "Backward-only bound kernel count (after)",
+                "value": "33",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "3-layer 네트워크, CUDA kernel launch만 카운트",
+                "element_ids": [
+                  "p82:enh:e3"
+                ]
+              },
+              {
+                "metric": "Backward-only bound kernel reduction",
+                "value": "12",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "3-layer 네트워크, CUDA kernel launch만 카운트",
+                "element_ids": [
+                  "p82:enh:e3"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p82:enh:e3"
+            ]
+          }
+        ],
+        "reason": "기존 rejected_measurements 9건의 수치(27, 18, 9, 46, 31, 15, 45, 33, 12)가 원문 p82:enh:e3 표에 모두 명시됨('Forward method=0 bound | 27회 | 18회 | 9회', 'Backward method=1 bound 전체 | 46회 | 31회 | 15회', 'Backward-only method=2 bound 전체 | 45회 | 33회 | 12회'). 측정 조건(3-layer 네트워크, CUDA kernel launch만 카운트, H2D/D2H memcpy·cudaStreamSynchronize·cudaGraphLaunch 제외)은 p82:enh:e1·e2에서 확인됨. 승인 후보 P0082F0001의 observation(bound 기준 Forward 27→18(9회), Backward 46→31(15회), Backward-only 45→33(12회))과 일치하며, 측정값들이 원문에서 확인되어 repair 완료."
+      }
+    }
+  }
+}

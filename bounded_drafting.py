@@ -92,6 +92,30 @@ def slim_feedback(feedback, section_id, facts):
     return result
 
 
+def compact_fragment_revision(request):
+    """Scope oversized revision feedback without changing any source evidence."""
+    result = copy.deepcopy(request)
+    fragment = result["fragment"]
+    pid = fragment.get("paragraph_id")
+    source = result["source_body"].strip()
+    feedback = result["revision"]
+    issues = []
+    for issue in feedback["review"]["issues"]:
+        target = issue.get("paragraph_id")
+        # Other paragraphs have their own tasks. A missing-evidence task adds
+        # new prose, so it must not rewrite an existing paragraph's findings.
+        if target not in (None, "none", pid):
+            continue
+        row = copy.deepcopy(issue)
+        if row.get("quote", "").strip() == source:
+            row.pop("quote", None)  # Exact text is already in source_body.
+        issues.append(row)
+    feedback["review"]["issues"] = issues
+    feedback["scope"] = {"policy": "fragment-revision-context-v1",
+                         "paragraph_id": pid or "none", "operation": fragment.get("operation", "generate")}
+    return result
+
+
 def _revision_windows(packet, sid, key, full):
     """Bind the latest candidate's exact windows to the review's paragraph IDs."""
     from planned_paper import compose_parts, index_paragraphs
@@ -158,7 +182,7 @@ def generation_fragments(system, packet, packets):
             facts = scoped["facts"]
             # Editors need the facts actually cited in the prose, plus the
             # explicitly required candidates needed to address review findings.
-            def make(selected, source_body):
+            def make(selected, source_body, paragraph_id=None, operation=None):
                 ids = {f["id"] for f in selected}
                 section = copy.deepcopy(scoped["section_plan"])
                 section["evidence_ids"] = [f["id"] for f in selected]
@@ -174,9 +198,21 @@ def generation_fragments(system, packet, packets):
                     "tables": tables, "source_body": source_body, "outline": outline,
                     "subsection_headings": [], "workflow_stage": packet.get("workflow_stage"),
                     "fragment": {"section_id": sid, "part": key}}
+                if operation is not None:
+                    request["fragment"]["operation"] = operation
+                if paragraph_id is not None:
+                    request["fragment"]["paragraph_id"] = paragraph_id
+                if operation == "missing_evidence":
+                    request["fragment"]["missing_evidence_ids"] = [f["id"] for f in selected if f["id"] in missing]
                 feedback = slim_feedback(local_revision, sid, selected) if revision else None
                 if feedback:
                     request["revision"] = feedback
+                # Keep fitting requests unchanged so completed responses remain
+                # reusable. Only oversized paragraph/gap revisions shed repeated
+                # prose and findings belonging to independently revised windows.
+                if (revision_windows is not None and feedback
+                        and not fits_request(system + FRAGMENT + PROTOCOL, request, schema)):
+                    request = compact_fragment_revision(request)
                 return request
             windows = revision_windows if revision_windows is not None else [
                 (None, text) for text in (re.split(r"\n\s*\n", body) if body else [""])]
@@ -227,14 +263,14 @@ def generation_fragments(system, packet, packets):
                     raise ValueError("분할 편집 문단의 근거가 해당 소절 범위를 벗어났습니다.")
                 groups = evidence_groups([f for f in facts if f["id"] in selected], scoped["tables"],
                                          scoped["section_plan"]["required_items"])
-                make_window = lambda batch: make(batch, window)
+                make_window = lambda batch: make(batch, window,
+                    paragraph_id=pid if revision_windows is not None else None,
+                    operation="revise_paragraph" if revision_windows is not None else None)
                 batches = pack_groups(groups, make_window, system + FRAGMENT + PROTOCOL, schema)
                 if not batches:
                     raise DraftingBudgetError(f"{sid}/{key}에 작성할 근거가 없습니다.")
                 for index, batch in enumerate(batches):
-                    request = make(batch, window)
-                    if revision_windows is not None:
-                        request["fragment"].update(operation="revise_paragraph", paragraph_id=pid)
+                    request = make_window(batch)
                     tasks.append((sid, key, f"{window_index}-{index}", request, prose_schema(request)))
             if revision_windows is not None:
                 missing = {eid for check in report.get("checks", [])
@@ -246,17 +282,15 @@ def generation_fragments(system, packet, packets):
                 groups = evidence_groups(facts, scoped["tables"], scoped["section_plan"]["required_items"])
                 groups = [group for group in groups if missing.intersection(f["id"] for f in group)]
                 def make_gap(batch):
-                    request = make(batch, "")
-                    request["fragment"].update(operation="missing_evidence",
-                        missing_evidence_ids=[f["id"] for f in batch if f["id"] in missing])
-                    return request
+                    return make(batch, "", operation="missing_evidence")
                 for index, batch in enumerate(pack_groups(groups, make_gap, system + FRAGMENT + PROTOCOL, schema)):
                     request = make_gap(batch)
                     tasks.append((sid, key, f"missing-{index}", request, prose_schema(request)))
     return tasks
 
 
-def generate_bounded(engine, folder, name, system, packet, schema, packets, single):
+def generate_bounded(engine, folder, name, system, packet, schema, packets, single, *, on_warning=None):
+    """Generate valid prose; report exhausted content gaps separately from format errors."""
     from document_parse import write_json
     from planned_paper import parts_schema
     if packet.get("revision", {}).get("previous_sections"):
@@ -277,13 +311,13 @@ def generate_bounded(engine, folder, name, system, packet, schema, packets, sing
         return call_bounded(engine, folder, name, system + PROTOCOL, packet, structured_schema)
     tasks = generation_fragments(system, packet, packets)
     result = {key: {"parts": {}} for key in packets}
-    manifest = []
+    manifest, warnings = [], []
     for sid, key, index, request, fragment_schema in tasks:
         if fragment_schema is None:
             result[sid]["parts"].setdefault(key, []).append(request["passthrough"])
             manifest.append({"section_id": sid, "part": key, "batch": index, "preserved_connecting_text": True})
             continue
-        error = None
+        error, deferred_missing = None, []
         for repair in range(2):
             bounded_packet = request if error is None else {**request, "fragment_validation_error": error}
             fragment_name = f"{name}-split-{sid}-{key}-{index}" + ("-repair" if repair else "")
@@ -305,19 +339,44 @@ def generate_bounded(engine, folder, name, system, packet, schema, packets, sing
                 body = render_parts(response, request)["parts"]["p0"]
                 missing = set(request["fragment"].get("missing_evidence_ids", [])) - cited_ids(body)
                 if missing:
+                    # The prose and all actual citations have passed render_parts.
+                    # Failure to include every requested fact is a content gap,
+                    # not an invalid ID or broken paragraph. Preserve the same
+                    # first error/repair packet so saved repair responses replay.
+                    if repair == 1:
+                        deferred_missing = sorted(missing)
+                        write_json(folder / f"{name}-split-{sid}-{key}-{index}-content-warning.json", {
+                            "missing_evidence_ids": deferred_missing, "response": response,
+                            "status": "needs_attention", "attempts": repair + 1})
+                        break
                     raise ValueError(f"누락 보완 응답에서 요청한 근거가 다시 빠졌습니다: {sorted(missing)}")
                 break
             except (ValueError, KeyError, TypeError) as exc:
                 error = {"error": str(exc), "response": response}
                 write_json(folder / f"{name}-split-{sid}-{key}-{index}-invalid-{repair}.json", error)
         else:
-            raise ValueError(f"분할 본문 {sid}/{key}/{index}이 보정 후에도 근거·구조 검증에 실패했습니다.")
+            raise ValueError(f"분할 본문 {sid}/{key}/{index}이 보정 후에도 근거·구조 검증에 실패했습니다. "
+                             f"원인: {error['error']} 상세: {folder / f'{name}-split-{sid}-{key}-{index}-invalid-1.json'}")
         result[sid]["parts"].setdefault(key, []).append(body)
+        if deferred_missing:
+            warnings.append({"section_id": sid, "part": key, "paragraph_id": "none",
+                "severity": "warning", "original_severity": "error", "deferred": True,
+                "validation_code": "fragment_missing_evidence", "review_stage": "generation_completion",
+                "failure_owner": "writer", "evidence_ids": deferred_missing,
+                "generation_request": name, "fragment_batch": index, "repair_attempts": 1})
         manifest.append({"section_id": sid, "part": key, "batch": index,
                          "evidence_ids": [f["id"] for f in request["facts"]],
                          "operation": request["fragment"].get("operation", "generate"),
-                         "paragraph_id": request["fragment"].get("paragraph_id")})
+                         "paragraph_id": request["fragment"].get("paragraph_id"),
+                         **({"revision_scope": request["revision"]["scope"]}
+                            if "scope" in request.get("revision", {}) else {}),
+                         **({"deferred_missing_evidence_ids": deferred_missing} if deferred_missing else {})})
     for section in result.values():
         section["parts"] = {key: "\n\n".join(values) for key, values in section["parts"].items()}
-    write_json(folder / f"{name}-split-manifest.json", {"tasks": manifest})
+    from content_review_completion import reconcile_generation_warnings
+    warnings = reconcile_generation_warnings(warnings, result, packets)
+    write_json(folder / f"{name}-split-manifest.json", {"tasks": manifest, "content_warnings": warnings})
+    if on_warning is not None:
+        for warning in warnings:
+            on_warning(copy.deepcopy(warning))
     return result[next(iter(result))] if single else {"sections": result}

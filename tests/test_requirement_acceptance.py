@@ -139,6 +139,10 @@ class LimitedAcceptanceTests(unittest.TestCase):
             def client(system, packet, schema, path):
                 seen.append((system, packet))
                 props = schema["properties"]
+                if packet.get("operation") in ("editorial_assembly", "editorial_revision"):
+                    from review_test_support import editorial_reply
+                    self.assertNotIn("facts", packet)
+                    return editorial_reply(packet)
                 if packet.get("operation") == "editorial_review":
                     self.assertNotIn("research", packet)
                     return {"issues": []}

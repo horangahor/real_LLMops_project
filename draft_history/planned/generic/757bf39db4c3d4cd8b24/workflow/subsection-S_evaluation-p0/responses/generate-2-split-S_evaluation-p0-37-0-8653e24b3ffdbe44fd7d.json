@@ -1,0 +1,40 @@
+{
+  "request_fingerprint": "8653e24b3ffdbe44fd7dfa43be3f8ad9b1e1e0206738eac39863c111898a574a",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "구조 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU 버전은 d_mat[4]와 d_vec[2]를 미리 할당하고, hybrid 버전은 matmul 전용으로 d_A, d_B, d_C 세 개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU(커널 또는 cudaMemset)에서 CPU(생성자 초기화 또는 for 문)로 실행 위치가 바뀌었으며, matmul은 cuBLAS와 메모리 풀을 그대로 사용한다. [근거:H40849fcc17fe_1]",
+          "evidence_ids": [
+            "H40849fcc17fe_1"
+          ]
+        },
+        {
+          "text": "bound 계산 방식은 forward와 backward로 나뉘며, 동일 코드 구조에서 switch(case 0/1)로 두 방식을 선택할 수 있다. 측정 결과 warmup 이후 두 bound 계산 시간은 약 0.2 ms 차이로 비슷하게 나타났다. 다만 이 차이는 warmup 이후 전체 평균 기준과 단일 샘플 기준이 혼재되어 있으며, 단일 샘플에서는 오히려 backward가 약 0.2 ms 더 느리게 관측된 사례가 함께 기록되어 있다. [근거:H40849fcc17fe_3]",
+          "evidence_ids": [
+            "H40849fcc17fe_3"
+          ]
+        },
+        {
+          "text": "변형 모델에서는 배칭과 cudaGraph 캡처 등 실행 구조 변경이 적용되었다. 배칭은 여러 데이터를 묶어 병렬 처리를 가능하게 하는 방식으로 설명되며, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 약 3배 시간이 단축되어 25분에서 8분으로 줄었다고 기록된다. 다만 이 수치는 실시간 환경이 아니라 데이터셋이 준비된 실험 환경 기준이며, 실시간 환경에서는 데이터셋을 꽉 채우기 어렵다고 명시되어 있다. cudaGraph는 추론과 bound를 따로 또는 합쳐 캡처해 커널 런치 비용을 줄이려는 시도로 적용되었고, 추론과 bound를 따로 캡처했을 때 약 400초 정도 줄어든 것으로 보이나 한번에 캡처한 경우의 수치는 별도로 제시되지 않는다. [근거:H40849fcc17fe_4]",
+          "evidence_ids": [
+            "H40849fcc17fe_4"
+          ]
+        },
+        {
+          "text": "기준 모델은 CROWN 알고리즘이 출력한 16개 값에 대해 신경망 기준 또는 lower_bound/upper_bound 기준으로 8개 출력 노드를 선택하는 구조를 사용한다고 기술되어 있다. 다만 원문에는 신경망 기준이 아마 최댓값을 따라가는 듯하고, lower_bound/upper_bound 기준은 아마 간격을 기준으로 따라간다는 식의 추측성 표현이 포함되어 있으며, 실제 구현 확정 여부는 교수 제공 답지에 의존한다고 기록되어 있다. [근거:H40849fcc17fe_6]",
+          "evidence_ids": [
+            "H40849fcc17fe_6"
+          ]
+        },
+        {
+          "text": "변형 모델 중 하나는 메모리 풀(할당·해제 제거)과 memcpy 비용 제거를 적용한 버전으로, 고정된 가중치(W)와 편향(B) 값을 사용한다. 또 다른 변형 모델은 cuBlas와 cuSparse 라이브러리를 도입하고 메모리 풀을 사용하며, matvec/matmul 연산을 cuBlas로 수행하도록 변경되었다. 다만 cuSparse는 잘 되는지 확인해 보기 위해 도입해 본 수준의 실험적 시도이며, 실제 적용 결과나 성능 기여는 원문에서 명확하지 않다. [근거:H40849fcc17fe_7, H40849fcc17fe_8]",
+          "evidence_ids": [
+            "H40849fcc17fe_7",
+            "H40849fcc17fe_8"
+          ]
+        }
+      ]
+    }
+  }
+}

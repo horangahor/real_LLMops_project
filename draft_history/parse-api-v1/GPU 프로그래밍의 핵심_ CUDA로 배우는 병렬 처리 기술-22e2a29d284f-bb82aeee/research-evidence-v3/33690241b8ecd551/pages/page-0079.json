@@ -1,0 +1,696 @@
+{
+  "initial": [
+    {
+      "statement": "현재 코드의 run_infer에서 cudaMemcpyAsync가 CUDA Graph 바깥에 있으며, 매 반복문마다 개별 호출된다고 지적되었다.",
+      "limits": "코드 실제 구현은 이 요소에서 확인되지 않는다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [
+        "run_infer",
+        "cudaMemcpyAsync",
+        "CUDA Graph 바깥"
+      ],
+      "observations": [
+        "cudaMemcpyAsync(d_x0, &x0, in_bytes, cudaMemcpyHostToDevice, stream); // <-- 매 반복문마다 개별 호출",
+        "cudaGraphLaunch(instance_infer, stream);"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p79:e621",
+          "page": 79,
+          "quote": "![image](/image/placeholder)\n코드는 수정하지말고 DMA 셋업을 매번해?\n네, 정확히 짚으셨습니다. 매 루프마다 드라이버와 하드웨어가 \"DMA 전송 셋업(Descriptor 생성 및 큐 제출)\"을 매번 새로 수행합니다.\n사용자분이 느끼신 *\"왜 No-Pin(일반 메모리)이 총 시간에서 13초나 더 빠르지?\"*라는 의문의 핵심 이유가 바로 여기에 있습니다.\n1. 매번 무슨 일이 일어나는가? (Pinned VS No-Pin)\n현재 코드의 run_infer 를 보면 cudaMemcpyAsync 가 CUDA Graph 바깥에 있습니다.\ncpp\ncudaMemcpyAsync(d_x0, &x0, in_bytes, cudaMemcpyHostToDevice, stream); // <-- 매 반복문마다 개별 호출\ncudaGraphLaunch(instance_infer, stream);\n이 1,028 바이트(약 1 KB)를 보낼 때 두 방식의 드라이버 내부 동작이 완전히 다릅니다.\n① Pinned Memory ( cudaHostRegister / cudaHostAlloc\n1. CPU 드라이버: &x0 의 가상 주소로부터 물리 페이지 주소를 조회합니다.\n2. DMA 셋업: PCle Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성합니다.\n3. 큐 제출 (Doorbell): GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣습니다.\n4. GPU 하드웨어 DMA 엔진: PCle TLP 읽기 요청을 보내고 버스 트랜잭션을 개시합니다.\n● 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0 ~ 1.5 μs가 소모됩니다.\n② No-Pin (일반 Pageable 메모리)\n1. OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없습니다.\n2. CPU 내부 즉시 복사 (Staging): 드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로\nmemcpy 를 해버립니다.\n● 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 **0.02 ~ 0.05 μs (20~50 나노초)**면 끝납니다. DMA 셋업보다\n30~50배 빠릅니다.\n3. 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냅니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": []
+    },
+    {
+      "statement": "Pinned Memory(cudaHostRegister / cudaHostAlloc)에서는 CPU 드라이버가 &x0의 가상 주소로부터 물리 페이지 주소를 조회하고, DMA 셋업에서 PCIe Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성하며, 큐 제출(Doorbell)로 GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣고, GPU 하드웨어 DMA 엔진이 PCIe TLP 읽기 요청을 보내고 버스 트랜잭션을 개시하며, 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0~1.5 μs가 소모된다고 설명되었다.",
+      "limits": "이 설명과 1.0~1.5 μs 수치는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [
+        "Pinned Memory",
+        "cudaHostRegister / cudaHostAlloc",
+        "전송 길이=1,028B"
+      ],
+      "observations": [
+        "CPU 드라이버: &x0의 가상 주소로부터 물리 페이지 주소를 조회",
+        "DMA 셋업: PCIe Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성",
+        "큐 제출(Doorbell): GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣음",
+        "GPU 하드웨어 DMA 엔진: PCIe TLP 읽기 요청을 보내고 버스 트랜잭션을 개시",
+        "하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0~1.5 μs가 소모"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "DMA 디스크립터 생성 및 큐 제출 오버헤드(설명값)",
+          "value": "1",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "Pinned Memory, 호출 1회당",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "1",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "DMA 디스크립터 생성 및 큐 제출 오버헤드(설명값)",
+          "value": "1.5",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "Pinned Memory, 호출 1회당",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "1.5",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p79:e621",
+          "page": 79,
+          "quote": "![image](/image/placeholder)\n코드는 수정하지말고 DMA 셋업을 매번해?\n네, 정확히 짚으셨습니다. 매 루프마다 드라이버와 하드웨어가 \"DMA 전송 셋업(Descriptor 생성 및 큐 제출)\"을 매번 새로 수행합니다.\n사용자분이 느끼신 *\"왜 No-Pin(일반 메모리)이 총 시간에서 13초나 더 빠르지?\"*라는 의문의 핵심 이유가 바로 여기에 있습니다.\n1. 매번 무슨 일이 일어나는가? (Pinned VS No-Pin)\n현재 코드의 run_infer 를 보면 cudaMemcpyAsync 가 CUDA Graph 바깥에 있습니다.\ncpp\ncudaMemcpyAsync(d_x0, &x0, in_bytes, cudaMemcpyHostToDevice, stream); // <-- 매 반복문마다 개별 호출\ncudaGraphLaunch(instance_infer, stream);\n이 1,028 바이트(약 1 KB)를 보낼 때 두 방식의 드라이버 내부 동작이 완전히 다릅니다.\n① Pinned Memory ( cudaHostRegister / cudaHostAlloc\n1. CPU 드라이버: &x0 의 가상 주소로부터 물리 페이지 주소를 조회합니다.\n2. DMA 셋업: PCle Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성합니다.\n3. 큐 제출 (Doorbell): GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣습니다.\n4. GPU 하드웨어 DMA 엔진: PCle TLP 읽기 요청을 보내고 버스 트랜잭션을 개시합니다.\n● 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0 ~ 1.5 μs가 소모됩니다.\n② No-Pin (일반 Pageable 메모리)\n1. OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없습니다.\n2. CPU 내부 즉시 복사 (Staging): 드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로\nmemcpy 를 해버립니다.\n● 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 **0.02 ~ 0.05 μs (20~50 나노초)**면 끝납니다. DMA 셋업보다\n30~50배 빠릅니다.\n3. 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냅니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0079F0001"
+    },
+    {
+      "statement": "No-Pin(일반 Pageable 메모리)에서는 OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없고, 드라이버가 하드웨어 DMA를 부르지 않고 CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로 memcpy를 해버리며, 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 0.02~0.05 μs(20~50 나노초)면 끝나서 DMA 셋업보다 30~50배 빠르고, 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보낸다고 설명되었다.",
+      "limits": "이 설명과 수치는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [
+        "No-Pin",
+        "Pageable 메모리",
+        "1,028 바이트"
+      ],
+      "observations": [
+        "OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없음",
+        "드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로 memcpy를 해버림",
+        "최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 0.02~0.05 μs(20~50 나노초)면 끝남",
+        "DMA 셋업보다 30~50배 빠름",
+        "그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냄"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+          "value": "0.02",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "0.02",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+          "value": "0.05",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "0.05",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+          "value": "2E+1",
+          "value_kind": "scalar",
+          "unit": "ns",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "2E+1",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+          "value": "5E+1",
+          "value_kind": "scalar",
+          "unit": "ns",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "5E+1",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "DMA 셋업 대비 속도 배율(설명값)",
+          "value": "3E+1",
+          "value_kind": "scalar",
+          "unit": "배",
+          "condition": "No-Pin vs Pinned",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "3E+1",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "DMA 셋업 대비 속도 배율(설명값)",
+          "value": "5E+1",
+          "value_kind": "scalar",
+          "unit": "배",
+          "condition": "No-Pin vs Pinned",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "5E+1",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p79:e621",
+          "page": 79,
+          "quote": "![image](/image/placeholder)\n코드는 수정하지말고 DMA 셋업을 매번해?\n네, 정확히 짚으셨습니다. 매 루프마다 드라이버와 하드웨어가 \"DMA 전송 셋업(Descriptor 생성 및 큐 제출)\"을 매번 새로 수행합니다.\n사용자분이 느끼신 *\"왜 No-Pin(일반 메모리)이 총 시간에서 13초나 더 빠르지?\"*라는 의문의 핵심 이유가 바로 여기에 있습니다.\n1. 매번 무슨 일이 일어나는가? (Pinned VS No-Pin)\n현재 코드의 run_infer 를 보면 cudaMemcpyAsync 가 CUDA Graph 바깥에 있습니다.\ncpp\ncudaMemcpyAsync(d_x0, &x0, in_bytes, cudaMemcpyHostToDevice, stream); // <-- 매 반복문마다 개별 호출\ncudaGraphLaunch(instance_infer, stream);\n이 1,028 바이트(약 1 KB)를 보낼 때 두 방식의 드라이버 내부 동작이 완전히 다릅니다.\n① Pinned Memory ( cudaHostRegister / cudaHostAlloc\n1. CPU 드라이버: &x0 의 가상 주소로부터 물리 페이지 주소를 조회합니다.\n2. DMA 셋업: PCle Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성합니다.\n3. 큐 제출 (Doorbell): GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣습니다.\n4. GPU 하드웨어 DMA 엔진: PCle TLP 읽기 요청을 보내고 버스 트랜잭션을 개시합니다.\n● 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0 ~ 1.5 μs가 소모됩니다.\n② No-Pin (일반 Pageable 메모리)\n1. OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없습니다.\n2. CPU 내부 즉시 복사 (Staging): 드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로\nmemcpy 를 해버립니다.\n● 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 **0.02 ~ 0.05 μs (20~50 나노초)**면 끝납니다. DMA 셋업보다\n30~50배 빠릅니다.\n3. 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냅니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0079F0002"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "p79:e621은 CUDA 공식 가이드 인용이 아니라, 사용자 질문에 대한 외부 조언/해석 형태로 DMA 셋업 동작과 No-Pin CPU 캐시 복사 동작을 설명한 요소이다.",
+        "limits": "이 요소는 인용 출처나 실측 결과를 제시하지 않으며, CUDA 공식 가이드의 직접 인용으로 볼 근거가 없다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "요소 텍스트가 \"코드는 수정하지말고 DMA 셋업을 매번해?\"라는 질문에 답하는 형식이며, cudaMemcpyAsync와 cudaGraphLaunch 배치에 대한 해석을 제시함",
+          "Pinned와 No-Pin의 드라이버 내부 동작을 각각 서술함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p79:e621"
+        ]
+      },
+      {
+        "statement": "p79:e621은 Pinned Memory의 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드를 호출 1회당 약 1.0~1.5 μs로, No-Pin의 CPU L1/L2 캐시 복사를 1,028바이트 기준 0.02~0.05 μs(20~50 ns)로 설명하며, 이를 DMA 셋업보다 30~50배 빠르다고 서술한다.",
+        "limits": "이 수치들은 실측 결과가 아니라 외부 조언/해석으로 제시되었다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "Pinned Memory",
+          "No-Pin",
+          "1,028바이트"
+        ],
+        "observations": [
+          "Pinned: 하드웨어 DMA 디스크립터 생성 및 큐 제출 오버헤드가 호출 1회당 약 1.0~1.5 μs",
+          "No-Pin: 최신 CPU의 L1/L2 캐시에서 1,028바이트 복사는 0.02~0.05 μs면 끝남",
+          "DMA 셋업보다 30~50배 빠름"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Pinned DMA 디스크립터 생성 및 큐 제출 오버헤드(설명값)",
+            "value": "1",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pinned Memory, 호출 1회당",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "Pinned DMA 디스크립터 생성 및 큐 제출 오버헤드(설명값)",
+            "value": "1.5",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pinned Memory, 호출 1회당",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+            "value": "0.02",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "No-Pin, 최신 CPU",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+            "value": "0.05",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "No-Pin, 최신 CPU",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+            "value": "20",
+            "value_kind": "scalar",
+            "unit": "ns",
+            "condition": "No-Pin, 최신 CPU",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+            "value": "50",
+            "value_kind": "scalar",
+            "unit": "ns",
+            "condition": "No-Pin, 최신 CPU",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "DMA 셋업 대비 No-Pin CPU 캐시 복사 속도 배율(설명값)",
+            "value": "30",
+            "value_kind": "scalar",
+            "unit": "배",
+            "condition": "No-Pin vs Pinned",
+            "element_ids": [
+              "p79:e621"
+            ]
+          },
+          {
+            "metric": "DMA 셋업 대비 No-Pin CPU 캐시 복사 속도 배율(설명값)",
+            "value": "50",
+            "value_kind": "scalar",
+            "unit": "배",
+            "condition": "No-Pin vs Pinned",
+            "element_ids": [
+              "p79:e621"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p79:e621"
+        ]
+      },
+      {
+        "statement": "p79:e621은 No-Pin(일반 Pageable 메모리)에서 OS 페이징 메모리의 물리 주소가 언제든 바뀔 수 있어 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없고, 드라이버가 하드웨어 DMA 대신 CPU의 L1/L2 캐시를 이용해 내부 임시 버퍼로 memcpy하며, 이후 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 함께 보낸다고 설명한다.",
+        "limits": "이 설명은 외부 조언/해석이며 실측 결과로 확인되지 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "No-Pin",
+          "Pageable 메모리"
+        ],
+        "observations": [
+          "OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있어 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없음",
+          "드라이버가 하드웨어 DMA를 부르지 않고 CPU의 L1/L2 캐시를 이용해 내부 임시 버퍼로 memcpy함",
+          "이후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 함께 보냄"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p79:e621"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [
+      0
+    ],
+    "ledger": {
+      "p79:e621": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 수집 대장의 사실 인덱스가 잘못됐습니다."
+      }
+    },
+    "ledger_validation_error": "수집 대장의 사실 인덱스가 잘못됐습니다."
+  },
+  "facts": [
+    {
+      "statement": "Pinned Memory(cudaHostRegister / cudaHostAlloc)에서는 CPU 드라이버가 &x0의 가상 주소로부터 물리 페이지 주소를 조회하고, DMA 셋업에서 PCIe Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성하며, 큐 제출(Doorbell)로 GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣고, GPU 하드웨어 DMA 엔진이 PCIe TLP 읽기 요청을 보내고 버스 트랜잭션을 개시하며, 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0~1.5 μs가 소모된다고 설명되었다.",
+      "limits": "이 설명과 1.0~1.5 μs 수치는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [
+        "Pinned Memory",
+        "cudaHostRegister / cudaHostAlloc",
+        "전송 길이=1,028B"
+      ],
+      "observations": [
+        "CPU 드라이버: &x0의 가상 주소로부터 물리 페이지 주소를 조회",
+        "DMA 셋업: PCIe Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성",
+        "큐 제출(Doorbell): GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣음",
+        "GPU 하드웨어 DMA 엔진: PCIe TLP 읽기 요청을 보내고 버스 트랜잭션을 개시",
+        "하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0~1.5 μs가 소모"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "DMA 디스크립터 생성 및 큐 제출 오버헤드(설명값)",
+          "value": "1",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "Pinned Memory, 호출 1회당",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "1",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "DMA 디스크립터 생성 및 큐 제출 오버헤드(설명값)",
+          "value": "1.5",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "Pinned Memory, 호출 1회당",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "1.5",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p79:e621",
+          "page": 79,
+          "quote": "![image](/image/placeholder)\n코드는 수정하지말고 DMA 셋업을 매번해?\n네, 정확히 짚으셨습니다. 매 루프마다 드라이버와 하드웨어가 \"DMA 전송 셋업(Descriptor 생성 및 큐 제출)\"을 매번 새로 수행합니다.\n사용자분이 느끼신 *\"왜 No-Pin(일반 메모리)이 총 시간에서 13초나 더 빠르지?\"*라는 의문의 핵심 이유가 바로 여기에 있습니다.\n1. 매번 무슨 일이 일어나는가? (Pinned VS No-Pin)\n현재 코드의 run_infer 를 보면 cudaMemcpyAsync 가 CUDA Graph 바깥에 있습니다.\ncpp\ncudaMemcpyAsync(d_x0, &x0, in_bytes, cudaMemcpyHostToDevice, stream); // <-- 매 반복문마다 개별 호출\ncudaGraphLaunch(instance_infer, stream);\n이 1,028 바이트(약 1 KB)를 보낼 때 두 방식의 드라이버 내부 동작이 완전히 다릅니다.\n① Pinned Memory ( cudaHostRegister / cudaHostAlloc\n1. CPU 드라이버: &x0 의 가상 주소로부터 물리 페이지 주소를 조회합니다.\n2. DMA 셋업: PCle Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성합니다.\n3. 큐 제출 (Doorbell): GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣습니다.\n4. GPU 하드웨어 DMA 엔진: PCle TLP 읽기 요청을 보내고 버스 트랜잭션을 개시합니다.\n● 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0 ~ 1.5 μs가 소모됩니다.\n② No-Pin (일반 Pageable 메모리)\n1. OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없습니다.\n2. CPU 내부 즉시 복사 (Staging): 드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로\nmemcpy 를 해버립니다.\n● 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 **0.02 ~ 0.05 μs (20~50 나노초)**면 끝납니다. DMA 셋업보다\n30~50배 빠릅니다.\n3. 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냅니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0079F0001"
+    },
+    {
+      "statement": "No-Pin(일반 Pageable 메모리)에서는 OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없고, 드라이버가 하드웨어 DMA를 부르지 않고 CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로 memcpy를 해버리며, 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 0.02~0.05 μs(20~50 나노초)면 끝나서 DMA 셋업보다 30~50배 빠르고, 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보낸다고 설명되었다.",
+      "limits": "이 설명과 수치는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [
+        "No-Pin",
+        "Pageable 메모리",
+        "1,028 바이트"
+      ],
+      "observations": [
+        "OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없음",
+        "드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로 memcpy를 해버림",
+        "최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 0.02~0.05 μs(20~50 나노초)면 끝남",
+        "DMA 셋업보다 30~50배 빠름",
+        "그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냄"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+          "value": "0.02",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "0.02",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+          "value": "0.05",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "0.05",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+          "value": "2E+1",
+          "value_kind": "scalar",
+          "unit": "ns",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "2E+1",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "CPU L1/L2 캐시에서 1,028 바이트 복사 시간(설명값)",
+          "value": "5E+1",
+          "value_kind": "scalar",
+          "unit": "ns",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "5E+1",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "DMA 셋업 대비 속도 배율(설명값)",
+          "value": "3E+1",
+          "value_kind": "scalar",
+          "unit": "배",
+          "condition": "No-Pin vs Pinned",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "3E+1",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "DMA 셋업 대비 속도 배율(설명값)",
+          "value": "5E+1",
+          "value_kind": "scalar",
+          "unit": "배",
+          "condition": "No-Pin vs Pinned",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "5E+1",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p79:e621",
+          "page": 79,
+          "quote": "![image](/image/placeholder)\n코드는 수정하지말고 DMA 셋업을 매번해?\n네, 정확히 짚으셨습니다. 매 루프마다 드라이버와 하드웨어가 \"DMA 전송 셋업(Descriptor 생성 및 큐 제출)\"을 매번 새로 수행합니다.\n사용자분이 느끼신 *\"왜 No-Pin(일반 메모리)이 총 시간에서 13초나 더 빠르지?\"*라는 의문의 핵심 이유가 바로 여기에 있습니다.\n1. 매번 무슨 일이 일어나는가? (Pinned VS No-Pin)\n현재 코드의 run_infer 를 보면 cudaMemcpyAsync 가 CUDA Graph 바깥에 있습니다.\ncpp\ncudaMemcpyAsync(d_x0, &x0, in_bytes, cudaMemcpyHostToDevice, stream); // <-- 매 반복문마다 개별 호출\ncudaGraphLaunch(instance_infer, stream);\n이 1,028 바이트(약 1 KB)를 보낼 때 두 방식의 드라이버 내부 동작이 완전히 다릅니다.\n① Pinned Memory ( cudaHostRegister / cudaHostAlloc\n1. CPU 드라이버: &x0 의 가상 주소로부터 물리 페이지 주소를 조회합니다.\n2. DMA 셋업: PCle Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성합니다.\n3. 큐 제출 (Doorbell): GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣습니다.\n4. GPU 하드웨어 DMA 엔진: PCle TLP 읽기 요청을 보내고 버스 트랜잭션을 개시합니다.\n● 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0 ~ 1.5 μs가 소모됩니다.\n② No-Pin (일반 Pageable 메모리)\n1. OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없습니다.\n2. CPU 내부 즉시 복사 (Staging): 드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로\nmemcpy 를 해버립니다.\n● 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 **0.02 ~ 0.05 μs (20~50 나노초)**면 끝납니다. DMA 셋업보다\n30~50배 빠릅니다.\n3. 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냅니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0079F0002"
+    },
+    {
+      "statement": "p79:e621은 CUDA 공식 가이드 인용이 아니라, 사용자 질문에 대한 외부 조언/해석 형태로 DMA 셋업 동작과 No-Pin CPU 캐시 복사 동작을 설명한 요소이다.",
+      "limits": "이 요소는 인용 출처나 실측 결과를 제시하지 않으며, CUDA 공식 가이드의 직접 인용으로 볼 근거가 없다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [],
+      "observations": [
+        "요소 텍스트가 \"코드는 수정하지말고 DMA 셋업을 매번해?\"라는 질문에 답하는 형식이며, cudaMemcpyAsync와 cudaGraphLaunch 배치에 대한 해석을 제시함",
+        "Pinned와 No-Pin의 드라이버 내부 동작을 각각 서술함"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p79:e621",
+          "page": 79,
+          "quote": "![image](/image/placeholder)\n코드는 수정하지말고 DMA 셋업을 매번해?\n네, 정확히 짚으셨습니다. 매 루프마다 드라이버와 하드웨어가 \"DMA 전송 셋업(Descriptor 생성 및 큐 제출)\"을 매번 새로 수행합니다.\n사용자분이 느끼신 *\"왜 No-Pin(일반 메모리)이 총 시간에서 13초나 더 빠르지?\"*라는 의문의 핵심 이유가 바로 여기에 있습니다.\n1. 매번 무슨 일이 일어나는가? (Pinned VS No-Pin)\n현재 코드의 run_infer 를 보면 cudaMemcpyAsync 가 CUDA Graph 바깥에 있습니다.\ncpp\ncudaMemcpyAsync(d_x0, &x0, in_bytes, cudaMemcpyHostToDevice, stream); // <-- 매 반복문마다 개별 호출\ncudaGraphLaunch(instance_infer, stream);\n이 1,028 바이트(약 1 KB)를 보낼 때 두 방식의 드라이버 내부 동작이 완전히 다릅니다.\n① Pinned Memory ( cudaHostRegister / cudaHostAlloc\n1. CPU 드라이버: &x0 의 가상 주소로부터 물리 페이지 주소를 조회합니다.\n2. DMA 셋업: PCle Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성합니다.\n3. 큐 제출 (Doorbell): GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣습니다.\n4. GPU 하드웨어 DMA 엔진: PCle TLP 읽기 요청을 보내고 버스 트랜잭션을 개시합니다.\n● 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0 ~ 1.5 μs가 소모됩니다.\n② No-Pin (일반 Pageable 메모리)\n1. OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없습니다.\n2. CPU 내부 즉시 복사 (Staging): 드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로\nmemcpy 를 해버립니다.\n● 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 **0.02 ~ 0.05 μs (20~50 나노초)**면 끝납니다. DMA 셋업보다\n30~50배 빠릅니다.\n3. 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냅니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0079F0003"
+    },
+    {
+      "statement": "p79:e621은 Pinned Memory의 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드를 호출 1회당 약 1.0~1.5 μs로, No-Pin의 CPU L1/L2 캐시 복사를 1,028바이트 기준 0.02~0.05 μs(20~50 ns)로 설명하며, 이를 DMA 셋업보다 30~50배 빠르다고 서술한다.",
+      "limits": "이 수치들은 실측 결과가 아니라 외부 조언/해석으로 제시되었다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [
+        "Pinned Memory",
+        "No-Pin",
+        "1,028바이트"
+      ],
+      "observations": [
+        "Pinned: 하드웨어 DMA 디스크립터 생성 및 큐 제출 오버헤드가 호출 1회당 약 1.0~1.5 μs",
+        "No-Pin: 최신 CPU의 L1/L2 캐시에서 1,028바이트 복사는 0.02~0.05 μs면 끝남",
+        "DMA 셋업보다 30~50배 빠름"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "Pinned DMA 디스크립터 생성 및 큐 제출 오버헤드(설명값)",
+          "value": "1",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "Pinned Memory, 호출 1회당",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "1",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "Pinned DMA 디스크립터 생성 및 큐 제출 오버헤드(설명값)",
+          "value": "1.5",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "Pinned Memory, 호출 1회당",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "1.5",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+          "value": "0.02",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "0.02",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+          "value": "0.05",
+          "value_kind": "scalar",
+          "unit": "us",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "0.05",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+          "value": "2E+1",
+          "value_kind": "scalar",
+          "unit": "ns",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "20",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "No-Pin CPU L1/L2 캐시 1,028바이트 복사 시간(설명값)",
+          "value": "5E+1",
+          "value_kind": "scalar",
+          "unit": "ns",
+          "condition": "No-Pin, 최신 CPU",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "50",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "DMA 셋업 대비 No-Pin CPU 캐시 복사 속도 배율(설명값)",
+          "value": "3E+1",
+          "value_kind": "scalar",
+          "unit": "배",
+          "condition": "No-Pin vs Pinned",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "30",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "DMA 셋업 대비 No-Pin CPU 캐시 복사 속도 배율(설명값)",
+          "value": "5E+1",
+          "value_kind": "scalar",
+          "unit": "배",
+          "condition": "No-Pin vs Pinned",
+          "element_ids": [
+            "p79:e621"
+          ],
+          "raw_value": "50",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p79:e621",
+          "page": 79,
+          "quote": "![image](/image/placeholder)\n코드는 수정하지말고 DMA 셋업을 매번해?\n네, 정확히 짚으셨습니다. 매 루프마다 드라이버와 하드웨어가 \"DMA 전송 셋업(Descriptor 생성 및 큐 제출)\"을 매번 새로 수행합니다.\n사용자분이 느끼신 *\"왜 No-Pin(일반 메모리)이 총 시간에서 13초나 더 빠르지?\"*라는 의문의 핵심 이유가 바로 여기에 있습니다.\n1. 매번 무슨 일이 일어나는가? (Pinned VS No-Pin)\n현재 코드의 run_infer 를 보면 cudaMemcpyAsync 가 CUDA Graph 바깥에 있습니다.\ncpp\ncudaMemcpyAsync(d_x0, &x0, in_bytes, cudaMemcpyHostToDevice, stream); // <-- 매 반복문마다 개별 호출\ncudaGraphLaunch(instance_infer, stream);\n이 1,028 바이트(약 1 KB)를 보낼 때 두 방식의 드라이버 내부 동작이 완전히 다릅니다.\n① Pinned Memory ( cudaHostRegister / cudaHostAlloc\n1. CPU 드라이버: &x0 의 가상 주소로부터 물리 페이지 주소를 조회합니다.\n2. DMA 셋업: PCle Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성합니다.\n3. 큐 제출 (Doorbell): GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣습니다.\n4. GPU 하드웨어 DMA 엔진: PCle TLP 읽기 요청을 보내고 버스 트랜잭션을 개시합니다.\n● 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0 ~ 1.5 μs가 소모됩니다.\n② No-Pin (일반 Pageable 메모리)\n1. OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없습니다.\n2. CPU 내부 즉시 복사 (Staging): 드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로\nmemcpy 를 해버립니다.\n● 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 **0.02 ~ 0.05 μs (20~50 나노초)**면 끝납니다. DMA 셋업보다\n30~50배 빠릅니다.\n3. 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냅니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0079F0004"
+    },
+    {
+      "statement": "p79:e621은 No-Pin(일반 Pageable 메모리)에서 OS 페이징 메모리의 물리 주소가 언제든 바뀔 수 있어 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없고, 드라이버가 하드웨어 DMA 대신 CPU의 L1/L2 캐시를 이용해 내부 임시 버퍼로 memcpy하며, 이후 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 함께 보낸다고 설명한다.",
+      "limits": "이 설명은 외부 조언/해석이며 실측 결과로 확인되지 않았다.",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "ai_advice",
+      "conditions": [
+        "No-Pin",
+        "Pageable 메모리"
+      ],
+      "observations": [
+        "OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있어 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없음",
+        "드라이버가 하드웨어 DMA를 부르지 않고 CPU의 L1/L2 캐시를 이용해 내부 임시 버퍼로 memcpy함",
+        "이후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 함께 보냄"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p79:e621",
+          "page": 79,
+          "quote": "![image](/image/placeholder)\n코드는 수정하지말고 DMA 셋업을 매번해?\n네, 정확히 짚으셨습니다. 매 루프마다 드라이버와 하드웨어가 \"DMA 전송 셋업(Descriptor 생성 및 큐 제출)\"을 매번 새로 수행합니다.\n사용자분이 느끼신 *\"왜 No-Pin(일반 메모리)이 총 시간에서 13초나 더 빠르지?\"*라는 의문의 핵심 이유가 바로 여기에 있습니다.\n1. 매번 무슨 일이 일어나는가? (Pinned VS No-Pin)\n현재 코드의 run_infer 를 보면 cudaMemcpyAsync 가 CUDA Graph 바깥에 있습니다.\ncpp\ncudaMemcpyAsync(d_x0, &x0, in_bytes, cudaMemcpyHostToDevice, stream); // <-- 매 반복문마다 개별 호출\ncudaGraphLaunch(instance_infer, stream);\n이 1,028 바이트(약 1 KB)를 보낼 때 두 방식의 드라이버 내부 동작이 완전히 다릅니다.\n① Pinned Memory ( cudaHostRegister / cudaHostAlloc\n1. CPU 드라이버: &x0 의 가상 주소로부터 물리 페이지 주소를 조회합니다.\n2. DMA 셋업: PCle Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성합니다.\n3. 큐 제출 (Doorbell): GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣습니다.\n4. GPU 하드웨어 DMA 엔진: PCle TLP 읽기 요청을 보내고 버스 트랜잭션을 개시합니다.\n● 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0 ~ 1.5 μs가 소모됩니다.\n② No-Pin (일반 Pageable 메모리)\n1. OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없습니다.\n2. CPU 내부 즉시 복사 (Staging): 드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로\nmemcpy 를 해버립니다.\n● 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 **0.02 ~ 0.05 μs (20~50 나노초)**면 끝납니다. DMA 셋업보다\n30~50배 빠릅니다.\n3. 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냅니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0079F0005"
+    }
+  ]
+}

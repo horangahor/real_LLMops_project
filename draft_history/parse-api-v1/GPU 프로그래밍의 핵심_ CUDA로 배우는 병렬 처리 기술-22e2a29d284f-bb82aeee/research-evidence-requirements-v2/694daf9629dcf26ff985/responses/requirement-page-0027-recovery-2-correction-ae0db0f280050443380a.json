@@ -1,0 +1,698 @@
+{
+  "request_fingerprint": "ae0db0f280050443380acb58780faca807df496651c2f908eadf308bea210e2c",
+  "value": {
+    "facts": [
+      {
+        "statement": "동기화 코드(cudaDeviceSynchronize)를 필요한 부분을 제외하고 제거하여 CROWN Verification 실행 시간이 26.529100 ms에서 25.457200 ms로 약 1 ms 정도 줄었다.",
+        "limits": "단일 실행 결과 기록이며, 반복 측정 통계나 다른 조건과의 분리 비교는 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CROWN Verification 실행",
+          "eps = 1e-06",
+          "Output Dimension: 16",
+          "cudaDeviceSynchronize 제거"
+        ],
+        "observations": [
+          "동기화 코드 제거 후 실행 시간이 약 1 ms 감소함"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p27:e188"
+            ]
+          },
+          {
+            "name": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p27:e188"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time (제거 전)",
+            "value": "26.5291",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CROWN Verification, eps=1e-06, Output Dimension 16, cudaDeviceSynchronize 포함",
+            "element_ids": [
+              "p27:e188"
+            ]
+          },
+          {
+            "metric": "Elapsed time (제거 후)",
+            "value": "25.4572",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CROWN Verification, eps=1e-06, Output Dimension 16, cudaDeviceSynchronize 제거",
+            "element_ids": [
+              "p27:e188"
+            ]
+          },
+          {
+            "metric": "Elapsed time 감소",
+            "value": "1",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cudaDeviceSynchronize 제거 후",
+            "element_ids": [
+              "p27:e188"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p27:e188",
+          "p27:e189"
+        ],
+        "requirement_ids": [
+          "methods_Q8",
+          "evaluation_Q10"
+        ],
+        "supplemental_reason": "동기화 제거 전후 실행 시간 수치와 조건을 보존한다."
+      },
+      {
+        "statement": "cuBlas를 도입했으나 오히려 결과가 안 좋아졌으며, cuSparse나 cuBlas 사용 시 -lcublas, -lcusparse를 컴파일 옵션에 붙여야 한다.",
+        "limits": "도입 후 결과가 안 좋았다는 정성적 평가이며, 정량 성능 수치나 원인 분리 실험 결과는 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuBlas 도입 시도",
+          "컴파일 옵션 -lcublas, -lcusparse 필요"
+        ],
+        "observations": [
+          "cuBlas 도입 후 결과가 안 좋음"
+        ],
+        "parameters": [
+          {
+            "name": "컴파일 옵션",
+            "value": "-lcublas, -lcusparse",
+            "value_kind": "text",
+            "element_ids": [
+              "p26:e185"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p26:e184",
+          "p26:e185"
+        ],
+        "requirement_ids": [
+          "methods_Q4",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "cuBlas 도입 후 결과 악화 및 컴파일 옵션 정보를 보존한다."
+      },
+      {
+        "statement": "cuBlas, cuSparse 같은 라이브러리는 Nvidia에서 만든 매우 거대한 소스코드 덩어리로 미리 컴파일되어 있으며, 소스코드가 없기 때문에 해당 라이브러리를 넣고 한번에 컴파일할 수 없다.",
+        "limits": "라이브러리 특성과 컴파일 방식에 대한 설명 기록이며, 실제 링크 성공 여부나 성능 영향은 제시되지 않았다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuBlas, cuSparse 사용",
+          "Nvidia 제공 라이브러리",
+          "미리 컴파일된 소스코드 덩어리",
+          "소스코드 없음"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p26:e187"
+        ],
+        "requirement_ids": [
+          "methods_Q12"
+        ],
+        "supplemental_reason": "cuBlas/cuSparse의 사전 컴파일 특성과 컴파일 제약 설명을 보존한다."
+      },
+      {
+        "statement": "cuSparse를 도입해 벡터 곱(spMV)만 적용해 보았으며, 적용 범위는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고 cuSPARSE handle 및 CSR descriptor를 유지하며 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체한 상황이다. 기존 matmul은 아직 유지되었다.",
+        "limits": "이 내용은 cuSparse 도입 시도와 적용 범위에 대한 기록이며, spMM 도입 여부나 최종 성능 결론은 다음 단계의 결과로 이어진다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse 도입 시도",
+          "spMV만 적용",
+          "W, W_pos, W_neg를 CSR 형식으로 변환",
+          "cuSPARSE handle 및 CSR descriptor 유지",
+          "network_forward()의 dense matvec를 cuSPARSE SpMV로 교체",
+          "기존 matmul은 유지"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:e194",
+          "p28:enh:e3",
+          "p28:enh:e5"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "cuSparse spMV 적용 범위와 유지된 기존 matmul 정보를 보존한다."
+      },
+      {
+        "statement": "cuSparse를 이용해 spMV만 적용한 결과 CROWN Verification 실행 시간이 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다.",
+        "limits": "이 수치는 단일 실행 결과이며, 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSparse 도입",
+          "spMV만 적용",
+          "CROWN Verification 실행",
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "실행 시간이 27.107400 ms로 기록됨",
+          "이전보다 느려졌다고 기록됨"
+        ],
+        "parameters": [
+          {
+            "name": "eps",
+            "value": "1e-06",
+            "value_kind": "text",
+            "element_ids": [
+              "p28:e192"
+            ]
+          },
+          {
+            "name": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p28:e192"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "27.1074",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "cuSparse spMV 적용, CROWN Verification, eps=1e-06, Output Dimension 16",
+            "element_ids": [
+              "p28:e192"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p28:e192",
+          "p28:e195"
+        ],
+        "requirement_ids": [
+          "evaluation_Q1",
+          "evaluation_Q7"
+        ],
+        "supplemental_reason": "cuSparse spMV 적용 후 실행 시간 수치와 느려졌다는 관측을 보존한다."
+      },
+      {
+        "statement": "spMV 적용 결과가 느려진 뒤 spMM(Sparse 행렬곱) 도입까지 검토하기로 했다.",
+        "limits": "이 내용은 후속 도입 검토 방향의 기록이며, spMM 도입 후 실제 결과는 다음 페이지에 이어진다.",
+        "kind": "method",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMV 적용 결과가 느려짐",
+          "spMM 도입 검토 예정"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p28:e194",
+          "p28:enh:e5"
+        ],
+        "requirement_ids": [
+          "methods_Q13"
+        ],
+        "supplemental_reason": "spMV 결과 이후 spMM 도입 검토 계획을 보존한다."
+      },
+      {
+        "statement": "cuSPARSE 도입 후 spMM까지 적용해 결과를 확인했으며, 실행 시간이 약 38.580600 ms로 기록되어 이전 27.107400 ms보다 느려졌다.",
+        "limits": "이 결과는 단일 실행 관측이며, 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE 도입",
+          "spMV 적용 후 spMM까지 도입",
+          "CROWN Verification 실행",
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "실행 시간이 38.580600 ms로 기록됨",
+          "이전 27.107400 ms보다 느려졌다고 기록됨",
+          "출력 표에 [Index], Lower Bound, Upper Bound, Normal Pred (y) 열이 포함됨",
+          "0번~15번 출력의 Lower/Upper Bound 및 Normal Pred (y) 값이 표시됨"
+        ],
+        "parameters": [
+          {
+            "name": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p27:e188"
+            ]
+          },
+          {
+            "name": "Elapsed time",
+            "value": "38.580600",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p27:e188"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p27:e188"
+        ],
+        "requirement_ids": [
+          "evaluation_Q1",
+          "evaluation_Q7"
+        ],
+        "supplemental_reason": "spMM 도입 후 실행 시간 수치와 이전 대비 느려졌다는 관측을 보존한다."
+      },
+      {
+        "statement": "cuBLAS와 cuSPARSE는 실험했으나 현재 모델 크기와 호출 패턴에서는 느려졌으므로, 현 기준 코드에는 포함하지 않은 상태이며 후에 다시 도입해보는 시도가 필요하다.",
+        "limits": "현재 기준 코드에는 포함하지 않은 상태이며, 이후 재도입을 시도할 필요가 있다는 계획·판단이 함께 기록되어 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuBLAS와 cuSPARSE 실험 수행",
+          "현재 모델 크기와 호출 패턴에서 느려짐",
+          "현 기준 코드에는 미포함",
+          "후에 다시 도입해보는 시도 필요"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p27:e190"
+        ],
+        "requirement_ids": [
+          "limitations_Q3",
+          "conclusion_Q3"
+        ],
+        "supplemental_reason": "cuBLAS/cuSPARSE 실험 결과와 현 기준 미포함 및 재도입 필요성을 보존한다."
+      },
+      {
+        "statement": "spMM까지 도입한 뒤 결과를 확인했으며, 실행 시간이 약 38.580600 ms로 기록되어 이전 27.107400 ms보다 느려졌다.",
+        "limits": "단일 실행 관측 결과이며, 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "cuSPARSE 도입",
+          "spMV 적용 후 spMM까지 도입",
+          "CROWN Verification 실행",
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "실행 시간이 38.580600 ms로 기록됨",
+          "이전 27.107400 ms보다 느려졌다고 기록됨",
+          "출력 표에 [Index], Lower Bound, Upper Bound, Normal Pred (y) 열이 포함됨",
+          "0번~15번 출력의 Lower/Upper Bound 및 Normal Pred (y) 값이 표시됨"
+        ],
+        "parameters": [
+          {
+            "name": "출력 차원",
+            "value": "16",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p27:e188"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p27:e188"
+        ],
+        "requirement_ids": [
+          "evaluation_Q1",
+          "evaluation_Q7"
+        ],
+        "supplemental_reason": "spMM 도입 후 실행 시간 수치와 이전 대비 느려졌다는 관측을 보존한다."
+      },
+      {
+        "statement": "거의 40ms로 회귀했으며, 이러면 안된다고 기록되었다.",
+        "limits": "정성적 판단·반응 기록이며, 정량 비교 기준이나 반복 측정 통계는 현재 페이지에 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "spMM 도입 후 실행 시간 확인",
+          "약 40ms 수준으로 회귀"
+        ],
+        "observations": [
+          "거의 40ms로 회귀",
+          "이러면 안된다"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p27:e189",
+          "p27:e190"
+        ],
+        "requirement_ids": [
+          "evaluation_Q3",
+          "limitations_Q9"
+        ],
+        "supplemental_reason": "spMM 도입 후 약 40ms 회귀와 부정적 판단을 보존한다."
+      },
+      {
+        "statement": "신경망이 너무 작아서 그런 것일 수 있다는 의견이 있었다.",
+        "limits": "의견 수준의 진술이며, 원인 확정이나 정량 검증 결과는 현재 페이지에 제시되지 않았다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "실행 시간이 약 40ms로 회귀",
+          "신경망 크기가 작음"
+        ],
+        "observations": [
+          "너무 신경망이 작아서 그런 걸지도 모른다는 의견이 있음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p27:e190"
+        ],
+        "requirement_ids": [
+          "limitations_Q1",
+          "limitations_Q9"
+        ],
+        "supplemental_reason": "실행 시간 회귀 원인에 대한 신경망 크기 관련 의견을 보존한다."
+      },
+      {
+        "statement": "network_forward는 신경망의 일반 추론값을 출력하는데, 아직 GPU 파이프라인이 아니라서 최적화가 안 되어 있기도 하다.",
+        "limits": "현재 상태에 대한 설명·해석 기록이며, 최적화 적용 결과나 정량 수치는 현재 페이지에 제시되지 않았다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "network_forward가 신경망 일반 추론값 출력",
+          "아직 GPU 파이프라인이 아님",
+          "최적화가 안 되어 있음"
+        ],
+        "observations": [
+          "network_forward는 신경망의 일반 추론값을 출력함",
+          "GPU 파이프라인이 아니라서 최적화가 안되어 있음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p27:e190"
+        ],
+        "requirement_ids": [
+          "methods_Q5",
+          "limitations_Q2"
+        ],
+        "supplemental_reason": "network_forward의 현재 상태와 최적화 미완료 해석을 보존한다."
+      },
+      {
+        "statement": "현재 주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞다.",
+        "limits": "현재 측정 기준 유지에 대한 판단 기록이며, 별도 벤치마크 옵션 비교 가능성은 함께 언급되어 있다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "현재 주 측정 기준",
+          "cuSPARSE SpMV/SpMM 제외",
+          "기존 dense matvec/matmul 유지"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p27:e190"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "methods_Q9"
+        ],
+        "supplemental_reason": "현재 주 측정에서 cuSPARSE 제외와 기존 dense 연산 유지 판단을 보존한다."
+      },
+      {
+        "statement": "network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다.",
+        "limits": "현재 파이프라인 상태와 오버헤드 구조에 대한 설명 기록이며, 정량 분리 측정 결과는 제시되지 않았다.",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "network_forward()가 전체 타이머에 포함됨",
+          "cuSPARSE pipeline 미완성 상태",
+          "SpMV/SpMM 호출 시 descriptor와 buffer 처리 비용 추가"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p27:e190"
+        ],
+        "requirement_ids": [
+          "methods_Q8",
+          "methods_Q13"
+        ],
+        "supplemental_reason": "network_forward 타이머 포함 여부와 cuSPARSE 파이프라인 미완성 및 오버헤드 구조를 보존한다."
+      },
+      {
+        "statement": "모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크며, SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황이다.",
+        "limits": "기록자의 원인 해석이며, setup/launch 비용과 계산 이득의 정량 분리 측정은 현재 페이지에 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "모델과 layer 수가 작음",
+          "실제 sparse 연산보다 setup/launch 비용이 더 큼",
+          "SpMM 적용 후 38 ms 기록",
+          "오버헤드가 계산 이득보다 큰 상황"
+        ],
+        "observations": [
+          "SpMM 적용 후 38 ms가 됨",
+          "오버헤드가 계산 이득보다 큰 상황"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p27:e190"
+        ],
+        "requirement_ids": [
+          "methods_Q13",
+          "limitations_Q6"
+        ],
+        "supplemental_reason": "SpMM 성능 저하 원인을 모델 크기와 setup/launch 오버헤드로 해석한 내용을 보존한다."
+      },
+      {
+        "statement": "공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다.",
+        "limits": "공식 결과 유지 및 별도 비교 방식에 대한 제안·판단 기록이며, 실제 별도 벤치마크 결과 수치는 현재 페이지에 제시되지 않았다.",
+        "kind": "setup",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "공식 결과는 24 ms dense baseline으로 유지",
+          "cuSPARSE는 별도 benchmark 옵션으로 비교"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "공식 결과 기준",
+            "value": "24 ms dense baseline",
+            "value_kind": "text",
+            "element_ids": [
+              "p27:e190"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p27:e190"
+        ],
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5"
+        ],
+        "supplemental_reason": "공식 dense baseline 유지 및 cuSPARSE 별도 비교 제안을 보존한다."
+      }
+    ],
+    "existing_links": [
+      {
+        "fact_id": "E00102",
+        "requirement_ids": [
+          "methods_Q8",
+          "evaluation_Q10"
+        ],
+        "element_ids": [
+          "p27:e188",
+          "p27:e189"
+        ]
+      },
+      {
+        "fact_id": "E00103",
+        "requirement_ids": [
+          "methods_Q4",
+          "methods_Q13"
+        ],
+        "element_ids": [
+          "p27:e190"
+        ]
+      },
+      {
+        "fact_id": "E00104",
+        "requirement_ids": [
+          "methods_Q12"
+        ],
+        "element_ids": [
+          "p27:e190"
+        ]
+      },
+      {
+        "fact_id": "E00105",
+        "requirement_ids": [
+          "methods_Q5",
+          "methods_Q13"
+        ],
+        "element_ids": [
+          "p27:e190"
+        ]
+      },
+      {
+        "fact_id": "E00106",
+        "requirement_ids": [
+          "evaluation_Q1",
+          "evaluation_Q7"
+        ],
+        "element_ids": [
+          "p27:e188"
+        ]
+      },
+      {
+        "fact_id": "E00107",
+        "requirement_ids": [
+          "methods_Q13"
+        ],
+        "element_ids": [
+          "p27:e190"
+        ]
+      },
+      {
+        "fact_id": "E00108",
+        "requirement_ids": [
+          "evaluation_Q1",
+          "evaluation_Q7"
+        ],
+        "element_ids": [
+          "p27:e188"
+        ]
+      },
+      {
+        "fact_id": "E00109",
+        "requirement_ids": [
+          "limitations_Q3",
+          "conclusion_Q3"
+        ],
+        "element_ids": [
+          "p27:e190"
+        ]
+      },
+      {
+        "fact_id": "E00110",
+        "requirement_ids": [
+          "evaluation_Q1",
+          "evaluation_Q7"
+        ],
+        "element_ids": [
+          "p27:e188"
+        ]
+      },
+      {
+        "fact_id": "E00111",
+        "requirement_ids": [
+          "evaluation_Q3",
+          "limitations_Q9"
+        ],
+        "element_ids": [
+          "p27:e189",
+          "p27:e190"
+        ]
+      },
+      {
+        "fact_id": "E00112",
+        "requirement_ids": [
+          "limitations_Q1",
+          "limitations_Q9"
+        ],
+        "element_ids": [
+          "p27:e190"
+        ]
+      },
+      {
+        "fact_id": "E00113",
+        "requirement_ids": [
+          "methods_Q5",
+          "limitations_Q2"
+        ],
+        "element_ids": [
+          "p27:e190"
+        ]
+      },
+      {
+        "fact_id": "E00114",
+        "requirement_ids": [
+          "methods_Q7",
+          "methods_Q9"
+        ],
+        "element_ids": [
+          "p27:e190"
+        ]
+      },
+      {
+        "fact_id": "E00115",
+        "requirement_ids": [
+          "methods_Q8",
+          "methods_Q13"
+        ],
+        "element_ids": [
+          "p27:e190"
+        ]
+      },
+      {
+        "fact_id": "E00116",
+        "requirement_ids": [
+          "methods_Q13",
+          "limitations_Q6"
+        ],
+        "element_ids": [
+          "p27:e190"
+        ]
+      },
+      {
+        "fact_id": "E00117",
+        "requirement_ids": [
+          "methods_Q7",
+          "evaluation_Q5"
+        ],
+        "element_ids": [
+          "p27:e190"
+        ]
+      }
+    ]
+  }
+}

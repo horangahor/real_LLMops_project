@@ -1,0 +1,106 @@
+{
+  "request_fingerprint": "10baaf0070caa06dcaa361e2b8495c369dddfc8e622582f46c631556c6bba5f8",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "추론, bound 계산, 검증 각 단계 종료 시점에 std::chrono::high_resolution_clock::now()로 타임스탬프를 기록하고, 구간 차이를 double 초 단위로 누적하여 각각 시간을 측정하도록 코드를 구성함",
+          "limits": "측정은 단일 데이터 포인트(dataset[i]) 단위로 수행되며, 전체 92만 번 실행의 elapsed 타임과 미세한 오차가 존재함",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "추론(네트워크 정방향 통과) 후 bound 계산, bound 계산 후 검증(Top-k 인증 판정) 순서로 진행",
+            "case 0은 ForwardBoundResult, case 1은 BackwardBoundResult 사용",
+            "각 case 안에서 직접 초기화하여 NRVO 적용, 4MB+ 구조체 복사 0회"
+          ],
+          "observations": [
+            "추론 시간 누적 변수: time_infer_total",
+            "bound 시간 누적 변수: time_bound_total",
+            "검증 시간 누적 변수: time_certify_total",
+            "Top-k 인증 판정 결과에 따라 t_count 또는 f_count 증가"
+          ],
+          "parameters": [
+            {
+              "name": "추론 시간 측정 구간",
+              "value": "t0 ~ t1",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p54:e392"
+              ]
+            },
+            {
+              "name": "bound 시간 측정 구간",
+              "value": "t1 ~ t2",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p54:e392"
+              ]
+            },
+            {
+              "name": "검증 시간 측정 구간",
+              "value": "t2 ~ t3",
+              "value_kind": "scalar",
+              "element_ids": [
+                "p54:e392"
+              ]
+            },
+            {
+              "name": "bound 계산 방법(case)",
+              "value": "0: ForwardBoundResult (lirpa_forward_bound_imp1), 1: BackwardBoundResult (lirpa_backward_bound)",
+              "value_kind": "text",
+              "element_ids": [
+                "p54:e392"
+              ]
+            },
+            {
+              "name": "Top-k 인증 판정 함수",
+              "value": "certify_topk(y0, final_lower, final_upper, k)",
+              "value_kind": "text",
+              "element_ids": [
+                "p54:e392"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "추론 시간 누적",
+              "value": "time_infer_total",
+              "value_kind": "scalar",
+              "unit": "초(double)",
+              "condition": "network_forward(*net, dataset[i]) 실행 후 t0~t1 구간 누적",
+              "element_ids": [
+                "p54:e392"
+              ]
+            },
+            {
+              "metric": "bound 시간 누적",
+              "value": "time_bound_total",
+              "value_kind": "scalar",
+              "unit": "초(double)",
+              "condition": "bound 계산 종료 후 t1~t2 구간 누적 (case 0/1 공통)",
+              "element_ids": [
+                "p54:e392"
+              ]
+            },
+            {
+              "metric": "검증 시간 누적",
+              "value": "time_certify_total",
+              "value_kind": "scalar",
+              "unit": "초(double)",
+              "condition": "검증 종료 후 t2~t3 구간 누적 (case 0/1 공통)",
+              "element_ids": [
+                "p54:e392"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p54:e392",
+            "p54:e393",
+            "p54:e394"
+          ]
+        }
+      ]
+    }
+  }
+}

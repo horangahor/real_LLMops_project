@@ -1,0 +1,207 @@
+{
+  "request_fingerprint": "fb5584c9f6403f725a02e2cc490d3e6dacfad673a0af273690d5c59bb7de7498",
+  "value": {
+    "decisions": {
+      "P0026F0004": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "cuBlas/cuSparse가 자동 링크되지 않는 이유로 1) 표준 라이브러리(libc)가 아니기 때문, 2) 커스텀 모듈은 코드를 직접 가져와 통째로 컴파일하므로 -l을 안 붙여도 됨, 3) cuBlas/cuSparse는 Nvidia의 거대한 소스코드 덩어리로 미리 컴파일되어 있음, 4) 소스코드가 없어 해당 라이브러리를 넣고 한 번에 컴파일할 수 없음을 들었다.",
+            "limits": "이 설명은 작성자의 해석/정리이며 실제 빌드 시스템 동작과 다를 수 있음. 숫자 1~4는 원문 p26:e187의 목록 항목 번호(1.~4.)로 확인됨.",
+            "kind": "method",
+            "claim_status": "interpretation",
+            "source_origin": "research_note",
+            "conditions": [
+              "설명 대상: cuBlas, cuSparse의 자동 링크 불가 이유"
+            ],
+            "observations": [
+              "1. 표준 라이브러리(libc)가 아니기 때문임, 표준 라이브러리에 속하는 헤더들(iostream 등)은 include 하면 자동으로 링크됨 (p26:e187)",
+              "2. 표준 라이브러리가 아닌 커스텀 모듈(직접 제작한 모듈 등)도 -l를 안 붙이는데, 코드를 직접 가져와서 통째로 컴파일하기 때문 (p26:e187)",
+              "3. cuBlas, cuSparse 같은 라이브러리들은 Nvidia에서 만든 매우 거대한 소스코드 덩어리라서 미리 컴파일되어 있음 (p26:e187)",
+              "4. 소스코드가 없기 때문에 해당 라이브러리를 넣고 한 번에 컴파일 불가 (p26:e187)"
+            ],
+            "parameters": [],
+            "measurements": [],
+            "element_ids": [
+              "p26:e186",
+              "p26:e187"
+            ]
+          }
+        ],
+        "reason": "numeric_issues로 flagged된 '1, 2, 3, 4'는 원문 p26:e187의 목록 항목 번호(1.~4.)로 확인되어 허위 양성임. 승인 후보 P0026R0F0002가 사실의 모든 내용을 포함하나, 검증 피드백에 따라 중복 연결 전에 먼저 repair로 처리함. 수정안은 원문의 4개 항목을 관찰로 보존하고 숫자 출처를 명시함."
+      },
+      "P0026F0006": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "동기화 제거 후 CROWN Verification 실행 결과 elapsed time은 25.457200 ms로, 동기화 제거 전(26.529100 ms) 대비 1ms 정도 감소하였다.",
+            "limits": "비교 기준: 동기화 제거 전 실행 26.529100 ms (p25:e175). '1ms 정도 감소'는 작성자 관찰(p26:e182). 원문 표기에서 소수점 구분자가 쉼표(26,529100, 25,457200)로 되어 있어 정규화(26.5291, 25.4572)됨.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "eps = 1e-06",
+              "mempool + warmup",
+              "Output Dimension: 16"
+            ],
+            "observations": [
+              "동기화 제거 전 실행 elapsed time: 26.529100 ms (p25:e175)",
+              "동기화 제거 후 실행 elapsed time: 25.457200 ms (p26:e181)",
+              "1ms 정도 감소 (p26:e182)"
+            ],
+            "parameters": [],
+            "measurements": [
+              {
+                "metric": "elapsed_time",
+                "value": "26.5291",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "동기화 제거 전, eps=1e-06, mempool + warmup, Output Dimension 16",
+                "element_ids": [
+                  "p25:e175"
+                ]
+              },
+              {
+                "metric": "elapsed_time",
+                "value": "25.4572",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "동기화 제거 후, eps=1e-06, mempool + warmup, Output Dimension 16",
+                "element_ids": [
+                  "p26:e181"
+                ]
+              },
+              {
+                "metric": "elapsed_time_difference",
+                "value": "1",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "동기화 제거 전후 비교, 작성자 관찰",
+                "element_ids": [
+                  "p26:e182"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p25:e175",
+              "p26:e181",
+              "p26:e182"
+            ]
+          }
+        ],
+        "reason": "이전 repair에서 동기화 제거 후 측정값(25.457200 ms)과 1ms 차이 측정이 누락되어 검증 실패함. 이번 수정안은 원문 p25:e175(26.529100 ms), p26:e181(25.457200 ms), p26:e182(1ms 감소)의 세 측정을 모두 포함하여 복구함. limits의 26,529100은 p25:e175에 존재하여 numeric_issues 플래그가 허위 양성임."
+      },
+      "P0027F0001": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "cuBlas 도입 후 CROWN Verification 실행 결과 elapsed time은 40.050500 ms로, 동기화 제거 후(25.457200 ms) 대비 시간이 다시 늘어났음.",
+            "limits": "비교 기준 25.457200 ms는 원문 p26:e181에서 확인됨. 27.107400 ms(cuSparse 결과)는 제공된 소스 요소에서 확인되지 않아 검증 불가로 명시함.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "eps = 1e-06",
+              "mempool + warmup",
+              "Output Dimension: 16",
+              "cuBlas 도입 실험"
+            ],
+            "observations": [
+              "실행 결과 Elapsed time: 40.050500 ms (p27:e188, p27:review:e2)",
+              "40ms 정도로 다시 시간이 늘어남 (p27:e189, p27:review:e5)"
+            ],
+            "parameters": [
+              {
+                "name": "library",
+                "value": "cuBlas",
+                "value_kind": "text",
+                "element_ids": [
+                  "p26:e184"
+                ]
+              }
+            ],
+            "measurements": [
+              {
+                "metric": "elapsed_time",
+                "value": "40.0505",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "cuBlas 도입 후, eps=1e-06, mempool + warmup, Output Dimension 16",
+                "element_ids": [
+                  "p27:e188",
+                  "p27:review:e2"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p26:e184",
+              "p27:e188",
+              "p27:e189",
+              "p27:review:e2",
+              "p27:review:e5"
+            ]
+          }
+        ],
+        "reason": "25.457200 ms는 p26:e181에서 확인되어 numeric_issues 플래그가 허위 양성임. 27.107400 ms(cuSparse 결과)는 제공된 소스 요소에서 확인되지 않아 limits에 검증 불가로 명시함. 핵심 사실(40.050500 ms elapsed time, 시간 증가)은 원문 p27:e188, p27:e189, p27:review:e2, p27:review:e5로 복구 가능함."
+      },
+      "P0027F0002": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "cuBlas 도입 실험에서는 결과가 오히려 안 좋았으며, elapsed time이 40.050500 ms로 다시 늘어났음.",
+            "limits": "비교 기준 25.457200 ms는 원문 p26:e181에서 확인됨. 27.107400 ms(cuSparse 결과)는 제공된 소스 요소에서 확인되지 않아 검증 불가로 명시함. '결과가 안좋음'은 p26:e184의 작성자 해석임.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "eps = 1e-06",
+              "mempool + warmup",
+              "Output Dimension: 16",
+              "cuBlas 도입 실험"
+            ],
+            "observations": [
+              "cuBlas 도입했으나 오히려 결과가 안좋음 (p26:e184)",
+              "실행 결과 Elapsed time: 40.050500 ms (p27:e188, p27:review:e2)",
+              "40ms 정도로 다시 시간이 늘어남 (p27:e189, p27:review:e5)"
+            ],
+            "parameters": [
+              {
+                "name": "library",
+                "value": "cuBlas",
+                "value_kind": "text",
+                "element_ids": [
+                  "p26:e184"
+                ]
+              }
+            ],
+            "measurements": [
+              {
+                "metric": "elapsed_time",
+                "value": "40.0505",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "cuBlas 도입 후, eps=1e-06, mempool + warmup, Output Dimension 16",
+                "element_ids": [
+                  "p27:e188",
+                  "p27:review:e2"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p26:e184",
+              "p27:e188",
+              "p27:e189",
+              "p27:review:e2",
+              "p27:review:e5"
+            ]
+          }
+        ],
+        "reason": "25.457200 ms는 p26:e181에서 확인되어 numeric_issues 플래그가 허위 양성임. 27.107400 ms는 제공된 소스에서 미확인되어 limits에 검증 불가로 명시함. 승인 후보 P0027R0F0008과 P0026F0002는 정성적 주장('결과가 안좋음', p26:e184)만 커버하고 정량적 측정값(40.050500ms)은 커버하지 않아 단일 승인 후보로 duplicate 불가했으나, 원문 전체로 복구 가능함."
+      }
+    }
+  }
+}

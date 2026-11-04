@@ -1,0 +1,578 @@
+{
+  "api": "2.0",
+  "content": {
+    "html": "<p id='0' data-category='paragraph'>별로 차이가 안난다..</p>\n<p id='1' data-category='paragraph'>그러면 일단</p>\n<p id='2' data-category='paragraph'>초기화만 하면 <b>forward, backward</b> 의 <b>bound</b> 계산 시간은 비슷하다는 것!</p>\n<p id='3' data-category='paragraph'>(한 <b>0.2ms</b> 정도 차이남)</p>\n<p id='4' data-category='paragraph'>여기서 적절한 기준을 다시 세우기로 했다</p>\n<p id='5' data-category='paragraph'>gpu 벤치마크 모범 사례를 따라서</p>\n<p id='6' data-category='paragraph'>Nvidia의 warm up 가이드라인 을 세우고</p>\n<p id='7' data-category='paragraph'>1. 실제 사이클 시간만 측정 (가중치 로드 memcpy 등은 포함 x)</p>\n<p id='8' data-category='paragraph'>2. warm up 한번 하기</p>\n<p id='9' data-category='paragraph'>3. CV를 통해서 스파이크, 분산 정도를 규명할 것</p>\n<p id='10' data-category='paragraph'>추론, bound 계산, 검증 3가지 값을 나눠서 측정하기로 했다..</p>\n<p id='11' data-category='paragraph'>근데 웬 일? warmup 하니까 걸리는 시간 및 각 평균 시간이 더 늘어남 ...</p>\n<p id='12' data-category='paragraph'>어느정도냐면.. forward 가 warm up 이전 backward 급 속도가 나올정도..</p>\n<p id='13' data-category='paragraph'>음... 이게 잘 모르겠다..</p>\n<p id='14' data-category='paragraph'>의문점 : <b>warm up</b> 을 해도 스파이크 데이터가 뜨고, 심지어 가끔은 <b>10</b> 번 측정했을 때 평균 시간이 느려지는 문제 생김</p>\n<p id='15' data-category='paragraph'>규명할 원인 두가지가 늘어난 느낌.... 이런</p>\n<p id='16' data-category='paragraph'>그래도 꿋꿋이 측정했더니</p>\n<p id='17' data-category='paragraph'>1. 일단 warm up도 warm up 이전 버전이랑 측정 시간에서 큰 차이 나지 않음</p>\n<p id='18' data-category='paragraph'>2. 스파이크가 안뜰 때의 시간은 오히려 더 안정적인듯 (변동 계수가 좀 더 낮은 느낌)</p>\n<p id='19' data-category='paragraph'>그래서</p>",
+    "markdown": "별로 차이가 안난다..\n\n그러면 일단\n\n초기화만 하면 **forward, backward** 의 **bound** 계산 시간은 비슷하다는 것!\n\n(한 **0.2ms** 정도 차이남)\n\n여기서 적절한 기준을 다시 세우기로 했다\n\ngpu 벤치마크 모범 사례를 따라서\n\nNvidia의 warm up 가이드라인 을 세우고\n\n1. 실제 사이클 시간만 측정 (가중치 로드 memcpy 등은 포함 x)\n\n2. warm up 한번 하기\n\n3. CV를 통해서 스파이크, 분산 정도를 규명할 것\n\n추론, bound 계산, 검증 3가지 값을 나눠서 측정하기로 했다..\n\n근데 웬 일? warmup 하니까 걸리는 시간 및 각 평균 시간이 더 늘어남 ...\n\n어느정도냐면.. forward 가 warm up 이전 backward 급 속도가 나올정도..\n\n음... 이게 잘 모르겠다..\n\n의문점 : **warm up** 을 해도 스파이크 데이터가 뜨고, 심지어 가끔은 **10** 번 측정했을 때 평균 시간이 느려지는 문제 생김\n\n규명할 원인 두가지가 늘어난 느낌.... 이런\n\n그래도 꿋꿋이 측정했더니\n\n1. 일단 warm up도 warm up 이전 버전이랑 측정 시간에서 큰 차이 나지 않음\n\n2. 스파이크가 안뜰 때의 시간은 오히려 더 안정적인듯 (변동 계수가 좀 더 낮은 느낌)\n\n그래서",
+    "text": "별로 차이가 안난다..\n그러면 일단\n초기화만 하면 forward, backward 의 bound 계산 시간은 비슷하다는 것!\n(한 0.2ms 정도 차이남)\n여기서 적절한 기준을 다시 세우기로 했다\ngpu 벤치마크 모범 사례를 따라서\nNvidia의 warm up 가이드라인 을 세우고\n1. 실제 사이클 시간만 측정 (가중치 로드 memcpy 등은 포함 x)\n2. warm up 한번 하기\n3. CV를 통해서 스파이크, 분산 정도를 규명할 것\n추론, bound 계산, 검증 3가지 값을 나눠서 측정하기로 했다..\n근데 웬 일? warmup 하니까 걸리는 시간 및 각 평균 시간이 더 늘어남 ...\n어느정도냐면.. forward 가 warm up 이전 backward 급 속도가 나올정도..\n음... 이게 잘 모르겠다..\n의문점 : warm up 을 해도 스파이크 데이터가 뜨고, 심지어 가끔은 10 번 측정했을 때 평균 시간이 느려지는 문제 생김\n규명할 원인 두가지가 늘어난 느낌.... 이런\n그래도 꿋꿋이 측정했더니\n1. 일단 warm up도 warm up 이전 버전이랑 측정 시간에서 큰 차이 나지 않음\n2. 스파이크가 안뜰 때의 시간은 오히려 더 안정적인듯 (변동 계수가 좀 더 낮은 느낌)\n그래서"
+  },
+  "elements": [
+    {
+      "id": 0,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='0' data-category='paragraph'>별로 차이가 안난다..</p>",
+        "markdown": "별로 차이가 안난다..",
+        "text": "별로 차이가 안난다.."
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.085
+        },
+        {
+          "x": 0.293,
+          "y": 0.085
+        },
+        {
+          "x": 0.293,
+          "y": 0.1
+        },
+        {
+          "x": 0.117,
+          "y": 0.1
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='1' data-category='paragraph'>그러면 일단</p>",
+        "markdown": "그러면 일단",
+        "text": "그러면 일단"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.119
+        },
+        {
+          "x": 0.22,
+          "y": 0.119
+        },
+        {
+          "x": 0.22,
+          "y": 0.134
+        },
+        {
+          "x": 0.116,
+          "y": 0.134
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='2' data-category='paragraph'>초기화만 하면 <b>forward, backward</b> 의 <b>bound</b> 계산 시간은 비슷하다는 것!</p>",
+        "markdown": "초기화만 하면 **forward, backward** 의 **bound** 계산 시간은 비슷하다는 것!",
+        "text": "초기화만 하면 forward, backward 의 bound 계산 시간은 비슷하다는 것!"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.136
+        },
+        {
+          "x": 0.723,
+          "y": 0.136
+        },
+        {
+          "x": 0.723,
+          "y": 0.152
+        },
+        {
+          "x": 0.116,
+          "y": 0.152
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='3' data-category='paragraph'>(한 <b>0.2ms</b> 정도 차이남)</p>",
+        "markdown": "(한 **0.2ms** 정도 차이남)",
+        "text": "(한 0.2ms 정도 차이남)"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.154
+        },
+        {
+          "x": 0.316,
+          "y": 0.154
+        },
+        {
+          "x": 0.316,
+          "y": 0.171
+        },
+        {
+          "x": 0.117,
+          "y": 0.171
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='4' data-category='paragraph'>여기서 적절한 기준을 다시 세우기로 했다</p>",
+        "markdown": "여기서 적절한 기준을 다시 세우기로 했다",
+        "text": "여기서 적절한 기준을 다시 세우기로 했다"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.274
+        },
+        {
+          "x": 0.467,
+          "y": 0.274
+        },
+        {
+          "x": 0.467,
+          "y": 0.29
+        },
+        {
+          "x": 0.116,
+          "y": 0.29
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='5' data-category='paragraph'>gpu 벤치마크 모범 사례를 따라서</p>",
+        "markdown": "gpu 벤치마크 모범 사례를 따라서",
+        "text": "gpu 벤치마크 모범 사례를 따라서"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.292
+        },
+        {
+          "x": 0.398,
+          "y": 0.292
+        },
+        {
+          "x": 0.398,
+          "y": 0.309
+        },
+        {
+          "x": 0.117,
+          "y": 0.309
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='6' data-category='paragraph'>Nvidia의 warm up 가이드라인 을 세우고</p>",
+        "markdown": "Nvidia의 warm up 가이드라인 을 세우고",
+        "text": "Nvidia의 warm up 가이드라인 을 세우고"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.326
+        },
+        {
+          "x": 0.452,
+          "y": 0.326
+        },
+        {
+          "x": 0.452,
+          "y": 0.342
+        },
+        {
+          "x": 0.116,
+          "y": 0.342
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='7' data-category='paragraph'>1. 실제 사이클 시간만 측정 (가중치 로드 memcpy 등은 포함 x)</p>",
+        "markdown": "1. 실제 사이클 시간만 측정 (가중치 로드 memcpy 등은 포함 x)",
+        "text": "1. 실제 사이클 시간만 측정 (가중치 로드 memcpy 등은 포함 x)"
+      },
+      "coordinates": [
+        {
+          "x": 0.146,
+          "y": 0.361
+        },
+        {
+          "x": 0.678,
+          "y": 0.361
+        },
+        {
+          "x": 0.678,
+          "y": 0.377
+        },
+        {
+          "x": 0.146,
+          "y": 0.377
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='8' data-category='paragraph'>2. warm up 한번 하기</p>",
+        "markdown": "2. warm up 한번 하기",
+        "text": "2. warm up 한번 하기"
+      },
+      "coordinates": [
+        {
+          "x": 0.146,
+          "y": 0.379
+        },
+        {
+          "x": 0.338,
+          "y": 0.379
+        },
+        {
+          "x": 0.338,
+          "y": 0.394
+        },
+        {
+          "x": 0.146,
+          "y": 0.394
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='9' data-category='paragraph'>3. CV를 통해서 스파이크, 분산 정도를 규명할 것</p>",
+        "markdown": "3. CV를 통해서 스파이크, 분산 정도를 규명할 것",
+        "text": "3. CV를 통해서 스파이크, 분산 정도를 규명할 것"
+      },
+      "coordinates": [
+        {
+          "x": 0.146,
+          "y": 0.396
+        },
+        {
+          "x": 0.563,
+          "y": 0.396
+        },
+        {
+          "x": 0.563,
+          "y": 0.411
+        },
+        {
+          "x": 0.146,
+          "y": 0.411
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='10' data-category='paragraph'>추론, bound 계산, 검증 3가지 값을 나눠서 측정하기로 했다..</p>",
+        "markdown": "추론, bound 계산, 검증 3가지 값을 나눠서 측정하기로 했다..",
+        "text": "추론, bound 계산, 검증 3가지 값을 나눠서 측정하기로 했다.."
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.43
+        },
+        {
+          "x": 0.623,
+          "y": 0.43
+        },
+        {
+          "x": 0.623,
+          "y": 0.446
+        },
+        {
+          "x": 0.116,
+          "y": 0.446
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='11' data-category='paragraph'>근데 웬 일? warmup 하니까 걸리는 시간 및 각 평균 시간이 더 늘어남 ...</p>",
+        "markdown": "근데 웬 일? warmup 하니까 걸리는 시간 및 각 평균 시간이 더 늘어남 ...",
+        "text": "근데 웬 일? warmup 하니까 걸리는 시간 및 각 평균 시간이 더 늘어남 ..."
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.465
+        },
+        {
+          "x": 0.717,
+          "y": 0.465
+        },
+        {
+          "x": 0.717,
+          "y": 0.481
+        },
+        {
+          "x": 0.116,
+          "y": 0.481
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='12' data-category='paragraph'>어느정도냐면.. forward 가 warm up 이전 backward 급 속도가 나올정도..</p>",
+        "markdown": "어느정도냐면.. forward 가 warm up 이전 backward 급 속도가 나올정도..",
+        "text": "어느정도냐면.. forward 가 warm up 이전 backward 급 속도가 나올정도.."
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.499
+        },
+        {
+          "x": 0.715,
+          "y": 0.499
+        },
+        {
+          "x": 0.715,
+          "y": 0.516
+        },
+        {
+          "x": 0.116,
+          "y": 0.516
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='13' data-category='paragraph'>음... 이게 잘 모르겠다..</p>",
+        "markdown": "음... 이게 잘 모르겠다..",
+        "text": "음... 이게 잘 모르겠다.."
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.534
+        },
+        {
+          "x": 0.316,
+          "y": 0.534
+        },
+        {
+          "x": 0.316,
+          "y": 0.549
+        },
+        {
+          "x": 0.116,
+          "y": 0.549
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='14' data-category='paragraph'>의문점 : <b>warm up</b> 을 해도 스파이크 데이터가 뜨고, 심지어 가끔은 <b>10</b> 번 측정했을 때 평균 시간이 느려지는 문제 생김</p>",
+        "markdown": "의문점 : **warm up** 을 해도 스파이크 데이터가 뜨고, 심지어 가끔은 **10** 번 측정했을 때 평균 시간이 느려지는 문제 생김",
+        "text": "의문점 : warm up 을 해도 스파이크 데이터가 뜨고, 심지어 가끔은 10 번 측정했을 때 평균 시간이 느려지는 문제 생김"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.568
+        },
+        {
+          "x": 0.855,
+          "y": 0.568
+        },
+        {
+          "x": 0.855,
+          "y": 0.601
+        },
+        {
+          "x": 0.116,
+          "y": 0.601
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='15' data-category='paragraph'>규명할 원인 두가지가 늘어난 느낌.... 이런</p>",
+        "markdown": "규명할 원인 두가지가 늘어난 느낌.... 이런",
+        "text": "규명할 원인 두가지가 늘어난 느낌.... 이런"
+      },
+      "coordinates": [
+        {
+          "x": 0.116,
+          "y": 0.62
+        },
+        {
+          "x": 0.472,
+          "y": 0.62
+        },
+        {
+          "x": 0.472,
+          "y": 0.636
+        },
+        {
+          "x": 0.116,
+          "y": 0.636
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='16' data-category='paragraph'>그래도 꿋꿋이 측정했더니</p>",
+        "markdown": "그래도 꿋꿋이 측정했더니",
+        "text": "그래도 꿋꿋이 측정했더니"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.655
+        },
+        {
+          "x": 0.338,
+          "y": 0.655
+        },
+        {
+          "x": 0.338,
+          "y": 0.67
+        },
+        {
+          "x": 0.117,
+          "y": 0.67
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='17' data-category='paragraph'>1. 일단 warm up도 warm up 이전 버전이랑 측정 시간에서 큰 차이 나지 않음</p>",
+        "markdown": "1. 일단 warm up도 warm up 이전 버전이랑 측정 시간에서 큰 차이 나지 않음",
+        "text": "1. 일단 warm up도 warm up 이전 버전이랑 측정 시간에서 큰 차이 나지 않음"
+      },
+      "coordinates": [
+        {
+          "x": 0.146,
+          "y": 0.672
+        },
+        {
+          "x": 0.789,
+          "y": 0.672
+        },
+        {
+          "x": 0.789,
+          "y": 0.687
+        },
+        {
+          "x": 0.146,
+          "y": 0.687
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='18' data-category='paragraph'>2. 스파이크가 안뜰 때의 시간은 오히려 더 안정적인듯 (변동 계수가 좀 더 낮은 느낌)</p>",
+        "markdown": "2. 스파이크가 안뜰 때의 시간은 오히려 더 안정적인듯 (변동 계수가 좀 더 낮은 느낌)",
+        "text": "2. 스파이크가 안뜰 때의 시간은 오히려 더 안정적인듯 (변동 계수가 좀 더 낮은 느낌)"
+      },
+      "coordinates": [
+        {
+          "x": 0.145,
+          "y": 0.689
+        },
+        {
+          "x": 0.86,
+          "y": 0.689
+        },
+        {
+          "x": 0.86,
+          "y": 0.706
+        },
+        {
+          "x": 0.145,
+          "y": 0.706
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='19' data-category='paragraph'>그래서</p>",
+        "markdown": "그래서",
+        "text": "그래서"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.724
+        },
+        {
+          "x": 0.177,
+          "y": 0.724
+        },
+        {
+          "x": 0.177,
+          "y": 0.739
+        },
+        {
+          "x": 0.117,
+          "y": 0.739
+        }
+      ]
+    }
+  ],
+  "model": "document-parse-260930",
+  "ocr": true,
+  "usage": {
+    "pages": 1,
+    "enhanced": [
+      1
+    ]
+  }
+}

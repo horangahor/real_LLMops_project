@@ -1,0 +1,49 @@
+{
+  "request_fingerprint": "a16cb7c3f44fe61f6b2ecf621d575cbc78f6cfe884e2d2e2cffc2d275d9d4498",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "CROWN 검증의 정확도 보존 여부는 기존 신경망 검증팀 구현과의 검증 결과·비율 차이로 판단했으며, 모든 출력에서 결과가 동일하게 유지되었다[근거:E00300]. 이는 GPU 병렬화 및 최적화 과정에서 검증 결과 자체가 달라지지 않았음을 의미한다[근거:E00301]. 실제 CROWN Verification 실행에서도 16개 출력 차원에 대해 Lower Bound, Upper Bound, inference(y) 값이 출력되었고, 예시 출력값들은 eps=1e-06 조건에서 일관된 범위를 보였다[근거:E00341]. 다만 이 출력값은 단일 실행 기록이며, 다른 조건과의 수치 동일성 여부나 정확도 해석은 이 결과만으로 제시되지 않는다[근거:E00341].",
+          "evidence_ids": [
+            "E00300",
+            "E00301",
+            "E00341"
+          ]
+        },
+        {
+          "text": "메모리 방식 비교에서는 cudaHostRegister, HostAlloc, No Pinning을 측정했으며, 평균값(n=920000) 기준으로 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 비교했다[근거:E00309]. cudaHostRegister와 cudaHostAlloc은 cudaStreamSynchronize(323μs/322μs), cudaMemcpyAsync(5.188μs/5.351μs), memcpy 복사 시간(1.117μs/1.142μs) 수준에서 유사하게 측정되었고, noPinning은 cudaStreamSynchronize 314μs, cudaMemcpyAsync 4.932μs, memcpy 복사 시간 340ns로 측정되어 방식 간 동기화·복사 비용 차이가 나타났다[근거:Hefd7e87bb735_67]. 초기 비교에서는 no Pinning이 가장 빠르게 측정되었으나, 이 결과는 클록 고정 여부 등 측정 조건이 명시되지 않은 초기 비교라는 한계가 있다[근거:Hefd7e87bb735_34].",
+          "evidence_ids": [
+            "E00309",
+            "Hefd7e87bb735_67",
+            "Hefd7e87bb735_34"
+          ]
+        },
+        {
+          "text": "Pinned memory 적용 여부에 따른 총 소요 시간 비교에서는, infer 단계에서 40,000번 반복 중 CPU 스레드가 cudaStreamSynchronize로 대기·깨어나는 미세 지연과 드라이버 동기화 비용이 맞물려 Pinned 쪽이 총 루프 시간에서 약 13초 느려지는 결과가 나타났다[근거:E00298]. 이는 1KB 수준의 작은 데이터를 보내면서 매 루프마다 개별 하드웨어 DMA 셋업을 부르는 오버헤드가 원인으로 해석되었다[근거:E00301]. 한편 No-Pin은 평소 CPU 캐시로 빠르게 동작하지만 OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 터지는 순간 지연시간이 11ms까지 튈 수 있고, Pinned는 매번 1.5μs의 비용을 내는 대신 OS 페이징 간섭을 차단하여 1.64ms 안쪽으로 엄격하게 보장된다는 해석도 함께 제시되었다[근거:E00300].",
+          "evidence_ids": [
+            "E00298",
+            "E00301",
+            "E00300"
+          ]
+        },
+        {
+          "text": "cudaMemcpyAsync 호출 시간 비교에서는 pinned 적용 버전이 미적용 버전보다 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다는 분석이 기록되었다[근거:E00304]. 작은 데이터 크기(현재 입력 기준 1KB)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다는 해석도 제시되었으나[근거:E00305], 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라서 2copy→1copy로 고정 setup 비용이 줄었구나 했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다[근거:E00306]. 이에 따라 pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 것도 못할 것 같다는 판단이 기록되었다[근거:E00307].",
+          "evidence_ids": [
+            "E00304",
+            "E00305",
+            "E00306",
+            "E00307"
+          ]
+        },
+        {
+          "text": "추론이 끝나기까지의 동기화(synchronize) 시간은 pinned memory 미적용 버전이 가장 빠르며, 이는 H2D 복사 시간의 영향일 수 있다고 분석되었다[근거:E00303]. 또한 backward_only가 왜 제일 빠른지에 대한 질문이 결론 섹션에서 제기되었으나, 이 페이지에서 답변이 완료되지는 않았다[근거:E00308].",
+          "evidence_ids": [
+            "E00303",
+            "E00308"
+          ]
+        }
+      ]
+    }
+  }
+}

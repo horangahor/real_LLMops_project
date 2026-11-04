@@ -1,0 +1,188 @@
+{
+  "request_fingerprint": "242f7cb270881f1eb913f79f3c50a3994fd94365d9c165a84bc1d4433e37ebb1",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "CROWN 검증 실행에서 가중치 사전 업로드(preload) 버전은 149.820400ms, 비교 대상 실행은 228.585200ms로 기록되었다.",
+          "limits": "두 실행의 정확한 비교 기준(동일 조건 반복 여부)은 원문에 명시되지 않았다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "eps = 1e-06",
+            "Output Dimension: 16"
+          ],
+          "observations": [
+            "preload 버전 실행에서 149.820400ms 기록",
+            "비교 실행에서 228.585200ms 기록",
+            "두 실행의 출력 하한/상한/예측값이 미세하게 다름"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "elapsed_time",
+              "value": "228.5852",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "CROWN 검증 실행 (모드 명시 없음)",
+              "element_ids": [
+                "p11:e95"
+              ]
+            },
+            {
+              "metric": "elapsed_time",
+              "value": "149.8204",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "MODE: MEMPOOL + Weights PRELOAD ON GPU",
+              "element_ids": [
+                "p12:e102"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p11:e95",
+            "p12:e102",
+            "p12:e103"
+          ]
+        },
+        {
+          "statement": "FullyConnectedNetwork 구조체에는 GPU에 사전 로드된 가중치 포인터를 저장하는 double* d_W[MAX_LAYERS] 배열이 포함되어 있다.",
+          "limits": "포인터 배열 크기는 MAX_LAYERS 기준이므로 실제 신경망보다 작으면 공간 낭비가 발생할 수 있다고 저자가 언급했다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "가중치 사전 업로드 구현",
+            "GPU 메모리 주소 저장을 위한 포인터 배열"
+          ],
+          "observations": [
+            "구조체에 d_W 배열 포함",
+            "MAX_LAYERS 기준 크기로 인한 공간 낭비 가능성 언급"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p11:e97",
+            "p11:e98"
+          ]
+        },
+        {
+          "statement": "pre_upload_weights_to_gpu 함수는 각 레이어마다 cudaMalloc으로 GPU 메모리를 할당하고 cudaMemcpy2D로 호스트 가중치를 디바이스로 복사한다.",
+          "limits": "할당 크기는 MAX_DIM * MAX_DIM * sizeof(double) 기준이다.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "cudaMalloc & cudaMemcpy2D 사용",
+            "double 정밀도 기준"
+          ],
+          "observations": [
+            "net->d_W[i]에 GPU 할당 메모리 저장",
+            "호스트→디바이스 복사 수행"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p12:e100",
+            "p12:e101"
+          ]
+        },
+        {
+          "statement": "bias까지 미리 업로드한 실험에서는 큰 성능 개선이 관찰되지 않았으며, 저자는 bias가 Vector이고 약 4KB 정도라서 CPU 연산에도 무리가 없는 수준이기 때문이라고 추정했다.",
+          "limits": "이는 저자의 추정이며 실제 측정된 bias preload 성능 수치는 원문에 제시되지 않았다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "bias Vector 크기 약 4KB",
+            "CPU 연산 부담 적음"
+          ],
+          "observations": [
+            "bias preload가 성능 개선에 의미 있는 영향을 미치지 않음"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p12:e104"
+          ]
+        },
+        {
+          "statement": "저자는 가중치를 사전 로드해놓고도 matmul 함수에서 d_W를 활용하지 않았는데 시간이 줄어든 이유를 의문으로 제기했다.",
+          "limits": "이는 저자의 질문/의문점이며 당시 확인된 사실이 아니다.",
+          "kind": "result",
+          "claim_status": "hypothesis",
+          "source_origin": "research_note",
+          "conditions": [
+            "d_W가 matmul에서 활용되지 않음",
+            "그럼에도 시간 감소 관찰"
+          ],
+          "observations": [
+            "사전 로드 활용 없이 시간 줄어든 점에 대한 의문"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p13:e105"
+          ]
+        },
+        {
+          "statement": "시간 감소의 원인은 preload 자체가 아니라 pre_upload_weights_to_gpu가 타이머 시작 전에 호출한 cudaMalloc/cudaMemcpy로 인한 GPU 웜업 효과라고 해석되었다.",
+          "limits": "이 해석은 mempool 버전과 preload 버전의 측정 구간 차이를 근거로 한 저자의 추론이다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "pre_upload_weights_to_gpu가 t_start 이전에 cudaMalloc/cudaMemcpy 호출",
+            "mempool 버전은 ensure_pool()의 첫 cudaMalloc이 측정 구간 안에 포함"
+          ],
+          "observations": [
+            "GPU 컨텍스트 초기화, 클럭 부스팅, JIT 컴파일 비용이 타이머 구간 밖으로 빠짐",
+            "mempool 버전 대비 약 50ms 감소 관찰",
+            "저자는 이를 GPU warmup 때문으로 결론"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "time_reduction",
+              "value": "50",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "mempool 버전 대비 preload 버전 감소량(근사치)",
+              "element_ids": [
+                "p13:e108",
+                "p13:e109"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p13:e106",
+            "p13:e107",
+            "p13:e108",
+            "p13:e109"
+          ]
+        },
+        {
+          "statement": "float가 double보다 접근 속도가 빠르다는 언급이 있으나, 행렬/벡터 구조체 등이 전부 double 기준이라 float 포인터 사용을 위해서는 전체 구조 변경이 필요하다고 저자가 언급했다.",
+          "limits": "이는 저자의 관찰/의견이며 실제 float 전환 성능 측정은 원문에 없다.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [
+            "현재 구조체/행렬/벡터가 double 기준"
+          ],
+          "observations": [
+            "float 접근 속도가 더 빠르다는 언급",
+            "float 포인터 사용 위해 전체 갈아엎을 필요"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p11:e99"
+          ]
+        }
+      ]
+    }
+  }
+}

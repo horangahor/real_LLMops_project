@@ -1,0 +1,17 @@
+{
+  "request_fingerprint": "f693bb9ae204bad33eb92d37bea269ca0a39069822990428ecf2647fa90ce7dc",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "메모리 복사 경로 최적화에서는 backward_bound_gpu에서 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하여, 이를 affine_min/max까지 backward_bound_gpu 내에서 GPU 실행으로 통합해 GPU→CPU 복사를 줄이는 방향으로 개선하였다. forward 호출 시에는 forward의 중간 결과를 CPU(메모리)에 복사(memcpy)하는지 여부를 플래그로 구분하였고, false로 설정할 경우 memcpy가 현저히 줄어드는 효과가 확인되었다. memcpy 호출 횟수는 NV TX 구간 내에서 109→94로 15번 감소한 사례와 호출 횟수 비교에서 66→56개로 줄어든 사례가 기록되었다. 다만 이러한 횟수 변화는 복사 제거 여부나 플래그 설정에 따라 달라지므로, 비교 지표로 사용할 때는 해당 조건을 함께 명시해야 한다. 또한 backward_bound_gpu의 복사 경로 문제와 forward의 memcpy 플래그 도입은 측정·비교 시 복사 오버헤드가 결과에 섞일 수 있는 요인으로 인식될 수 있으며, 플래그로 제어하지 않으면 memcpy가 늘어나 비교 조건이 달라질 가능성도 함께 고려할 수 있다.",
+          "evidence_ids": [
+            "Hefd7e87bb735_10",
+            "Hefd7e87bb735_11",
+            "Hefd7e87bb735_15"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "request_fingerprint": "ad6f223ac2a3b9c9cbce2bb6d72f2e2f0dd2029bda7f4aafb972ee4ae0dd9c0d",
+  "value": {
+    "decisions": {
+      "P0049R0F0002": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "문제 코드 구조에서는 ForwardBoundResult fwd와 BackwardBoundResult bwd가 switch 문 바깥에 선언되고, switch case 0에서 fwd에 lirpa_forward_bound_impl 결과를 대입한 뒤 lb와 ub가 fwd.final_lower와 fwd.final_upper의 주소를 가리키며, case 1에서 bwd에 lirpa_backward_bound 결과를 대입한 뒤 lb와 ub가 bwd.final_lower와 bwd.final_upper의 주소를 가리킨다. (AI 조언에 따르면 이 코드 구조가 성능 저하의 원인이다.)",
+            "limits": "이 코드는 성능 저하가 발생하기 전의 구조(수정 전)이며, 이후 p50:e351에서 switch 내부에 구조체를 선언하는 방식으로 변경된다. p49:e347 코드 텍스트에서 '1b'는 'lb'의 OCR 오기, 'lirpa_forward_bound_imp1'은 'lirpa_forward_bound_impl'의 OCR 오기, 'fwd -'는 'fwd ='의 OCR 오기로 보인다.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "ai_advice",
+            "conditions": [
+              "switch 바깥에 구조체 선언",
+              "case 내부에서 CROWN 결과 대입",
+              "lb/ub가 구조체 멤버의 주소 참조"
+            ],
+            "observations": [
+              "ForwardBoundResult fwd; BackwardBoundResult bwd;가 switch 바깥 선언됨",
+              "case 0: fwd = lirpa_forward_bound_impl(*net, dataset[i], eps_f, false, false, true); lb = &fwd.final_lower; ub = &fwd.final_upper;",
+              "case 1: bwd = lirpa_backward_bound(*net, dataset[i], eps_f, false, false); lb = &bwd.final_lower; ub = &bwd.final_upper;"
+            ],
+            "parameters": [],
+            "measurements": [],
+            "element_ids": [
+              "p49:e347"
+            ]
+          }
+        ],
+        "reason": "AI 조언의 귀속(인용 도입문)을 statement에 보존하고, p49:e347의 OCR 오기(1b→lb, imp1→impl, -→=)를 limits에 명시하여 원문 충실성을 회복한다."
+      },
+      "P0049R0F0003": {
+        "action": "repair",
+        "representative_fact_id": "",
+        "corrections": [
+          {
+            "statement": "작성자는 성능 저하 문제가 switch 바깥 구조체 선언과 반복문 내부 CROWN 결과 대입이 이루어지는 이 코드 부분에 있다고 지목했다.",
+            "limits": "이 요소는 문제 위치를 가리키는 전환적 제목이며, 구체적인 문제 진단(값에 의한 복사, 92만 번 복사)은 p49:e349~p49:e350에 서술된다. p49:e350에서 '92만번 복사하면 꽤 크다'고 언급된다.",
+            "kind": "result",
+            "claim_status": "interpretation",
+            "source_origin": "research_note",
+            "conditions": [
+              "문제 위치를 가리키는 맥락",
+              "'문 제가 이부분에 있다고 한다.'라는 제목",
+              "p49:e347의 코드 구조를 가리킴"
+            ],
+            "observations": [
+              "p49:e348에 '문 제가 이부분에 있다고 한다.'라는 제목으로 문제 위치 지목"
+            ],
+            "parameters": [],
+            "measurements": [],
+            "element_ids": [
+              "p49:e348",
+              "p49:e349",
+              "p49:e350"
+            ]
+          }
+        ],
+        "reason": "limits의 원문 미확인 수치 '92'를 p49:e350의 실제 표현 '92만번 복사'로 수정하여 원문 충실성을 회복한다."
+      }
+    }
+  }
+}

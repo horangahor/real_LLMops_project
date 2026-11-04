@@ -1,0 +1,730 @@
+{
+  "request_fingerprint": "c5786c3469de597cb06f45770ad4b7fc548f3a88269adbee29ff4e293fe326cd",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "Nsight System에서 kernel 비중이 높아지고 메모리 비중이 줄어드는 현상이 proper optimization 때문인지, 아니면 kernel 자체의 실행시간 증가(커널 최적화 부족) 때문인지 구별해봐야 한다.",
+          "limits": "원인이 최적화 성과인지 커널 작성 오류인지 판별 필요. Nsight System kernel 비중만으로 최적화 성과를 판단할 수 없음.",
+          "kind": "problem",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "Nsight System kernel 비중 증가와 메모리 비중 감소 방향성에 대한 원인 분석 필요"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p45:e303"
+          ]
+        },
+        {
+          "statement": "이전 발표에서 Nsight System kernel 비중은 커질수록 좋고 Nsight Compute compute throughput은 높아지면 좋다고 설명했으나, 이 부분에 잘못된 점이 있어 정정한다.",
+          "limits": "이전 발표 내용의 오류 정정. kernel 비중 증가가 항상 최적화를 의미하지 않음.",
+          "kind": "problem",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "Nsight System kernel 비중 해석 관련 이전 발표 내용 정정 필요"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p45:e306"
+          ]
+        },
+        {
+          "statement": "Nsight System의 kernel 비중은 CPU-GPU 사이 메모리 병목이 그대로인 상태에서 잘못된 커널 작성으로 kernel 실행시간이 느려져도 증가할 수 있다.",
+          "limits": "kernel 비중 증가가 optimization 성과인지 kernel 실행시간 증가 때문인지 원인 분석 필요. Compute throughput과 마찬가지로 적절히 판단해야 함.",
+          "kind": "result",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "kernel 비중 증가가 optimization 때문인지 kernel 실행시간 증가 때문인지 원인 분석 필요",
+            "메모리 throughput 감소도 optimization 성과인지 메모리 활용 부족인지 분석 후 판단 필요"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p45:e307"
+          ]
+        },
+        {
+          "statement": "forward도 테스트해봤으며 crown_test_optimizing과 동일하게 실행했다.",
+          "limits": "forward 테스트 실행 조건. crown_test_optimizing과 동일 조건.",
+          "kind": "setup",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "crown_test_optimizing과 동일한 실행 조건"
+          ],
+          "observations": [
+            "forward 테스트 수행",
+            "crown_test_optimizing과 동일 조건으로 실행"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p45:e309",
+            "p45:e311"
+          ]
+        },
+        {
+          "statement": "40000번 루프에서 backward보다 forward가 느린 것을 확인했으며, 원인은 중간 레이어 결과 저장 여부 플래그에 있었다.",
+          "limits": "40000 루프 기준 forward가 backward보다 느렸음. 원인은 중간 레이어 결과 저장 플래그.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "40000번 루프 테스트"
+          ],
+          "observations": [
+            "40000번 루프에서 forward가 backward보다 느림",
+            "원인은 중간 레이어 결과 저장 여부 플래그"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p45:e313"
+          ]
+        },
+        {
+          "statement": "forward_bound_impl의 플래그를 true로 두면 중간 결과가 복사된다.",
+          "limits": "플래그 true 설정 시 중간 결과 복사 발생.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [
+            "forward_bound_impl 플래그 true 설정"
+          ],
+          "observations": [
+            "플래그 true 시 중간 결과 복사 발생"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p45:e314"
+          ]
+        },
+        {
+          "statement": "단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 뛰어넘지 않았다.",
+          "limits": "단일 실행 기준. 반복 실행 시와는 다른 결과.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "단일 실행 기준"
+          ],
+          "observations": [
+            "단일 실행에서 D2H 오버헤드 < 연산 오버헤드"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p45:e315"
+          ]
+        },
+        {
+          "statement": "40000번 * 각 eps 테스트를 반복하면서 D2H 복사 오버헤드가 backward에서 forward로 계산 방식을 바꾼 이득을 뛰어넘어버렸다.",
+          "limits": "40000번 * 각 eps 반복 테스트 기준. 단일 실행과 달리 반복 시 D2H 오버헤드가 누적되어 이득 초과.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "40000번 * 각 eps 테스트 반복"
+          ],
+          "observations": [
+            "반복 테스트에서 D2H 복사 오버헤드가 backward→forward 전환의 이득을 초과"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p46:e316"
+          ]
+        },
+        {
+          "statement": "기존에 forward에서 사용하던 단일 플래그 하나가 layer의 중간 계산 결과 + 최종 결과까지 D2H 복사를 제어하는 역할을 했다.",
+          "limits": "플래그의 구체적 역할에 대한 서술. 이후 플래그를 3개로 분리하는 구현 변경의 동기가 됨.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "단일 플래그가 forward의 중간 계산 결과 및 최종 결과 D2H 복사 제어"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p46:e317"
+          ]
+        },
+        {
+          "statement": "forward의 플래그를 3개로 늘렸다: 중간 결과(layer_bound 복사용), final_affine 복사용, 최종 결과 복사용.",
+          "limits": "forward 플래그 분리 구현. 3개 플래그로 세분화.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "forward 플래그 3개로 분리: 중간 결과(layer_bound 복사용), final_affine 복사용, 최종 결과 복사용"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p46:e318"
+          ]
+        },
+        {
+          "statement": "backward의 플래그도 기존의 layer_bound와 backward result의 affine_bound를 같이 복사할지 제어하는 플래그를 각각 2개로 분리했다.",
+          "limits": "backward 플래그 분리 구현. layer_bound와 affine_bound 복사 제어를 각각 2개 플래그로 분리.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "backward 플래그 2개로 분리: layer_bound 복사 제어, backward result의 affine_bound 복사 제어"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p46:e318"
+          ]
+        },
+        {
+          "statement": "forward 최종 계산(result -> lower/upper bounds)을 D2H 복사하는 데에 비효율적인 부분이 있어서 정확한 테스트를 위해 최적화를 진행했다.",
+          "limits": "forward 최종 계산의 D2H 복사 비효율성. 정확한 테스트를 위한 최적화 목적.",
+          "kind": "method",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "forward 최종 계산 D2H 복사 비효율성 존재",
+            "정확한 테스트를 위해 최적화 진행"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p46:e319"
+          ]
+        },
+        {
+          "statement": "forward 최적화를 통해 backward가 forward보다 빠른 문제는 해결되었다.",
+          "limits": "forward 최적화 후 backward 대비 forward 속도 문제 해결.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "forward 최적화로 backward 대비 forward 속도 문제 해결"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p46:e320"
+          ]
+        },
+        {
+          "statement": "forward와 backward 결과를 각각 비교했을 때, 단일 테스트 결과로 비교하면 다중 데이터셋 테스트 시 3배 차이가 나야 하는데 왜 그렇게 나오지 않는지 의문을 가졌다.",
+          "limits": "기대되는 3배 차이와 실제 결과 간 불일치. 원인 분석을 위해 Nsight System 분석 사용 결정.",
+          "kind": "problem",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "다중 데이터셋 테스트",
+            "단일 테스트 결과 비교 기준"
+          ],
+          "observations": [
+            "단일 테스트 기준 forward/backward 3배 차이 기대",
+            "실제 다중 데이터셋 테스트에서 3배 차이가 나오지 않음",
+            "원인 분석을 위해 Nsight System 분석 사용 결정"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p46:e322"
+          ]
+        },
+        {
+          "statement": "단일 데이터에 대한 memcpy 호출 횟수는 forward/backward 각각 6번이다.",
+          "limits": "단일 데이터 기준 memcpy 호출 횟수. forward와 backward 각각 6회.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "단일 데이터 기준"
+          ],
+          "observations": [
+            "단일 데이터 forward memcpy 6회",
+            "단일 데이터 backward memcpy 6회"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p46:e323"
+          ]
+        },
+        {
+          "statement": "처음에는 입력 데이터 +- eps, 가중치, bias, upper bound 결과, lower bound 결과로 총 6개인 줄 알았다.",
+          "limits": "초기 memcpy 구성 이해. 입력 데이터 +- eps, 가중치, bias, upper bound, lower bound = 6개.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "초기 이해: 입력 데이터 +- eps, 가중치, bias, upper bound 결과, lower bound 결과 = 총 6개 memcpy"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p46:e325"
+          ]
+        },
+        {
+          "statement": "가중치와 bias는 nvtx 찍기 전에 한번에 올라가기 때문에(prepare network on gpu), 입력 데이터 +- eps와 upper bound, lower bound 결과 해서 총 4번만 복사해야 하는 것 아닌가 생각했다.",
+          "limits": "가중치/bias는 nvtx 이전 GPU 업로드 완료. 입력 데이터 +- eps + upper/lower bound = 4회 복사 가능성.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "가중치, bias는 nvtx 찍기 전 prepare network on gpu로 한번에 업로드"
+          ],
+          "observations": [
+            "가중치/bias는 nvtx 이전 GPU 업로드 완료",
+            "입력 데이터 +- eps + upper bound + lower bound = 4회 복사 가능성 제기"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p46:e326",
+            "p46:e327"
+          ]
+        },
+        {
+          "statement": "CROWN에서 입력 데이터 +- eps랑 upper/lower bound 해서 총 6개이다.",
+          "limits": "CROWN 기준 memcpy 구성. 입력 데이터 +- eps + upper/lower bound = 6개.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "CROWN 기준"
+          ],
+          "observations": [
+            "CROWN: 입력 데이터 +- eps + upper bound + lower bound = 총 6개"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p46:e331"
+          ]
+        },
+        {
+          "statement": "프로그램 전체 실행에서 memcpy는 18번이며, 여기서 6번을 빼면 외부에서 12번이다. 가중치 행은 3개(신경망 구조 256 * 491 * 491 * 16)이며 (가중치 + 가중치 양수부/음수부 + bias) * 3이다.",
+          "limits": "전체 실행 memcpy 18회. 외부 12회. 신경망 구조 256 * 491 * 491 * 16. 가중치 관련 복사 (가중치 + 가중치 양수부/음수부 + bias) * 3.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "신경망 구조: 256 * 491 * 491 * 16",
+            "전체 실행 기준"
+          ],
+          "observations": [
+            "전체 실행 memcpy 18회",
+            "외부 memcpy 12회 (18 - 6)",
+            "가중치 행 3개",
+            "가중치 관련 복사: (가중치 + 가중치 양수부/음수부 + bias) * 3"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p47:e332",
+            "p47:e333"
+          ]
+        },
+        {
+          "statement": "cudaMemcpy 횟수는 forward와 backward가 동일하다.",
+          "limits": "forward/backward 간 cudaMemcpy 호출 횟수 동일.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [],
+          "observations": [
+            "forward와 backward의 cudaMemcpy 호출 횟수 동일"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p47:e336"
+          ]
+        },
+        {
+          "statement": "forward 전체 실행 시간이 약 64s, backward 전체 실행 시간이 약 98s이다. 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 훨씬 많이 잡힌다.",
+          "limits": "40000개 데이터 기준 테스트. forward 약 64s, backward 약 98s. 동일 cudaMemcpy 호출 횟수이나 forward cudaMemcpy 시간 더 큼.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "40000개 데이터 기준 테스트",
+            "forward 전체 실행 시간 약 64s",
+            "backward 전체 실행 시간 약 98s"
+          ],
+          "observations": [
+            "forward 전체 실행 시간 약 64s",
+            "backward 전체 실행 시간 약 98s",
+            "동일 cudaMemcpy 호출 횟수임에도 forward cudaMemcpy 시간이 더 많이 잡힘"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "forward 전체 실행 시간",
+              "value": "64",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "40000개 데이터 기준",
+              "element_ids": [
+                "p47:e337"
+              ]
+            },
+            {
+              "metric": "backward 전체 실행 시간",
+              "value": "98",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "40000개 데이터 기준",
+              "element_ids": [
+                "p47:e337"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p47:e337"
+          ]
+        },
+        {
+          "statement": "단일 테스트 forward, backward는 시간에서 3배 차이가 나는데, 왜 92만개의 데이터를 돌리면 비슷해지는가? (1분 정도 차이). 아직 해결하지 못했다.",
+          "limits": "단일 테스트 3배 차이 vs 92만 개 데이터 유사성. 약 1분 차이. 미해결 상태.",
+          "kind": "problem",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "단일 테스트 forward/backward 3배 시간 차이",
+            "92만 개 데이터 테스트 시 비슷해짐",
+            "약 1분 차이"
+          ],
+          "observations": [
+            "단일 테스트 forward/backward 3배 시간 차이 존재",
+            "92만 개 데이터 테스트 시 forward/backward 시간 비슷해짐",
+            "약 1분 정도 차이",
+            "아직 해결하지 못함"
+          ],
+          "parameters": [],
+          "measurements": [],
+          "element_ids": [
+            "p47:e338"
+          ]
+        },
+        {
+          "statement": "Nsight System 프로파일링 결과 cudaMemcpy의 통계: Num Calls 6, Avg 182.834 μs, Med 21.129 μs, Min 9.434 μs, Max 932.351 μs, StdDev 368.454 μs.",
+          "limits": "Nsight System 프로파일링 데이터. cudaMemcpy 단일 호출 기준 통계.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [],
+          "observations": [
+            "cudaMemcpy 6회 호출",
+            "평균 182.834 μs",
+            "중앙값 21.129 μs",
+            "최소 9.434 μs",
+            "최대 932.351 μs",
+            "표준편차 368.454 μs"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "cudaMemcpy 호출 횟수",
+              "value": "6",
+              "value_kind": "scalar",
+              "unit": "calls",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p46:img0:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 평균 시간",
+              "value": "182.834",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p46:img0:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 중앙값 시간",
+              "value": "21.129",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p46:img0:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 최소 시간",
+              "value": "9.434",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p46:img0:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 최대 시간",
+              "value": "932.351",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p46:img0:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 표준편차",
+              "value": "368.454",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p46:img0:e0"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p46:img0:e0"
+          ]
+        },
+        {
+          "statement": "Nsight System 프로파일링 결과 cudaMemcpy의 통계: Total Time 40.726 s (79.7%), Num Calls 240000, Avg 169.691 μs, Med 18.120 μs, Min 3.599 μs, Max 7.616 ms, StdDev 316.565 μs.",
+          "limits": "Nsight System 프로파일링 데이터. cudaMemcpy 전체 실행 기준 통계.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [],
+          "observations": [
+            "cudaMemcpy 총 시간 40.726 s (전체 79.7%)",
+            "호출 횟수 240000회",
+            "평균 169.691 μs",
+            "중앙값 18.120 μs",
+            "최소 3.599 μs",
+            "최대 7.616 ms",
+            "표준편차 316.565 μs"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "cudaMemcpy 총 시간",
+              "value": "40.726",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "Nsight System 프로파일링, 전체 79.7%",
+              "element_ids": [
+                "p47:img0:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 호출 횟수",
+              "value": "240000",
+              "value_kind": "scalar",
+              "unit": "calls",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p47:img0:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 평균 시간",
+              "value": "169.691",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p47:img0:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 중앙값 시간",
+              "value": "18.120",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p47:img0:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 최소 시간",
+              "value": "3.599",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p47:img0:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 최대 시간",
+              "value": "7.616",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p47:img0:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 표준편차",
+              "value": "316.565",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "Nsight System 프로파일링",
+              "element_ids": [
+                "p47:img0:e0"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p47:img0:e0"
+          ]
+        },
+        {
+          "statement": "CROWN_SWEEP [64.064 s] 프로파일링 결과 cudaMemcpy 통계: Total Time 11.332 s, Num Calls 240000, Avg 47.216 μs, Med 24.612 μs, Min 3.642 μs, Max 7.404 ms, StdDev 51.755 μs.",
+          "limits": "CROWN_SWEEP 프로파일링 데이터. 총 실행 시간 64.064 s 기준 cudaMemcpy 통계.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "CROWN_SWEEP 총 실행 시간 64.064 s"
+          ],
+          "observations": [
+            "cudaMemcpy 총 시간 11.332 s",
+            "호출 횟수 240000회",
+            "평균 47.216 μs",
+            "중앙값 24.612 μs",
+            "최소 3.642 μs",
+            "최대 7.404 ms",
+            "표준편차 51.755 μs"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "cudaMemcpy 총 시간",
+              "value": "11.332",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "CROWN_SWEEP [64.064 s]",
+              "element_ids": [
+                "p47:img2:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 호출 횟수",
+              "value": "240000",
+              "value_kind": "scalar",
+              "unit": "calls",
+              "condition": "CROWN_SWEEP [64.064 s]",
+              "element_ids": [
+                "p47:img2:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 평균 시간",
+              "value": "47.216",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "CROWN_SWEEP [64.064 s]",
+              "element_ids": [
+                "p47:img2:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 중앙값 시간",
+              "value": "24.612",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "CROWN_SWEEP [64.064 s]",
+              "element_ids": [
+                "p47:img2:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 최소 시간",
+              "value": "3.642",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "CROWN_SWEEP [64.064 s]",
+              "element_ids": [
+                "p47:img2:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 최대 시간",
+              "value": "7.404",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "CROWN_SWEEP [64.064 s]",
+              "element_ids": [
+                "p47:img2:e0"
+              ]
+            },
+            {
+              "metric": "cudaMemcpy 표준편차",
+              "value": "51.755",
+              "value_kind": "scalar",
+              "unit": "μs",
+              "condition": "CROWN_SWEEP [64.064 s]",
+              "element_ids": [
+                "p47:img2:e0"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p47:img2:e0"
+          ]
+        },
+        {
+          "statement": "CROWN_SWEEP [98.995 s] 프로파일링 결과가 존재한다.",
+          "limits": "CROWN_SWEEP 총 실행 시간 98.995 s 기준 프로파일링.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "conditions": [
+            "CROWN_SWEEP 총 실행 시간 98.995 s"
+          ],
+          "observations": [
+            "CROWN_SWEEP 총 실행 시간 98.995 s"
+          ],
+          "parameters": [],
+          "measurements": [
+            {
+              "metric": "CROWN_SWEEP 총 실행 시간",
+              "value": "98.995",
+              "value_kind": "scalar",
+              "unit": "s",
+              "condition": "CROWN_SWEEP 프로파일링",
+              "element_ids": [
+                "p47:img3:e0"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p47:img3:e0"
+          ]
+        }
+      ]
+    }
+  }
+}

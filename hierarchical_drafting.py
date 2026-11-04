@@ -10,8 +10,11 @@ from review_response import checked_review
 from bounded_drafting import generate_bounded
 from bounded_review import review_bounded, SIMPLE_REVIEW
 from draft_prose import render_parts
-from draft_diagnostics import save_review_diagnostics
-from editorial_review import POLICY as EDITORIAL_POLICY, checked_editorial_review, review_editorial
+from draft_diagnostics import save_review_diagnostics, review_diagnostics
+from content_review_completion import (POLICY as CONTENT_POLICY, MAX_REVISIONS,
+                                      finish_content_review, reconcile_generation_warnings)
+from editorial_review import POLICY as EDITORIAL_POLICY, checked_editorial_review, finish_editorial, review_editorial
+from editorial_revision import REVISION_POLICY, edit_editorial, revise_editorial, revision_changes
 
 VERSION = "hierarchical-drafting-v1"
 LEAF = """현재 target_heading 소절 하나만 작성한다. parts.p0에 제목 없는 본문만 반환한다.
@@ -50,6 +53,13 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
 
     folder = Path(folder)
     stages = []
+    warning_stages = []
+
+    def warning_summary():
+        return {"policy": CONTENT_POLICY, "status": "needs_attention" if warning_stages else "reviewed",
+                "scope": "Saved review snapshots; not a new review of the final edited paper.",
+                "warning_count": sum(len(s["warnings"]) for s in warning_stages),
+                "stages": copy.deepcopy(warning_stages)}
     by_id = {s["id"]: s for s in plan["sections"]}
     total = sum(len(contexts["subsections"][key]) + 1 for key in plan["generation_order"]) + 1
 
@@ -95,23 +105,39 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
         heading = inputs.get("target_heading") or inputs.get("section_plan", {}).get("title", "전체 논문")
         heading = heading.lstrip("# ")
         revalidation_path = root / "checkpoint-revalidation.json"
-        reviews, feedback = [], None
+        reviews, feedback, generation_warnings = [], None, []
 
-        def review_candidate(value, bodies, attempt):
+        def review_candidate(value, bodies, attempt, pending_issues=None):
             if level != "subsection":
-                return review_editorial(engine, root, f"review-{attempt}", level, review_plan, bodies, children_reviews)
+                return review_editorial(engine, root, f"review-{attempt}", level, review_plan, bodies, children_reviews, pending_issues)
             paragraphs = index_paragraphs(bodies)
             return review_bounded(engine, root, f"review-{attempt}", SIMPLE_REVIEW + "\n" + REVIEW_FOCUS[level],
                 {"research": local_research, "plan": review_plan, "draft_paragraphs": paragraphs,
                  "reference_guides": local_catalog, "workflow_stage": level},
                 review_schema(review_plan, paragraphs), review_plan, bodies)
 
-        def record():
+        def record(report, bodies):
+            warnings = report.get("content_warnings", []) if level == "subsection" else [
+                i for i in report.get("editorial_warnings", []) if i.get("stage") == name]
+            if warnings:
+                from bounded_drafting import cited_ids
+                evidence_ids = {key for body in bodies.values() for key in cited_ids(body)}
+                evidence_ids.update(key for issue in warnings for key in issue.get("evidence_ids", []))
+                warning_stages.append({"stage": name, "level": level, "heading": heading,
+                    "warnings": copy.deepcopy(warnings), "review_path": str(root / "reviews.json"),
+                    "checkpoint_path": str(approved_path),
+                    "snapshot": review_diagnostics(name, review_plan, local_research, bodies, report),
+                    "evidence": [copy.deepcopy(f) for f in local_research["facts"] if f["id"] in evidence_ids],
+                    "completion": report.get("content_completion" if level == "subsection" else "editorial_completion")})
+            write_json(folder / "review-warnings.json", warning_summary())
             stages.append({"id": name, "level": level, "approved": True,
+                           "content_status": report.get("content_status"),
+                           "warning_count": len(warnings),
                            "input_fingerprint": identity, "review_path": str(root / "reviews.json")})
             write_json(folder / "workflow.json", {"version": VERSION, "stages": stages})
             if progress:
-                progress(20 + int(65 * len(stages) / total), f"{label} 검토 완료 · {heading}")
+                status = "경고를 남기고 완료" if warnings else "검토 완료"
+                progress(20 + int(65 * len(stages) / total), f"{label} {status} · {heading}")
 
         def content_feedback(value, report):
             if level != "subsection":
@@ -152,12 +178,17 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                     value, bodies = normalize(payload["sections"], packets)
                     if level == "subsection":
                         report = checked_review(payload["raw_review"], review_plan, bodies)
+                        generation_warnings = reconcile_generation_warnings(payload.get("generation_warnings", []), value, packets)
+                        report["issues"].extend(copy.deepcopy(generation_warnings))
+                        report = finish_content_review(report, name, payload.get("content_completion"))
                     elif payload["raw_review"].get("review_policy") == EDITORIAL_POLICY:
                         report = checked_editorial_review(payload["raw_review"], review_plan, bodies, children_reviews)
+                        report = finish_editorial(report, name, payload.get("editorial_completion"))
                     else:
                         # An old mixed review must not be used as an editorial
                         # verdict, but the already-written body is reusable.
                         raw, report = review_candidate(value, bodies, "policy-migration")
+                        report = finish_editorial(report, name, None)
                         write_json(root / "checkpoint-history" / f"approved-{saved['sha256']}.json", saved)
                         payload = {**payload, "raw_review": raw, "reviews": payload["reviews"] + [report]}
                         saved = {"sha256": fingerprint(payload), "value": payload}
@@ -177,7 +208,7 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                             revalidation = json.loads(revalidation_path.read_text(encoding="utf-8"))
                             revalidation.update(status="resolved", approved_checkpoint_sha256=saved["sha256"])
                             write_json(revalidation_path, revalidation)
-                        record()
+                        record(report, bodies)
                         return value, bodies, report, payload["reviews"]
                     reason = "review_rejected"
                     feedback = content_feedback(value, report)
@@ -202,7 +233,7 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                   object_schema({"sections": object_schema({key: parts_schema(p) for key, p in packets.items()})}))
         last_validation_error, invalid_responses = None, set()
         sid = next(iter(packets))
-        attempt, format_attempt = 0, 0
+        attempt, format_attempt, editorial_revisions, content_revisions = 0, 0, 0, 0
         while attempt < 3:
             request = {**inputs, "workflow_stage": level}
             if feedback:
@@ -211,9 +242,23 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                 suffix = f" · 형식 보정 {format_attempt}차" if format_attempt else ""
                 progress(20 + int(65 * len(stages) / total), f"{label} 중 · {heading} · {attempt + 1}차{suffix}")
             request_name = f"generate-{attempt}" + (f"-format-repair-{format_attempt}" if format_attempt else "")
-            result = generate_bounded(engine, root, request_name, GROUNDING + "\n" + system,
-                                      request, schema, packets, single)
-            candidate = {sid: result} if single else (result.get("sections") if isinstance(result, dict) else None)
+            editing = level != "subsection" and feedback and "previous_sections" in feedback
+            if editing:
+                editorial_revisions += 1
+                candidate = revise_editorial(engine, root, request_name, level, feedback["previous_sections"], packets, feedback["review"])
+                result = candidate[sid] if single else {"sections": candidate}
+            elif level != "subsection":
+                previous = {sid: {"parts": inputs["child_parts"]}} if single else inputs["sections"]
+                candidate = edit_editorial(engine, root, request_name, level, previous, packets)
+                result = candidate[sid] if single else {"sections": candidate}
+            else:
+                if feedback and "previous_sections" in feedback and format_attempt == 0:
+                    content_revisions += 1
+                new_warnings = []
+                result = generate_bounded(engine, root, request_name, GROUNDING + "\n" + system,
+                                          request, schema, packets, single, on_warning=new_warnings.append)
+                generation_warnings.extend(new_warnings)
+                candidate = {sid: result} if single else (result.get("sections") if isinstance(result, dict) else None)
             try:
                 value, bodies = normalize(candidate, packets)
             except (ValueError, KeyError, TypeError) as error:
@@ -232,11 +277,42 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                 format_attempt += 1
                 continue
             last_validation_error = None
+            generation_warnings = reconcile_generation_warnings(generation_warnings, value, packets)
             format_attempt = 0
             invalid_responses.clear()
             paragraphs = index_paragraphs(bodies)
-            write_json(root / "candidate.json", {"sections": value, "status": "awaiting_review"})
-            raw_review, report = review_candidate(value, bodies, attempt)
+            write_json(root / "candidate.json", {"sections": value, "status": "awaiting_review",
+                                                "generation_warnings": generation_warnings})
+            changes = None
+            if editing:
+                changes = revision_changes(feedback["previous_sections"], value, packets, feedback["review"]["issues"])
+                write_json(root / f"{request_name}-{REVISION_POLICY}-changes.json", changes)
+            if changes is not None and not changes["prose_changed"]:
+                # A no-op response must not spend another model review on the
+                # exact same prose or silently rewrite only its citations.
+                value, bodies = normalize(feedback["previous_sections"], packets)
+                report = copy.deepcopy(feedback["review"])
+                raw_review = {"review_policy": EDITORIAL_POLICY, "issues": [
+                    {key: copy.deepcopy(i[key]) for key in ("section_id", "paragraph_id", "category", "severity", "reason")}
+                    for i in report["issues"]]}
+                report["revision_result"] = "unchanged"
+            else:
+                raw_review, report = review_candidate(value, bodies, attempt, feedback["review"]["issues"] if editing else None)
+            if level == "subsection":
+                report["issues"].extend(copy.deepcopy(generation_warnings))
+            completion = None
+            unresolved = [i["reason"] for i in report["issues"]
+                          if i["severity"] == "error" and i.get("failure_owner") == "reviewer"]
+            if level == "subsection":
+                if not report["approved"] and not unresolved and content_revisions >= MAX_REVISIONS:
+                    completion = {"policy": CONTENT_POLICY, "status": "needs_attention",
+                                  "revisions": content_revisions, "reason": "revision_limit"}
+                report = finish_content_review(report, name, completion)
+            else:
+                if not report["approved"] and editorial_revisions >= 2:
+                    completion = {"policy": REVISION_POLICY, "status": "needs_attention", "revisions": editorial_revisions,
+                                  "reason": "unchanged" if changes and not changes["prose_changed"] else "revision_limit"}
+                report = finish_editorial(report, name, completion)
             reviews.append(report)
             save_review_diagnostics(root, f"review-{attempt}", name, review_plan, local_research, bodies, report)
             write_json(root / "reviews.json", reviews)
@@ -249,12 +325,16 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
             if report["approved"]:
                 payload = {"input_fingerprint": identity, "sections": value,
                            "raw_review": raw_review, "reviews": reviews}
+                if completion is not None:
+                    payload["content_completion" if level == "subsection" else "editorial_completion"] = completion
+                if generation_warnings:
+                    payload["generation_warnings"] = generation_warnings
                 write_json(approved_path, {"sha256": fingerprint(payload), "value": payload})
                 if revalidation_path.is_file():
                     revalidation = json.loads(revalidation_path.read_text(encoding="utf-8"))
                     revalidation.update(status="resolved", approved_checkpoint_sha256=fingerprint(payload))
                     write_json(revalidation_path, revalidation)
-                record()
+                record(report, bodies)
                 return value, bodies, report, reviews
             feedback = content_feedback(value, report)
             attempt += 1
@@ -292,4 +372,5 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
         {"research": scoped_research(packets), "plan": plan, "sections": assembled,
          "section_packets": packets, "reference_guides": catalog}, children_reviews=section_reviews)
     return {"sections": bodies, "drafts": drafts, "review": report,
-            "review_history": history, "workflow": {"version": VERSION, "stages": stages}}
+            "review_history": history, "review_warnings": warning_summary(),
+            "workflow": {"version": VERSION, "stages": stages}}

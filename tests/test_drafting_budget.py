@@ -68,8 +68,7 @@ class BudgetTests(unittest.TestCase):
             calls.append((system, request, schema))
             self.assertLessEqual(request_bytes(system, request, schema), request_limit() + 300)
             if request.get("operation") == "verify_review_findings":
-                from review_test_support import confirmed_findings
-                return confirmed_findings(request, schema)
+                raise AssertionError("Retired source-review agent must not be called")
             if "evidence_usage_targets" in request:
                 target = request["evidence_usage_targets"][0]
                 if "F5" in target["evidence_ids"] and target["section_id"] == "s0":
@@ -194,8 +193,7 @@ class BudgetTests(unittest.TestCase):
         def client(system, request, schema, path):
             self.assertLessEqual(request_bytes(system, request, schema), request_limit() + 300)
             if request.get("operation") == "verify_review_findings":
-                from review_test_support import confirmed_findings
-                return confirmed_findings(request, schema)
+                raise AssertionError("Retired source-review agent must not be called")
             if "evidence_usage_targets" in request:
                 return {"issues": []}
             if "outline" in request:

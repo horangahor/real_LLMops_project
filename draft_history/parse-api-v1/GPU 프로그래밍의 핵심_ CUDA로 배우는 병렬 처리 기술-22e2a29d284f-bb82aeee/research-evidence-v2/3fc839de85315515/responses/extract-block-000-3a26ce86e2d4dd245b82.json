@@ -1,0 +1,668 @@
+{
+  "request_fingerprint": "3a26ce86e2d4dd245b8227d1784121106eb5b2426dadd8495c91a4fdd07495d3",
+  "value": {
+    "title": "CUDA 포팅 및 CROWN 검증 성능 측정 연구 노트",
+    "facts": [
+      {
+        "statement": "CUDA 컴파일러(nvcc) 버전은 release 13.3, V13.3.73이며 빌드 시점은 2026-06-09이다.",
+        "limits": "해당 버전 정보는 특정 개발 머신에서의 nvcc --version 출력값이며, 다른 환경의 CUDA 툴킷 버전과 동일하다고 단정하지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CUDA toolkit 13.3",
+          "nvcc --version 출력"
+        ],
+        "observations": [
+          "release 13.3",
+          "V13.3.73",
+          "Built on Tue_Jun__9_14:30:19_Pacific_Daylight_Time_2026"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e1"
+        ]
+      },
+      {
+        "statement": "CUDA는 기본적으로 C++ 언어 기반으로 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 분리해 작성해도 nvcc로 컴파일이 가능하다는 이해가 기록되어 있다.",
+        "limits": "이는 작성자의 방법론적 이해이며 실제 컴파일 성공 여부를 일반화한 실측 결과는 아니다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "CUDA는 C++ 기반",
+          "GPU 동작이 필요한 코드만 따로 바꿔도 nvcc 컴파일 가능"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e4"
+        ]
+      },
+      {
+        "statement": "lirpa_forward_backward_fc_array.cpp를 CUDA로 재작성하는 접근이 제안되었으며, 병렬 연산이 필요한 부분을 device에서 동작하는 kernel 함수로 바꾸는 방안이 언급되었다.",
+        "limits": "kernel 함수 분리에 대한 구체적 구현 범위나 성공 여부는 이 요소에서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "hypothesis",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "병렬 연산이 필요한 부분만 kernel 함수로 전환",
+          "kernel 함수는 GPU(device)에서 동작하는 코드"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e2",
+          "p1:e5"
+        ]
+      },
+      {
+        "statement": "진입점 main은 epsilon을 입력받으며, 시스템 호출 인자를 통해 eps 값을 변경할 수 있다고 기록되어 있다.",
+        "limits": "인자 전달 방식이나 실제 변경 가능한 eps 범위는 여기서 측정되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "main 진입점",
+          "epsilon 입력"
+        ],
+        "observations": [
+          "epsilon을 입력받음",
+          "시스템 호출 인자로 eps 값 변경 가능"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e8"
+        ]
+      },
+      {
+        "statement": "main에서 self_test_relaxations와 run_xor_demo가 호출된다고 기록되어 있으며, self_test_relaxations는 안정성 테스트용 코드로 전체 흐름에 큰 영향이 없다고 평가되었다.",
+        "limits": "self_test_relaxations의 세부 동작이나 실제 영향도는 여기서 정량적으로 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "main 호출 흐름"
+        ],
+        "observations": [
+          "self_test_relaxations 호출",
+          "run_xor_demo 호출",
+          "self_test_relaxations는 안정성 테스트용 코드"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e10",
+          "p1:e12"
+        ]
+      },
+      {
+        "statement": "run_xor_demo가 핵심이며, 코드가 복잡하여 기존 cpp 코드를 그대로 복붙하면서 배열 연산이 필요한 지점을 파악하기로 했다고 기록되어 있다.",
+        "limits": "이 문장은 진행 방식과 판단 근거를 기술한 것으로, 실제 식별된 연산 지점 목록은 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "run_xor_demo가 중요",
+          "cpp 처음 코드부터 복붙하며 배열 연산 필요 지점 파악"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e13",
+          "p1:e15"
+        ]
+      },
+      {
+        "statement": "mat_add부터 배열을 통한 연산이 시작되어 포팅을 시도했다고 기록되어 있다.",
+        "limits": "mat_add 포팅의 최종 성공 여부나 세부 변경은 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "mat_add부터 배열 연산",
+          "포팅 시도"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e16"
+        ]
+      },
+      {
+        "statement": "mat_add가 여러 번 호출되며 메모리 할당/해제도 여러 번 일어나 비효율적이라고 판단했으나, 최적화는 나중에 진행하기로 했다고 기록되어 있다.",
+        "limits": "비효율성 판단은 작성자의 해석이며, 실제 호출 횟수나 메모리 할당 횟수는 여기서 정량화되지 않았다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "mat_add 여러 번 호출",
+          "메모리 할당/해제 여러 번 발생",
+          "비효율적이라 판단",
+          "최적화는 나중에 진행"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p1:e17"
+        ]
+      },
+      {
+        "statement": "최종 포팅, 컴파일, 실행 검증이 완료되었고 동일하게 동작했다고 기록되어 있다.",
+        "limits": "동일하게 동작했다는 판단의 구체적 검증 조건이나 비교 범위는 여기서 명시되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "포팅 후 컴파일/실행"
+        ],
+        "observations": [
+          "최종 포팅, 컴파일, 실행 검증 완료",
+          "동일하게 동작함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p2:e18"
+        ]
+      },
+      {
+        "statement": "1차 진행 상황 보고 이후 해야 할 일로 backward only mode의 재귀 버전, loop 버전, iteration 버전을 희소행렬로 만든 버전이 언급되었고, 이 4가지를 CUDA 프로그램으로 만들어 돌려보는 것이 최종 목표라고 기록되어 있다.",
+        "limits": "목록 중 하나는 작성자가 기억을 떠올리며 적은 것으로 보이며, 정확한 항목 명칭과 범위는 여기서 완전히 고정되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "backward only mode 재귀 버전",
+          "backward only loop 버전",
+          "backward only iteration 버전을 희소행렬로 만든 버전",
+          "4가지를 CUDA 프로그램으로 만들어 실행 목표"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p2:e21",
+          "p2:e23",
+          "p2:e24"
+        ]
+      },
+      {
+        "statement": "프루닝(pruning)을 적용해 파라미터 수를 약 93% 정도 제한했다고 기록되어 있다.",
+        "limits": "약 93%라는 수치는 작성자가 기록한 값이며, 어떤 기준 대비 제한인지는 여기서 명시되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "프루닝 적용"
+        ],
+        "observations": [
+          "프루닝 적용",
+          "파라미터 수를 93% 정도 제한"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "parameter_reduction_ratio",
+            "value": "0.93",
+            "value_kind": "range",
+            "unit": "ratio",
+            "condition": "pruning 적용",
+            "element_ids": [
+              "p2:e22"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p2:e22"
+        ]
+      },
+      {
+        "statement": "람다 같은 함수들을 rewrite하는 논의가 교수님과 필요하다고 기록되어 있다.",
+        "limits": "논의 대상 함수의 구체적 범위나 논의 결과는 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "람다 같은 함수 rewrite 논의 필요",
+          "교수님과 논의"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p2:e25"
+        ]
+      },
+      {
+        "statement": "교수(최광훈)의 안내로 대상 신경망이 Fully Connected 구조이며, 입력 256개, 히든 계층 2개(N^(1)=491, N^(2)=491), 출력 16개라는 정보가 전달되었다.",
+        "limits": "이는 교수 안내 내용이며, 실제 모델 파일과 완전히 일치하는지 여기서 실측되지는 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "교수 안내"
+        ],
+        "observations": [
+          "Fully Connected 구조",
+          "입력 N^(0)=256",
+          "히든 N^(1)=491, N^(2)=491",
+          "출력 N^(3)=16"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p2:e28"
+        ]
+      },
+      {
+        "statement": " crown 알고리즘의 입력으로 테스트 데이터 1개와 eps=10^-6을 사용해 CROWN을 돌려 16개 출력을 뽑는 것이 1차 목표로 제시되었다.",
+        "limits": "이 목표는 교수 안내/요청 내용이며, 실제 수행 결과는 별도 요소에서 확인된다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "교수 안내",
+          "CROWN 알고리즘",
+          "eps=10^-6",
+          "테스트 데이터 1개"
+        ],
+        "observations": [
+          " crown 입력으로 테스트 데이터 1개와 eps=10^-6 사용",
+          "16개 출력 추출이 1차 목표"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p2:e28"
+        ]
+      },
+      {
+        "statement": "my_lirpa.cu에 실제 신경망을 로드(기존에는 가상 신경망 사용)하고 16개 출력을 뽑는 것이 1차 목표로 이해되었다고 기록되어 있다.",
+        "limits": "이는 작성자의 해석이며, 실제 로드 방식과 출력 수가 여기서 실측된 것은 아니다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "my_lirpa.cu에 실제 신경망 로드",
+          "기존에는 가상 신경망 사용",
+          "16개 출력 추출이 1차 목표로 이해"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p2:e29"
+        ]
+      },
+      {
+        "statement": "새로운 crown_test.cu를 만들어 작성하기로 했다고 기록되어 있다.",
+        "limits": "파일 생성 여부나 실제 내용은 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "새로운 crown_test.cu 작성"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p2:e30"
+        ]
+      },
+      {
+        "statement": "모델 파일 로드 시 CustomToLirpa.py를 참조해 model.bin 구조를 파악했다고 기록되어 있다.",
+        "limits": "파악한 model.bin 구조의 세부 필드는 여기서 나열되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "모델 파일 로드"
+        ],
+        "observations": [
+          "CustomToLirpa.py 참조",
+          "model.bin 구조 파악"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p2:e31"
+        ]
+      },
+      {
+        "statement": "새로운 FullyConnectedNetwork를 heap에 할당해 읽어온 신경망을 로드했다고 기록되어 있으며, 이는 트러블 슈팅 참조와 함께 언급되었다.",
+        "limits": "heap 할당 방식이나 트러블 슈팅 세부 내용은 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "FullyConnectedNetwork를 heap에 할당",
+          "읽어온 신경망 로드",
+          "트러블 슈팅 참조"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p3:e32"
+        ]
+      },
+      {
+        "statement": " .Pickle로 된 데이터셋을 CUDA로 읽기 위해 .bin 파일로 변환했으며, 테스트 단계이므로 입력 256개 1세트만 변환했다고 기록되어 있다.",
+        "limits": "변환 방식이나 실제 변환된 파일 크기는 여기서 명시되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "데이터셋 변환",
+          "테스트 단계"
+        ],
+        "observations": [
+          ".Pickle 데이터셋을 .bin 파일로 변환",
+          "CUDA로 읽기 위한 목적",
+          "입력 256개 1세트만 변환"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p3:e32"
+        ]
+      },
+      {
+        "statement": "GPU에 신경망을 로드(Memcpy)하고 CROWN을 호출했다고 기록되어 있다.",
+        "limits": "Memcpy 규모나 CROWN 호출 세부 조건은 여기서 명시되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "GPU에 신경망 로드(Memcpy)",
+          "CROWN 호출"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p3:e32"
+        ]
+      },
+      {
+        "statement": "CPU ONLY 계산 버전과 GPU 버전을 만들어 신경망 정방향 통과 및 CROWN 알고리즘(backward) 계산 시간을 측정했다고 기록되어 있다.",
+        "limits": "측정 환경 세부(정밀도, 반복 횟수, 배치 등)는 여기서 명시되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CPU ONLY 버전",
+          "GPU 버전",
+          "정방향 통과 & CROWN(backward) 계산 시간 측정"
+        ],
+        "observations": [
+          "CPU ONLY 계산 버전과 GPU 버전 제작",
+          "신경망 정방향 통과 및 CROWN 알고리즘 계산 시간 측정"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p3:e33"
+        ]
+      },
+      {
+        "statement": "CPU ONLY 모드에서 CROWN 검증(eps = 1e-06) 계산 성공 후 경과 시간이 101.237800 ms로 기록되었다.",
+        "limits": "이 값은 단일 실행 화면 기록이며, 반복 측정 평균이나 분산은 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "MODE: CPU ONLY (no GPU)",
+          "eps = 1e-06",
+          "CROWN Verification"
+        ],
+        "observations": [
+          "calc success",
+          "Output Dimension: 16"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time_ms",
+            "value": "101.237800",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CPU ONLY, eps=1e-06, CROWN verification",
+            "element_ids": [
+              "p3:e35"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p3:e35"
+        ]
+      },
+      {
+        "statement": "GPU 버전에서 CROWN 검증(eps = 1e-06) 계산 성공 후 경과 시간이 353.057200 ms로 기록되었다.",
+        "limits": "이 값은 단일 실행 화면 기록이며, GPU 버전의 세부 최적화 적용 여부는 여기서 구분되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "CROWN Verification",
+          "GPU 버전"
+        ],
+        "observations": [
+          "calc success",
+          "Output Dimension: 16"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time_ms",
+            "value": "353.057200",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "GPU 버전, eps=1e-06, CROWN verification",
+            "element_ids": [
+              "p4:e37"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p4:e37"
+        ]
+      },
+      {
+        "statement": "CPU ONLY 버전과 GPU 버전의 출력(하한/상한/Normal Pred)이 동일한 값으로 표시되었다고 기록되어 있다.",
+        "limits": "동일 출력 여부는 화면 표기 기준이며, 수치적 동등성 검증 절차가 여기서 상세히 기술되지는 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "CPU ONLY",
+          "GPU 버전",
+          "eps = 1e-06"
+        ],
+        "observations": [
+          "Lower Bound, Upper Bound, Normal Pred(y) 값이 CPU/GPU 출력에서 동일하게 보임"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p3:e35",
+          "p4:e37"
+        ]
+      },
+      {
+        "statement": "AI에게 시켜서 대충 최적화한 버전으로 my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu를 만들어 실행해봤다고 기록되어 있다.",
+        "limits": "AI 생성 코드의 구체적 내용이나 품질 평가는 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "AI에게 시켜서 대충 최적화한 버전 제작",
+          "my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu 실행"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p4:e40"
+        ]
+      },
+      {
+        "statement": "컴파일 옵션에 -lcublas를 넣었다고 기록되어 있으며, 이는 my_lirpa_op.cu에서 cublasDgemm()를 사용하기 때문에 cuBLAS 라이브러리를 연결해야 한다는 설명과 함께 언급되었다.",
+        "limits": "실제 링크 성공 여부나 cublasDgemm 사용 범위는 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "컴파일 옵션 -lcublas",
+          "my_lirpa_op.cu"
+        ],
+        "observations": [
+          "-lcublas 링크 옵션 사용",
+          "cublasDgemm() 사용을 위해 cuBLAS 라이브러리 연결 필요",
+          "CUDA Toolkit 설치 시 자동 포함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p4:e41",
+          "p4:e42"
+        ]
+      },
+      {
+        "statement": "GPU OPTIMIZED(cuBLAS + Pool) 모드에서 CROWN 검증(eps = 1e-06) 계산 성공 후 경과 시간이 229.691800 ms로 기록되었다.",
+        "limits": "이 값은 단일 실행 화면 기록이며, 최적화 구성별 반복 측정 결과는 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "MODE: GPU OPTIMIZED (cuBLAS + Pool)",
+          "eps = 1e-06",
+          "CROWN Verification"
+        ],
+        "observations": [
+          "calc success",
+          "Output Dimension: 16"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "elapsed_time_ms",
+            "value": "229.691800",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "GPU OPTIMIZED (cuBLAS + Pool), eps=1e-06, CROWN verification",
+            "element_ids": [
+              "p5:e43"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p5:e43"
+        ]
+      },
+      {
+        "statement": "GPU OPTIMIZED 버전의 출력(하한/상한/Normal Pred)이 CPU ONLY 및 이전 GPU 버전과 동일한 값으로 표시되었다고 기록되어 있다.",
+        "limits": "동일 출력 여부는 화면 표기 기준이며, 수치적 동등성 검증 절차가 여기서 상세히 기술되지는 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "GPU OPTIMIZED (cuBLAS + Pool)",
+          "eps = 1e-06"
+        ],
+        "observations": [
+          "Lower Bound, Upper Bound, Normal Pred(y) 값이 이전 출력과 동일하게 보임"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p5:e43"
+        ]
+      },
+      {
+        "statement": "GPU OPTIMIZED 버전에 적용된 최적화로 cuBLAS로 matmul 대체, 메모리 풀 사용, 벡터 연산을 CPU로 바꾸는 방법이 기록되어 있다.",
+        "limits": "각 최적화의 구현 세부나 적용 범위는 여기서 명시되지 않았다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "GPU OPTIMIZED 버전"
+        ],
+        "observations": [
+          "cuBLAS로 matmul 대체",
+          "메모리 풀 사용(큰 공간 미리 할당 후 빌려주는 형식, 함수 호출마다 할당/해제 제거)",
+          "벡터 연산을 CPU로 변경"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p5:e45"
+        ]
+      },
+      {
+        "statement": "GPU OPTIMIZED 버전이 229.691800ms로 100ms 정도 줄었지만 여전히 CPU보다 느리다고 기록되어 있다.",
+        "limits": "비교는 CPU ONLY 101.237800ms 대비로 보이며, 반복 측정이나 통계적 유의성은 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "GPU OPTIMIZED (cuBLAS + Pool)",
+          "CPU ONLY 대비"
+        ],
+        "observations": [
+          "229.691800ms로 100ms 정도 감소",
+          "여전히 CPU보다 느림"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p5:e46"
+        ]
+      },
+      {
+        "statement": "matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 만들어봤다고 기록되어 있다.",
+        "limits": "하이브리드 프로그램의 구체적 구성이나 성능 결과는 여기서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "matmul만 GPU로 실행하는 하이브리드 프로그램 제작"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p5:e47"
+        ]
+      }
+    ],
+    "coverage": {
+      "p1": {
+        "status": "extracted",
+        "note": "CUDA 버전, 포팅 접근, main 진입점 분석, mat_add 관련 관찰과 최적화 지연 판단을 수집함."
+      },
+      "p2": {
+        "status": "extracted",
+        "note": "최종 포팅 검증 완료, 이후 진행 과제 목록, 프루닝 적용, 교수 안내(Fully Connected 구조/입력256/히든491/출력16/eps=1e-6), crown_test.cu 작성, model.bin 구조 파악, heap 할당 및 데이터셋 .bin 변환, GPU 로드/CROWN 호출을 수집함."
+      },
+      "p3": {
+        "status": "extracted",
+        "note": "CPU/GPU 버전 제작 및 시간 측정 의도, CPU ONLY 101.237800ms 측정값, 출력 표기 내용을 수집함."
+      },
+      "p4": {
+        "status": "extracted",
+        "note": "GPU 버전 353.057200ms 측정값, AI 최적화 버전 시도, -lcublas 링크와 cublasDgemm 관련 설명을 수집함."
+      }
+    }
+  }
+}

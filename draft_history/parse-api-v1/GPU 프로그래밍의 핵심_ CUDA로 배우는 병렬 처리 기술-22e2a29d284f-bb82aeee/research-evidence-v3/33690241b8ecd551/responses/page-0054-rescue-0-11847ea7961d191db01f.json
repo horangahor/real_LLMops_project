@@ -1,0 +1,157 @@
+{
+  "request_fingerprint": "11847ea7961d191db01f5d6a3dc7323de78f35334b52a17501ed6ac698784f19",
+  "value": {
+    "facts": [
+      {
+        "statement": "각 추론, bound 계산, 검증 단계 끝마다 시간을 기록해서(E2E) 각각 시간을 측정하도록 코드를 구성하였다",
+        "limits": "elapsed 타임(92만 번 계산 시간)과 미세한 오차가 존재하며, 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단하여 사용하기로 함",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "추론(네트워크 정방향 통과) → bound 계산 → 검증(Top-k 인증 판정) 순서로 진행",
+          "각 단계 종료 시점에 std::chrono::high_resolution_clock::now()로 타임스탬프 기록",
+          "구간 차이를 double 초 단위로 누적"
+        ],
+        "observations": [
+          "추론 시간 누적 변수: time_infer_total (t0~t1 구간)",
+          "bound 시간 누적 변수: time_bound_total (t1~t2 구간)",
+          "검증 시간 누적 변수: time_certify_total (t2~t3 구간)",
+          "case 0은 ForwardBoundResult(lirpa_forward_bound_imp1), case 1은 BackwardBoundResult(lirpa_backward_bound) 사용",
+          "각 case 안에서 직접 초기화하여 NRVO 적용, 4MB+ 구조체 복사 0회"
+        ],
+        "parameters": [
+          {
+            "name": "추론 시간 측정 구간",
+            "value": "t0 ~ t1",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "bound 시간 측정 구간",
+            "value": "t1 ~ t2",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "검증 시간 측정 구간",
+            "value": "t2 ~ t3",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "bound 계산 방법(case)",
+            "value": "0: ForwardBoundResult (lirpa_forward_bound_imp1), 1: BackwardBoundResult (lirpa_backward_bound)",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          },
+          {
+            "name": "Top-k 인증 판정 함수",
+            "value": "certify_topk(y0, final_lower, final_upper, k)",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e392",
+          "p54:e393"
+        ]
+      },
+      {
+        "statement": "각 forward, backward를 20번씩 측정 완료하였다",
+        "limits": "92만 번 실행 중 가끔 튀는 값(outlier)이 존재하는 경우가 있음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward, backward 각각 20번 측정",
+          "92만 번 실행 대상"
+        ],
+        "observations": [
+          "튀는 값(outlier)이 존재함",
+          "p53:e387에서 'forward, backward 92만번 실행에 대해 가끔 튀는 경우가 있는데 그거 평균, 분산을 구해보자'라고 계획하였고 '측정완료 평균, 분산만 슬라이드에 넣으면 됨'이라고 확인됨",
+          "p53:e388에서 '92만번의 forward, backward 측정하기 ⇐ 20번씩 측정 완료'라고 기록됨"
+        ],
+        "parameters": [
+          {
+            "name": "forward 측정 횟수",
+            "value": "20번",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e395",
+              "p53:e388"
+            ]
+          },
+          {
+            "name": "backward 측정 횟수",
+            "value": "20번",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p54:e395",
+              "p53:e388"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p54:e395",
+          "p53:e387",
+          "p53:e388"
+        ]
+      },
+      {
+        "statement": "튀는 값이 존재하는 각 20번 실행 시간의 평균과 분산을 구하여 슬라이드에 넣을 예정",
+        "limits": "아직 평균·분산 계산 및 슬라이드 반영이 완료되지 않은 계획 단계임",
+        "kind": "method",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [
+          "forward, backward 각 20번 실행 시간 데이터 존재",
+          "튀는 값(outlier) 포함"
+        ],
+        "observations": [
+          "각 20번 실행 시간의 평균과 분산을 계산할 예정",
+          "계산된 평균·분산을 슬라이드에 넣을 예정",
+          "p53:e387에서 '평균, 분산만 슬라이드에 넣으면 됨'이라고 확인됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p54:e395",
+          "p53:e387"
+        ]
+      },
+      {
+        "statement": "elapsed 타임(92만 번 계산 시간)과 3개 누적 시간(추론+bound+검증) 합 사이에 미세한 오차가 존재하며, 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단하여 사용하기로 함",
+        "limits": "두 시간 측정 방식 간 정합성이 완벽하지 않을 수 있음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "92만 번 계산 대상",
+          "추론·bound·검증 각 단계 누적 시간 합산 방식 사용"
+        ],
+        "observations": [
+          "elapsed 타임과 3개 누적 시간 합 간 미세한 오차 존재",
+          "3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단하여 해당 값을 사용하기로 결정"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p54:e394"
+        ]
+      }
+    ]
+  }
+}

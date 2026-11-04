@@ -1,0 +1,458 @@
+{
+  "request_fingerprint": "b3664f426cf24776ef262674a341ff178a8f0329862d195aec34e7d4fc08ecd4",
+  "value": {
+    "title": "Cross-attention 기반 경량 CNN–Transformer의 RGBD 융합을 통한 묘목 이식 중 실시간 스트레스 분류",
+    "rationale": "연구 자료의 핵심 기여(가벼운 RGBD 다중모달 프레임워크, 계층적 교차 주의 융합, 6단계 스트레스 분류, 엣지 배포 성능)를 반영하면서, 참고 가이드의 서론·방법·평가·한계·결론 역할 구조를 따르도록 구성함.",
+    "sections": [
+      {
+        "id": "S01_introduction",
+        "title": "서론",
+        "role": "introduction",
+        "purpose": "로봇 이식 환경에서 묘목 스트레스 분류의 실용적 중요성과 기존 단일 모달 접근의 한계를 제시하고, RGBD 융합과 실시간성·정확도를 함께 고려해야 하는 이유를 명확히 한다. 이후 제안 프레임워크와 실험 조건, 주요 결과를 요약하고 논문 구성을 안내한다.",
+        "status": "write",
+        "subsections": [
+          "연구 배경 및 문제 제기",
+          "비교의 어려움과 측정 범위의 모호함",
+          "연구 공백과 본 연구의 초점",
+          "실험 조건 및 구성의 정의",
+          "주요 발견 요약 및 논문 구성"
+        ],
+        "evidence_ids": [
+          "F01",
+          "F02",
+          "F03",
+          "F04",
+          "F05",
+          "F18",
+          "F06",
+          "F07",
+          "F08",
+          "F09",
+          "F10",
+          "F11",
+          "F13",
+          "F16",
+          "F17"
+        ],
+        "reference_ids": [
+          "ref1_introduction"
+        ],
+        "table_ids": [],
+        "depends_on": [],
+        "reference_adaptation": "ref1_introduction의 문단 전개(연구 중요성 → 비교 어려움 → 연구 공백 → 조건 정의 → 결과 요약 → 구성 안내)를 따르되, 본 연구의 사실(6단계 스트레스, RGBD 융합, 엣지 FPS/정확도, RGB-only 대비 개선)에 맞춰 조건 정의와 결과 요약을 구체화한다.",
+        "required_items": [
+          {
+            "id": "I01",
+            "description": "로봇 이식 중 묘목 스트레스 분류의 실용적 중요성과 기존 단일 모달 접근의 한계 서술",
+            "evidence_ids": [
+              "F01",
+              "F02"
+            ]
+          },
+          {
+            "id": "I02",
+            "description": "정확도와 지연 시간을 함께 고려해야 하는 이유 및 측정 범위 차이 설명",
+            "evidence_ids": [
+              "F04",
+              "F18"
+            ]
+          },
+          {
+            "id": "I03",
+            "description": "서로 다른 대상·구성 간 비교가 어려운 이유를 구성·스택·파이프라인 차이로 서술",
+            "evidence_ids": [
+              "F04",
+              "F18"
+            ]
+          },
+          {
+            "id": "I04",
+            "description": "기존 연구 초점과 본 연구가 별도로 분리하려는 수준 대비 및 연구 공백 명시",
+            "evidence_ids": [
+              "F01",
+              "F02",
+              "F05"
+            ]
+          },
+          {
+            "id": "I05",
+            "description": "실험 조건 정의(6단계 스트레스, RGBD 수집, 엣지 배포)와 각 조건이 포착하는 효과 설명",
+            "evidence_ids": [
+              "F01",
+              "F03",
+              "F06",
+              "F07",
+              "F08",
+              "F09",
+              "F10",
+              "F11",
+              "F13",
+              "F16",
+              "F17"
+            ]
+          },
+          {
+            "id": "I06",
+            "description": "주요 결과 요약(정확도, FPS, RGB-only 대비 개선)과 논문 구성 안내",
+            "evidence_ids": [
+              "F04",
+              "F05",
+              "F18"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "S02_methods",
+        "title": "방법",
+        "role": "methods",
+        "purpose": "실험 구성, 프레임워크, 조건, 데이터셋, 배포 설정, 하드웨어·소프트웨어 환경을 단계적으로 정의한다. 특히 RGB-CTA 기준선, RGBD-CTA-F/D 변형, 교차 주의 융합 방식, 학습·검증 전략을 명확히 구분하여 각 구성이 통제하는 범위를 밝힌다.",
+        "status": "write",
+        "subsections": [
+          "연구 설계 및 구성 정의",
+          "프레임워크와 실행 경로",
+          "RGB-CTA 기준선 구성",
+          "RGBD 융합 변형(RGBD-CTA-F, RGBD-CTA-D)",
+          "데이터셋, 전처리 및 증강",
+          "학습·검증 전략 및 평가 지표",
+          "배포 플랫폼과 소프트웨어 환경"
+        ],
+        "evidence_ids": [
+          "F02",
+          "F03",
+          "F06",
+          "F07",
+          "F08",
+          "F09",
+          "F10",
+          "F11",
+          "F12",
+          "F13",
+          "F14",
+          "F15",
+          "F16",
+          "F17",
+          "F18",
+          "F04",
+          "F01"
+        ],
+        "reference_ids": [
+          "ref1_methods"
+        ],
+        "table_ids": [
+          "T01_config",
+          "T02_dataset",
+          "T03_hardware",
+          "T04_training"
+        ],
+        "depends_on": [
+          "S01_introduction"
+        ],
+        "reference_adaptation": "ref1_methods의 문단 흐름(구성/조건 정의 → 실행 경로·측정 구간 → 공통 고정 요소 → 워크로드·데이터셋·정확도 지표 → 환경별 설정 → 플랫폼·소프트웨어 스택)을 따르되, 본 연구의 사실(계층적 교차 주의, RGB-as-query 융합식, 8:2 분할+계층화 5-fold, Jetson AGX Xavier, Azure Kinect DK, 학습 스케줄)에 맞춰 세부 항목을 채운다.",
+        "required_items": [
+          {
+            "id": "M01",
+            "description": "세 가지 구성(RGB-CTA, RGBD-CTA-F, RGBD-CTA-D)의 정의와 각 구성이 통제하는 범위 설명",
+            "evidence_ids": [
+              "F14",
+              "F15",
+              "F18"
+            ]
+          },
+          {
+            "id": "M02",
+            "description": "프레임워크와 실행 경로, 측정 구간(정확도·FPS 측정 범위) 설명",
+            "evidence_ids": [
+              "F02",
+              "F04",
+              "F18"
+            ]
+          },
+          {
+            "id": "M03",
+            "description": "공통으로 고정하는 요소(입력 크기, 배치, 평가 입력 등) 명시",
+            "evidence_ids": [
+              "F14",
+              "F16",
+              "F18"
+            ]
+          },
+          {
+            "id": "M04",
+            "description": "워크로드·데이터셋 선택과 정확도 지표(6단계 스트레스, 1537 원본+RGBD, 증강, 8:2 분할) 제시",
+            "evidence_ids": [
+              "F01",
+              "F03",
+              "F06",
+              "F07",
+              "F12",
+              "F13"
+            ]
+          },
+          {
+            "id": "M05",
+            "description": "환경별 설정과 적용 범위(카메라 거리·각도, 해상도, 증강 범위) 설명",
+            "evidence_ids": [
+              "F09",
+              "F10",
+              "F11",
+              "F12"
+            ]
+          },
+          {
+            "id": "M06",
+            "description": "평가 대상 플랫폼과 소프트웨어 스택(Jetson AGX Xavier, Azure Kinect DK, PyTorch FP32, 배치 1, 100장 평균) 정리",
+            "evidence_ids": [
+              "F08",
+              "F09",
+              "F18"
+            ]
+          },
+          {
+            "id": "M07",
+            "description": "학습·검증 전략(배치, 학습률, AdamW, warm-up, 200 epoch, label smoothing, AMP, 80/20 hold-out+계층화 5-fold, 테스트셋 1회 접근) 제시",
+            "evidence_ids": [
+              "F16",
+              "F17"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "S03_evaluation",
+        "title": "평가",
+        "role": "evaluation",
+        "purpose": "연구 질문별로 정확도·지연 시간 결과를 제시하고, 구성 간 차이와 개선 크기, 정확도·FPS 간 상충을 해석한다. 특히 RGBD 융합 효과, 기준선 대비 성능, 파라미터·GFLOPs·FPS 변화를 함께 다룬다.",
+        "status": "write",
+        "subsections": [
+          "평가 대상 및 결과 구성 안내",
+          "RGBD 융합이 정확도에 미치는 영향",
+          "기준선 대비 정확도와 모델 복잡도·속도 변화",
+          "정확도·지연 시간 상충 해석",
+          "결과 요약"
+        ],
+        "evidence_ids": [
+          "F04",
+          "F05",
+          "F18",
+          "F17"
+        ],
+        "reference_ids": [
+          "ref1_evaluation"
+        ],
+        "table_ids": [
+          "T05_performance"
+        ],
+        "depends_on": [
+          "S02_methods"
+        ],
+        "reference_adaptation": "ref1_evaluation의 흐름(평가 대상 안내 → 질문별 결과 서술 → 구성 간 차이·예외·순위 변화·감소 폭 중심 서술 → 지표 간 상충 논의)을 따르되, 본 연구는 단일 질문(RGBD 융합 효과 및 실시간성)에 집중하므로 정확도·파라미터·GFLOPs·FPS를 함께 제시하고 RGB-only 대비 4.9%p 개선, FPS 감소(7.6→5.2)를 상충 관점에서 해석한다.",
+        "required_items": [
+          {
+            "id": "E01",
+            "description": "평가 대상과 결과 표 구성 안내(정확도·정밀도·재현율·F1·파라미터·GFLOPs·FPS)",
+            "evidence_ids": [
+              "F18"
+            ]
+          },
+          {
+            "id": "E02",
+            "description": "RGBD 융합 효과 서술(RGBD-CTA-F 95.8% vs RGB-CTA 90.9%, +4.9%p)",
+            "evidence_ids": [
+              "F05",
+              "F18"
+            ]
+          },
+          {
+            "id": "E03",
+            "description": "기준선 대비 모델 복잡도·속도 변화(파라미터 18.1→23.2M, GFLOPs 8.2→10.3, FPS 7.6→5.2) 제시",
+            "evidence_ids": [
+              "F18"
+            ]
+          },
+          {
+            "id": "E04",
+            "description": "정확도·지연 시간 상충 해석(정확도 향상과 FPS 감소의 동시 발생, 이식 제어 파이프라인 통합 조건)",
+            "evidence_ids": [
+              "F04",
+              "F18"
+            ]
+          },
+          {
+            "id": "E05",
+            "description": "결과 요약 및 해석 범위(테스트셋 1회 접근, 엣지 배포 조건) 명시",
+            "evidence_ids": [
+              "F17",
+              "F18"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "S04_limitations",
+        "title": "한계",
+        "role": "limitations",
+        "purpose": "실험 범위, 통제 조건, 동시 변경의 제약, 측정 환경 차이, 제외된 평가 항목을 밝혀 결과 해석 범위를 제한한다. 특히 단일 작물·6단계 스트레스 정의, 증강 범위, FPS 측정 조건, 정확도·속도 동시 변경 문제를 명시한다.",
+        "status": "write",
+        "subsections": [
+          "실험 범위와 조건",
+          "통제 조건과 제한한 최적화",
+          "동시 변경과 개별 요인 분리의 제약",
+          "측정 환경 차이와 절대값 해석",
+          "제외된 평가 항목과 해석상 공백",
+          "결과 적용 범위의 한계"
+        ],
+        "evidence_ids": [
+          "F01",
+          "F06",
+          "F12",
+          "F13",
+          "F17",
+          "F18",
+          "F07",
+          "F16",
+          "F04",
+          "F10",
+          "F11"
+        ],
+        "reference_ids": [
+          "ref1_limitations"
+        ],
+        "table_ids": [],
+        "depends_on": [
+          "S03_evaluation"
+        ],
+        "reference_adaptation": "ref1_limitations의 흐름(범위·조건 → 제한한 최적화 사유 → 동시 변경 문제 → 호스트/절대값 해석 제약 → 제외 지표와 공백 → 적용 범위 정리)을 따르되, 본 연구의 사실(단일 작물, 6단계 스트레스 정의, 깊이 맵 증강 제한, 8:2 분할+계층화 5-fold, 테스트셋 1회 접근, FPS 측정 조건)에 맞춰 구체화한다.",
+        "required_items": [
+          {
+            "id": "L01",
+            "description": "실험 범위와 조건(단일 작물, 6단계 스트레스 정의, 실내 배양 환경) 명시",
+            "evidence_ids": [
+              "F01",
+              "F06",
+              "F07"
+            ]
+          },
+          {
+            "id": "L02",
+            "description": "통제 조건과 제한한 최적화(깊이 맵 증강 제한, 특정 학습 스케줄 고정) 설명",
+            "evidence_ids": [
+              "F12",
+              "F16"
+            ]
+          },
+          {
+            "id": "L03",
+            "description": "동시 변경 문제(RGBD 융합 도입 시 정확도·파라미터·GFLOPs·FPS가 함께 변하여 개별 요인 분리가 어려운 점) 명시",
+            "evidence_ids": [
+              "F18"
+            ]
+          },
+          {
+            "id": "L04",
+            "description": "측정 환경 차이와 절대값 해석 제약(엣지 장치, PyTorch FP32, 배치 1, 100장 평균, 이식 제어 파이프라인 통합 조건) 설명",
+            "evidence_ids": [
+              "F04",
+              "F18"
+            ]
+          },
+          {
+            "id": "L05",
+            "description": "제외된 평가 항목과 해석상 공백(예: 전력·에너지 효율, 다양한 작물·스트레스 범위 등) 제시",
+            "evidence_ids": [
+              "F01",
+              "F04"
+            ]
+          },
+          {
+            "id": "L06",
+            "description": "결과 적용 범위의 한계(실내 제어 환경, 특정 센서·거리·각도 조건, 8:2 분할+계층화 5-fold, 테스트셋 1회 접근) 정리",
+            "evidence_ids": [
+              "F07",
+              "F10",
+              "F11",
+              "F13",
+              "F17"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "S05_conclusion",
+        "title": "결론",
+        "role": "conclusion",
+        "purpose": "수준별 핵심 발견을 다시 정리하고, 비교 시 함께 고려해야 할 요소(정확도·지연 시간, 모델 복잡도, 배포 조건)와 향후 확장 방향을 제시한다.",
+        "status": "write",
+        "subsections": [
+          "연구 범위와 접근 방식 재진술",
+          "수준별 핵심 발견 정리",
+          "정확도·지연 시간 상충과 비교 시 고려 요소",
+          "향후 확장 방향"
+        ],
+        "evidence_ids": [
+          "F01",
+          "F02",
+          "F04",
+          "F05",
+          "F18",
+          "F06"
+        ],
+        "reference_ids": [
+          "ref1_conclusion"
+        ],
+        "table_ids": [],
+        "depends_on": [
+          "S04_limitations"
+        ],
+        "reference_adaptation": "ref1_conclusion의 흐름(범위·접근 재진술 → 수준별 발견 정리 → 순위 변화·추가 이득·정확도 보존 여부 → 비교 시 고려 요소 종합 → 향후 확장 방향)을 따르되, 본 연구의 사실(가벼운 RGBD 프레임워크, 계층적 교차 주의 융합, 95.8%/5.2 FPS, RGB-only 대비 +4.9%p, 단일 작물·6단계 스트레스)에 맞춰 요약한다.",
+        "required_items": [
+          {
+            "id": "C01",
+            "description": "연구 범위와 접근 방식(가벼운 RGBD 다중모달 프레임워크, 계층적 교차 주의 융합, 6단계 스트레스 분류)을 한 문장으로 재진술",
+            "evidence_ids": [
+              "F01",
+              "F02"
+            ]
+          },
+          {
+            "id": "C02",
+            "description": "수준별 핵심 발견 정리(정확도 95.8%, RGB-only 대비 +4.9%p, FPS 5.2, 파라미터·GFLOPs 증가)",
+            "evidence_ids": [
+              "F04",
+              "F05",
+              "F18"
+            ]
+          },
+          {
+            "id": "C03",
+            "description": "정확도·지연 시간 상충과 비교 시 고려 요소(정확도 향상과 FPS 감소, 배포 파이프라인 통합 조건) 종합",
+            "evidence_ids": [
+              "F04",
+              "F18"
+            ]
+          },
+          {
+            "id": "C04",
+            "description": "향후 확장 방향(작물·스트레스 범위 확대, 요인 분리, 제약 조건 반영) 제시",
+            "evidence_ids": [
+              "F01",
+              "F06"
+            ]
+          }
+        ]
+      }
+    ],
+    "generation_order": [
+      "S01_introduction",
+      "S02_methods",
+      "S03_evaluation",
+      "S04_limitations",
+      "S05_conclusion"
+    ],
+    "unresolved": [
+      "[확인 필요: related_work 생략 정책이 omit_without_evidence이므로 관련 연구 장은 두지 않음. 참고 가이드 ref1_related_work는 본 연구 자료에 직접 대응하는 문헌 사실이 없어 사용하지 않음.]",
+      "[확인 필요: 표 T01~T05는 입력 자료에 실제 수치가 있는 항목만 배치함. 표 세부 행 구성은 각 장의 required_items에 맞춰 작성 시 확정함.]",
+      "[확인 필요: F18의 FPS 측정 조건(PyTorch FP32, 배치 1, 100장 평균, 전처리+병렬 제어 스레드 포함)은 성능 해석 시 반드시 함께 명시함.]"
+    ]
+  }
+}

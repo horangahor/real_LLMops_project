@@ -1,0 +1,591 @@
+{
+  "request_fingerprint": "2afe8a69a51f696d3ba1e3f865d204475ba6580309a8240fde43d62314173d02",
+  "value": {
+    "title": "CROWN Verification GPU Optimization and Measurement Notes",
+    "facts": [
+      {
+        "statement": "CROWN Verification with eps = 1e-06 reported Elapsed time 16,914800 ms and Output Dimension 16, with lower/upper bounds and inference (y) values listed for indices 0–15.",
+        "limits": "측정 구간·반복 횟수·warmup 조건은 원문에 명시되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Elapsed time: 16,914800 ms",
+          "Output Dimension: 16",
+          "lower/upper bound 및 inference(y) 값이 인덱스 0–15에 대해 표기됨"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "16.9148",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "eps = 1e-06, Output Dimension 16",
+            "element_ids": [
+              "p40:e270"
+            ]
+          },
+          {
+            "metric": "Output Dimension",
+            "value": "16",
+            "value_kind": "scalar",
+            "unit": "dimension",
+            "condition": "eps = 1e-06",
+            "element_ids": [
+              "p40:e270"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p40:e270"
+        ]
+      },
+      {
+        "statement": "memcpy 호출 횟수가 66개에서 56개로 줄었다고 비교함.",
+        "limits": "비교 기준 시점·측정 방법은 원문에 상세하지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "memcpy 호출 횟수 66 -> 56개로 감소"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "memcpy 호출 횟수",
+            "value": "66",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "개선 전",
+            "element_ids": [
+              "p40:e274"
+            ]
+          },
+          {
+            "metric": "memcpy 호출 횟수",
+            "value": "56",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "개선 후",
+            "element_ids": [
+              "p40:e274"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p40:e274"
+        ]
+      },
+      {
+        "statement": "backward_bound_gpu에서 기존에는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고, affine_min/max도 GPU에서 계산되어 GPU -> CPU -> GPU -> CPU 불필요한 복사가 발생했다고 설명함.",
+        "limits": "구체적 커널명·데이터 크기는 원문에 없음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "기존 방식: GPU (backward_bound_gpu 계산결과) -> CPU, 이후 CPU에서 affine_min/max 수행",
+          "affine_min/max도 GPU에서 계산되어 GPU -> CPU -> GPU -> CPU 복사 발생"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e276"
+        ]
+      },
+      {
+        "statement": "affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU -> CPU 메모리 복사를 최소화했다고 설명함.",
+        "limits": "개선 후 복사량·정량적 감소치는 원문에 없음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "affine_min/max를 backward_bound_gpu 내에서 실행하도록 개선",
+          "GPU -> CPU 메모리 복사 최소화"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e277"
+        ]
+      },
+      {
+        "statement": "개선 후 CROWN Verification에서 Elapsed time 15.828400 ms가 나왔고, 결과는 15ms 후반까지 나왔다고 기록함.",
+        "limits": "측정 조건·반복 횟수는 원문에 상세하지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Elapsed time: 15.828400 ms",
+          "결과가 15ms 후반까지 나옴"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "15.8284",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "eps = 1e-06, Output Dimension 16",
+            "element_ids": [
+              "p41:e278"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p41:e278",
+          "p41:e279"
+        ]
+      },
+      {
+        "statement": "GPU 안에서 최종 정답 계산을 위해 affine_min_gpu와 affine_max_gpu 커널을 호출하는 코드 조각이 제시됨.",
+        "limits": "커널 퓨전 적용 여부는 이 요소에서 확정되지 않음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "affine_min_gpu<<<blocksPerGrid, 256>>> 및 affine_max_gpu<<<blocksPerGrid, 256>>> 호출 코드 제시"
+        ],
+        "parameters": [
+          {
+            "name": "affine_min_gpu 블록당 스레드 수",
+            "value": "256",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p41:e281"
+            ]
+          },
+          {
+            "name": "affine_max_gpu 블록당 스레드 수",
+            "value": "256",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p41:e281"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p41:e281"
+        ]
+      },
+      {
+        "statement": "이 부분에서 커널 퓨전이 가능할 것 같다고 언급함.",
+        "limits": "실제 적용 결과는 이후 요소에서 다룸",
+        "kind": "method",
+        "claim_status": "hypothesis",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "커널 퓨전 가능성 언급"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e282"
+        ]
+      },
+      {
+        "statement": "미리 작성해둔 퓨전 함수가 있어서 사용했다고 기록함.",
+        "limits": "퓨전 함수 세부 사양은 원문에 없음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "미리 작성한 퓨전 함수 사용"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p42:e283"
+        ]
+      },
+      {
+        "statement": "퓨전 함수 사용 후 CROWN Verification에서 Elapsed time 15.751000 ms가 나왔고, 0.2ms 정도 하한선이 낮아진 듯하다고 기록함.",
+        "limits": "하한선 비교 기준·측정 조건은 원문에 상세하지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "Elapsed time: 15.751000 ms",
+          "0.2ms 정도 하한선이 낮아진 듯함"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "15.751",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "eps = 1e-06, Output Dimension 16",
+            "element_ids": [
+              "p42:e284"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p42:e284",
+          "p42:e285"
+        ]
+      },
+      {
+        "statement": "Backward 메모리 복사 제거 및 초기화 최적화로 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, default 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 최소화했다고 설명함.",
+        "limits": "재사용 버퍼 크기·초기화 빈도 등 정량 정보는 원문에 없음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "Forward 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사 제거",
+          "단위행렬/영벡터 등 default 초기 상태를 GPU 커널에서 직접 생성하여 PCIe 오버헤드 최소화"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p43:e287",
+          "p43:e288"
+        ]
+      },
+      {
+        "statement": "위 최적화 후 CROWN Verification에서 lapsed time 13.939000 ms가 나왔고, 13ms 후반 거의 14ms 정도로 봐도 된다고 기록함.",
+        "limits": "측정 조건·반복 횟수는 원문에 상세하지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps = 1e-06",
+          "Output Dimension: 16"
+        ],
+        "observations": [
+          "lapsed time: 13.939000 ms",
+          "13ms 후반, 거의 14ms 정도로 봐도 됨"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "13.939",
+            "value_kind": "range",
+            "unit": "ms",
+            "condition": "eps = 1e-06, Output Dimension 16",
+            "element_ids": [
+              "p43:e289"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p43:e289",
+          "p43:e290"
+        ]
+      },
+      {
+        "statement": "fp32에 단정밀도 연산으로 바꿔보기도 했으며, 이 부분은 fp32에 대한 고찰에 있다고 기록함.",
+        "limits": "fp32 변경 실험의 구체적 결과는 이 요소에서 제시되지 않음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "fp32 단정밀도 연산으로 변경 시도",
+          "관련 고찰은 별도 항목에서 다룸"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p43:e291"
+        ]
+      },
+      {
+        "statement": "7번째 세미나 이후 할 일(8/20)로 40000개 전체 데이터에 대해 테스트를 진행해보라는 의견이 있었고, 추가 의견으로 forward/backward 2개에 대해 진행할 것과 찬희씨 컨택 필요성이 기록됨.",
+        "limits": "실제 수행 결과는 이 요소에서 확인되지 않음",
+        "kind": "method",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "테스트 데이터 1개 대신 40000개 전체 데이터 테스트 제안",
+          "forward/backward 2개에 대한 추가 의견",
+          "찬희씨 컨택 필요"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p44:e295"
+        ]
+      },
+      {
+        "statement": "안테나 선택 신경망에서 sparse 행렬이 dense 행렬보다 빠르다는 결과를 내기 위해 찬희씨가 테스트를 진행 중이며, dense 또는 sparse 하나를 골라 같은 조건에서 CPU 순차처리와 GPU 병렬처리를 비교하면 될 듯하다고 기록함.",
+        "limits": "비교 결과·선택 행렬은 이 요소에서 확정되지 않음",
+        "kind": "method",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "sparse vs dense 행렬 성능 비교 테스트 진행 중",
+          "CPU 순차처리와 GPU 병렬처리 비교 제안"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p44:e295"
+        ]
+      },
+      {
+        "statement": "FP32로 바꾸었을 때 Nsight Compute를 해보는 것이 재미있을 것이라는 교수님 의견이 기록됨.",
+        "limits": "실제 Nsight Compute 결과는 이 요소에서 제시되지 않음",
+        "kind": "method",
+        "claim_status": "planned",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "FP32 변경 후 Nsight Compute 확인 제안",
+          "캐시 히트율·처리량 확인 관심"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p44:e295"
+        ]
+      },
+      {
+        "statement": "CUDA로 구현한 이유로 CUDA 프로그래밍 역량을 가진 사람이라는 점과, 안테나 신경망 검증 알고리즘을 하드웨어에 구현해 실시간 검증에 관심이 있으며 하드웨어 구현(실시간 검증) 여지가 있다는 논문의 뒷받침 논문으로 작성 가능하다는 점이 기록됨.",
+        "limits": "실제 하드웨어 구현 결과는 이 요소에서 제시되지 않음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "CUDA 프로그래밍 역량 보유 인력 활용",
+          "하드웨어 구현·실시간 검증 관심",
+          "논문 뒷받침 논문 작성 가능성"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p44:e297"
+        ]
+      },
+      {
+        "statement": "CROWN 알고리즘 개발 팀에서도 GPU를 활용한 검증 가속을 한 적은 있지만 실시간으로 하겠다는 뜻은 아니고, 모든 경우를 다 따져봐야 할 때 병렬성이 생기고 이를 빠르게 하겠다는 관점에서 사용한 적이 있다고 기록함.",
+        "limits": "해당 팀의 구체적 구현 세부사항은 이 요소에서 제시되지 않음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "CROWN 개발 팀의 GPU 검증 가속은 실시간 목적보다는 전체 경우 탐색의 병렬성·속도 관점"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p44:e298"
+        ]
+      },
+      {
+        "statement": "kernel 시간이 높을수록 좋다고 했는데 compute throughput도 높을수록 좋은 것이 아닌지 질문했고, Nsight System에서 CPU-GPU 간 메모리 교류 비율이 줄어들면 GPU 커널 비중이 늘어나니까 kernel은 높을수록 좋고, compute throughput은 쓸데없이 비효율적인 알고리즘 때문에 하드웨어 한계에 부딪혀서 그럴 수 있다고 생각했다고 기록함.",
+        "limits": "이 요소는 작성자 개인의 해석이며 실제 측정 인과관계는 확정되지 않음",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "kernel 시간 높을수록 좋다는 전제 질문",
+          "메모리 교류 비율 감소 시 GPU 커널 비중 증가 해석",
+          "compute throughput은 비효율적 알고리즘으로 하드웨어 한계에 부딪힐 수 있다는 해석"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p44:e301"
+        ]
+      },
+      {
+        "statement": "Nsight System의 kernel도 단순히 높을수록 좋은 것이 아니라 왜 높은지까지 분석해야 한다고 판단했으며, CPU-GPU는 안 줄어들고 비효율적인 GPU 계산 실행으로 계산 시간이 늘어난다면 그것 또한 커널 비중 증가로 이어진다고 기록함.",
+        "limits": "이 요소는 작성자 개인의 해석이며 실제 측정 인과관계는 확정되지 않음",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "kernel 비중 증가 원인을 분석해야 한다는 판단",
+          "CPU-GPU 메모리 교류 감소 없이 비효율적 GPU 실행으로 시간 증가 시 커널 비중 증가 가능"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p44:e302"
+        ]
+      },
+      {
+        "statement": "Nsight System의 kernel이 높아지고 메모리 비중이 줄어든다면 최적화를 제대로 해서 이런 방향으로 가는지, 아니면 kernel 실행시간이 증가(커널 자체 최적화 미흡으로 증가)해서 이렇게 된 것인지 따져봐야 한다고 기록함.",
+        "limits": "이 요소는 작성자 개인의 해석이며 실제 측정 인과관계는 확정되지 않음",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "kernel 비중 증가 원인 구분 필요",
+          "최적화 성과 vs 커널 자체 비효율 증가 가능성"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p45:e303"
+        ]
+      },
+      {
+        "statement": "Nsight system의 kernel 비중은 커질수록 좋고, Nsight compute의 compute throughput은 높아지면 이유를 분석해보고 좋은지 판단해야 한다고 말씀드렸는데 잘못된 부분이 있다고 정정함.",
+        "limits": "이 요소는 발표 내용 정정이며 실제 측정 결과는 아님",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "이전 발표 내용 중 kernel 비중·compute throughput 관련 설명 정정"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p45:e306"
+        ]
+      },
+      {
+        "statement": "Nsight system의 kernel 또한 CPU-GPU 사이 메모리 병목은 그대로인데 kernel 실행 시간이 잘못된 커널 작성으로 느려진다면 그것 또한 kernel 비중 증가로 늘어날 수 있으며, kernel 비중도 Compute throughput과 같이 최적화를 제대로 진행했기 때문에 커진 것인지 원인을 따져보고 적절히 판단해야 한다고 정정함.",
+        "limits": "이 요소는 발표 내용 정정이며 실제 측정 결과는 아님",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "메모리 병목 유지 상태에서 잘못된 커널 작성으로 kernel 실행 시간 증가 시 kernel 비중 증가 가능",
+          "kernel 비중 증가 원인 분석 필요성 정정"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p45:e307"
+        ]
+      },
+      {
+        "statement": "메모리 throughput 또한 낮아진 이유가 최적화가 잘되었기 때문인지 아니면 메모리 활용을 잘 하지 못하고 있는 것인지 정확히 분석한 이후 판단하는 것이 옳다고 정정함.",
+        "limits": "이 요소는 발표 내용 정정이며 실제 측정 결과는 아님",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "메모리 throughput 감소 원인 분석 필요성 정정"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p45:e307"
+        ]
+      },
+      {
+        "statement": "forward도 해봤다고 기록하고, crown_test_optimizing과 동일하게 실행했다고 기록함.",
+        "limits": "forward 실험의 전체 측정 조건은 이 요소에서 일부만 제시됨",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "forward 실험 수행",
+          "crown_test_optimizing과 동일 실행"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p45:e309",
+          "p45:e311"
+        ]
+      },
+      {
+        "statement": "40000번의 루프에서 backward보다 forward가 느린 것을 확인했고, 원인은 중간 레이어 결과를 저장하느냐/마느냐의 플래그에 있었다고 기록함.",
+        "limits": "플래그 이름·구체적 저장 방식은 이 요소에서 명시되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "40000번 루프"
+        ],
+        "observations": [
+          "40000번 루프에서 backward보다 forward가 느림",
+          "원인은 중간 레이어 결과 저장 여부 플래그"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p45:e313"
+        ]
+      },
+      {
+        "statement": "forward_bound_impl의 플래그를 true로 두면 중간 결과가 복사된다고 기록함.",
+        "limits": "플래그 정확한 명칭·복사 대상 크기는 이 요소에서 명시되지 않음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "forward_bound_impl 플래그 true 시 중간 결과 복사"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p45:e314"
+        ]
+      },
+      {
+        "statement": "단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 뛰어넘지 않았다고 기록함.",
+        "limits": "단일 실행의 구체적 수치·비교 조건은 이 요소에서 제시되지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "단일 실행에서 D2H 오버헤드가 연산 오버헤드를 넘지 않음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p45:e315"
+        ]
+      }
+    ],
+    "coverage": {
+      "p41": {
+        "status": "extracted",
+        "note": "backward_bound_gpu의 GPU->CPU->GPU->CPU 복사 문제와 affine_min/max 통합 개선, 15.828400ms 결과, 커널 퓨전 가능성 및 퓨전 커널 호출 코드 수집"
+      },
+      "p42": {
+        "status": "extracted",
+        "note": "미리 작성한 퓨전 함수 사용, 15.751000ms 결과, 0.2ms 정도 하한선 감소 언급 수집"
+      },
+      "p43": {
+        "status": "extracted",
+        "note": "Forward 입력 버퍼 재사용에 의한 H2D 복사 제거, GPU 커널 직접 초기화로 PCIe 오버헤드 최소화, 13.939000ms 결과, fp32 단정밀도 변경 시도 수집"
+      },
+      "p44": {
+        "status": "extracted",
+        "note": "8/20 이후 할 일(40000개 전체 데이터 테스트, forward/backward, 찬희씨 컨택, sparse vs dense 비교, FP32 Nsight Compute), CUDA 구현 이유, CROWN 팀의 GPU 활용 관점, kernel 시간·compute throughput 관련 질문과 해석 수집"
+      }
+    }
+  }
+}

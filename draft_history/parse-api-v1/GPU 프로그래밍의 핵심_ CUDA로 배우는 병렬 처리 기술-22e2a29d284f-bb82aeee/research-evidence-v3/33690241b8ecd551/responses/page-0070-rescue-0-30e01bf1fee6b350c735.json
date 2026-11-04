@@ -1,0 +1,80 @@
+{
+  "request_fingerprint": "30e01bf1fee6b350c73595b9fe2d1ffa70022354c11dc79ca1076a4951daa146",
+  "value": {
+    "facts": [
+      {
+        "statement": "1024개 샘플이 단 하나의 3D 큐브(텐서)로 GPU 메모리에 적재된다.",
+        "limits": "이는 auto-LiRPA / 3D Grid 방식 비교 설명에서의 서술이며, 실제 GPU 메모리 구성·용량·할당 방식·텐서 형태는 이 요소에서 확인되지 않는다.",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "1024개 샘플이 단 하나의 3D 큐브(텐서)로 GPU 메모리에 적재됨",
+          "Z축이 배치 축(0~1023번 샘플)으로 구성됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p70:e546"
+        ]
+      },
+      {
+        "statement": "GPU 코어 7,168개가 1024개 샘플을 동시에 초고속 연산한다.",
+        "limits": "7,168개 코어 수는 비교 설명에서 제시된 값이며, 실제 GPU 모델·실험 구성·코어 수 산정 방식은 이 요소에서 확인되지 않는다. 56개 SM과의 관계는 원문에 명시적 곱셈 관계가 없다.",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "GPU 코어 7,168개가 1024개 샘플을 동시에 초고속 연산",
+          "CPU는 일찌감치 쉬고 GPU가 연산 수행"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p70:e546"
+        ]
+      },
+      {
+        "statement": "방법 B는 CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산 등)에 직접 blockIdx.z를 넣어 3차원 배칭 커널을 작성하는 커스텀 구현 방식이며, 알고리즘과 메모리를 100% 통제할 수 있으나 엔비디아 텐서 코어 어셈블리 성능을 따라잡기 어렵다.",
+        "limits": "이는 작성자의 방법 B에 대한 설명·해석이며, 실제 구현 결과·성능 측정값은 이 요소들에서 확인되지 않는다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어서 3차원 배칭 커널을 작성",
+          "장점: 알고리즘과 메모리를 내가 100% 완벽히 통제 가능",
+          "아쉬운 점: 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어 어셈블리 성능을 손으로 따라잡기 어려움"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e555",
+          "p71:enh:e7"
+        ]
+      },
+      {
+        "statement": "방법 C는 CROWN 연산 시간의 80% 이상을 차지하는 행렬 곱셈(A×W)만 cuBLAS(cublasSgemmBatched)에 맡기고, CROWN 전용 연산(ReLU 완화 계수 계산 등)은 방법 B의 자체 3D 커널로 돌리는 하이브리드 방식이다.",
+        "limits": "80% 이상이라는 수치는 작성자의 서술이며, 실제 측정값·실험 조건은 이 요소들에서 확인되지 않는다. 파이토치 내부 동작과 100% 동일하다는 주장도 작성자의 해석이다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "CROWN 연산 시간의 80% 이상은 행렬 곱셈(A×W)",
+          "무거운 행렬 곱셈을 cuBLAS(cublasSgemmBatched)로 교체",
+          "CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 방법 B의 자체 3D 커널로 유지",
+          "파이토치가 내부적으로 동작하는 방식과 100% 동일"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e557",
+          "p71:enh:e9"
+        ]
+      }
+    ]
+  }
+}

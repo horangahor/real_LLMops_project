@@ -1,0 +1,390 @@
+{
+  "request_fingerprint": "51a53014e1c8d4ec1941f9c72768bc127d7c82b153fc0354fc9d58ef77bf3f13",
+  "value": {
+    "facts": [
+      {
+        "statement": "switch(method) 분기에서 case 0은 lirpa_forward_bound_impl을, case 1은 lirpa_backward_bound를 호출하며, 각 호출 결과를 fwd 또는 bwd 구조체에 담고 Top-k 인증 판정(certify_topk) 결과에 따라 t_count 또는 f_count를 증가시킨다.",
+        "limits": "현재 페이지는 코드 구조와 분기 조건만 기록하며, 실제 호출 횟수나 성능 수치는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps_list 기반 이중 루프",
+          "network_forward 정방향 통과",
+          "method=0: lirpa_forward_bound_impl 호출",
+          "method=1: lirpa_backward_bound 호출",
+          "certify_topk 판정 후 t_count/f_count 증가"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "method 분기",
+            "value": "0: forward bound, 1: backward bound",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e351"
+            ]
+          },
+          {
+            "name": "인증 판정 함수",
+            "value": "certify_topk",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e351"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p50:e351"
+        ],
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q5",
+          "methods_Q14"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "switch의 스코프 바깥에 CROWN 결과를 담을 구조체를 미리 선언해두고 반복문 내부에서 CROWN 결과를 복사해 담는 방식은 값에 의한 복사이며, 92만 번 복사 시 구조체 전체 복사로 인해 성능 저하가 발생할 수 있다고 해석되었다.",
+        "limits": "이 내용은 코드 구조 관찰과 기록자의 해석이며, 실제 성능 저하 정량 측정 결과는 현재 페이지에 제시되지 않았다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch 스코프 바깥 구조체 선언",
+          "반복문 내부에서 CROWN 결과 복사",
+          "값에 의한 복사",
+          "92만 번 복사"
+        ],
+        "observations": [
+          "구조체 전체 복사가 발생한다는 해석"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p49:e347",
+          "p49:e349",
+          "p49:e350"
+        ],
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q14"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "switch 안에서 선언과 동시에 구조체가 만들어지도록 변경했으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다고 기록되었다.",
+        "limits": "현재 페이지는 변경 방식과 문법 제약만 기록하며, 변경 후 정량 성능 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch 안에서 선언과 동시에 구조체 생성",
+          "switch 안 선언문은 중괄호로 스코프 덮어쓰기 필요"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e351",
+          "p50:e352",
+          "p50:e353"
+        ],
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q5",
+          "methods_Q14"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "nvcc 컴파일 시 switch(method)에서 transfer of control이 fwd, bwd 초기화를 우회한다는 경고(warning #546-D)와 함께, 'fwd' 초기화가 'case' 레이블에 의해 생략되었다는 오류(C2360) 및 'bwd' 초기화가 'default' 레이블에 의해 생략되었다는 오류(C2361)가 발생하였다.",
+        "limits": "현재 페이지는 컴파일 경고·오류 메시지와 그 발생 위치만 기록하며, 오류 해결 후 성능 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "nvcc 컴파일",
+          "switch(method) 내 fwd/bwd 선언",
+          "transfer of control이 초기화 우회"
+        ],
+        "observations": [
+          "warning #546-D: transfer of control bypasses initialization of fwd/bwd",
+          "error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략됨",
+          "error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략됨"
+        ],
+        "parameters": [
+          {
+            "name": "컴파일러",
+            "value": "nvcc",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e354"
+            ]
+          },
+          {
+            "name": "오류 코드",
+            "value": "C2360, C2361",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e354"
+            ]
+          },
+          {
+            "name": "경고 코드",
+            "value": "#546-D",
+            "value_kind": "text",
+            "element_ids": [
+              "p50:e354"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p50:e354"
+        ],
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q6",
+          "methods_Q15"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "fwd, bwd 초기화가 해당 레이블에 의해 생략되는 문제는 main 함수 scope의 선언문이 무조건 선언되어야 하는데 레이블에 의해 생략되기 때문이며, 이를 해결하기 위해 작은 scope(중괄호 블록)를 만들어 선언하도록 변경하였다.",
+        "limits": "현재 페이지는 오류 원인 해석과 해결 방향만 기록하며, 해결 후 정량 성능 결과는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "fwd/bwd 초기화가 레이블에 의해 생략됨",
+          "main 함수 scope 선언문은 무조건 선언 필요",
+          "작은 scope를 만들어 선언"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e355"
+        ],
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q6",
+          "methods_Q15"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "switch 안 중괄호 스코프를 이용해 fwd/bwd를 선언·초기화하도록 수정한 결과, 2100s가 나오던 문제가 원인 해결되어 준수한 결과가 나왔다고 기록되었다.",
+        "limits": "이 진술은 기록자의 정성적 평가이며, 해결 후 정량 성능 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "switch 안 중괄호 스코프로 fwd/bwd 선언·초기화 수정",
+          "기존 2100s 문제 발생"
+        ],
+        "observations": [
+          "준수한 결과가 나옴",
+          "2100s 초 나오는 문제 원인 해결 완료"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p50:e357"
+        ],
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q13",
+          "methods_Q16"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "커맨드라인 실행 인자를 받아 forward 또는 backward를 실행하도록 코드를 변경한 후 실행 결과가 2164s로, 기존 backward 실행 결과 1560s보다 느려졌다.",
+        "limits": "현재 페이지는 코드 변경 사실과 두 실행 결과의 수치만 기록하며, 느려진 원인에 대한 확정적 분석은 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "커맨드라인 실행 인자에 따라 forward 또는 backward 실행하도록 코드 변경",
+          "기존 backward 실행 결과 1560s",
+          "변경 후 실행 결과 2164s"
+        ],
+        "observations": [
+          "변경 후 실행 결과가 기존보다 느려짐"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "기존 backward 실행 시간",
+            "value": "1560",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "기존 번거롭게 backward 할 때의 실행 결과, 40000개 데이터 테스트 기준 추정(eps_list 기반 sweep)",
+            "element_ids": [
+              "p51:e360",
+              "p51:e361",
+              "p51:e372"
+            ]
+          },
+          {
+            "metric": "변경 후 실행 시간",
+            "value": "2164",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "커맨드라인 실행 인자로 forward/backward 선택하도록 코드 변경 후 실행 결과, 40000개 데이터 테스트 기준 추정(eps_list 기반 sweep)",
+            "element_ids": [
+              "p51:e363"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p51:e360",
+          "p51:e361",
+          "p51:e363",
+          "p51:e372"
+        ],
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q6",
+          "methods_Q13",
+          "methods_Q16"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "eps_list 기반 sweep 실행 결과 eps=9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00에서 모두 T=0, F=40000, ratio=0.0000으로 기록되었고, total elapsed는 1560.37s이며 결과는 results_cuda.csv에 저장되었다.",
+        "limits": "이 결과는 단일 실행 기록이며, 반복 측정 통계나 조건별 분리 해석은 포함하지 않는다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps_list 기반 sweep 실행",
+          "eps=9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00",
+          "각 eps에서 T=0, F=40000, ratio=0.0000",
+          "40000개 데이터 기준 추정"
+        ],
+        "observations": [
+          "모든 eps에서 인증 성공(T) 0건, 실패(F) 40000건, ratio 0.0000"
+        ],
+        "parameters": [
+          {
+            "name": "eps 값",
+            "value": "9.0e-05, 1.0e-02, 1.0e-01, 1.0e+00",
+            "value_kind": "text",
+            "element_ids": [
+              "p51:e360"
+            ]
+          },
+          {
+            "name": "데이터 규모",
+            "value": "40000",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p51:e360"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "total elapsed",
+            "value": "1560.37",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "eps_list 기반 sweep 실행, eps=9.0e-05/1.0e-02/1.0e-01/1.0e+00, 각 eps T=0 F=40000 ratio=0.0000",
+            "element_ids": [
+              "p51:e360"
+            ]
+          },
+          {
+            "metric": "eps=9.0e-05 결과",
+            "value": "T=0, F=40000, ratio=0.0000",
+            "value_kind": "scalar",
+            "unit": "text",
+            "condition": "eps_list 기반 sweep 실행",
+            "element_ids": [
+              "p51:e360"
+            ]
+          },
+          {
+            "metric": "eps=1.0e-02 결과",
+            "value": "T=0, F=40000, ratio=0.0000",
+            "value_kind": "scalar",
+            "unit": "text",
+            "condition": "eps_list 기반 sweep 실행",
+            "element_ids": [
+              "p51:e360"
+            ]
+          },
+          {
+            "metric": "eps=1.0e-01 결과",
+            "value": "T=0, F=40000, ratio=0.0000",
+            "value_kind": "scalar",
+            "unit": "text",
+            "condition": "eps_list 기반 sweep 실행",
+            "element_ids": [
+              "p51:e360"
+            ]
+          },
+          {
+            "metric": "eps=1.0e+00 결과",
+            "value": "T=0, F=40000, ratio=0.0000",
+            "value_kind": "scalar",
+            "unit": "text",
+            "condition": "eps_list 기반 sweep 실행",
+            "element_ids": [
+              "p51:e360"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p51:e360"
+        ],
+        "requirement_ids": [
+          "methods_Q3",
+          "methods_Q14",
+          "evaluation_Q9"
+        ],
+        "supplemental_reason": ""
+      },
+      {
+        "statement": "실행 코드에서 eps_list에 대해 이중 루프를 돌며 각 데이터 i에 대해 network_forward로 정방향 통과 후, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정(certify_topk) 결과에 따라 t_count 또는 f_count를 증가시킨다.",
+        "limits": "현재 페이지는 코드 구조와 분기 조건만 기록하며, 실제 호출 횟수나 성능 수치는 포함하지 않는다.",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps_list 기반 이중 루프",
+          "network_forward 정방향 통과",
+          "method=0: lirpa_forward_bound_impl 호출",
+          "method=1: lirpa_backward_bound 호출",
+          "certify_topk 판정 후 t_count/f_count 증가"
+        ],
+        "observations": [],
+        "parameters": [
+          {
+            "name": "method 분기",
+            "value": "0: forward bound, 1: backward bound",
+            "value_kind": "text",
+            "element_ids": [
+              "p49:e347"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p49:e347"
+        ],
+        "requirement_ids": [
+          "methods_Q1",
+          "methods_Q5",
+          "methods_Q14"
+        ],
+        "supplemental_reason": ""
+      }
+    ],
+    "existing_links": []
+  }
+}

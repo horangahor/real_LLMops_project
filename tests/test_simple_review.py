@@ -21,8 +21,7 @@ class SimpleReviewTests(unittest.TestCase):
         def response(system, packet, schema, path):
             requests.append((system, copy.deepcopy(packet), copy.deepcopy(schema)))
             return client(system, packet, schema, path)
-        with TemporaryDirectory() as tmp, patch("review_findings.verify_findings", side_effect=AssertionError("removed adjudication")), \
-                patch("citation_repair.repair_leaf_citations", side_effect=AssertionError("removed link agent")):
+        with TemporaryDirectory() as tmp:
             result = PlannedPaper(tmp, response).run(data)
             self.assertTrue(result["review"]["approved"])
             self.assertEqual(result["review"]["review_kind"], "editorial")
@@ -41,6 +40,13 @@ class SimpleReviewTests(unittest.TestCase):
                 self.assertIn("limits", fact)
         for packet in editors:
             self.assertEqual(set(packet), {"operation", "workflow_stage", "outline", "draft_paragraphs"})
+        assemblies = [(p, s) for _, p, s in requests if p.get("operation") == "editorial_assembly"]
+        self.assertEqual(len(assemblies), 4)
+        for packet, schema in assemblies:
+            self.assertNotIn("facts", packet)
+            self.assertNotIn("evidence_ids", json.dumps(packet))
+            self.assertNotIn("evidence_ids", json.dumps(schema))
+            self.assertIn("source_id", json.dumps(schema))
         self.assertFalse(any(p.get("operation") in ("repair_review_selection", "verify_review_findings") for _, p, _ in requests))
 
     def test_editorial_rejection_revises_only_editor_and_does_not_repeat_subsection_review(self):
@@ -122,9 +128,10 @@ class SimpleReviewTests(unittest.TestCase):
         raw = {"checks": [{"item_id": f"item{i}", "verdict": "met", "paragraph_ids": [f"s{i}_p1"], "evidence_ids": ["F1"]} for i in range(2)], "reference_checks": [], "issues": []}
         calls = []
         def client(system, request, schema, path):
+            self.assertNotIn(request.get("operation"), ("verify_review_findings", "repair_review_selection"))
             calls.append(request)
             return copy.deepcopy(raw)
-        with TemporaryDirectory() as tmp, patch("review_findings.verify_findings", side_effect=AssertionError("must not run")):
+        with TemporaryDirectory() as tmp:
             engine = PlannedPaper(tmp, client)
             schema = review_schema(value, packet["draft_paragraphs"])
             engine.call(Path(tmp), "review", "old source system", packet, schema)

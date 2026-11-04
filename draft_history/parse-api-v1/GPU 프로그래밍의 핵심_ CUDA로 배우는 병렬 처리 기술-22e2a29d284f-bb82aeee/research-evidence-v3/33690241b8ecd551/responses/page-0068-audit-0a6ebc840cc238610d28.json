@@ -1,0 +1,285 @@
+{
+  "request_fingerprint": "0a6ebc840cc238610d28c5675bdf9a5ff0e2cb83302bac5c3e88f6eabb3b9edd",
+  "value": {
+    "additions": [
+      {
+        "statement": "현재 작성자의 C++ 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만드는 방식이라 각 스트림이 GPU 메모리를 차지하므로 1024개의 배치 사이즈를 하면 1024개의 독립 스트림으로 GPU 메모리를 오버한다고 기록됨",
+        "limits": "측정 구간·버전 미기재",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "현재 구현 방식: 배치 사이즈만큼 동일한 수의 독립 스트림을 만드는 방식",
+          "각 스트림이 GPU 메모리를 차지함",
+          "1024개의 배치 사이즈 시 1024개의 독립 스트림으로 GPU 메모리 오버"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p67:e535"
+        ]
+      },
+      {
+        "statement": "배치 사이즈를 512로 하면 메모리를 넘지 않으나 느리며 그 이유는 각 스트림마다 CPU가 돌아가면서 다음 커널을 런치해줘야 하는 모양이고 1024개의 스트림이 각각 CPU가 다음 커널을 런치해줄 때까지 기다리고 있기 때문이라고 기록됨",
+        "limits": "측정 구간·버전 미기재",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "배치 사이즈 512 시 메모리 초과 없음",
+          "그러나 느림",
+          "느린 이유: 각 스트림마다 CPU가 돌아가면서 다음 커널을 런치해줘야 하는 모양",
+          "1024개의 스트림이 각각 CPU가 다음 커널을 런치해줄 때까지 기다리고 있음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p67:e537"
+        ]
+      },
+      {
+        "statement": "스트림 수를 64개 정도로 줄이고 배치 사이즈를 1024로 하는 방안은 의미가 없다고 기록되며 그 이유는 하나의 스트림이 하나의 입력을 처리하므로 동시에 돌릴 수 있는 것은 64개의 데이터를 올린 것이지만 16번씩 나눠서 처리한다는 뜻이기 때문이라고 기록됨",
+        "limits": "측정 구간·버전 미기재",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "방안: 스트림 수 64개 정도로 줄이고 배치 사이즈 1024로 함",
+          "의미가 없음",
+          "이유: 하나의 스트림이 하나의 입력을 처리함",
+          "동시에 돌릴 수 있는 것은 64개의 데이터를 올린 것",
+          "16번씩 나눠서 처리한다는 뜻임"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p67:e539"
+        ]
+      },
+      {
+        "statement": "스트림 수를 64개로 줄이고 배치 사이즈를 1024로 하는 방안의 초기 데이터 H2D 비용은 확 줄지만 연산 병목은 스트림이 64개라 한번에 64개밖에 대응하지 못한다고 기록됨",
+        "limits": "측정 구간·버전 미기재",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "방안: 스트림 수 64개, 배치 사이즈 1024",
+          "초기 데이터 H2D 비용 확 감소",
+          "연산 병목: 스트림이 64개라 한번에 64개밖에 대응 못함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p67:e540"
+        ]
+      },
+      {
+        "statement": "현재 작성자의 방식은 2차원 block 크기와 그 안의 tid로 평면적인 계산(단일 샘플에 대한 행렬 연산)을 수행중이며 z축을 추가하면 저 평면적인 연산을 한번에 처리가 가능하고 3차원(multi sample)을 처리하는 tensor 코어가 있기 때문이라고 기록됨",
+        "limits": "측정 구간·버전 미기재",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "현재 작성자 방식: 2차원 block 크기와 tid로 평면적 계산",
+          "단일 샘플에 대한 행렬 연산",
+          "z축 추가 시 평면적 연산 한번에 처리 가능",
+          "3차원(multi sample) 처리 tensor 코어 존재"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e544"
+        ]
+      },
+      {
+        "statement": "현재 작성자의 방식은 2차원 커널이라 fp32 코어로만 하고 있다고 기록됨",
+        "limits": "측정 구간·버전 미기재",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "현재 작성자 방식: 2차원 커널",
+          "fp32 코어로만 수행"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e544"
+        ]
+      },
+      {
+        "statement": "antenna_lirpa는 싱글 스트림(Single Stream)으로 동작하는데 C++ 멀티스트림(8분)보다 4배나 빠른 이유는 텐서 코어(Tensor Core)와 cuBLAS Batched GEMM 때문이라고 기록됨",
+        "limits": "측정 구간·버전 미기재",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "antenna_lirpa: 싱글 스트림(Single Stream) 동작",
+          "C++ 멀티스트림(8분)보다 4배 빠름",
+          "이유: 텐서 코어(Tensor Core)와 cuBLAS Batched GEMM"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e543"
+        ]
+      },
+      {
+        "statement": "현재 C++ 멀티스트림은 Task Parallelism으로 단일 샘플 연산 커널을 64개 스트림에 각각 런치하고 일반 CUDA 코어(FP32 연산기)만 사용하며 1024개를 처리하려면 수만 번의 커널 호출이 필요하고 결과는 8분 소요라고 기록됨",
+        "limits": "측정 구간·버전 미기재",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "현재 C++ 멀티스트림: Task Parallelism",
+          "단일 샘플 연산 커널을 64개 스트림에 각각 런치",
+          "일반 CUDA 코어(FP32 연산기)만 사용",
+          "1024개 처리 시 수만 번의 커널 호출 필요",
+          "결과: 8분 소요"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e543"
+        ]
+      },
+      {
+        "statement": "antenna_lirpa(PyTorch)는 Tensor Parallelism으로 1024개 입력을 [1024, 16, 491] 크기의 3D 텐서 하나로 병합하고 스트림 1개에서 단 1번의 cuBLAS GEMM 커널 호출하며 RTX 4070 SUPER의 텐서 코어(수백 TFLOPS)를 100% 풀가동하고 결과는 2분 미만 완료라고 기록됨",
+        "limits": "측정 구간·버전 미기재",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "antenna_lirpa(PyTorch): Tensor Parallelism",
+          "1024개 입력을 [1024, 16, 491] 크기의 3D 텐서 하나로 병합",
+          "스트림 1개에서 단 1번의 cuBLAS GEMM 커널 호출",
+          "RTX 4070 SUPER의 텐서 코어(수백 TFLOPS) 100% 풀가동",
+          "결과: 2분 미만 완료"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e543"
+        ]
+      },
+      {
+        "statement": "나아갈 방향으로 방법 A(Multi-Stream 배칭)는 현재 구현으로 기존 단일 샘플 커널을 유지하면서 3.2배 가속(25분 → 8분)하고 스트림 수의 한계(SM 포화)로 7~8분이 한계선이라고 기록됨",
+        "limits": "측정 구간·버전 미기재",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "방법 A(Multi-Stream 배칭): 현재 구현",
+          "기존 단일 샘플 커널 유지",
+          "3.2배 가속(25분 → 8분)",
+          "스트림 수의 한계(SM 포화)로 7~8분이 한계선"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "가속 배율",
+            "value": "3.2",
+            "value_kind": "scalar",
+            "unit": "배",
+            "condition": "방법 A(Multi-Stream 배칭)",
+            "element_ids": [
+              "p68:e543"
+            ]
+          },
+          {
+            "metric": "소요 시간",
+            "value": "25",
+            "value_kind": "scalar",
+            "unit": "분",
+            "condition": "방법 A 이전",
+            "element_ids": [
+              "p68:e543"
+            ]
+          },
+          {
+            "metric": "소요 시간",
+            "value": "8",
+            "value_kind": "scalar",
+            "unit": "분",
+            "condition": "방법 A 이후",
+            "element_ids": [
+              "p68:e543"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p68:e543"
+        ]
+      },
+      {
+        "statement": "방법 C(Batched GEMM(3D 텐서 연산화))는 차기 로드맵으로 CROWN 행렬식을 3D 텐서 레이아웃으로 변환하여 cublasSgemmBatched 호출하고 PyTorch처럼 텐서 코어를 100% 활용하며 이렇게 구현하면 antenna_lirpa의 2분을 뛰어넘어 30초 ~ 1분대(전체 40,000개) 진입이 가능하다고 기록됨",
+        "limits": "측정 구간·버전 미기재",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "방법 C(Batched GEMM(3D 텐서 연산화)): 차기 로드맵",
+          "CROWN 행렬식을 3D 텐서 레이아웃으로 변환하여 cublasSgemmBatched 호출",
+          "PyTorch처럼 텐서 코어 100% 활용",
+          "antenna_lirpa의 2분을 뛰어넘어 30초 ~ 1분대(전체 40,000개) 진입 가능"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e543"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p68:e542": {
+        "state": "represented",
+        "fact_refs": [
+          0
+        ],
+        "note": "auto_lirpa 빠른 이유(커널 런치 1번으로 줄임, 커널 런치 오버헤드 상대적 없음, 연산 병목이 아니라 일을 시키는 과정의 병목)가 facts[0]에 보존됨",
+        "addition_refs": []
+      },
+      "p68:e543": {
+        "state": "represented",
+        "fact_refs": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "note": "antenna_lirpa 싱글 스트림·4배 빠름·텐서 코어/cuBLAS Batched GEMM, C++ 멀티스트림 Task Parallelism·64 스트림·FP32·만 번 커널 호출·8분, antenna_lirpa PyTorch Tensor Parallelism·[1024,16,491] 3D 텐서·1회 cuBLAS GEMM·RTX 4070 SUPER 텐서 코어 100%·2분 미만, 방법 A 3.2배 가속(25분→8분)·SM 포화 7~8분 한계, 방법 C Batched GEMM·cublasSgemmBatched·텐서 코어 100%·30초~1분대(40,000개)가 facts[2..6]에 보존됨",
+        "addition_refs": []
+      },
+      "p68:e544": {
+        "state": "represented",
+        "fact_refs": [
+          1
+        ],
+        "note": "현재 작성자 방식(2차원 block·tid 평면적 계산, 단일 샘플 행렬 연산, z축 추가 시 한번에 처리 가능, 3차원 multi sample tensor 코어 존재)이 facts[1]에 보존됨",
+        "addition_refs": []
+      },
+      "p68:pdf:b1": {
+        "state": "represented",
+        "fact_refs": [
+          0,
+          1
+        ],
+        "note": "p68:pdf:b1은 p68:e542(커널 런치 1번·오버헤드·병목 성격)와 p68:e544(2차원 block·tid 평면적 계산·z축·tensor 코어)의 내용을 중복 수록하므로 facts[0,1]로 커버됨",
+        "addition_refs": []
+      }
+    }
+  }
+}

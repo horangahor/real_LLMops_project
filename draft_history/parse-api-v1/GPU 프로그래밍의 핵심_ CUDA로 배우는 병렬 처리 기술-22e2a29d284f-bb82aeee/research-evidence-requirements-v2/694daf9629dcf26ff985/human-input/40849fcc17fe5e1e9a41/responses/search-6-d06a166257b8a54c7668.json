@@ -1,0 +1,189 @@
+{
+  "request_fingerprint": "d06a166257b8a54c76680b46f44871bac05df5808dd09a9e1a3cb0576d4c1944",
+  "value": {
+    "title": "기준 모델과 변형 모델의 구조 차이",
+    "facts": [
+      {
+        "statement": "기준 모델(forward bound)과 변형 모델(backward bound)은 bound 계산 방식(forward/backward)에서 차이가 있으며, 측정 결과 두 bound 계산 시간은 warmup 이후 약 0.2ms 차이로 비슷하게 나타났다.",
+        "limits": "단일 샘플 측정 및 20회/92만 번 테스트 평균 기준; warmup 전후 및 데이터 편차에 따른 변동 존재",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "warmup 적용 여부",
+          "단일 데이터 vs 전체 데이터 평균",
+          "eps 및 데이터셋 구성"
+        ],
+        "observations": [
+          "forward bound와 backward bound의 계산 시간이 warmup 이후 약 0.2ms 차이로 비슷하게 관측됨",
+          "단일 샘플에서는 warmup을 해도 약 0.2ms 정도 더 느리게 나타난 사례가 있음",
+          "전체 데이터 평균에서는 빠른 데이터가 더 많아 평균이 낮게 보였을 가능성이 언급됨"
+        ],
+        "parameters": [
+          {
+            "name": "bound 계산 방식",
+            "value": "forward vs backward",
+            "value_kind": "text",
+            "element_ids": [
+              "p54:e392",
+              "p55:e400",
+              "p56:e408",
+              "p57:e420"
+            ]
+          },
+          {
+            "name": "bound 시간 차이",
+            "value": "약 0.2ms",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p57:e420",
+              "p56:e409"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "bound 계산 시간 차이(forward vs backward)",
+            "value": "약 0.2ms",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "warmup 이후 단일/평균 측정 기준",
+            "element_ids": [
+              "p57:e420",
+              "p56:e409"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p54:e392",
+          "p55:e400",
+          "p56:e408",
+          "p57:e420",
+          "p56:e409"
+        ]
+      },
+      {
+        "statement": "변형 모델에서는 배칭(batching) 및 cudaGraph 캡처 등 실행 구조 변경이 적용되었고, 준비된 실험 환경에서 단일 스트림 대비 약 3배 시간 단축(25분 → 8분)이 보고되었다.",
+        "limits": "실시간 환경이 아닌 데이터셋이 준비된 실험 환경 기준; 실시간 환경에서는 데이터셋을 꽉 채워 넣기 어렵다고 명시됨",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "준비된 데이터셋 환경 vs 실시간 환경",
+          "단일 스트림 vs 배칭/멀티 스트림",
+          "cudaGraph 캡처 적용 여부"
+        ],
+        "observations": [
+          "배칭(멀티 스트림)으로 여러 데이터를 묶어 넣으면 병렬 처리가 가능하다고 설명됨",
+          "기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 시간 빨라졌다고 기록됨(25분 → 8분)",
+          "cudaGraph로 추론/bound를 따로 또는 합쳐 캡처해 커널 런치 비용을 줄이려는 시도가 있었음",
+          "cudaGraph 적용 후 약 400초 정도 줄어든 것으로 보이나, 이는 추론과 bound를 따로 캡처했을 때 기준임"
+        ],
+        "parameters": [
+          {
+            "name": "배칭 적용 효과",
+            "value": "약 3배 시간 단축(25분 → 8분)",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p59:e453"
+            ]
+          },
+          {
+            "name": "cudaGraph 캡처 방식",
+            "value": "추론/bound 따로 또는 한번에 캡처",
+            "value_kind": "text",
+            "element_ids": [
+              "p59:e454",
+              "p59:e456"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "배칭 적용 전후 전체 소요 시간",
+            "value": "25분 → 8분",
+            "value_kind": "range",
+            "unit": "분",
+            "condition": "준비된 데이터셋 실험 환경, 단일 스트림 대비",
+            "element_ids": [
+              "p59:e453"
+            ]
+          },
+          {
+            "metric": "cudaGraph 캡처로 줄어든 시간",
+            "value": "약 400초",
+            "value_kind": "scalar",
+            "unit": "초",
+            "condition": "추론/bound를 따로 캡처한 경우",
+            "element_ids": [
+              "p59:e456"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p59:e453",
+          "p59:e454",
+          "p59:e456",
+          "p58:e441",
+          "p58:e443"
+        ]
+      },
+      {
+        "statement": "기준/변형 모델 구조 차이가 성능에 미치는 영향에 대해, 초기화 비용 차이로 인해 최대 약 5.3배 차이가 관측된 사례가 있으나, warmup 이후 forward/backward bound 계산 시간 자체는 비슷하게 나타났다는 해석이 기록되어 있다.",
+        "limits": "해당 해석은 측정 로그의 고찰/의견 성격이며, 통제된 비교 실험 결과로만 단정되지는 않음",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "초기화 비용 포함 여부",
+          "warmup 적용 여부",
+          "측정 대상(추론/bound/검증 분리 여부)"
+        ],
+        "observations": [
+          "초기화 비용으로 인해 3배 차이가 났는지 검증하려는 목적이 언급됨",
+          "warmup 이후 forward/backward bound 계산 시간은 한 0.2ms 정도 차이로 비슷하다는 결론이 기록됨",
+          "5.3배 정도 차이나는 것을 확인했다는 기록이 있으나, 스파이크 및 평균 분포 상승 문제가 함께 언급됨",
+          "warmup을 해도 스파이크가 뜨고, 가끔 10번 측정 평균이 느려지는 현상이 보고됨"
+        ],
+        "parameters": [
+          {
+            "name": "초기화 비용 관련 차이",
+            "value": "최대 약 5.3배",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p58:e435"
+            ]
+          },
+          {
+            "name": "bound 계산 시간 유사성",
+            "value": "약 0.2ms 차이",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p57:e420"
+            ]
+          }
+        ],
+        "measurements": [
+          {
+            "metric": "초기화 비용 관련 관측 차이",
+            "value": "약 5.3배",
+            "value_kind": "scalar",
+            "unit": "배",
+            "condition": "초기화 비용 포함 여부에 따른 비교 맥락",
+            "element_ids": [
+              "p58:e435"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p58:e435",
+          "p57:e420",
+          "p57:e426",
+          "p57:e430",
+          "p57:e433"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

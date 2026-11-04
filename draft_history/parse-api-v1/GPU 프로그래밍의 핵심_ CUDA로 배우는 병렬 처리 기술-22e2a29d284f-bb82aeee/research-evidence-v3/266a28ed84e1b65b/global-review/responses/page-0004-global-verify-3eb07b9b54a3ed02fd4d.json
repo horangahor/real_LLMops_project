@@ -1,0 +1,154 @@
+{
+  "request_fingerprint": "3eb07b9b54a3ed02fd4d51949343237f53a635d994b6854750b61fcd71b7d850",
+  "value": {
+    "checks": {
+      "P0010F0014": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "attribution_preserved": true,
+        "note": "v1-1-1(my_lirpa_mempool.cu)의 메모리풀만 도입한 결과가 205~250ms로 기록되어 있으며, cuBLAS 예열 등 다른 최적화는 포함되지 않은 것으로 보인다. 원문(p10:e92, p10:enh:e9, p10:review:e9)에 동일 문장이 있고 인접 문맥(p10:e83 cuBLAS 예열, p10:e86 복사 최소화)과도 배치되지 않는다."
+      },
+      "P0010F0015": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "메모리 풀 크기 산정 근거로 Matrix 3개(mat_add, matmul 등에서 최대 3개 A, B, C 동시 사용)와 Vector 6개(relu_relax에서 lower, upper, alpha_l, beta_l, alpha_u, beta_u 동시 사용)가 제시되어 있다. 다만 실제 풀 크기 수치 자체는 이 문장들에 직접 제시되지 않았다(p10:enh:e12, p10:enh:e13, p10:review:e12, p10:review:e13)."
+      },
+      "P0010F0016": {
+        "support": "supported",
+        "claim_status": "unclear",
+        "source_origin": "measurement_log",
+        "attribution_preserved": true,
+        "note": "원문에는 'v4 :' 아래에 '85ms'가 적혀 있고, 그 아래에 '// crown_test_op_hybrid_v2'라는 주석이 함께 보인다(p10:e87, p10:enh:e5, p10:review:e5). 그러나 85ms가 v4 자체의 최종 측정값인지, 특정 하위 구성의 값인지는 확인되지 않는다."
+      },
+      "P0011F0001": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "attribution_preserved": true,
+        "note": "CROWN 검증 실행 예시로 eps = 1e-06 조건에서 출력 차원 16의 lower/upper bound 및 정상 예측(y) 값이 출력된 화면이 기록되어 있다(p11:e95). 이 화면은 특정 실행 결과 예시이며, 버전별 성능 비교의 대표값으로 쓰였다는 뜻은 아니다."
+      },
+      "P0011F0002": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "attribution_preserved": true,
+        "note": "v1-1-2는 가중치만 미리 업로드할 수 있게 한 버전으로 149~155ms 범위가 기록되었다(p11:e96, p12:e103). 구현 파일명은 my_lirpa_mempool_preload_on_gpu.cu로 기록되어 있다."
+      },
+      "P0011F0004": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "v1-1-2의 구현 파일명은 my_lirpa_mempool_preload_on_gpu.cu로 기록되어 있으며, v1-1-2는 가중치만 미리 업로드할 수 있게 한 버전이다(p11:e96)."
+      },
+      "P0012F0001": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "implementation_code",
+        "attribution_preserved": true,
+        "note": "pre_upload_weights_to_gpu 함수는 각 레이어마다 cudaMalloc로 MAX_DIM * MAX_DIM * sizeof(double) 크기의 메모리를 할당하고, cudaMemcpy2D로 호스트 가중치를 디바이스로 복사하는 방식으로 기록되어 있다(p12:e100, p12:e101). 이 코드는 가중치 사전 업로드 구현 예시이며, 실제 실행 측정값과는 별도로 제시되어 있다."
+      },
+      "P0012F0002": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "attribution_preserved": true,
+        "note": "가중치 사전 업로드 후 측정 예시로 MEMPOOL + Weights PRELOAD ON GPU 모드에서 elapsed time 149.820400ms가 출력된 화면이 기록되어 있다(p12:e102). 이 값은 특정 실행 예시이며, 버전별 대표 성능으로 일반화하지는 않는다."
+      },
+      "P0012F0003": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "bias까지 미리 업로드해봤으나 성능 개선 의미가 크지 않았다고 평가되었다(p12:e104). 이유는 bias가 Vector이고 약 4KB 정도라 CPU 연산에도 크게 무리가 없는 수준으로 설명되었다."
+      },
+      "P0012F0005": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "bias까지 사전 업로드해도 성능 개선 의미가 크지 않다고 평가되었으며, 그 이유는 bias가 Vector이고 약 4KB 정도로 작아 CPU 연산에도 큰 무리가 없는 수준으로 설명되었다(p12:e104, p13:e105). 이 평가는 코드 크기와 연산 부담에 대한 저자의 판단을 바탕으로 하며, bias 사전 업로드의 효과를 정량적으로 비교한 별도 측정값은 제시되지 않았다."
+      },
+      "P0013F0001": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "작성자가 미리 로드해놓고 matmul 함수에서 활용을 안 했는데 시간이 줄어든 이유를 의문시했다(p13:e105). 이는 실험 해석 과정의 질문이다."
+      },
+      "P0013F0002": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "preload로 시간이 줄어든 원인은 GPU 웜업 효과라고 작성자가 판단했다(p13:e106). 이는 작성자 해석이다."
+      },
+      "P0013F0003": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "mempool 버전은 GPU 메모리풀 할당까지 시간에 계산되고, mempool_preload 버전은 가중치를 시간 측정 전에 미리 로드해 해당 시간이 제외된다(p13:e107). 이는 측정 구간 차이에 대한 설명이다."
+      },
+      "P0013F0004": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "pre_upload_weights_to_gpu가 t_start 앞에서 cudaMalloc과 cudaMemcpy를 호출하면 CUDA 드라이버 초기화가 타이머 구간 밖으로 빠져나가며, 이로 인해 mempool 버전 대비 약 50ms가 줄어든 것으로 설명된다(p13:e108). 이는 작성자 해석이며, 초기화 비용 50ms는 별도 실측값이 아니라 설명상의 수치이다."
+      },
+      "P0013F0005": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "v1-1-2의 50ms 감소는 GPU warmup 때문이며 preload 때문이 아니라고 작성자가 결론지었다(p13:e109). 이는 작성자 결론이다."
+      },
+      "P0014F0001": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "v1-1-3은 crown_test_preload_fix로, 미리 로드한 W 가중치를 제대로 활용하도록 고친 버전이다(p14:e110, p14:enh:e0). 이는 버전 설명이다."
+      },
+      "P0014F0002": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "pre_upload_weights_to_gpu도 memcpy2D 사용이 아니라 Matrix를 할당, 복사하도록 바꿨다(p14:e113, p14:enh:e5). 이는 구현 변경 설명이다."
+      },
+      "P0014F0003": {
+        "support": "supported",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "500회 정도 돌리니 5~10ms 정도 우세했다(p14:e116, p14:enh:e8). 이는 반복 실험 관측이다."
+      },
+      "P0014F0004": {
+        "support": "supported",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "작성자가 가중치를 미리 로드해 memcpy를 줄이겠다는 접근은 크게 의미를 못 미친다고 결론지었다(p14:e117, p14:enh:e9). 이는 작성자 결론이다."
+      },
+      "P0014F0005": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "v1-1-1-1은 메모리풀에 cuBlas를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBlas를 활용하도록 한 버전이다(p14:e120, p14:enh:e11). 파일은 my_lirpa_mempool_cuBlas.cu로 기록되어 있다."
+      },
+      "P0014F0006": {
+        "support": "supported",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "attribution_preserved": true,
+        "note": "v1-1-3(crown_test_preload_fix)은 미리 로드한 W 가중치를 실제로 활용하도록 고친 버전이다. 성능 차이는 크지 않았고, 이후 memcpy 절감 효과가 크지 않다고 판단하여 my_lirpa_mempool.cu(v1-1-1)로 롤백했다. d_W 타입을 double*에서 Matrix*로 변경하고, positive_part/W, negative_part/W, matmul(A,W,d_W), matvec(W,x,d_W)에서 각각 복사를 스킵하는 변경이 있었으며, pre_upload_weights_to_gpu도 memcpy2D 대신 Matrix 할당/복사로 변경되었다(p14:e110~e118, p14:enh:e0~e11, p14:review:e0~e11). 100회 비교에서는 성능 차이가 거의 없었고, 500회 반복 누적시간 비교에서 5~10ms 정도 우세했다(p14:e116, p14:enh:e8, p14:review:e8)."
+      }
+    }
+  }
+}

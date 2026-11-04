@@ -1,0 +1,123 @@
+{
+  "request_fingerprint": "18b34e2c5e6ad8f49750f6c2755e85c53d952c4f547f8855d5a5d1d46f4d24ec",
+  "value": {
+    "repairs": {
+      "0": [
+        {
+          "statement": "cuBlas 도입 후 elapsed time은 40.050500 ms로 다시 늘어났다.",
+          "limits": "비교 기준은 동기화 제거 후 25.457200 ms이며, cuSparse 결과(27.107400 ms)와는 별개의 실험이다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "eps = 1e-06",
+            "mempool + warmup",
+            "Output Dimension: 16",
+            "cuBlas 도입 실험"
+          ],
+          "observations": [
+            "실행 결과 elapsed time: 40.050500 ms",
+            "40ms 정도로 다시 시간이 늘어남",
+            "cuBlas 도입함.. 근데 오히려 결과가 안좋음"
+          ],
+          "parameters": [
+            {
+              "name": "library",
+              "value": "cuBlas",
+              "value_kind": "text",
+              "element_ids": [
+                "p26:e184"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "elapsed_time",
+              "value": "40.0505",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "cuBlas 도입 후, eps=1e-06, mempool + warmup, Output Dimension 16",
+              "element_ids": [
+                "p27:e188",
+                "p27:e189",
+                "p27:review:e2",
+                "p27:review:e5"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p26:e184",
+            "p27:e188",
+            "p27:e189",
+            "p27:review:e2",
+            "p27:review:e5"
+          ]
+        },
+        {
+          "statement": "cuSparse 도입 후(spMV만 적용) elapsed time은 27.107400 ms로 측정되었다.",
+          "limits": "비교 기준은 동기화 제거 후 25.457200 ms, cuBlas 40.050500 ms이며, cuSparse는 cuBlas보다 빠르지만 동기화 제거 baseline보다는 느리다.",
+          "kind": "result",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "conditions": [
+            "eps = 1e-06",
+            "mempool + warmup",
+            "Output Dimension: 16",
+            "cuSparse spMV만 적용, 기존 matmul 유지",
+            "W, W_pos, W_neg를 CSR 형식으로 변환",
+            "cuSPARSE handle 및 CSR descriptor 유지",
+            "network_forward()의 dense matvec를 cuSPARSE SpMV로 교체"
+          ],
+          "observations": [
+            "실행 결과 elapsed time: 27.107400 ms",
+            "결과는 27ms .. 좀 더 느려졌다",
+            "cuSparse를 이용해서 벡터 곱(spMV)만 적용 해본 상황, 여기서 빠르면 spMM(Sparse 행렬곱) 을 도입하기로 했다."
+          ],
+          "parameters": [
+            {
+              "name": "library",
+              "value": "cuSparse",
+              "value_kind": "text",
+              "element_ids": [
+                "p28:e191"
+              ]
+            },
+            {
+              "name": "applied_scope",
+              "value": "spMV only (W, W_pos, W_neg CSR 변환, dense matvec → cuSPARSE SpMV 교체, 기존 matmul 유지)",
+              "value_kind": "text",
+              "element_ids": [
+                "p28:enh:e3"
+              ]
+            }
+          ],
+          "measurements": [
+            {
+              "metric": "elapsed_time",
+              "value": "27.1074",
+              "value_kind": "scalar",
+              "unit": "ms",
+              "condition": "cuSparse spMV 도입 후, eps=1e-06, mempool + warmup, Output Dimension 16",
+              "element_ids": [
+                "p28:e192",
+                "p28:e195",
+                "p28:enh:e1",
+                "p28:enh:e6"
+              ]
+            }
+          ],
+          "element_ids": [
+            "p28:e191",
+            "p28:e192",
+            "p28:e194",
+            "p28:e195",
+            "p28:enh:e1",
+            "p28:enh:e3",
+            "p28:enh:e5",
+            "p28:enh:e6"
+          ]
+        }
+      ]
+    }
+  }
+}

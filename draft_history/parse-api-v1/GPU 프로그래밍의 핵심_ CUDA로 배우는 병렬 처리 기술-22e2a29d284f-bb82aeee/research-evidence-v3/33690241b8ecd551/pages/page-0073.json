@@ -1,0 +1,1268 @@
+{
+  "initial": [
+    {
+      "statement": "결과는 no Pinning이 가장 빨랐다고 기록되었다.",
+      "limits": "구체적 수치와 이유는 후속 항목에서 다룸",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "결과는 no Pinning이 젤 빠르다.."
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p73:e573",
+          "page": 73,
+          "quote": "결과는 no Pinning이 젤 빠르다..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0073F0001"
+    },
+    {
+      "statement": "cudaHostAlloc이 8.64초 더 걸린 이유로 CPU 루프 내 복사 오버헤드가 그대로 반영되었다고 해석되었다.",
+      "limits": "작성자 해석이며 실측 분해 결과는 별도 항목 참조",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "예상했던 대로 CPU 루프 내 복사 오버헤드가 그대로 반영되었습니다.",
+        "매 루프마다 *pinned_in = dataset[i]; (1,028바이트)를 92만 번 수행하면서 약 **8.64초 (회당 약 9.4 $\\mu\\text{s}$)**의 CPU 메모리 복사 지연이 누적되었습니다.",
+        "앞서 나누었던 대화처럼, **\"테스트 코드에서 h_x0를 쓰면 불필요한 시뮬레이션용 CPU memcpy 오버헤드가 발생한다\"**는 사실이 정확하게 수치로 입증되었습니다."
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "cudaHostAlloc 추가 소요 시간",
+          "value": "8.64",
+          "value_kind": "scalar",
+          "unit": "초",
+          "condition": "CPU 루프 내 복사 오버헤드 누적",
+          "element_ids": [
+            "p73:e576"
+          ],
+          "raw_value": "8.64",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "회당 CPU 메모리 복사 지연",
+          "value": "9.4",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "매 루프마다 *pinned_in = dataset[i]; (1,028바이트) 수행, 92만 번",
+          "element_ids": [
+            "p73:e576"
+          ],
+          "raw_value": "9.4",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p73:e575",
+          "page": 73,
+          "quote": "① cudaHostAlloc이 8.64초 더 걸린 이유",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p73:e576",
+          "page": 73,
+          "quote": "예상했던 대로 CPU 루프 내 복사 오버헤드가 그대로 반영되었습니다.\n매 루프마다 *pinned_in = dataset[i]; (1,028바이트)를 92만 번 수행하면서 약 **8.64초 (회당\n약 9.4 $\\mu\\text{s}$)**의 CPU 메모리 복사 지연이 누적되었습니다.\n앞서 나누었던 대화처럼, **\"테스트 코드에서 h_x0를 쓰면 불필요한 시뮬레이션용 CPU\nmemcpy 오버헤드가 발생한다\"**는 사실이 정확하게 수치로 입증되었습니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0073F0002"
+    },
+    {
+      "statement": "No Pinning(일반 메모리)과 Pinned 메모리의 차이가 크지 않은 이유로 극도로 작은 입력 크기(1 KB)와 GPU 연산 시간 지배적(Amdahl's Law)이 제시되었다.",
+      "limits": "작성자 해석이며 실측 분해 결과는 별도 항목 참조",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "입력 벡터는 256차원(FP32)으로 불과 **1,024 Byte(1 KB)**에 불과합니다.",
+        "전송 데이터가 수십~수백 MB 단위일 때는 DMA 대역폭 차이가 크게 벌어지지만, 1 KB 수준의 초소형 패킷은 CPU L1/L2 캐시에 이미 올라와 있어 드라이버의 내부 스테이징 버퍼 복사 지연이 $0.1,\\mu\\text{s}$ 미만으로 거의 무시할 수 있는 수준입니다.",
+        "단일 샘플 처리 시간(~840 $\\mu\\text{s}$) 중 **85% 이상(약 716 $\\mu\\text{s}$)**이 순수 GPU 커널 연산(CROWN 역전파 행렬 계산) 시간입니다.",
+        "전송 시간이 차지하는 비중 자체가 $1\\sim2,\\mu\\text{s}$ 수준이므로 전송 방식에 따른 전체 지연시간 영향이 미미합니다."
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "입력 벡터 크기",
+          "value": "1024",
+          "value_kind": "scalar",
+          "unit": "Byte",
+          "condition": "256차원(FP32)",
+          "element_ids": [
+            "p73:e579"
+          ],
+          "raw_value": "1024",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "단일 샘플 처리 시간",
+          "value": "8.4E+2",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "전체 처리 시간 기준",
+          "element_ids": [
+            "p73:e580"
+          ],
+          "raw_value": "8.4E+2",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "순수 GPU 커널 연산 시간",
+          "value": "716",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "단일 샘플 처리 시간 중 85% 이상",
+          "element_ids": [
+            "p73:e580"
+          ],
+          "raw_value": "716",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "전송 시간 비중",
+          "value": "1",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "전체 지연시간 영향이 미미한 수준",
+          "element_ids": [
+            "p73:e580"
+          ],
+          "raw_value": "1",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p73:e577",
+          "page": 73,
+          "quote": "② No Pinning(일반 메모리)과 Pinned 메모리의 차이가 크지 않은 이유",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p73:e578",
+          "page": 73,
+          "quote": "1. 극도로 작은 입력 크기 (1 KB):",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p73:e579",
+          "page": 73,
+          "quote": "입력 벡터는 256차원(FP32)으로 불과 **1,024 Byte(1 KB)**에 불과합니다.\n전송 데이터가 수십~수백 MB 단위일 때는 DMA 대역폭 차이가 크게 벌어지지만, 1 KB\n수준의 초소형 패킷은 CPU L1/L2 캐시에 이미 올라와 있어 드라이버의 내부 스테이징 버퍼\n복사 지연이 $0.1,\\mu\\text{s}$ 미만으로 거의 무시할 수 있는 수준입니다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p73:e580",
+          "page": 73,
+          "quote": "2. GPU 연산 시간 지배적 (Amdahl's Law):\n단일 샘플 처리 시간(~840 $\\mu\\text{s}$) 중 **85% 이상(약 716 $\\mu\\text{s}$)**이 순수\nGPU 커널 연산(CROWN 역전파 행렬 계산) 시간입니다.\n전송 시간이 차지하는 비중 자체가 $1\\sim2,\\mu\\text{s}$ 수준이므로 전송 방식에 따른 전체\n지연시간 영향이 미미합니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0073F0003"
+    },
+    {
+      "statement": "No pinning이 pinned memory를 적용한 것보다 더 빠른 이유를 더 자세히 보려고 한다고 기록되었다.",
+      "limits": "추가 분석 의도이며 실측 결론은 아님",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "여 기서 왜 No pinning이 pinned memory를 적용한 것보다 더 빠른지 더 자세히 이유를 보면"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p73:e581",
+          "page": 73,
+          "quote": "여 기서 왜 No pinning이 pinned memory를 적용한 것보다 더 빠른지 더 자세히 이유를 보면",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0073F0004"
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "3가지 메모리 방식 벤치마크 결과 비교에서 cudaHostRegister 787.88s, cudaHostAlloc(h_x0 복사) 796.52s(+8.64s), No Pinning(Pageable) 776.70s로 기록되었다.",
+        "limits": "backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산 조건",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_only(method=2)",
+          "CUDA Graph Separate(graph_mode=1)",
+          "총 920,000회 연산"
+        ],
+        "observations": [
+          "전체 실행 시간 (Total s): cudaHostRegister 787.88s, cudaHostAlloc 796.52s(+8.64s), No Pinning 776.70s",
+          "추론 누적 시간 (infer_s): cudaHostRegister 127.18s, cudaHostAlloc 130.47s, No Pinning 111.92s",
+          "바운드 누적 시간 (bound_s): cudaHostRegister 658.80s, cudaHostAlloc 664.46s, No Pinning 663.17s",
+          "단일 샘플 평균 지연시간: cudaHostRegister 약 856μs, cudaHostAlloc 867.43μs, No Pinning 843.81μs",
+          "중위값(P50 Latency): cudaHostAlloc 859.80μs, No Pinning 837.10μs",
+          "95% 꼬리 지연(P95): cudaHostAlloc 893.80μs, No Pinning 867.20μs",
+          "지터(Jitter, StdDev): cudaHostAlloc 24.63μs, No Pinning 15.95μs",
+          "순수 GPU 커널 시간: cudaHostRegister 716.10μs, cudaHostAlloc 706.34μs, No Pinning 716.00μs",
+          "초당 처리량(Throughput): cudaHostRegister 약 1,168 samples/s, cudaHostAlloc 1,152.8 samples/s, No Pinning 1,185.1 samples/s"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "전체 실행 시간 cudaHostRegister",
+            "value": "787.88",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "전체 실행 시간 cudaHostAlloc",
+            "value": "796.52",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "전체 실행 시간 No Pinning",
+            "value": "776.70",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "cudaHostAlloc 추가 소요 시간",
+            "value": "8.64",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaHostAlloc(h_x0 복사) vs cudaHostRegister",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "추론 누적 시간 cudaHostRegister",
+            "value": "127.18",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "추론 누적 시간 cudaHostAlloc",
+            "value": "130.47",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "추론 누적 시간 No Pinning",
+            "value": "111.92",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "바운드 누적 시간 cudaHostRegister",
+            "value": "658.80",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "바운드 누적 시간 cudaHostAlloc",
+            "value": "664.46",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "바운드 누적 시간 No Pinning",
+            "value": "663.17",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "단일 샘플 평균 지연시간 cudaHostRegister",
+            "value": "856",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "단일 샘플 평균 지연시간 cudaHostAlloc",
+            "value": "867.43",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "단일 샘플 평균 지연시간 No Pinning",
+            "value": "843.81",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "중위값(P50 Latency) cudaHostAlloc",
+            "value": "859.80",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "중위값(P50 Latency) No Pinning",
+            "value": "837.10",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "95% 꼬리 지연(P95) cudaHostAlloc",
+            "value": "893.80",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "95% 꼬리 지연(P95) No Pinning",
+            "value": "867.20",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "지터(Jitter, StdDev) cudaHostAlloc",
+            "value": "24.63",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "지터(Jitter, StdDev) No Pinning",
+            "value": "15.95",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "순수 GPU 커널 시간 cudaHostRegister",
+            "value": "716.10",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "순수 GPU 커널 시간 cudaHostAlloc",
+            "value": "706.34",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "순수 GPU 커널 시간 No Pinning",
+            "value": "716.00",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "초당 처리량(Throughput) cudaHostRegister",
+            "value": "1168",
+            "value_kind": "scalar",
+            "unit": "samples/s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "초당 처리량(Throughput) cudaHostAlloc",
+            "value": "1152.8",
+            "value_kind": "scalar",
+            "unit": "samples/s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          },
+          {
+            "metric": "초당 처리량(Throughput) No Pinning",
+            "value": "1185.1",
+            "value_kind": "scalar",
+            "unit": "samples/s",
+            "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+            "element_ids": [
+              "p73:img0:e2"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p73:img0:e0",
+          "p73:img0:e1",
+          "p73:img0:e2"
+        ]
+      },
+      {
+        "statement": "cudaHostRegister와 No Pinning의 전체 시간 차이는 787.88초 대 776.70초로 단 1.4%(약 11초) 차이이며, 92만 번의 루프 중 1회당 약 12μs 수준의 미세한 차이다.",
+        "limits": "작성자 해석이며 세부 분해 결과는 별도 항목 참조",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaHostRegister vs No Pinning 비교",
+          "92만 번 루프"
+        ],
+        "observations": [
+          "전체 시간 차이는 787.88초 VS 776.70초로 단 1.4%(약 11초) 차이",
+          "92만 번의 루프 중 1회당 불과 약 12μs 수준의 미세한 차이"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "cudaHostRegister 전체 시간",
+            "value": "787.88",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaHostRegister vs No Pinning 비교",
+            "element_ids": [
+              "p74:e582"
+            ]
+          },
+          {
+            "metric": "No Pinning 전체 시간",
+            "value": "776.70",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaHostRegister vs No Pinning 비교",
+            "element_ids": [
+              "p74:e582"
+            ]
+          },
+          {
+            "metric": "전체 시간 차이 비율",
+            "value": "1.4",
+            "value_kind": "scalar",
+            "unit": "%",
+            "condition": "cudaHostRegister vs No Pinning 비교",
+            "element_ids": [
+              "p74:e582"
+            ]
+          },
+          {
+            "metric": "전체 시간 차이",
+            "value": "11",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "cudaHostRegister vs No Pinning 비교",
+            "element_ids": [
+              "p74:e582"
+            ]
+          },
+          {
+            "metric": "1회당 차이",
+            "value": "12",
+            "value_kind": "scalar",
+            "unit": "μs",
+            "condition": "92만 번 루프 기준",
+            "element_ids": [
+              "p74:e582"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p74:e582"
+        ]
+      },
+      {
+        "statement": "Bound 단계에서는 cudaHostRegister가 658.80s로 No Pinning 663.17s보다 4.37초 더 빨랐고, Infer 단계에서는 cudaHostRegister가 127.18s로 No Pinning 111.92s보다 15.26초 더 느렸다.",
+        "limits": "작성자 해석이며 세부 분해 결과는 별도 항목 참조",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "research_note",
+        "conditions": [
+          "cudaHostRegister vs No Pinning 비교",
+          "Bound 단계(전체 85%)",
+          "Infer 단계(전체 15%)"
+        ],
+        "observations": [
+          "Bound 단계 (전체의 85%): cudaHostRegister 658.80s, No Pinning 663.17s, Register가 4.37초 더 빠름",
+          "Infer 단계 (전체의 15%): cudaHostRegister 127.18s, No Pinning 111.92s, Register가 15.26초 더 느림",
+          "연산량이 많은 Bound 단계에서는 오히려 Register가 4초 이상 빨랐지만, 데이터 전송 직후 바로 동기화가 일어나는 Infer 단계에서 15초가 역전됨"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Bound 단계 cudaHostRegister",
+            "value": "658.80",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "전체 85%",
+            "element_ids": [
+              "p74:e582"
+            ]
+          },
+          {
+            "metric": "Bound 단계 No Pinning",
+            "value": "663.17",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "전체 85%",
+            "element_ids": [
+              "p74:e582"
+            ]
+          },
+          {
+            "metric": "Bound 단계 차이",
+            "value": "4.37",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "Register가 더 빠름",
+            "element_ids": [
+              "p74:e582"
+            ]
+          },
+          {
+            "metric": "Infer 단계 cudaHostRegister",
+            "value": "127.18",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "전체 15%",
+            "element_ids": [
+              "p74:e582"
+            ]
+          },
+          {
+            "metric": "Infer 단계 No Pinning",
+            "value": "111.92",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "전체 15%",
+            "element_ids": [
+              "p74:e582"
+            ]
+          },
+          {
+            "metric": "Infer 단계 차이",
+            "value": "15.26",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "Register가 더 느림",
+            "element_ids": [
+              "p74:e582"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p74:e582"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [],
+    "ledger": {
+      "p73:e573": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p73:e574": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p73:e575": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p73:e576": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p73:e577": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p73:e578": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p73:e579": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p73:e580": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p73:e581": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p73:img0:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p73:img0:e1": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      },
+      "p73:img0:e2": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+      }
+    },
+    "ledger_validation_error": "대장의 원문 요소가 연결한 사실의 출처에 없습니다."
+  },
+  "facts": [
+    {
+      "statement": "결과는 no Pinning이 가장 빨랐다고 기록되었다.",
+      "limits": "구체적 수치와 이유는 후속 항목에서 다룸",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "결과는 no Pinning이 젤 빠르다.."
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p73:e573",
+          "page": 73,
+          "quote": "결과는 no Pinning이 젤 빠르다..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0073F0001"
+    },
+    {
+      "statement": "cudaHostAlloc이 8.64초 더 걸린 이유로 CPU 루프 내 복사 오버헤드가 그대로 반영되었다고 해석되었다.",
+      "limits": "작성자 해석이며 실측 분해 결과는 별도 항목 참조",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "예상했던 대로 CPU 루프 내 복사 오버헤드가 그대로 반영되었습니다.",
+        "매 루프마다 *pinned_in = dataset[i]; (1,028바이트)를 92만 번 수행하면서 약 **8.64초 (회당 약 9.4 $\\mu\\text{s}$)**의 CPU 메모리 복사 지연이 누적되었습니다.",
+        "앞서 나누었던 대화처럼, **\"테스트 코드에서 h_x0를 쓰면 불필요한 시뮬레이션용 CPU memcpy 오버헤드가 발생한다\"**는 사실이 정확하게 수치로 입증되었습니다."
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "cudaHostAlloc 추가 소요 시간",
+          "value": "8.64",
+          "value_kind": "scalar",
+          "unit": "초",
+          "condition": "CPU 루프 내 복사 오버헤드 누적",
+          "element_ids": [
+            "p73:e576"
+          ],
+          "raw_value": "8.64",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "회당 CPU 메모리 복사 지연",
+          "value": "9.4",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "매 루프마다 *pinned_in = dataset[i]; (1,028바이트) 수행, 92만 번",
+          "element_ids": [
+            "p73:e576"
+          ],
+          "raw_value": "9.4",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p73:e575",
+          "page": 73,
+          "quote": "① cudaHostAlloc이 8.64초 더 걸린 이유",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p73:e576",
+          "page": 73,
+          "quote": "예상했던 대로 CPU 루프 내 복사 오버헤드가 그대로 반영되었습니다.\n매 루프마다 *pinned_in = dataset[i]; (1,028바이트)를 92만 번 수행하면서 약 **8.64초 (회당\n약 9.4 $\\mu\\text{s}$)**의 CPU 메모리 복사 지연이 누적되었습니다.\n앞서 나누었던 대화처럼, **\"테스트 코드에서 h_x0를 쓰면 불필요한 시뮬레이션용 CPU\nmemcpy 오버헤드가 발생한다\"**는 사실이 정확하게 수치로 입증되었습니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0073F0002"
+    },
+    {
+      "statement": "No Pinning(일반 메모리)과 Pinned 메모리의 차이가 크지 않은 이유로 극도로 작은 입력 크기(1 KB)와 GPU 연산 시간 지배적(Amdahl's Law)이 제시되었다.",
+      "limits": "작성자 해석이며 실측 분해 결과는 별도 항목 참조",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "입력 벡터는 256차원(FP32)으로 불과 **1,024 Byte(1 KB)**에 불과합니다.",
+        "전송 데이터가 수십~수백 MB 단위일 때는 DMA 대역폭 차이가 크게 벌어지지만, 1 KB 수준의 초소형 패킷은 CPU L1/L2 캐시에 이미 올라와 있어 드라이버의 내부 스테이징 버퍼 복사 지연이 $0.1,\\mu\\text{s}$ 미만으로 거의 무시할 수 있는 수준입니다.",
+        "단일 샘플 처리 시간(~840 $\\mu\\text{s}$) 중 **85% 이상(약 716 $\\mu\\text{s}$)**이 순수 GPU 커널 연산(CROWN 역전파 행렬 계산) 시간입니다.",
+        "전송 시간이 차지하는 비중 자체가 $1\\sim2,\\mu\\text{s}$ 수준이므로 전송 방식에 따른 전체 지연시간 영향이 미미합니다."
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "입력 벡터 크기",
+          "value": "1024",
+          "value_kind": "scalar",
+          "unit": "Byte",
+          "condition": "256차원(FP32)",
+          "element_ids": [
+            "p73:e579"
+          ],
+          "raw_value": "1024",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "단일 샘플 처리 시간",
+          "value": "8.4E+2",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "전체 처리 시간 기준",
+          "element_ids": [
+            "p73:e580"
+          ],
+          "raw_value": "8.4E+2",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "순수 GPU 커널 연산 시간",
+          "value": "716",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "단일 샘플 처리 시간 중 85% 이상",
+          "element_ids": [
+            "p73:e580"
+          ],
+          "raw_value": "716",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "전송 시간 비중",
+          "value": "1",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "전체 지연시간 영향이 미미한 수준",
+          "element_ids": [
+            "p73:e580"
+          ],
+          "raw_value": "1",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p73:e577",
+          "page": 73,
+          "quote": "② No Pinning(일반 메모리)과 Pinned 메모리의 차이가 크지 않은 이유",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p73:e578",
+          "page": 73,
+          "quote": "1. 극도로 작은 입력 크기 (1 KB):",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p73:e579",
+          "page": 73,
+          "quote": "입력 벡터는 256차원(FP32)으로 불과 **1,024 Byte(1 KB)**에 불과합니다.\n전송 데이터가 수십~수백 MB 단위일 때는 DMA 대역폭 차이가 크게 벌어지지만, 1 KB\n수준의 초소형 패킷은 CPU L1/L2 캐시에 이미 올라와 있어 드라이버의 내부 스테이징 버퍼\n복사 지연이 $0.1,\\mu\\text{s}$ 미만으로 거의 무시할 수 있는 수준입니다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p73:e580",
+          "page": 73,
+          "quote": "2. GPU 연산 시간 지배적 (Amdahl's Law):\n단일 샘플 처리 시간(~840 $\\mu\\text{s}$) 중 **85% 이상(약 716 $\\mu\\text{s}$)**이 순수\nGPU 커널 연산(CROWN 역전파 행렬 계산) 시간입니다.\n전송 시간이 차지하는 비중 자체가 $1\\sim2,\\mu\\text{s}$ 수준이므로 전송 방식에 따른 전체\n지연시간 영향이 미미합니다.",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0073F0003"
+    },
+    {
+      "statement": "No pinning이 pinned memory를 적용한 것보다 더 빠른 이유를 더 자세히 보려고 한다고 기록되었다.",
+      "limits": "추가 분석 의도이며 실측 결론은 아님",
+      "kind": "result",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "여 기서 왜 No pinning이 pinned memory를 적용한 것보다 더 빠른지 더 자세히 이유를 보면"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p73:e581",
+          "page": 73,
+          "quote": "여 기서 왜 No pinning이 pinned memory를 적용한 것보다 더 빠른지 더 자세히 이유를 보면",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0073F0004"
+    },
+    {
+      "statement": "3가지 메모리 방식 벤치마크 결과 비교에서 cudaHostRegister 787.88s, cudaHostAlloc(h_x0 복사) 796.52s(+8.64s), No Pinning(Pageable) 776.70s로 기록되었다.",
+      "limits": "backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산 조건",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "backward_only(method=2)",
+        "CUDA Graph Separate(graph_mode=1)",
+        "총 920,000회 연산"
+      ],
+      "observations": [
+        "전체 실행 시간 (Total s): cudaHostRegister 787.88s, cudaHostAlloc 796.52s(+8.64s), No Pinning 776.70s",
+        "추론 누적 시간 (infer_s): cudaHostRegister 127.18s, cudaHostAlloc 130.47s, No Pinning 111.92s",
+        "바운드 누적 시간 (bound_s): cudaHostRegister 658.80s, cudaHostAlloc 664.46s, No Pinning 663.17s",
+        "단일 샘플 평균 지연시간: cudaHostRegister 약 856μs, cudaHostAlloc 867.43μs, No Pinning 843.81μs",
+        "중위값(P50 Latency): cudaHostAlloc 859.80μs, No Pinning 837.10μs",
+        "95% 꼬리 지연(P95): cudaHostAlloc 893.80μs, No Pinning 867.20μs",
+        "지터(Jitter, StdDev): cudaHostAlloc 24.63μs, No Pinning 15.95μs",
+        "순수 GPU 커널 시간: cudaHostRegister 716.10μs, cudaHostAlloc 706.34μs, No Pinning 716.00μs",
+        "초당 처리량(Throughput): cudaHostRegister 약 1,168 samples/s, cudaHostAlloc 1,152.8 samples/s, No Pinning 1,185.1 samples/s"
+      ],
+      "parameters": [],
+      "measurements": [
+        {
+          "metric": "전체 실행 시간 cudaHostRegister",
+          "value": "787.88",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "787.88",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "전체 실행 시간 cudaHostAlloc",
+          "value": "796.52",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "796.52",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "전체 실행 시간 No Pinning",
+          "value": "776.7",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "776.70",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "cudaHostAlloc 추가 소요 시간",
+          "value": "8.64",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "cudaHostAlloc(h_x0 복사) vs cudaHostRegister",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "8.64",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "추론 누적 시간 cudaHostRegister",
+          "value": "127.18",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "127.18",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "추론 누적 시간 cudaHostAlloc",
+          "value": "130.47",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "130.47",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "추론 누적 시간 No Pinning",
+          "value": "111.92",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "111.92",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "바운드 누적 시간 cudaHostRegister",
+          "value": "658.8",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "658.80",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "바운드 누적 시간 cudaHostAlloc",
+          "value": "664.46",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "664.46",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "바운드 누적 시간 No Pinning",
+          "value": "663.17",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "663.17",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "단일 샘플 평균 지연시간 cudaHostRegister",
+          "value": "856",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "856",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "단일 샘플 평균 지연시간 cudaHostAlloc",
+          "value": "867.43",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "867.43",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "단일 샘플 평균 지연시간 No Pinning",
+          "value": "843.81",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "843.81",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "중위값(P50 Latency) cudaHostAlloc",
+          "value": "859.8",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "859.80",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "중위값(P50 Latency) No Pinning",
+          "value": "837.1",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "837.10",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "95% 꼬리 지연(P95) cudaHostAlloc",
+          "value": "893.8",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "893.80",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "95% 꼬리 지연(P95) No Pinning",
+          "value": "867.2",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "867.20",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "지터(Jitter, StdDev) cudaHostAlloc",
+          "value": "24.63",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "24.63",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "지터(Jitter, StdDev) No Pinning",
+          "value": "15.95",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "15.95",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "순수 GPU 커널 시간 cudaHostRegister",
+          "value": "716.1",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "716.10",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "순수 GPU 커널 시간 cudaHostAlloc",
+          "value": "706.34",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "706.34",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "순수 GPU 커널 시간 No Pinning",
+          "value": "716",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "716.00",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "초당 처리량(Throughput) cudaHostRegister",
+          "value": "1168",
+          "value_kind": "scalar",
+          "unit": "samples/s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "1168",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "초당 처리량(Throughput) cudaHostAlloc",
+          "value": "1152.8",
+          "value_kind": "scalar",
+          "unit": "samples/s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "1152.8",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "초당 처리량(Throughput) No Pinning",
+          "value": "1185.1",
+          "value_kind": "scalar",
+          "unit": "samples/s",
+          "condition": "backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p73:img0:e2"
+          ],
+          "raw_value": "1185.1",
+          "normalization_status": "normalized"
+        }
+      ],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p73:img0:e0",
+          "page": 73,
+          "quote": "1. 3가지 메모리 방식 벤치마크 결과 비교",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p73:img0:e1",
+          "page": 73,
+          "quote": "조건: backward_only (method=2), CUDA Graph Separate (graph_mode=1), 총 920,000회 연산",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p73:img0:e2",
+          "page": 73,
+          "quote": "| 항목 | 1 기존 cudaHostRegister | 2 cudaHostAlloc ( h_x0 복사) | 3 No Pinning (Pageable) |\n| --- | --- | --- | --- |\n| 전체 실행 시간 (Total s) | 787.88s | 796.52s (+8.64s) | 776.70s |\n| 추론 누적 시간 (infer_s) | 127.18s | 130.47s | 111.92s |\n| 바운드 누적 시간 (bound_s) | 658.80s | 664.46s | 663.17s |\n| 단일 샘플 평균 지연시간 | $약 856$ \\mu\\text{s}$ | $867.43$ \\mu\\text{s}$ | $843.81$ \\mu\\text{s}$ |\n| 중위값 (P50 Latency) | - | $859.80$ \\mu\\text{s}$ | $837.10$ \\mu\\text{s}$ |\n| 95% 꼬리 지연 (P95) | - | $893.80$ \\mu\\text{s}$ | $867.20$ \\mu\\text{s}$ |\n| 지터 (Jitter, StdDev) | - | $24.63$ \\mu\\text{s}$ | $15.95$ \\mu\\text{s}$ |\n| 순수 GPU 커널 시간 | $716.10$ \\mu\\text{s}$ | $706.34$ \\mu\\text{s}$ | $716.00$ \\mu\\text{s}$ |\n| 초당 처리량 (Throughput) | 약 1,168 samples/s | 1,152.8 samples/s | 1,185.1 samples/s |",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0073F0005"
+    }
+  ]
+}

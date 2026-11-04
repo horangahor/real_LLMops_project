@@ -1,0 +1,90 @@
+{
+  "request_fingerprint": "c0223549095846a082def6d7fdc8e77fec3902b26ea8ad5757dad2df41933fd2",
+  "value": {
+    "facts": [
+      {
+        "statement": "방법 B는 '내가 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것'(Custom Implementation)이고, 방법 C는 '가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리(cuBLAS)에 맡기는 것'(Library Integration)이다.",
+        "limits": "이 정의는 질문(p71:e548)에 대한 AI 응답(p71:e552) 기반 서술이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "방법 B: 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것(Custom Implementation)",
+          "방법 C: 가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리(cuBLAS)에 맡기는 것(Library Integration)"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e548",
+          "p71:e552",
+          "p71:enh:e0",
+          "p71:enh:e4"
+        ]
+      },
+      {
+        "statement": "방법 B는 행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어서 3차원 배칭 커널을 작성하는 것이며, 장점은 알고리즘과 메모리를 100% 완벽히 통제할 수 있고, 아쉬운 점은 C++ CUDA 코드를 잘 짜도 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기 어렵다.",
+        "limits": "방법 B의 장단점 서술은 AI 응답(p71:e555) 기반이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어서 3차원 배칭 커널을 작성",
+          "장점: 알고리즘과 메모리를 100% 완벽히 통제 가능",
+          "아쉬운 점: 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어 어셈블리 성능을 손으로 따라잡기 어려움"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e554",
+          "p71:e555",
+          "p71:enh:e6",
+          "p71:enh:e7"
+        ]
+      },
+      {
+        "statement": "방법 C는 CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이고, 이 무거운 행렬 곱셈까지 굳이 손수 짤 필요가 없으니 엔비디아가 텐서 코어용으로 극한까지 깎아놓은 공식 라이브러리(cublasSgemmBatched)를 쓰자는 것이며, 핵심은 CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식이다.",
+        "limits": "CROWN 연산 시간의 80% 이상이 행렬 곱셈이라는 서술과 하이브리드 방식 설명은 AI 응답(p71:e557) 기반이며, 실제 측정값·구현 결과는 이 요소에서 확인되지 않는다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "CROWN 연산 시간의 80% 이상은 행렬 곱셈(A × W)",
+          "무거운 행렬 곱셈까지 굳이 손수 짤 필요가 없으니 엔비디아가 텐서 코어용으로 극한까지 깎아놓은 공식 라이브러리(cublasSgemmBatched)를 쓰자",
+          "CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌림",
+          "오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식",
+          "파이토치가 내부적으로 동작하는 방식과 100% 동일"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e556",
+          "p71:e557",
+          "p71:enh:e8",
+          "p71:enh:e9"
+        ]
+      },
+      {
+        "statement": "결론은 B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것이다.",
+        "limits": "결론 서술은 AI 응답(p71:e559) 기반이며, 실제 구현·측정 결과는 이 요소에서 확인되지 않는다.",
+        "kind": "problem",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e558",
+          "p71:e559",
+          "p71:enh:e10",
+          "p71:enh:e11"
+        ]
+      }
+    ]
+  }
+}

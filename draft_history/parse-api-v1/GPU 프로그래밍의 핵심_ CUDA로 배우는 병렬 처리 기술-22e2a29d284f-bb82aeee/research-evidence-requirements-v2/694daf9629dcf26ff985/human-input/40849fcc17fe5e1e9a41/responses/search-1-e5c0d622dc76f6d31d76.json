@@ -1,0 +1,67 @@
+{
+  "request_fingerprint": "e5c0d622dc76f6d31d76d413cd224485bcd97c2d3b2bbe565fc7a98c098dd691",
+  "value": {
+    "title": "기준 모델과 변형 모델의 구조 차이",
+    "facts": [
+      {
+        "statement": "기준 모델(v1)은 모든 병렬처리 함수를 GPU 커널 함수로 바꾼 only_GPU 버전이며, 변형 모델(hybrid)은 only_GPU에서 matmul(cuBLAS)만 GPU로 남기고 나머지 GPU 커널을 전부 CPU for 문으로 되돌린 버전이다.",
+        "limits": "v1은 my_lirpa.cu, hybrid는 crown_test_op_hybrid.cu 계열로 지칭되며, v1은 355ms, hybrid는 200ms로 측정되었다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "v1: 모든 병렬처리 함수를 커널 함수로 바꿈, 355ms // 이게 my_lirpa.cu",
+          "hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for 문으로 되돌린 버전",
+          "hybrid: 200ms"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p8:e75",
+          "p9:e81"
+        ]
+      },
+      {
+        "statement": "구조 차이는 함수별 실행 위치(GPU 커널 vs CPU for 문)와 GPU 메모리 풀 구조에서 나타난다.",
+        "limits": "only_GPU는 d_mat[4] + d_vec[2](행렬 4개, 벡터 2개)를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당)",
+          "hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용)",
+          "make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max가 GPU(커널/ cudaMemset)에서 CPU(생성자 초기화/ for 문)로 변경됨",
+          "matmul은 cuBLAS + 메모리풀로 동일"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p9:e78"
+        ]
+      },
+      {
+        "statement": "이 구조 차이가 성능에 미친 영향은 GPU 코드를 삭제(CPU로 회귀)했는데도 빨라진 사례로 해석된다.",
+        "limits": "hybrid는 only_GPU 대비 355ms에서 200ms로 줄었으며, 새로 추가된 것은 없고 GPU 코드를 삭제해 빨라진 케이스라고 요약된다.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for 문으로 되돌린 버전",
+          "새로 \"추가\"된 것은 없고, 오히려 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스",
+          "v1: 355ms, hybrid: 200ms"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p9:e81",
+          "p8:e75",
+          "p9:e78"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "request_fingerprint": "7d5afbc35cf7ef86ceb8f05c05c3ab046a7bfc72139f3210f6c88fe4558efbbc",
+  "value": {
+    "title": "GPU/CUDA 비교 맥락의 어려움·공정 조건 검토",
+    "facts": [
+      {
+        "statement": "cudaHostRegister/No Pinning 비교나 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않다.",
+        "limits": "elements 내 GPU/CUDA 실험 관련 원문(p83, p66, p68, p55, p56, p58, p62 등)에서 해당 비교·측정 조건을 직접 확인할 수 없다.",
+        "kind": "limitation",
+        "claim_status": "unclear",
+        "source_origin": "measurement_log",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p83:review:e1",
+          "p83:review:e2",
+          "p83:review:e3",
+          "p83:review:e5",
+          "p83:review:e6",
+          "p66:pdf:b1",
+          "p68:pdf:b1",
+          "p55:img0:e0",
+          "p55:img1:e0",
+          "p56:img0:e2",
+          "p56:img0:e3",
+          "p58:img0:e1",
+          "p58:img1:e0",
+          "p62:img0:e1",
+          "p62:img0:e2"
+        ]
+      },
+      {
+        "statement": "원문에는 forward / forward+backward / backward_only 실행 방식 간 총 소요 시간 및 단계별(infer·bound·certify) 시간 비교 결과가 기록되어 있다.",
+        "limits": "예: backward_only가 630.94s(infer 131.248s, bound 497.107s, certify 1.613s), forward가 668.37s(infer 130.712s, bound 535.361s, certify 1.437s)로 비교되어 있으며, backward_only가 가장 빠르다는 관찰이 함께 적혀 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "forward / forward+backward / backward_only 실행 방식 구분"
+        ],
+        "observations": [
+          "backward_only가 가장 빠름",
+          "forward가 가장 느림"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p83:review:e1",
+          "p83:review:e2",
+          "p83:review:e3",
+          "p83:review:e5",
+          "p83:review:e6",
+          "p66:pdf:b1"
+        ]
+      },
+      {
+        "statement": "원문에는 배치 사이즈 1024, 싱글 스트림 추정, CUDA 장치(device cuda) 사용 등 실행 조건이 일부 언급되어 있다.",
+        "limits": "python autolirpa_topk_robustness.py --data-path ... --device cuda --batch-size 1024 실행과 '싱글 스트림인듯'이라는 관찰이 적혀 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "batch-size 1024",
+          "device cuda",
+          "싱글 스트림(추정)"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p66:pdf:b1"
+        ]
+      },
+      {
+        "statement": "원문에는 커널 런치 오버헤드, 2차원 블록/tid 기반 평면 계산, 3차원(멀티 샘플) 처리 및 tensor 코어 활용 가능성 등 비교 맥락에 영향을 줄 수 있는 요소가 서술되어 있다.",
+        "limits": "상대방과 달리 입력데이터에 대한 커널 런치를 1번으로 줄여 커널 런치 오버헤드가 상대적으로 없다는 설명, 현재 2차원 커널이라 fp32 코어로만 수행 중이며 z축 추가 시 3차원 처리가 가능하다는 관찰이 적혀 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "커널 런치 횟수",
+          "블록 차원(2차원 vs 3차원)",
+          "사용 코어(fp32 vs tensor 코어)"
+        ],
+        "observations": [
+          "커널 런치 오버헤드 상대적 차이",
+          "2차원 커널은 fp32 코어로만 수행"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:pdf:b1"
+        ]
+      },
+      {
+        "statement": "원문에는 warmup 수행, 평균 기반 측정, cudaGraph 적용 버전 등 측정 방식과 버전 구분이 일부 기록되어 있다.",
+        "limits": "warmup 코드 주석(network_forward, lirpa_forward_bound_impl 등), '평균으로 측정을 해봤다'는 캡션, cudaGraph만 적용된 버전 heading, sparse.py와 CUDA의 평균 bound 계산 시간 비교 표가 포함되어 있다.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "measurement_log",
+        "conditions": [
+          "warmup 유무",
+          "평균 측정",
+          "cudaGraph 적용 여부",
+          "sparse.py vs CUDA 비교"
+        ],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p55:img0:e0",
+          "p55:img1:e0",
+          "p56:img0:e2",
+          "p56:img0:e3",
+          "p58:img0:e1",
+          "p58:img1:e0",
+          "p62:img0:e1",
+          "p62:img0:e2"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

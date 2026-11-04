@@ -1,0 +1,805 @@
+{
+  "initial": [
+    {
+      "statement": "프로그램 전체 실행에서 18번이므로 6번을 빼면 외부에서 12번이며, 가중치 행은 3개(신경망 구조가 256 * 491 * 491 * 16이므로 개수만큼)이다.",
+      "limits": "전체 memcpy 횟수와 가중치 행 수 추정 기록.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "신경망 구조 256 * 491 * 491 * 16"
+      ],
+      "observations": [
+        "전체 18번",
+        "외부 12번",
+        "가중치 행 3개"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p47:e332",
+          "page": 47,
+          "quote": "그럼 프로그램 전체 실행에서 18번이니까 6번 빼면 외부에서 12번\n가중치 행 (3개 , 신경망 구조가 256 * 491 * 491 * 16 이니까 * 개수만큼)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0047F0001"
+    },
+    {
+      "statement": "가중치 관련 복사는 (가중치 + 가중치 양수부/음수부 + bias) * 3이다.",
+      "limits": "가중치 복사 구성 기록.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "가중치+양수부/음수부+bias를 3배"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p47:e333",
+          "page": 47,
+          "quote": "( 가중치 + 가중치 양수부 / 음수부 + bias) * 3",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0047F0002"
+    },
+    {
+      "statement": "forward와 backward의 cudaMemcpy 횟수는 동일하다.",
+      "limits": "호출 횟수 동일성 기록.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "forward/backward cudaMemcpy 횟수 동일"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p47:e336",
+          "page": 47,
+          "quote": "c udamemcpy 횟수는 동일함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0047F0003"
+    },
+    {
+      "statement": "단일 테스트 forward/backward는 시간에서 3배 차이가 나는데, 왜 92만개의 데이터를 돌리면 비슷해지는지(약 1분 차이)에 대해 아직 해결하지 못했다.",
+      "limits": "미해결 질문 기록.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "단일 테스트 3배 차이",
+        "92만개 데이터"
+      ],
+      "observations": [
+        "92만개 데이터에서 비슷해짐",
+        "약 1분 차이",
+        "미해결"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p47:e338",
+          "page": 47,
+          "quote": "결 국 여기서 물어보는 것은\n단일 테스트 forward, backward는 시간에서 3배 차이가 나는데 , 왜 92만개의 데이터를\n돌리면 비슷해지는가? (1분 정도 차이나긴 함..)\n⇒ 아직 해결 못함..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0047F0004"
+    },
+    {
+      "statement": "forward 전체 실행 시간이 약 64s, backward 전체 실행 시간이 약 98s 정도이며, 동일한 cudaMemcpy 호출 횟수임에도 forward의 cudaMemcpy 시간이 많이 잡히는 점이 눈에 띈다.",
+      "limits": "40000개 데이터 기준 테스트. 전체 실행 시간 및 cudaMemcpy 시간 분포 관측. 단일 테스트의 3배 차이가 40000개 데이터에서 왜 나타나지 않는지는 미해결.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "40000개 데이터 테스트",
+        "CROWN_SWEEP 프로파일링"
+      ],
+      "observations": [
+        "forward 전체 실행 시간 약 64s (CROWN_SWEEP [64.064 s])",
+        "backward 전체 실행 시간 약 98s (CROWN_SWEEP [98.995 s])",
+        "cudaMemcpy 호출 횟수는 forward/backward 동일(240000회)",
+        "동일 호출 횟수임에도 forward의 cudaMemcpy 시간이 더 크게 잡힘"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [
+        {
+          "metric": "Total Time",
+          "value": "",
+          "value_kind": "range",
+          "unit": "s",
+          "condition": "forward 전체 실행 시간",
+          "element_ids": [
+            "p47:e337"
+          ],
+          "validation_error": "수치는 scalar/range로 분리하고 버전·정성 문장은 parameters/observations에 넣어야 합니다."
+        },
+        {
+          "metric": "Total Time",
+          "value": "",
+          "value_kind": "range",
+          "unit": "s",
+          "condition": "backward 전체 실행 시간",
+          "element_ids": [
+            "p47:e337"
+          ],
+          "validation_error": "수치는 scalar/range로 분리하고 버전·정성 문장은 parameters/observations에 넣어야 합니다."
+        }
+      ],
+      "sources": [
+        {
+          "element_id": "p47:e337",
+          "page": 47,
+          "quote": "f orward 전체 실행 시간이 약 64s / backward 전체 실행 시간이 약 98s 정도..\n눈에 띄는 점은 동일한 호출 횟수임에도 불구하고 forward의 cudamemcpy 시간이 왤케 많이\n잡히냐는 것..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [
+        "limits의 원문 미확인 수치: 40000, 3",
+        "조건·관찰의 원문 미확인 수치: 40000",
+        "조건·관찰의 원문 미확인 수치: 64.064",
+        "조건·관찰의 원문 미확인 수치: 98.995",
+        "조건·관찰의 원문 미확인 수치: 240000"
+      ]
+    }
+  ],
+  "audit": {
+    "additions": [
+      {
+        "statement": "40000개 데이터에 대한 테스트에서 forward 전체 실행 시간은 약 64.064s(CROWN_SWEEP [64.064 s]), backward 전체 실행 시간은 약 98.995s(CROWN_SWEEP [98.995 s])이다.",
+        "limits": "40000개 데이터 기준 테스트. 프로파일링에서 관측된 전체 실행 시간.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "40000개 데이터 테스트",
+          "CROWN_SWEEP 프로파일링"
+        ],
+        "observations": [
+          "forward 전체 실행 시간 약 64.064s",
+          "backward 전체 실행 시간 약 98.995s"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "forward 전체 실행 시간",
+            "value": "64.064",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "40000개 데이터 테스트, CROWN_SWEEP 프로파일링",
+            "element_ids": [
+              "p47:e337",
+              "p47:img1:e0"
+            ]
+          },
+          {
+            "metric": "backward 전체 실행 시간",
+            "value": "98.995",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "40000개 데이터 테스트, CROWN_SWEEP 프로파일링",
+            "element_ids": [
+              "p47:e337",
+              "p47:img3:e0"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p47:e337",
+          "p47:img1:e0",
+          "p47:img3:e0"
+        ]
+      },
+      {
+        "statement": "40000개 데이터 테스트에서 forward와 backward의 cudaMemcpy 호출 횟수는 동일하게 240000회이다.",
+        "limits": "40000개 데이터 기준 테스트. 프로파일링에서 관측된 cudaMemcpy 호출 횟수.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "40000개 데이터 테스트",
+          "CROWN_SWEEP 프로파일링"
+        ],
+        "observations": [
+          "forward/backward cudaMemcpy 호출 횟수 동일(240000회)"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "cudaMemcpy 호출 횟수",
+            "value": "240000",
+            "value_kind": "scalar",
+            "unit": "회",
+            "condition": "40000개 데이터 테스트, forward/backward 공통",
+            "element_ids": [
+              "p47:e337",
+              "p47:img0:e0",
+              "p47:img2:e0"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p47:e337",
+          "p47:img0:e0",
+          "p47:img2:e0"
+        ]
+      },
+      {
+        "statement": "40000개 데이터 테스트에서 forward의 cudaMemcpy 시간은 40.726s(총 시간의 79.7%), backward의 cudaMemcpy 시간은 11.332s이다. 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 더 크게 잡힌다.",
+        "limits": "40000개 데이터 기준 테스트. 프로파일링에서 관측된 cudaMemcpy 시간 분포.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "40000개 데이터 테스트",
+          "CROWN_SWEEP 프로파일링"
+        ],
+        "observations": [
+          "forward cudaMemcpy 시간 40.726s(총 시간의 79.7%)",
+          "backward cudaMemcpy 시간 11.332s",
+          "동일 호출 횟수임에도 forward의 cudaMemcpy 시간이 더 크게 잡힘"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "forward cudaMemcpy 시간",
+            "value": "40.726",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "40000개 데이터 테스트, forward",
+            "element_ids": [
+              "p47:e337",
+              "p47:img0:e0"
+            ]
+          },
+          {
+            "metric": "forward cudaMemcpy 시간 비율",
+            "value": "79.7",
+            "value_kind": "scalar",
+            "unit": "%",
+            "condition": "40000개 데이터 테스트, forward",
+            "element_ids": [
+              "p47:e337",
+              "p47:img0:e0"
+            ]
+          },
+          {
+            "metric": "backward cudaMemcpy 시간",
+            "value": "11.332",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "40000개 데이터 테스트, backward",
+            "element_ids": [
+              "p47:e337",
+              "p47:img2:e0"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p47:e337",
+          "p47:img0:e0",
+          "p47:img2:e0"
+        ]
+      },
+      {
+        "statement": "단일 테스트 forward/backward는 시간에서 3배 차이가 나는데, 40000개 데이터를 돌리면 약 1분(64.064s vs 98.995s) 차이로 비슷해지며, 이에 대해 아직 해결하지 못했다.",
+        "limits": "단일 테스트 3배 차이와 40000개 데이터에서의 차이 감소 현상. 미해결 질문.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "단일 테스트 3배 차이",
+          "40000개 데이터 테스트"
+        ],
+        "observations": [
+          "40000개 데이터에서 forward 약 64s, backward 약 98s로 약 1분 차이",
+          "단일 테스트 3배 차이가 40000개 데이터에서 왜 나타나지 않는지 미해결"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p47:e338"
+        ]
+      }
+    ],
+    "invalid_fact_indices": [
+      4
+    ],
+    "ledger": {
+      "p47:e332": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p47:e333": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p47:e334": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p47:e335": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p47:e336": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p47:e337": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p47:e338": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p47:e339": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p47:img0:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p47:img1:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p47:img2:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      },
+      "p47:img3:e0": {
+        "state": "unresolved",
+        "fact_refs": [],
+        "addition_refs": [],
+        "note": "누락 감사의 출처 연결 검사 실패: 구조화된 사실 없이 수집 완료로 표시했습니다."
+      }
+    },
+    "ledger_validation_error": "구조화된 사실 없이 수집 완료로 표시했습니다."
+  },
+  "facts": [
+    {
+      "statement": "프로그램 전체 실행에서 18번이므로 6번을 빼면 외부에서 12번이며, 가중치 행은 3개(신경망 구조가 256 * 491 * 491 * 16이므로 개수만큼)이다.",
+      "limits": "전체 memcpy 횟수와 가중치 행 수 추정 기록.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "신경망 구조 256 * 491 * 491 * 16"
+      ],
+      "observations": [
+        "전체 18번",
+        "외부 12번",
+        "가중치 행 3개"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p47:e332",
+          "page": 47,
+          "quote": "그럼 프로그램 전체 실행에서 18번이니까 6번 빼면 외부에서 12번\n가중치 행 (3개 , 신경망 구조가 256 * 491 * 491 * 16 이니까 * 개수만큼)",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0047F0001"
+    },
+    {
+      "statement": "가중치 관련 복사는 (가중치 + 가중치 양수부/음수부 + bias) * 3이다.",
+      "limits": "가중치 복사 구성 기록.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "가중치+양수부/음수부+bias를 3배"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p47:e333",
+          "page": 47,
+          "quote": "( 가중치 + 가중치 양수부 / 음수부 + bias) * 3",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0047F0002"
+    },
+    {
+      "statement": "forward와 backward의 cudaMemcpy 횟수는 동일하다.",
+      "limits": "호출 횟수 동일성 기록.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [],
+      "observations": [
+        "forward/backward cudaMemcpy 횟수 동일"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p47:e336",
+          "page": 47,
+          "quote": "c udamemcpy 횟수는 동일함",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0047F0003"
+    },
+    {
+      "statement": "단일 테스트 forward/backward는 시간에서 3배 차이가 나는데, 왜 92만개의 데이터를 돌리면 비슷해지는지(약 1분 차이)에 대해 아직 해결하지 못했다.",
+      "limits": "미해결 질문 기록.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "단일 테스트 3배 차이",
+        "92만개 데이터"
+      ],
+      "observations": [
+        "92만개 데이터에서 비슷해짐",
+        "약 1분 차이",
+        "미해결"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [],
+      "sources": [
+        {
+          "element_id": "p47:e338",
+          "page": 47,
+          "quote": "결 국 여기서 물어보는 것은\n단일 테스트 forward, backward는 시간에서 3배 차이가 나는데 , 왜 92만개의 데이터를\n돌리면 비슷해지는가? (1분 정도 차이나긴 함..)\n⇒ 아직 해결 못함..",
+          "origin": "standard_parse"
+        }
+      ],
+      "numeric_issues": [],
+      "id": "P0047F0004"
+    },
+    {
+      "statement": "40000개 데이터에 대한 테스트에서 forward 전체 실행 시간은 약 64.064s(CROWN_SWEEP [64.064 s]), backward 전체 실행 시간은 약 98.995s(CROWN_SWEEP [98.995 s])이다.",
+      "limits": "40000개 데이터 기준 테스트. 프로파일링에서 관측된 전체 실행 시간.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "40000개 데이터 테스트",
+        "CROWN_SWEEP 프로파일링"
+      ],
+      "observations": [
+        "forward 전체 실행 시간 약 64.064s",
+        "backward 전체 실행 시간 약 98.995s"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [
+        {
+          "metric": "forward 전체 실행 시간",
+          "value": "64.064",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "40000개 데이터 테스트, CROWN_SWEEP 프로파일링",
+          "element_ids": [
+            "p47:e337",
+            "p47:img1:e0"
+          ],
+          "validation_error": "측정 조건의 수치를 연결 원문에서 확인하지 못했습니다."
+        },
+        {
+          "metric": "backward 전체 실행 시간",
+          "value": "98.995",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "40000개 데이터 테스트, CROWN_SWEEP 프로파일링",
+          "element_ids": [
+            "p47:e337",
+            "p47:img3:e0"
+          ],
+          "validation_error": "측정 조건의 수치를 연결 원문에서 확인하지 못했습니다."
+        }
+      ],
+      "sources": [
+        {
+          "element_id": "p47:e337",
+          "page": 47,
+          "quote": "f orward 전체 실행 시간이 약 64s / backward 전체 실행 시간이 약 98s 정도..\n눈에 띄는 점은 동일한 호출 횟수임에도 불구하고 forward의 cudamemcpy 시간이 왤케 많이\n잡히냐는 것..",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p47:img1:e0",
+          "page": 47,
+          "quote": "CROWN_SWEEP [64.064 s]",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p47:img3:e0",
+          "page": 47,
+          "quote": "CROWN_SWEEP [98.995 s]",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 40000",
+        "limits의 원문 미확인 수치: 40000",
+        "조건·관찰의 원문 미확인 수치: 40000"
+      ],
+      "repair_unresolved": true,
+      "id": "P0047F0005"
+    },
+    {
+      "statement": "40000개 데이터 테스트에서 forward와 backward의 cudaMemcpy 호출 횟수는 동일하게 240000회이다.",
+      "limits": "40000개 데이터 기준 테스트. 프로파일링에서 관측된 cudaMemcpy 호출 횟수.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "40000개 데이터 테스트",
+        "CROWN_SWEEP 프로파일링"
+      ],
+      "observations": [
+        "forward/backward cudaMemcpy 호출 횟수 동일(240000회)"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [
+        {
+          "metric": "cudaMemcpy 호출 횟수",
+          "value": "240000",
+          "value_kind": "scalar",
+          "unit": "회",
+          "condition": "40000개 데이터 테스트, forward/backward 공통",
+          "element_ids": [
+            "p47:e336",
+            "p47:img0:e0",
+            "p47:img2:e0"
+          ],
+          "validation_error": "측정 조건의 수치를 연결 원문에서 확인하지 못했습니다."
+        }
+      ],
+      "sources": [
+        {
+          "element_id": "p47:e336",
+          "page": 47,
+          "quote": "c udamemcpy 횟수는 동일함",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p47:e337",
+          "page": 47,
+          "quote": "f orward 전체 실행 시간이 약 64s / backward 전체 실행 시간이 약 98s 정도..\n눈에 띄는 점은 동일한 호출 횟수임에도 불구하고 forward의 cudamemcpy 시간이 왤케 많이\n잡히냐는 것..",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p47:img0:e0",
+          "page": 47,
+          "quote": "| ▼ | Total Time | Num Calls | Avg | Med | Min | Max | StdDev | Name |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 79.7% | 40.726 s | 240000 | 169.691 μs | 18.120 μs | 3.599 μs | 7.616 ms | 316.565 μs | cudaMemcpy |\n| 17.0% | 8.698 s | 1520000 | 5.722 μs | 3.843 μs | 2.785 μs | 6.908 ms | 9.200 μs | cudaLaunchK |\n| 3.0% | 1.523 s | 160000 | 9.518 μs | 5.344 μs | 2.696 μs | 7.272 ms | 20.329 μs | cudaMemset |\n| 0.4% | 184.318 ms | 1520000 | 121 ns | 96 ns | 70 ns | 196.708 μs | 398 ns | cuKernelGetN |\n| 0.0% | 7.814 μs | 12 | 651 ns | 449 ns | 242 ns | 1.903 μs | 545 ns | cuLibraryGetK |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p47:img2:e0",
+          "page": 47,
+          "quote": "| Total Time | Num Calls | Avg | Med | Min | Max | StdDev | Name |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| 18.527 s | 2160000 | 8.577 μs | 7.208 μs | 2.779 μs | 7.565 ms | 14.922 μs | cudaLaunchh |\n| 11.332 s | 240000 | 47.216 μs | 24.612 μs | 3.642 μs | 7.404 ms | 51.755 μs | cudaMemcpy |\n| 2.121 s | 160000 | 13.259 μs | 8.447 μs | 2.684 μs | 2.041 ms | 14.919 μs | cudaMemset |\n| 392.770 ms | 2160000 | 181 ns | 160 ns | 74 ns | 222.425 μs | 713 ns | cuKernelGetN |\n| 16.718 μs | 18 | 928 ns | 638 ns | 304 ns | 2.763 μs | 767 ns | cuLibraryGetK |",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 40000",
+        "limits의 원문 미확인 수치: 40000",
+        "조건·관찰의 원문 미확인 수치: 40000"
+      ],
+      "id": "P0047F0006"
+    },
+    {
+      "statement": "40000개 데이터 테스트에서 forward의 cudaMemcpy 시간은 40.726s(총 시간의 79.7%), backward의 cudaMemcpy 시간은 11.332s이다. 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 더 크게 잡힌다.",
+      "limits": "40000개 데이터 기준 테스트. 프로파일링에서 관측된 cudaMemcpy 시간 분포.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "40000개 데이터 테스트",
+        "CROWN_SWEEP 프로파일링"
+      ],
+      "observations": [
+        "forward cudaMemcpy 시간 40.726s(총 시간의 79.7%)",
+        "backward cudaMemcpy 시간 11.332s",
+        "동일 호출 횟수임에도 forward의 cudaMemcpy 시간이 더 크게 잡힘"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [
+        {
+          "metric": "forward cudaMemcpy 시간",
+          "value": "40.726",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "40000개 데이터 테스트, forward",
+          "element_ids": [
+            "p47:e337",
+            "p47:img0:e0"
+          ],
+          "validation_error": "측정 조건의 수치를 연결 원문에서 확인하지 못했습니다."
+        },
+        {
+          "metric": "forward cudaMemcpy 시간 비율",
+          "value": "79.7",
+          "value_kind": "scalar",
+          "unit": "%",
+          "condition": "40000개 데이터 테스트, forward",
+          "element_ids": [
+            "p47:e337",
+            "p47:img0:e0"
+          ],
+          "validation_error": "측정 조건의 수치를 연결 원문에서 확인하지 못했습니다."
+        },
+        {
+          "metric": "backward cudaMemcpy 시간",
+          "value": "11.332",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "40000개 데이터 테스트, backward",
+          "element_ids": [
+            "p47:e337",
+            "p47:img2:e0"
+          ],
+          "validation_error": "측정 조건의 수치를 연결 원문에서 확인하지 못했습니다."
+        }
+      ],
+      "sources": [
+        {
+          "element_id": "p47:e337",
+          "page": 47,
+          "quote": "f orward 전체 실행 시간이 약 64s / backward 전체 실행 시간이 약 98s 정도..\n눈에 띄는 점은 동일한 호출 횟수임에도 불구하고 forward의 cudamemcpy 시간이 왤케 많이\n잡히냐는 것..",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p47:img0:e0",
+          "page": 47,
+          "quote": "| ▼ | Total Time | Num Calls | Avg | Med | Min | Max | StdDev | Name |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| 79.7% | 40.726 s | 240000 | 169.691 μs | 18.120 μs | 3.599 μs | 7.616 ms | 316.565 μs | cudaMemcpy |\n| 17.0% | 8.698 s | 1520000 | 5.722 μs | 3.843 μs | 2.785 μs | 6.908 ms | 9.200 μs | cudaLaunchK |\n| 3.0% | 1.523 s | 160000 | 9.518 μs | 5.344 μs | 2.696 μs | 7.272 ms | 20.329 μs | cudaMemset |\n| 0.4% | 184.318 ms | 1520000 | 121 ns | 96 ns | 70 ns | 196.708 μs | 398 ns | cuKernelGetN |\n| 0.0% | 7.814 μs | 12 | 651 ns | 449 ns | 242 ns | 1.903 μs | 545 ns | cuLibraryGetK |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p47:img2:e0",
+          "page": 47,
+          "quote": "| Total Time | Num Calls | Avg | Med | Min | Max | StdDev | Name |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| 18.527 s | 2160000 | 8.577 μs | 7.208 μs | 2.779 μs | 7.565 ms | 14.922 μs | cudaLaunchh |\n| 11.332 s | 240000 | 47.216 μs | 24.612 μs | 3.642 μs | 7.404 ms | 51.755 μs | cudaMemcpy |\n| 2.121 s | 160000 | 13.259 μs | 8.447 μs | 2.684 μs | 2.041 ms | 14.919 μs | cudaMemset |\n| 392.770 ms | 2160000 | 181 ns | 160 ns | 74 ns | 222.425 μs | 713 ns | cuKernelGetN |\n| 16.718 μs | 18 | 928 ns | 638 ns | 304 ns | 2.763 μs | 767 ns | cuLibraryGetK |",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 40000",
+        "limits의 원문 미확인 수치: 40000",
+        "조건·관찰의 원문 미확인 수치: 40000"
+      ],
+      "repair_unresolved": true,
+      "id": "P0047F0007"
+    },
+    {
+      "statement": "단일 테스트 forward/backward는 시간에서 3배 차이가 나는데, 40000개 데이터 테스트에서 forward 약 64.064s, backward 약 98.995s로 약 1분(34.931초) 차이가 나며, 단일 테스트 3배 차이가 92만개 데이터에서 왜 나타나지 않는지 아직 해결하지 못했다.",
+      "limits": "40000개 데이터 테스트 측정값(64.064s, 98.995s)과 92만개 데이터에 대한 질문은 별개. 92만개 데이터 측정값은 없으며, 92만개는 원문에서 질문으로 제시된 데이터 규모임. 단일 테스트 3배 차이는 p47:e338에 명시되어 있으나 제공된 요소 내에서 단일 테스트의 구체적인 forward/backward 실행 시간 측정값은 없음.",
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "conditions": [
+        "단일 테스트 3배 차이",
+        "40000개 데이터 테스트",
+        "92만개 데이터 미측정"
+      ],
+      "observations": [
+        "40000개 데이터에서 forward 약 64.064s, backward 약 98.995s로 약 1분 차이",
+        "단일 테스트 3배 차이가 92만개 데이터에서 왜 나타나지 않는지 미해결"
+      ],
+      "parameters": [],
+      "measurements": [],
+      "rejected_measurements": [
+        {
+          "metric": "forward 전체 실행 시간",
+          "value": "64.064",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "40000개 데이터 테스트, CROWN_SWEEP 프로파일링",
+          "element_ids": [
+            "p47:e337",
+            "p47:img1:e0"
+          ],
+          "validation_error": "측정 조건의 수치를 연결 원문에서 확인하지 못했습니다."
+        },
+        {
+          "metric": "backward 전체 실행 시간",
+          "value": "98.995",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "40000개 데이터 테스트, CROWN_SWEEP 프로파일링",
+          "element_ids": [
+            "p47:e337",
+            "p47:img3:e0"
+          ],
+          "validation_error": "측정 조건의 수치를 연결 원문에서 확인하지 못했습니다."
+        }
+      ],
+      "sources": [
+        {
+          "element_id": "p47:e337",
+          "page": 47,
+          "quote": "f orward 전체 실행 시간이 약 64s / backward 전체 실행 시간이 약 98s 정도..\n눈에 띄는 점은 동일한 호출 횟수임에도 불구하고 forward의 cudamemcpy 시간이 왤케 많이\n잡히냐는 것..",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p47:e338",
+          "page": 47,
+          "quote": "결 국 여기서 물어보는 것은\n단일 테스트 forward, backward는 시간에서 3배 차이가 나는데 , 왜 92만개의 데이터를\n돌리면 비슷해지는가? (1분 정도 차이나긴 함..)\n⇒ 아직 해결 못함..",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p47:img1:e0",
+          "page": 47,
+          "quote": "CROWN_SWEEP [64.064 s]",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p47:img3:e0",
+          "page": 47,
+          "quote": "CROWN_SWEEP [98.995 s]",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "numeric_issues": [
+        "statement의 원문 미확인 수치: 40000, 34.931",
+        "limits의 원문 미확인 수치: 40000",
+        "조건·관찰의 원문 미확인 수치: 40000",
+        "조건·관찰의 원문 미확인 수치: 40000"
+      ],
+      "id": "P0047F0008"
+    }
+  ]
+}

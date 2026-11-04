@@ -1,0 +1,152 @@
+{
+  "request_fingerprint": "97c39b83136275e0403995dd5c0e219433e1088ee9e865ae7c22fb3cda0ac876",
+  "value": {
+    "decisions": {
+      "P0050F0003": {
+        "action": "repair",
+        "representative_fact_id": "P0050R0F0002",
+        "corrections": [
+          {
+            "statement": "조건 'case 0/1 및 default 레이블'의 수치 0, 1은 p50:e351의 switch 코드 조각(case 0, case 1)에서 확인되며, p50:e354의 컴파일 출력에는 'case' 레이블과 'default' 레이블만 언급됨. element_ids에 p50:e351을 추가하거나 조건을 'case 레이블 및 default 레이블'로 수정하여 수치 출처를 명확히 할 것.",
+            "limits": "컴파일러 진단 메시지는 nvcc 컴파일 과정에서 발생한 것으로 기록됨.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "nvcc 컴파일",
+              "switch(method) 바깥에 fwd/bwd 선언",
+              "case 레이블 및 default 레이블 (case 번호는 p50:e351 참조)"
+            ],
+            "observations": [
+              "warning #546-D: transfer of control bypasses initialization of variable fwd/bwd",
+              "error C2360/C2361: fwd/bwd 초기화가 case/default 레이블에 의해 생략됨"
+            ],
+            "parameters": [],
+            "measurements": [],
+            "element_ids": [
+              "p50:e354",
+              "p50:e355",
+              "p50:e351"
+            ]
+          }
+        ],
+        "reason": "조건·관찰의 원문 미확인 수치(0, 1)가 있으며, 승인 후보 P0050R0F0002에 없는 추가 조건('case 0/1 및 default 레이블')이 포함됨. 수치 0, 1은 p50:e351의 코드 조각에서 확인 가능하므로 element_ids에 p50:e351을 추가하여 출처를 명확히 해야 함."
+      },
+      "P0050F0004": {
+        "action": "repair",
+        "representative_fact_id": "P0050R0F0002",
+        "corrections": [
+          {
+            "statement": "switch문 바깥에 fwd/bwd를 선언했을 때 nvcc 컴파일에서 warning #546-D와 error C2360/C2361이 발생했으며, 이는 transfer of control이 초기화를 우회하고 case/default 레이블에 의해 초기화가 생략되었기 때문이다.",
+            "limits": "컴파일러 진단 메시지는 nvcc 컴파일 과정에서 발생한 것으로 기록되었으며, 경고는 -diag-suppress로 억제 가능하다고 안내되었다.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "nvcc 컴파일",
+              "switch(method) 바깥에 fwd/bwd 선언",
+              "case 0/1 및 default 레이블"
+            ],
+            "observations": [
+              "warning #546-D: transfer of control bypasses initialization of variable \"fwd\" (declared at line 252) variable \"bwd\" (declared at line 260)",
+              "error C2360: 'fwd' 초기화가 'case' 레이블에 의해 생략되었습니다.",
+              "error C2361: 'bwd' 초기화가 'default' 레이블에 의해 생략되었습니다.",
+              "error C2361: 'fwd' 초기화가 'default' 레이블에 의해 생략되었습니다.",
+              "Remark: The warnings can be suppressed with \"-diag-suppress <warning-number>\""
+            ],
+            "parameters": [
+              {
+                "name": "fwd 선언 위치",
+                "value": "switch(method) 바깥 main 함수 scope",
+                "value_kind": "text",
+                "element_ids": [
+                  "p50:e354"
+                ]
+              },
+              {
+                "name": "bwd 선언 위치",
+                "value": "switch(method) 바깥 main 함수 scope",
+                "value_kind": "text",
+                "element_ids": [
+                  "p50:e354"
+                ]
+              },
+              {
+                "name": "fwd 선언 라인",
+                "value": "252",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p50:e354"
+                ]
+              },
+              {
+                "name": "bwd 선언 라인",
+                "value": "260",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p50:e354"
+                ]
+              }
+            ],
+            "measurements": [
+              {
+                "metric": "컴파일 경고 번호",
+                "value": "",
+                "value_kind": "scalar",
+                "unit": "warning",
+                "condition": "nvcc 컴파일, switch 바깥 선언",
+                "element_ids": [
+                  "p50:e354"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p50:e354",
+              "p50:e355"
+            ]
+          }
+        ],
+        "reason": "rejected_measurements가 있으며, 오류 코드(C2360/C2361)가 scalar 측정으로 잘못 분류됨. measurements의 '컴파일 오류 번호' 항목은 오류 코드 문자열로 scalar 측정이 아니므로 measurements에서 제거하고 observations로 이동해야 함. '컴파일 경고 번호' 546은 scalar 측정으로 유지 가능하나, 승인 후보 P0050R0F0002와 같이 measurements를 비우고 observations에 통합하는 방식도 고려 가능."
+      },
+      "P0050R0F0001": {
+        "action": "repair",
+        "representative_fact_id": "P0050F0001",
+        "corrections": [
+          {
+            "statement": "switch문 안에서 ForwardBoundResult/BackwardBoundResult를 선언과 동시에 생성하도록 코드를 수정했다. p50:e351의 코드 조각에서 case 0은 중괄호 스코프 { ... }로 감싸고 ForwardBoundResult fwd = lirpa_forward_bound_impl(...)을 선언하며, case 1은 중괄호 없이 BackwardBoundResult bwd = lirpa_backward_bound(...)를 선언한다.",
+            "limits": "승인된 기존 사실(P0050F0001/P0050F0006)은 case 0/1 모두 중괄호 스코프를 사용한 것으로 서술하나, p50:e351의 실제 코드 조각에서는 case 0에만 중괄호가 있고 case 1에는 중괄호가 없다. 코드 조각 자체는 기존 승인 사실에 코드 블록으로 보존되지 않았다.",
+            "kind": "method",
+            "claim_status": "documented_method",
+            "source_origin": "research_note",
+            "conditions": [
+              "switch(method) 내부 case 0/1에서 지역 변수로 선언",
+              "case 0은 중괄호 스코프 사용",
+              "case 1은 중괄호 스코프 미사용"
+            ],
+            "observations": [
+              "switch 안에서 선언과 동시에 만들어지도록 변경",
+              "switch 안의 선언문은 중괄호로 덮어주지 않으면 안된다고 기록",
+              "case 0: { ForwardBoundResult fwd = lirpa_forward_bound_impl(*net, dataset[i], eps_f, false, false, true); if (certify_topk(y0, fwd.final_lower, fwd.final_upper, k)) +t_count; else ++f_count; break; }",
+              "case 1: BackwardBoundResult bwd = lirpa_backward_bound(*net, dataset[i], eps_f, false, false); if (certify_topk(y0, bwd.final_lower, bwd.final_upper, k)) ++t_count; else ++f_count; break;",
+              "case 1에는 중괄호 스코프가 없음"
+            ],
+            "parameters": [],
+            "measurements": [],
+            "element_ids": [
+              "p50:e351",
+              "p50:e352",
+              "p50:e353"
+            ]
+          }
+        ],
+        "reason": "verification_conflicts가 있으며, 승인 후보 P0050F0001/P0050F0006의 조건 '중괄호 스코프 사용'이 p50:e351의 실제 코드와 불일치. p50:e351의 코드 조각에 따르면 case 0만 중괄호 스코프를 사용하고 case 1은 중괄호 없이 선언됨. 조건을 'case 0은 중괄호 스코프 사용, case 1은 중괄호 스코프 미사용'으로 수정해야 함."
+      },
+      "P0050R0F0004": {
+        "action": "unresolved",
+        "representative_fact_id": "",
+        "corrections": [],
+        "reason": "승인 후보가 존재하지 않아 비교·검증 불가. 대상 사실은 작성자 해석(claim_status: interpretation)으로, p50:e356('하여튼 이렇게 해서 결과를 봤다') 및 p50:e357('음 .. 준수한 결과다. ⇒ 이러면 2100s 초 나오는 문제도 원인 해결 완료')에 기반함. limits에 '해결 판단은 작성자 해석이며, 이후 실행에서 시간 변동이 다시 관찰되었다'고 명시되어 있으며, verification_missing_support에 '이후 실행에서 시간 변동이 다시 관찰되었다는 점은 이 사실만으로는 확인되지 않음'이 기록되어 있음. p51:e361~p51:e372의 후속 실행 결과에서 1560.37s, 1342.47s, 1561.72s, 1460.60s, 1564.18s 등 다양한 실행 시간이 관찰되어 작성자의 '원인 해결 완료' 해석이 완전히 확인되지 않음. 승인 후보 생성을 위해서는 작성자의 해석과 후속 관찰 결과를 모두 반영한 limits 설정이 필요함."
+      }
+    }
+  }
+}

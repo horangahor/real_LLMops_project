@@ -1,0 +1,273 @@
+{
+  "request_fingerprint": "0b6b3c7050a6e8b8e72d69586d1306b39656ebd3da0cd1c698273ad6c5ecb7cc",
+  "value": {
+    "items": [
+      {
+        "fact_id": "F01",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "support": "supported",
+        "support_note": "nvcc 버전 출력 텍스트와 CUDA 동작이 필요한 코드만 바꿔도 nvcc 컴파일이 가능하다는 전제가 원문에 함께 제시되어 있어, CUDA 포팅의 환경·전제가 진술과 일치한다.",
+        "conditions": [
+          "CUDA 컴파일러 드라이버(nvcc) release 13.3, V13.3.73",
+          "CUDA 동작이 필요한 코드만 수정해도 nvcc로 컴파일 가능하다는 전제"
+        ],
+        "measurements": [
+          {
+            "metric": "nvcc version",
+            "value": "13.3",
+            "unit": "",
+            "condition": "nvcc --version 출력 기준",
+            "element_ids": [
+              "p1:e1"
+            ]
+          },
+          {
+            "metric": "nvcc build version",
+            "value": "V13.3.73",
+            "unit": "",
+            "condition": "nvcc --version 출력 기준",
+            "element_ids": [
+              "p1:e1"
+            ]
+          }
+        ]
+      },
+      {
+        "fact_id": "F02",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "support": "supported",
+        "support_note": "원본 C++ 파일의 기본 틀을 유지하고 병렬 연산 부분만 커널 함수로 바꾸는 방식의 포팅 시도와, 포팅 직후 컴파일·실행 검증에서 동일하게 동작했다는 진술이 원문에 있다.",
+        "conditions": [
+          "원본 파일: lirpa_forward_backward_fc_array.cpp",
+          "병렬 연산이 필요한 부분만 kernel 함수로 교체",
+          "포팅 직후 컴파일·실행 검증"
+        ],
+        "measurements": [
+          {
+            "metric": "포팅 직후 동작 검증 결과",
+            "value": "동일하게 동작함",
+            "unit": "",
+            "condition": "최종 포팅, 컴파일, 실행 검증 완료 기준",
+            "element_ids": [
+              "p2:e18"
+            ]
+          }
+        ]
+      },
+      {
+        "fact_id": "F03",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "support": "partial",
+        "support_note": "신경망 구조(FC, 입력 256, 은닉 491/491, 출력 16)와 1차 목표(테스트 데이터 1개, eps=10^-6로 CROWN 돌려 16개 출력)는 교수 안내 메시지에서 제시된 가정값으로 원문에 있으나, 실제 모델 파일 로드 후 확인된 값인지는 별도 명시가 없어 가정/안내 수준으로만 지지된다.",
+        "conditions": [
+          "신경망 구조: Fully Connected",
+          "입력: N^(0)=256 (16×16)",
+          "은닉층: N^(1)=491, N^(2)=491",
+          "출력: N^(3)=16",
+          "1차 목표: 테스트 데이터 1개, eps=10^-6로 CROWN 수행 후 16개 출력 추출"
+        ],
+        "measurements": [
+          {
+            "metric": "입력 차원",
+            "value": "256",
+            "unit": "",
+            "condition": "교수 안내 기준 (16×16)",
+            "element_ids": [
+              "p2:e28"
+            ]
+          },
+          {
+            "metric": "은닉층 1 뉴런 수",
+            "value": "491",
+            "unit": "",
+            "condition": "교수 안내 기준",
+            "element_ids": [
+              "p2:e28"
+            ]
+          },
+          {
+            "metric": "은닉층 2 뉴런 수",
+            "value": "491",
+            "unit": "",
+            "condition": "교수 안내 기준",
+            "element_ids": [
+              "p2:e28"
+            ]
+          },
+          {
+            "metric": "출력 차원",
+            "value": "16",
+            "unit": "",
+            "condition": "교수 안내 기준",
+            "element_ids": [
+              "p2:e28"
+            ]
+          },
+          {
+            "metric": "CROWN eps",
+            "value": "1e-06",
+            "unit": "",
+            "condition": "1차 목표 기준",
+            "element_ids": [
+              "p2:e28"
+            ]
+          }
+        ]
+      },
+      {
+        "fact_id": "F04",
+        "kind": "result",
+        "claim_status": "observed",
+        "support": "supported",
+        "support_note": "CPU only와 GPU only 초기 버전의 단일 실행 경과 시간이 각 실행 출력의 Elapsed time으로 제시되어 있어 진술과 일치한다. 다만 CPU only 96ms라는 별도 정리값(p8:e73)은 동일 구간인지 확인이 필요하다는 한계가 있다.",
+        "conditions": [
+          "CROWN 검증 단일 실행",
+          "eps = 1e-06",
+          "CPU only 버전 vs GPU only 버전(my_lirpa.cu, 모든 병렬 함수를 커널로 교체)"
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "101.237800",
+            "unit": "ms",
+            "condition": "CPU only (no GPU) 단일 실행",
+            "element_ids": [
+              "p3:e35"
+            ]
+          },
+          {
+            "metric": "Elapsed time",
+            "value": "353.057200",
+            "unit": "ms",
+            "condition": "GPU only (my_lirpa.cu, 모든 병렬 함수 커널 교체) 단일 실행",
+            "element_ids": [
+              "p4:e37"
+            ]
+          }
+        ]
+      },
+      {
+        "fact_id": "F05",
+        "kind": "result",
+        "claim_status": "observed",
+        "support": "supported",
+        "support_note": "GPU OPTIMIZED 버전(cuBLAS matmul 대체, 메모리 풀 사용, 벡터 연산 CPU화)의 단일 실행 경과 시간이 229.691800ms로 원문에 제시되어 있으며, 작성자가 약 100ms 줄었지만 여전히 CPU보다 느리다고 진술한 점과 부합한다. 개별 최적화 항목의 기여도는 분리 측정되지 않았다.",
+        "conditions": [
+          "GPU OPTIMIZED 버전(crown_test_op_only_GPU.cu)",
+          "최적화 항목: 1) cuBLAS matmul 대체, 2) 메모리 풀 사용, 3) 벡터 연산 CPU화",
+          "단일 실행 기준"
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "229.691800",
+            "unit": "ms",
+            "condition": "GPU OPTIMIZED (cuBLAS + Pool) 단일 실행",
+            "element_ids": [
+              "p5:e43"
+            ]
+          }
+        ]
+      },
+      {
+        "fact_id": "F06",
+        "kind": "result",
+        "claim_status": "observed",
+        "support": "supported",
+        "support_note": "HYBRID(matmul만 GPU/cuBLAS, 나머지 CPU)와 HYBRID V2(cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사)의 단일 실행 경과 시간이 각각 원문에 제시되어 진술과 일치한다. 다만 V2의 CPU 대비 우위는 반복 측정 조건에 따라 달라질 수 있다는 한계가 있다.",
+        "conditions": [
+          "HYBRID: matmul=GPU, rest=CPU",
+          "HYBRID V2: cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사",
+          "단일 실행 기준"
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "201.670100",
+            "unit": "ms",
+            "condition": "HYBRID (matmul=GPU, rest=CPU) 단일 실행",
+            "element_ids": [
+              "p6:e48"
+            ]
+          },
+          {
+            "metric": "Elapsed time",
+            "value": "85.785300",
+            "unit": "ms",
+            "condition": "HYBRID V2 단일 실행",
+            "element_ids": [
+              "p7:e54"
+            ]
+          }
+        ]
+      },
+      {
+        "fact_id": "F07",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "support": "partial",
+        "support_note": "preload로 보였던 50ms 단축이 실제 가중치 활용보다 CUDA 컨텍스트 초기화·클럭 부스팅·JIT 컴파일 등 웜업 비용이 타이머 밖으로 빠진 영향이라는 해석은 원문에 작성자의 추론으로 제시되어 있다. 가중치 활용 자체의 효과가 크지 않았다는 보고(500회 누적 5~10ms 우세)도 함께 원문에 있다.",
+        "conditions": [
+          "preload 버전과 mempool 버전의 측정 구간 차이",
+          "pre_upload_weights_to_gpu가 t_start 앞에서 cudaMalloc/cudaMemcpy 호출",
+          "500회 누적에서 가중치 활용 효과는 5~10ms 우세 수준"
+        ],
+        "measurements": [
+          {
+            "metric": "preload 관련 단축 폭(관찰)",
+            "value": "50ms",
+            "unit": "",
+            "condition": "작성자가 언급한 단축 폭",
+            "element_ids": [
+              "p13:e106"
+            ]
+          },
+          {
+            "metric": "500회 누적 가중치 활용 우세",
+            "value": "5~10ms",
+            "unit": "",
+            "condition": "500회 정도 반복 측정 기준",
+            "element_ids": [
+              "p14:e116"
+            ]
+          }
+        ]
+      },
+      {
+        "fact_id": "F08",
+        "kind": "result",
+        "claim_status": "observed",
+        "support": "supported",
+        "support_note": "메모리 풀 + 웜업 조합으로 거의 200ms 단축, make_zero_matrix/make_zero_vector CPU 회귀와 불필요한 memcpy 제거로 추가 단축되어 최종 115.469900ms까지 내려갔다는 진술은 원문의 측정값과 서술에 의해 지지된다. 다만 115.469900ms는 해당 최적화 조합의 단일 실행값이며, CPU only 500회 평균 78.296988ms 구간도 보고되어 반복 측정 조건에 따라 우위 여부가 달라질 수 있다.",
+        "conditions": [
+          "적용 요소: 메모리 풀 + warmup + CPU 회귀(make_zero_matrix/make_zero_vector) + 불필요한 memcpy 제거",
+          "단일 실행 기준",
+          "CPU only 500회 평균 78.296988ms 보고 구간 존재"
+        ],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "128.894800",
+            "unit": "ms",
+            "condition": "mempool + warmup 단일 실행",
+            "element_ids": [
+              "p19:e141"
+            ]
+          },
+          {
+            "metric": "Elapsed time",
+            "value": "115.469900",
+            "unit": "ms",
+            "condition": "mempool + warmup + CPU 회귀 + memcpy 제거 적용 버전 단일 실행",
+            "element_ids": [
+              "p19:e137"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

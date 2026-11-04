@@ -1,0 +1,689 @@
+[
+  {
+    "statement": "기준 모델(v1)은 모든 병렬처리 함수를 GPU 커널 함수로 바꾼 only_GPU 버전이며, 변형 모델(hybrid)은 only_GPU에서 matmul(cuBLAS)만 GPU로 남기고 나머지 GPU 커널을 전부 CPU for 문으로 되돌린 버전이다.",
+    "limits": "v1은 my_lirpa.cu, hybrid는 crown_test_op_hybrid.cu 계열로 지칭되며, v1은 355ms, hybrid는 200ms로 측정되었다.",
+    "kind": "method",
+    "claim_status": "observed",
+    "source_origin": "research_note",
+    "conditions": [],
+    "observations": [
+      "v1: 모든 병렬처리 함수를 커널 함수로 바꿈, 355ms // 이게 my_lirpa.cu",
+      "hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for 문으로 되돌린 버전",
+      "hybrid: 200ms"
+    ],
+    "parameters": [],
+    "measurements": [],
+    "id": "H40849fcc17fe_0",
+    "requirement_ids": [
+      "methods_Q4"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p8:e75",
+        "page": 8,
+        "quote": "v 1 : 모든 병렬처리 함수를 커널 함수로 바꿈 , 355ms // 이게 my_lirpa.cu",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p9:e81",
+        "page": 9,
+        "quote": "hybrid 는 only_GPU 에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for\n문으로 되돌린 버전입니다. 새로 \"추가\"된 것은 없고, 오히려 GPU 코드를 **삭제(CPU로 회귀)**\n해서 빨라진 케이스입니다.",
+        "origin": "standard_parse"
+      }
+    ],
+    "numeric_issues": [
+      "limits의 원문 미확인 수치: 200",
+      "조건·관찰의 원문 미확인 수치: 200"
+    ],
+    "support": "unsupported",
+    "support_note": "limits의 원문 미확인 수치: 200; 조건·관찰의 원문 미확인 수치: 200",
+    "attribution_preserved": false,
+    "writing_role": "research_fact"
+  },
+  {
+    "statement": "구조 차이는 함수별 실행 위치(GPU 커널 vs CPU for 문)와 GPU 메모리 풀 구조에서 나타난다.",
+    "limits": "only_GPU는 d_mat[4] + d_vec[2](행렬 4개, 벡터 2개)를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다.",
+    "kind": "method",
+    "claim_status": "observed",
+    "source_origin": "research_note",
+    "conditions": [],
+    "observations": [
+      "only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당)",
+      "hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용)",
+      "make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max가 GPU(커널/ cudaMemset)에서 CPU(생성자 초기화/ for 문)로 변경됨",
+      "matmul은 cuBLAS + 메모리풀로 동일"
+    ],
+    "parameters": [],
+    "measurements": [],
+    "id": "H40849fcc17fe_1",
+    "requirement_ids": [
+      "methods_Q4"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p9:e78",
+        "page": 9,
+        "quote": "| 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: |\n| --- | --- | --- | --- |\n| 함수 | only_GPU | hybrid | 복잡도 |\n| make_zero_matri X | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_zero_vecto r | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_eye | GPU 커널 | CPU for 문 | O(n) |\n| mat_add | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| positive_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| negative_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n²) |\n| rowwise_scale | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| affine_min | GPU 커널 | CPU for 문 | O(n2) |\n| affine_max | GPU 커널 | CPU for 문 | O(n2) |\n| matmul | cuBLAS + 메모리풀 | cuBLAS + 메모리풀 (동 일) | O(n³) |\n| 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: |\n| ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) |",
+        "origin": "standard_parse"
+      }
+    ],
+    "numeric_issues": [],
+    "support": "supported",
+    "support_note": "주장(구조 차이가 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타남)과 한계(only_GPU d_mat[4]+d_vec[2] vs hybrid d_A,d_B,d_C 3개)는 p9:e78 표에 그대로 기재되어 있음. 함수별 실행 위치 변경(GPU 커널/cudaMemset → CPU 생성자 초기화/for 문)과 matmul의 cuBLAS+메모리풀 동일 유지도 표와 일치. 관찰 항목 4건 모두 표에 뒷받침됨.",
+    "attribution_preserved": true,
+    "verification_conflicts": [],
+    "verification_missing_support": [],
+    "evidence_limitations": [
+      "출처는 p9:e78 표의 비교 요약이며, 실제 코드 구현이나 실행 측정값은 별도 제시되지 않음",
+      "표의 복잡도 표기(O(n), O(n²), O(n³))는 작성자 기재 값이며 독립 검증은 원문에 없음"
+    ],
+    "writing_role": "research_fact"
+  },
+  {
+    "statement": "이 구조 차이가 성능에 미친 영향은 GPU 코드를 삭제(CPU로 회귀)했는데도 빨라진 사례로 해석된다.",
+    "limits": "hybrid는 only_GPU 대비 355ms에서 200ms로 줄었으며, 새로 추가된 것은 없고 GPU 코드를 삭제해 빨라진 케이스라고 요약된다.",
+    "kind": "method",
+    "claim_status": "observed",
+    "source_origin": "research_note",
+    "conditions": [],
+    "observations": [
+      "hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for 문으로 되돌린 버전",
+      "새로 \"추가\"된 것은 없고, 오히려 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스",
+      "v1: 355ms, hybrid: 200ms"
+    ],
+    "parameters": [],
+    "measurements": [],
+    "id": "H40849fcc17fe_2",
+    "requirement_ids": [
+      "methods_Q4"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p9:e81",
+        "page": 9,
+        "quote": "hybrid 는 only_GPU 에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for\n문으로 되돌린 버전입니다. 새로 \"추가\"된 것은 없고, 오히려 GPU 코드를 **삭제(CPU로 회귀)**\n해서 빨라진 케이스입니다.",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p8:e75",
+        "page": 8,
+        "quote": "v 1 : 모든 병렬처리 함수를 커널 함수로 바꿈 , 355ms // 이게 my_lirpa.cu",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p9:e78",
+        "page": 9,
+        "quote": "| 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: | 이제 only_GPU 와 hybrid 를 정확하게 비교해 드리겠습니다. only_GPU → hybrid 변경점 only_GPU 에서 GPU로 돌리고 있던 것들 중, hybrid 에서 CPU로 되돌린 함수들: |\n| --- | --- | --- | --- |\n| 함수 | only_GPU | hybrid | 복잡도 |\n| make_zero_matri X | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_zero_vecto r | GPU ( cudaMemset ) | CPU (그냥 생성자 초기화) | - |\n| make_eye | GPU 커널 | CPU for 문 | O(n) |\n| mat_add | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| positive_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| negative_part | GPU 커널 + 메모리 풀 | CPU for 문 | O(n²) |\n| rowwise_scale | GPU 커널 + 메모리 풀 | CPU for 문 | O(n2) |\n| affine_min | GPU 커널 | CPU for 문 | O(n2) |\n| affine_max | GPU 커널 | CPU for 문 | O(n2) |\n| matmul | cuBLAS + 메모리풀 | cuBLAS + 메모리풀 (동 일) | O(n³) |\n| 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: | 그리고 GPU 풀 구조체도 축소되었습니다: |\n| ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) | ● only_GPU: d_mat[4] + d_vec[2] (행렬 4개, 벡터 2개 미리 할당) ● hybrid: d_A, d_B, d_C 딱 3개만 (matmul 전용) |",
+        "origin": "standard_parse"
+      }
+    ],
+    "numeric_issues": [
+      "limits의 원문 미확인 수치: 200",
+      "조건·관찰의 원문 미확인 수치: 200"
+    ],
+    "support": "unsupported",
+    "support_note": "limits의 원문 미확인 수치: 200; 조건·관찰의 원문 미확인 수치: 200",
+    "attribution_preserved": false,
+    "writing_role": "research_fact"
+  },
+  {
+    "statement": "기준 모델(forward bound)과 변형 모델(backward bound)은 bound 계산 방식(forward/backward)에서 차이가 있으며, 측정 결과 두 bound 계산 시간은 warmup 이후 약 0.2ms 차이로 비슷하게 나타났다.",
+    "limits": "단일 샘플 측정 및 20회/92만 번 테스트 평균 기준; warmup 전후 및 데이터 편차에 따른 변동 존재",
+    "kind": "problem",
+    "claim_status": "observed",
+    "source_origin": "measurement_log",
+    "conditions": [
+      "warmup 적용 여부",
+      "단일 데이터 vs 전체 데이터 평균",
+      "eps 및 데이터셋 구성"
+    ],
+    "observations": [
+      "forward bound와 backward bound의 계산 시간이 warmup 이후 약 0.2ms 차이로 비슷하게 관측됨",
+      "단일 샘플에서는 warmup을 해도 약 0.2ms 정도 더 느리게 나타난 사례가 있음",
+      "전체 데이터 평균에서는 빠른 데이터가 더 많아 평균이 낮게 보였을 가능성이 언급됨"
+    ],
+    "parameters": [
+      {
+        "name": "bound 계산 방식",
+        "value": "forward vs backward",
+        "value_kind": "text",
+        "element_ids": [
+          "p54:e392",
+          "p55:e400",
+          "p56:e408",
+          "p57:e420"
+        ]
+      },
+      {
+        "name": "bound 시간 차이",
+        "value": "약 0.2ms",
+        "value_kind": "scalar",
+        "element_ids": [
+          "p57:e420",
+          "p56:e409"
+        ]
+      }
+    ],
+    "measurements": [
+      {
+        "metric": "bound 계산 시간 차이(forward vs backward)",
+        "value": "0.2",
+        "value_kind": "scalar",
+        "unit": "ms",
+        "condition": "warmup 이후 단일/평균 측정 기준",
+        "element_ids": [
+          "p57:e420",
+          "p56:e409"
+        ],
+        "raw_value": "약 0.2ms",
+        "normalization_status": "normalized"
+      }
+    ],
+    "id": "H40849fcc17fe_3",
+    "requirement_ids": [
+      "methods_Q4"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p54:e392",
+        "page": 54,
+        "quote": "![image](/image/placeholder)\nfor (int i = 0; i < N; ++i) { // - [1] 추론 // 신경망 정방향 통과 auto t0 = std::chrono::high_resolution_clock::now(); Vector ye = network_forward(*net, dataset[i]); auto t1 = std::chrono::high_resolution_clock::now(); // 추론 끝 시간 time_infer_total += std::chrono::duration<double>(t1 - t0).count(); // 추론 시간 누적 // - [2] Bound 계산 + [3] 검증 // CROWN backward bound or forward bound 계산 // (각 case 안에서 직접 초기화 → NRVO 적용, 4MB+ 구조체 복사 0회) switch(method){ case 0: { ForwardBoundResult fwd = lirpa_forward_bound_imp1(*net, dataset[i], eps_f, false, false, true); auto t2 = std::chrono::high_resolution_clock::now(); // bound 계산 끝 시간 time_bound_total += std::chrono::duration<double>(t2 - t1).count(); // bound 시간 누적 // Top-k 인증 판정 if (certify_topk(y0, fwd.final_lower, fwd.final_upper, k)) ++t_count; else ++f_count; auto t3 = std::chrono::high_resolution_clock::now(); // 검증 끝 시간 time_certify_total += std::chrono::duration<double>(t3 - t2).count(); // 검증 시간 누적 break; } case 1: { BackwardBoundResult bwd - lirpa_backward_bound(*net, dataset[i], eps_f, false, false); auto t2 = std::chrono::high_resolution_clock::now();/ bound 계산 끝 시간 time_bound_total += std::chrono::duration<double>(t2 - t1).count();// bound 시간 누적 // Top-k 인증 판정 if (certify_topk(y0, bwd.final_lower, bwd.final_upper, k)) +t_count; else ++f_count; auto t3 = std::chrono::high_resolution_clock::now(); // 검증 끝 시간 time_certify_total += - t2).count(); // 검증 시간 누적 break; } default: break; }",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p55:e400",
+        "page": 55,
+        "quote": "![image](/image/placeholder)\n// 2. CROWN (Backward Bound) 호출 // 여기서 선언시 BackwardBo wardBoundResult 빈 공간(4MB 할당 + 자잘한 벡터들까지 해서 넉넉 0.25MB ) // 내부 함수에 진입해서 보면 거의 64MB가 필요함 (함수 주석 참고) <== 근데 64MB 안되서 128MB로 함 // 왜인지는 모르겠다 너무 함수가 복잡해져서.. //BackwardBoundResult bwd = lirpa_backward_bound(* und(*net, x0, eps, false, false // 신경망 + foward 결과만 보면 7ms 초반 ~ 8ms 초반 정도 ForwardBoundResult bwd = lirpa_forward_bound_imp1 impl(*net, x0, eps, false, fals true); auto t_bound = std::chron chrono::high_resolution_clock: lock::now(); double time_bound = std::chrono::duration<double, std::milli>(t_bound - t_infer).count();",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p56:e408",
+        "page": 56,
+        "quote": "이게 backward 계산 시간",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p57:e420",
+        "page": 57,
+        "quote": "그 러면 일단\n초기화만 하면 forward, backward의 bound 계산 시간은 비슷하다는 것!\n(한 0.2ms 정도 차이남)",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p56:e409",
+        "page": 56,
+        "quote": "⇐ 이게 20번 92만 번 테스트(test_all_data의 평균 bound\n단일 테스트에서 웜업을 해도 좀 0.2ms 정도 느리다. 이게 왜 이렇게 되었을 지 고민을\n해봤는데.. 생각해보니 교수님께서 그런 말을 하셨다.\n40000개의 데이터중에도 계산이 더 빠른 데이터가 있고 , 느린 데이터가 있을것..",
+        "origin": "standard_parse"
+      }
+    ],
+    "numeric_issues": [],
+    "support": "supported",
+    "support_note": "핵심 측정 주장(forward/backward bound 계산 시간이 warmup 이후 약 0.2ms 차이로 비슷함)은 p56:e409, p57:e420에서 직접 뒷받침됨. '기준/변형 모델' 프레임은 작성자 해석으로 보이며 측정값 자체의 사실성에는 영향 없음.",
+    "attribution_preserved": true,
+    "verification_conflicts": [],
+    "verification_missing_support": [],
+    "evidence_limitations": [
+      "forward를 '기준 모델', backward를 '변형 모델'로 지칭한 표현은 원문에 명시적 라벨이 없으며, 원문은 switch(case 0/1)로 두 bound 방식을 선택할 수 있는 동일 코드 구조로 기술함",
+      "0.2ms 차이는 warmup 이후 전체 평균 기준(p57:e420)과 단일 샘플 기준(p56:e409)이 혼재되어 있으며, 단일 샘플에서는 오히려 backward가 약 0.2ms 더 느리다는 관찰이 함께 기록됨"
+    ],
+    "writing_role": "research_fact"
+  },
+  {
+    "statement": "변형 모델에서는 배칭(batching) 및 cudaGraph 캡처 등 실행 구조 변경이 적용되었고, 준비된 실험 환경에서 단일 스트림 대비 약 3배 시간 단축(25분 → 8분)이 보고되었다.",
+    "limits": "실시간 환경이 아닌 데이터셋이 준비된 실험 환경 기준; 실시간 환경에서는 데이터셋을 꽉 채워 넣기 어렵다고 명시됨",
+    "kind": "setup",
+    "claim_status": "observed",
+    "source_origin": "measurement_log",
+    "conditions": [
+      "준비된 데이터셋 환경 vs 실시간 환경",
+      "단일 스트림 vs 배칭/멀티 스트림",
+      "cudaGraph 캡처 적용 여부"
+    ],
+    "observations": [
+      "배칭(멀티 스트림)으로 여러 데이터를 묶어 넣으면 병렬 처리가 가능하다고 설명됨",
+      "기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 시간 빨라졌다고 기록됨(25분 → 8분)",
+      "cudaGraph로 추론/bound를 따로 또는 합쳐 캡처해 커널 런치 비용을 줄이려는 시도가 있었음",
+      "cudaGraph 적용 후 약 400초 정도 줄어든 것으로 보이나, 이는 추론과 bound를 따로 캡처했을 때 기준임"
+    ],
+    "parameters": [
+      {
+        "name": "배칭 적용 효과",
+        "value": "약 3배 시간 단축(25분 → 8분)",
+        "value_kind": "scalar",
+        "element_ids": [
+          "p59:e453"
+        ]
+      },
+      {
+        "name": "cudaGraph 캡처 방식",
+        "value": "추론/bound 따로 또는 한번에 캡처",
+        "value_kind": "text",
+        "element_ids": [
+          "p59:e454",
+          "p59:e456"
+        ]
+      }
+    ],
+    "measurements": [
+      {
+        "metric": "배칭 적용 전후 전체 소요 시간",
+        "value": "25~8",
+        "value_kind": "range",
+        "unit": "분",
+        "condition": "준비된 데이터셋 실험 환경, 단일 스트림 대비",
+        "element_ids": [
+          "p59:e453"
+        ],
+        "raw_value": "25분 → 8분",
+        "normalization_status": "normalized"
+      },
+      {
+        "metric": "cudaGraph 캡처로 줄어든 시간",
+        "value": "4E+2",
+        "value_kind": "scalar",
+        "unit": "초",
+        "condition": "추론/bound를 따로 캡처한 경우",
+        "element_ids": [
+          "p59:e456"
+        ],
+        "raw_value": "약 400초",
+        "normalization_status": "normalized"
+      }
+    ],
+    "id": "H40849fcc17fe_4",
+    "requirement_ids": [
+      "methods_Q4"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p59:e453",
+        "page": 59,
+        "quote": "5. 배칭 (싱글 스트림이 아닌 멀티 스트림, 데이터 하나씩 주지 말고 여러개 묶어서\n넣으면 병렬처리가 가능하니까.) (기존 데이터셋이 준비된 실험 환경에서는 단일\n스트림보다 3배 시간 빨라짐, (25 분 -> 8분)",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p59:e454",
+        "page": 59,
+        "quote": "여 기서 cudaGraph를 통해 추론, bound 따로 / 추론 + bound 한번에 하는 것을 따로\n캡처해서 커널 런치 비용을 최소화 해봤다.",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p59:e456",
+        "page": 59,
+        "quote": "한 400초 정도 줄어든 듯?\n(이게 추론이랑 , bound 랑 따로 캡처했을 때 기준임)",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p58:e441",
+        "page": 58,
+        "quote": "배 칭 시스템 구현했더니 3배나 빨라졌다.",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p58:e443",
+        "page": 58,
+        "quote": "일 단 branch를 따로 둬서 저장해놓기로 했다.\n(temp_batching)",
+        "origin": "standard_parse"
+      }
+    ],
+    "numeric_issues": [],
+    "support": "supported",
+    "support_note": "배칭 구현으로 3배 빨라졌다는 진술(p58:e441, p59:e453)과 cudaGraph 캡처 시도 및 약 400초 감소(p59:e454, p59:e456)가 원문 측정 로그와 일치함. 환경 조건(준비된 데이터셋 vs 실시간) 구분도 원문에 명시됨.",
+    "attribution_preserved": true,
+    "verification_conflicts": [],
+    "verification_missing_support": [],
+    "evidence_limitations": [
+      "25분 → 8분(3배 단축)은 '기존 데이터셋이 준비된 실험 환경' 기준(p59:e453)이며, 실시간 환경에서는 데이터셋을 꽉 채우기 어렵다고 명시됨(p58:e442)",
+      "cudaGraph로 약 400초 감소는 추론과 bound를 '따로 캡처'했을 때 기준(p59:e456)이며, 한번에 캡처한 경우의 수치는 별도로 제시되지 않음",
+      "배칭의 병렬 처리 설명은 원리 수준(p59:e453)이며, 실제 병렬화 효율이나 스트림 수에 대한 정량 정보는 없음"
+    ],
+    "writing_role": "research_fact"
+  },
+  {
+    "statement": "기준/변형 모델 구조 차이가 성능에 미치는 영향에 대해, 초기화 비용 차이로 인해 최대 약 5.3배 차이가 관측된 사례가 있으나, warmup 이후 forward/backward bound 계산 시간 자체는 비슷하게 나타났다는 해석이 기록되어 있다.",
+    "limits": "해당 해석은 측정 로그의 고찰/의견 성격이며, 통제된 비교 실험 결과로만 단정되지는 않음",
+    "kind": "result",
+    "claim_status": "interpretation",
+    "source_origin": "measurement_log",
+    "conditions": [
+      "초기화 비용 포함 여부",
+      "warmup 적용 여부",
+      "측정 대상(추론/bound/검증 분리 여부)"
+    ],
+    "observations": [
+      "초기화 비용으로 인해 3배 차이가 났는지 검증하려는 목적이 언급됨",
+      "warmup 이후 forward/backward bound 계산 시간은 한 0.2ms 정도 차이로 비슷하다는 결론이 기록됨",
+      "5.3배 정도 차이나는 것을 확인했다는 기록이 있으나, 스파이크 및 평균 분포 상승 문제가 함께 언급됨",
+      "warmup을 해도 스파이크가 뜨고, 가끔 10번 측정 평균이 느려지는 현상이 보고됨"
+    ],
+    "parameters": [
+      {
+        "name": "bound 계산 시간 유사성",
+        "value": "약 0.2ms 차이",
+        "value_kind": "scalar",
+        "element_ids": [
+          "p57:e420"
+        ]
+      }
+    ],
+    "measurements": [],
+    "id": "H40849fcc17fe_5",
+    "requirement_ids": [
+      "methods_Q4"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [
+      {
+        "metric": "초기화 비용 관련 관측 차이",
+        "value": "약 5.3배",
+        "value_kind": "scalar",
+        "unit": "배",
+        "condition": "초기화 비용 포함 여부에 따른 비교 맥락",
+        "element_ids": [
+          "p58:e435"
+        ],
+        "validation_error": "측정값이 연결 원문에 없습니다."
+      }
+    ],
+    "sources": [
+      {
+        "element_id": "p58:e435",
+        "page": 58,
+        "quote": "5 .3 배 정도 차이나는 것을 확인했고",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p57:e420",
+        "page": 57,
+        "quote": "그 러면 일단\n초기화만 하면 forward, backward의 bound 계산 시간은 비슷하다는 것!\n(한 0.2ms 정도 차이남)",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p57:e426",
+        "page": 57,
+        "quote": "근 데 웬 일? warmup 하니까 걸리는 시간 및 각 평균 시간이 더 늘어남 …",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p57:e430",
+        "page": 57,
+        "quote": "의 문점 : warm up을 해도 스파이크 데이터가 뜨고, 심지어 가끔은 10번 측정했을 때 평균\n시간이 느려지는 문제 생김",
+        "origin": "standard_parse"
+      },
+      {
+        "element_id": "p57:e433",
+        "page": 57,
+        "quote": "1. 일단 warm up도 warm up 이전 버전이랑 측정 시간에서 큰 차이 나지 않음\n2. 스파이크가 안뜰 때의 시간은 오히려 더 안정적인듯 (변동 계수가 좀 더 낮은 느낌)",
+        "origin": "standard_parse"
+      }
+    ],
+    "numeric_issues": [
+      "statement의 원문 미확인 수치: 5.3",
+      "조건·관찰의 원문 미확인 수치: 3",
+      "조건·관찰의 원문 미확인 수치: 5.3",
+      "설정값을 원문에서 확인하지 못했습니다: 최대 약 5.3배"
+    ],
+    "support": "unsupported",
+    "support_note": "statement의 원문 미확인 수치: 5.3; 조건·관찰의 원문 미확인 수치: 3; 조건·관찰의 원문 미확인 수치: 5.3; 설정값을 원문에서 확인하지 못했습니다: 최대 약 5.3배",
+    "attribution_preserved": false,
+    "writing_role": "context_only"
+  },
+  {
+    "statement": "기준 모델은 CROWN 알고리즘에서 출력한 16개 값에 대해 신경망 기준 또는 lower_bound/upper_bound 기준으로 8개 출력 노드를 선택하는 구조를 사용한다.",
+    "limits": "구체적인 선택 알고리즘 구현은 교수님이 제공하기로 한 답지에 의존하며, 현재 문서에는 상세 구조가 명시되지 않았다.",
+    "kind": "setup",
+    "claim_status": "documented_method",
+    "source_origin": "research_note",
+    "conditions": [],
+    "observations": [],
+    "parameters": [],
+    "measurements": [],
+    "id": "H40849fcc17fe_6",
+    "requirement_ids": [
+      "methods_Q4"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p8:enh:e1",
+        "page": 8,
+        "quote": "1. CROWN 알고리즘에서 출력한 16개의 값 ⇒",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p8:enh:e2",
+        "page": 8,
+        "quote": "a. 신경망을 기준으로 sorting (아마 최댓값을 따라가는 듯?) : 최댓값부터 8개의 출력노드를 선택",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p8:enh:e3",
+        "page": 8,
+        "quote": "b. lower_bound, upper_bound 를 기준으로 sorting (아마 간격을 기준으로 따라감) : 8개의 출력노드를 선택하도록 하기",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p8:enh:e4",
+        "page": 8,
+        "quote": "⇒ 이거에 대한 답지는 교수님께서 제공해주시기로 했음",
+        "origin": "enhanced_page_image"
+      }
+    ],
+    "numeric_issues": [],
+    "support": "supported",
+    "support_note": "p8:enh:e1~e4에서 CROWN 출력 16개 값, 신경망 기준 sorting(최댓값→8개 선택), lower_bound/upper_bound 기준 sorting(8개 선택) 구조가 명시적으로 기술되어 있어 사실 관계는 원문에 충실함. limits에 구현 상세의 교수 답지 의존성이 정확히 기재됨.",
+    "attribution_preserved": true,
+    "verification_conflicts": [],
+    "verification_missing_support": [],
+    "evidence_limitations": [
+      "원문(p8:enh:e2, p8:enh:e3)에 '아마 최댓값을 따라가는 듯?', '아마 간격을 기준으로 따라감' 등 추측성 표현이 포함되어 있어, 실제 구현 확정 여부는 교수 제공 답지에 의존함"
+    ],
+    "writing_role": "research_fact"
+  },
+  {
+    "statement": "변형 모델 중 하나는 메모리 풀(할당/해제 제거)과 memcpy 비용 제거를 적용한 버전으로, 고정된 가중치(W)와 편향(B) 값을 사용한다.",
+    "limits": "이 변형은 CPU보다 빠르도록 성능을 개선한 프로그램이며, 구체적인 구조 변경 세부사항은 문서에 제한적이다.",
+    "kind": "setup",
+    "claim_status": "documented_method",
+    "source_origin": "research_note",
+    "conditions": [],
+    "observations": [],
+    "parameters": [],
+    "measurements": [],
+    "id": "H40849fcc17fe_7",
+    "requirement_ids": [
+      "methods_Q4"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p8:enh:e13",
+        "page": 8,
+        "quote": "3-1. 메모리 풀(할당, 해제 제거) + memcpy 비용 제거한 버전 ( 고정된 W, B 값 )",
+        "origin": "enhanced_page_image"
+      }
+    ],
+    "numeric_issues": [],
+    "support": "supported",
+    "support_note": "p8:enh:e13 '메모리 풀(할당, 해제 제거) + memcpy 비용 제거한 버전 ( 고정된 W, B 값 )'과 정확히 일치함.",
+    "attribution_preserved": true,
+    "verification_conflicts": [],
+    "verification_missing_support": [],
+    "evidence_limitations": [
+      "구체적인 메모리 풀 구현 구조, memcpy 제거 범위 등 세부 사항은 원문(p8:enh:e13)에 '고정된 W, B 값' 정도로만 언급되어 제한적임"
+    ],
+    "writing_role": "research_fact"
+  },
+  {
+    "statement": "또 다른 변형 모델은 cuBlas, cuSparse 라이브러리를 도입하고 메모리 풀을 사용하며, matvec/matmul 연산을 cuBlas로 수행하도록 변경되었다.",
+    "limits": "cuSparse 도입 시도는 '잘 되나 하고 도입해봤다' 수준으로, 실제 적용 결과는 명확하지 않다.",
+    "kind": "setup",
+    "claim_status": "documented_method",
+    "source_origin": "research_note",
+    "conditions": [],
+    "observations": [],
+    "parameters": [],
+    "measurements": [],
+    "id": "H40849fcc17fe_8",
+    "requirement_ids": [
+      "methods_Q4"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p8:enh:e14",
+        "page": 8,
+        "quote": "3-2. cuBlas , cuSparse",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p8:enh:e15",
+        "page": 8,
+        "quote": "정리",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p28:enh:e0",
+        "page": 28,
+        "quote": "혹시 cuSparse는 잘 되나 하고 도입해봤다",
+        "origin": "enhanced_page_image"
+      }
+    ],
+    "numeric_issues": [],
+    "support": "supported",
+    "support_note": "p8:enh:e14(cuBlas, cuSparse), p14:enh:e11(메모리풀+cuBlas, matvec/matmul cuBlas 활용), p28:enh:e0(cuSparse 실험적 도입 시도)를 종합하면 사실 관계는 뒷받침됨. limits에 cuSparse의 실험적 성격이 정확히 반영됨.",
+    "attribution_preserved": true,
+    "verification_conflicts": [],
+    "verification_missing_support": [],
+    "evidence_limitations": [
+      "cuSparse는 p28:enh:e0 '혹시 cuSparse는 잘 되나 하고 도입해봤다' 수준으로 실험적 시도이며, 실제 적용 결과나 성능 기여는 원문에 명확하지 않음",
+      "cuBlas 기반 matvec/matmul 변경은 p14:enh:e11에서 확인되나, p8:enh:e14에는 cuBlas/cuSparse만 나열되어 있어 세부 연결은 교차 참조로 보완됨"
+    ],
+    "writing_role": "research_fact"
+  },
+  {
+    "statement": "기준 모델(v0)은 단독 CPU 처리로 96ms의 성능을 보이며, 변형 모델들은 GPU 병렬처리, 메모리 풀, cuBlas 도입 등을 통해 성능이 개선되었다 (v1: 355ms, v2: 229ms, v3: 200ms, v4: 85ms 등).",
+    "limits": "각 버전별 정확한 구조 차이와 성능 개선 원인은 문서에 부분적으로만 기술되어 있으며, 일부 버전은 실험적 시도 수준이다.",
+    "kind": "result",
+    "claim_status": "observed",
+    "source_origin": "measurement_log",
+    "conditions": [],
+    "observations": [],
+    "parameters": [],
+    "measurements": [],
+    "id": "H40849fcc17fe_9",
+    "requirement_ids": [
+      "methods_Q4"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p8:enh:e16",
+        "page": 8,
+        "quote": "v0 : 단독 CPU 처리 , 96ms",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p8:enh:e17",
+        "page": 8,
+        "quote": "v1 : 모든 병렬처리 함수를 커널 함수로 바꿈 , 355ms // 이게 my_lirpa.cu",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p8:enh:e18",
+        "page": 8,
+        "quote": "v2 : 벡터 연산은 다시 CPU로 처리, 메모리풀, cuBlas 도입 , 229ms // crown_test_op_only_GPU.cu",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p8:enh:e19",
+        "page": 8,
+        "quote": "v3 : CPU, GPU 하이브리드(어떤 함수인지는 아래 이미지), 풀 구조체 축소, 200ms // crown_test_op_hybrid.cu",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p10:enh:e5",
+        "page": 10,
+        "quote": "85ms",
+        "origin": "enhanced_page_image"
+      }
+    ],
+    "numeric_issues": [],
+    "support": "supported",
+    "support_note": "v0:96ms(p8:enh:e16), v1:355ms(p8:enh:e17), v2:229ms(p8:enh:e18), v3:200ms(p8:enh:e19), 85ms(p10:enh:e5) 모두 원문의 측정값과 일치함. '등'으로 모호하게 처리한 점도 원문의 불완전한 버전 관리를 반영함.",
+    "attribution_preserved": true,
+    "verification_conflicts": [],
+    "verification_missing_support": [],
+    "evidence_limitations": [
+      "v4=85ms는 p10:enh:e5('85ms')와 p10:enh:e6('// crown_test_op_hybrid_v2')에서 확인되나, 원문에 'v4' 라벨이 명시적으로 부여되지는 않음. v0~v3의 순차적 나열(p8:enh:e16~e19) 맥락상 v4로 추론됨",
+      "각 버전별 정확한 구조 차이와 성능 개선 원인 간 인과 관계는 원문에 부분적으로만 기술됨(p8:enh:e17~e19, p10:enh:e3~e5)"
+    ],
+    "writing_role": "research_fact"
+  },
+  {
+    "statement": "기준 모델과 변형 모델 간의 구조적 차이(메모리 풀 도입, 라이브러리 사용, memcpy 제거 등)가 성능에 미치는 영향에 대한 체계적인 해석은 문서에 충분히 기술되어 있지 않다.",
+    "limits": "성능 수치 차이는 관찰되나, 구조 차이가 성능에 미치는 인과적 해석은 제한적이며 일부 버전은 실험적 시도 수준이다.",
+    "kind": "limitation",
+    "claim_status": "interpretation",
+    "source_origin": "research_note",
+    "conditions": [],
+    "observations": [],
+    "parameters": [],
+    "measurements": [],
+    "id": "H40849fcc17fe_10",
+    "requirement_ids": [
+      "methods_Q4"
+    ],
+    "supplemental_reason": "사용자 지시에 따른 추가 탐색",
+    "rejected_measurements": [],
+    "sources": [
+      {
+        "element_id": "p8:enh:e13",
+        "page": 8,
+        "quote": "3-1. 메모리 풀(할당, 해제 제거) + memcpy 비용 제거한 버전 ( 고정된 W, B 값 )",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p8:enh:e14",
+        "page": 8,
+        "quote": "3-2. cuBlas , cuSparse",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p8:enh:e15",
+        "page": 8,
+        "quote": "정리",
+        "origin": "enhanced_page_image"
+      },
+      {
+        "element_id": "p14:enh:e9",
+        "page": 14,
+        "quote": "결국 가중치를 미리 로드해서 memcpy를 줄이겠다는 건.. 크게 의미를 못미친다.",
+        "origin": "enhanced_page_image"
+      }
+    ],
+    "numeric_issues": [],
+    "support": "supported",
+    "support_note": "p14:enh:e7~e9에서 memcpy 감소의 효과가 제한적임이 관찰되었고, p8:enh:e13~e15, p28:enh:e0에서 실험적 시도 수준이 확인되어 '체계적 해석 부족' 해석은 원문에 충실함. claim_status=interpretation, source_origin=research_note 적절함.",
+    "attribution_preserved": true,
+    "verification_conflicts": [],
+    "verification_missing_support": [],
+    "evidence_limitations": [
+      "원문 자체가 체계적 해석보다는 실험 기록(p14:enh:e7 '별로 성능 차이 안남', p14:enh:e8 '5~10ms 정도 우세함', p14:enh:e9 '크게 의미를 못미친다') 위주이므로, '체계적 해석 부족' 주장은 원문의 성격과 일치함"
+    ],
+    "writing_role": "context_only"
+  }
+]

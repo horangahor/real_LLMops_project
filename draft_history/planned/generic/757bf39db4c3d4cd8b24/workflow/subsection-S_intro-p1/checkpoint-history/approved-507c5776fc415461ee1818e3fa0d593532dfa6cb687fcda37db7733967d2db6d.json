@@ -1,0 +1,159 @@
+{
+  "sha256": "507c5776fc415461ee1818e3fa0d593532dfa6cb687fcda37db7733967d2db6d",
+  "value": {
+    "input_fingerprint": "649aa91662ae5a1b985a84b4a2219e2a5fc4e5aad99e3cdcebb5a40bc19fd9e4",
+    "sections": {
+      "S_intro": {
+        "parts": {
+          "p0": "신경망 검증은 안전이 중요한 환경에서 모델의 동작을 보장하는 데 쓰이지만, CROWN 검증은 대규모 선형 연산과 반복적 경계 계산을 수반해 연산 부담이 크다. 기존 연구는 CROWN을 주로 CPU 환경에서 실행해 왔으며, 이런 방식은 오프라인 조건에서는 제한적으로 빠른 결과를 낼 수 있어도 실시간 환경에서 요구되는 대규모 연산을 지속적으로 충족하기 어렵다. 따라서 본 연구는 CUDA 기반 CROWN 검증의 GPU 병렬화와 실시간성 최적화에 초점을 두고, GPU 환경에서 검증 연산이 실제 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:U9ff240a30b03c6835449]\n\n초기 실험에서 GPU OPTIMIZED 모드(cuBLAS + Pool)로 CROWN 검증을 실행했을 때 경과 시간은 229.691800 ms로 기록되었고, 이는 이전 대비 약 100 ms 줄어든 값이었다. 다만 이 감소는 기록자가 CPU보다 여전히 느리다고 평가한 수준으로, GPU 최적화만으로는 실시간성 요구가 충분히 해소되지 않았다. 이에 행렬곱(matmul)만 GPU로 실행하는 하이브리드 프로그램을 시도하는 등, 연산 일부를 GPU로 옮기는 방향의 후속 접근이 이어졌다. [근거:E00027,E00029,E00030]\n\n이후 측정 정밀도를 높이기 위해 GPU 클록 고정, Persistence mode 설정 같은 환경 통제 방법이 검토되었다. cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12 μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐지만, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 구간에서 역전 현상이 나타났다. [근거:E00277,E00278,E00280,E00281,E00282,E00283,E00284,E00286]"
+        }
+      }
+    },
+    "raw_review": {
+      "checks": [
+        {
+          "item_id": "RI_intro_2",
+          "verdict": "met",
+          "paragraph_ids": [
+            "S_intro_p1",
+            "S_intro_p2",
+            "S_intro_p3"
+          ],
+          "evidence_ids": [
+            "E00027",
+            "E00029",
+            "E00030",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "U9ff240a30b03c6835449"
+          ]
+        },
+        {
+          "item_id": "RI_intro_2",
+          "verdict": "met",
+          "paragraph_ids": [
+            "S_intro_p1",
+            "S_intro_p2",
+            "S_intro_p3"
+          ],
+          "evidence_ids": [
+            "E00027",
+            "E00029",
+            "E00030",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "U9ff240a30b03c6835449"
+          ]
+        }
+      ],
+      "issues": [],
+      "reference_checks": [
+        {
+          "section_id": "S_intro",
+          "reference_id": "ref1_introduction",
+          "verdict": "applied",
+          "paragraph_ids": [
+            "S_intro_p1",
+            "S_intro_p2",
+            "S_intro_p3"
+          ],
+          "reason": "ref1_introduction의 서론 구성 방식(문제 상황 제시 → 기존 방법의 한계 대조 → 제안 목표와 기여 방향 정리)을 CUDA 기반 CROWN 검증의 실시간성 문제와 GPU 최적화 동기로 대체해 적용했다. 식물 스트레스 분류 관련 내용은 제외하고, 기존 CPU 중심 검증의 한계와 GPU 최적화 시도, 측정 환경 통제 맥락을 순서대로 서술했다."
+        }
+      ]
+    },
+    "reviews": [
+      {
+        "checks": [
+          {
+            "item_id": "RI_intro_2",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_intro_p1",
+              "S_intro_p2",
+              "S_intro_p3"
+            ],
+            "evidence_ids": [
+              "E00027",
+              "E00029",
+              "E00030",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "U9ff240a30b03c6835449"
+            ],
+            "quote": "신경망 검증은 안전이 중요한 환경에서 모델의 동작을 보장하는 데 쓰이지만, CROWN 검증은 대규모 선형 연산과 반복적 경계 계산을 수반해 연산 부담이 크다. 기존 연구는 CROWN을 주로 CPU 환경에서 실행해 왔으며, 이런 방식은 오프라인 조건에서는 제한적으로 빠른 결과를 낼 수 있어도 실시간 환경에서 요구되는 대규모 연산을 지속적으로 충족하기 어렵다. 따라서 본 연구는 CUDA 기반 CROWN 검증의 GPU 병렬화와 실시간성 최적화에 초점을 두고, GPU 환경에서 검증 연산이 실제 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:U9ff240a30b03c6835449]",
+            "paragraph_quotes": [
+              "신경망 검증은 안전이 중요한 환경에서 모델의 동작을 보장하는 데 쓰이지만, CROWN 검증은 대규모 선형 연산과 반복적 경계 계산을 수반해 연산 부담이 크다. 기존 연구는 CROWN을 주로 CPU 환경에서 실행해 왔으며, 이런 방식은 오프라인 조건에서는 제한적으로 빠른 결과를 낼 수 있어도 실시간 환경에서 요구되는 대규모 연산을 지속적으로 충족하기 어렵다. 따라서 본 연구는 CUDA 기반 CROWN 검증의 GPU 병렬화와 실시간성 최적화에 초점을 두고, GPU 환경에서 검증 연산이 실제 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:U9ff240a30b03c6835449]",
+              "초기 실험에서 GPU OPTIMIZED 모드(cuBLAS + Pool)로 CROWN 검증을 실행했을 때 경과 시간은 229.691800 ms로 기록되었고, 이는 이전 대비 약 100 ms 줄어든 값이었다. 다만 이 감소는 기록자가 CPU보다 여전히 느리다고 평가한 수준으로, GPU 최적화만으로는 실시간성 요구가 충분히 해소되지 않았다. 이에 행렬곱(matmul)만 GPU로 실행하는 하이브리드 프로그램을 시도하는 등, 연산 일부를 GPU로 옮기는 방향의 후속 접근이 이어졌다. [근거:E00027,E00029,E00030]",
+              "이후 측정 정밀도를 높이기 위해 GPU 클록 고정, Persistence mode 설정 같은 환경 통제 방법이 검토되었다. cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12 μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐지만, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 구간에서 역전 현상이 나타났다. [근거:E00277,E00278,E00280,E00281,E00282,E00283,E00284,E00286]"
+            ],
+            "guideline_ids": [
+              "ref1_introduction_required_3"
+            ]
+          }
+        ],
+        "issues": [],
+        "reference_checks": [
+          {
+            "section_id": "S_intro",
+            "reference_id": "ref1_introduction",
+            "verdict": "applied",
+            "paragraph_ids": [
+              "S_intro_p1",
+              "S_intro_p2",
+              "S_intro_p3"
+            ],
+            "reason": "ref1_introduction의 서론 구성 방식(문제 상황 제시 → 기존 방법의 한계 대조 → 제안 목표와 기여 방향 정리)을 CUDA 기반 CROWN 검증의 실시간성 문제와 GPU 최적화 동기로 대체해 적용했다. 식물 스트레스 분류 관련 내용은 제외하고, 기존 CPU 중심 검증의 한계와 GPU 최적화 시도, 측정 환경 통제 맥락을 순서대로 서술했다.",
+            "quote": "신경망 검증은 안전이 중요한 환경에서 모델의 동작을 보장하는 데 쓰이지만, CROWN 검증은 대규모 선형 연산과 반복적 경계 계산을 수반해 연산 부담이 크다. 기존 연구는 CROWN을 주로 CPU 환경에서 실행해 왔으며, 이런 방식은 오프라인 조건에서는 제한적으로 빠른 결과를 낼 수 있어도 실시간 환경에서 요구되는 대규모 연산을 지속적으로 충족하기 어렵다. 따라서 본 연구는 CUDA 기반 CROWN 검증의 GPU 병렬화와 실시간성 최적화에 초점을 두고, GPU 환경에서 검증 연산이 실제 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:U9ff240a30b03c6835449]",
+            "paragraph_quotes": [
+              "신경망 검증은 안전이 중요한 환경에서 모델의 동작을 보장하는 데 쓰이지만, CROWN 검증은 대규모 선형 연산과 반복적 경계 계산을 수반해 연산 부담이 크다. 기존 연구는 CROWN을 주로 CPU 환경에서 실행해 왔으며, 이런 방식은 오프라인 조건에서는 제한적으로 빠른 결과를 낼 수 있어도 실시간 환경에서 요구되는 대규모 연산을 지속적으로 충족하기 어렵다. 따라서 본 연구는 CUDA 기반 CROWN 검증의 GPU 병렬화와 실시간성 최적화에 초점을 두고, GPU 환경에서 검증 연산이 실제 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하는 것을 목표로 한다. [근거:U9ff240a30b03c6835449]",
+              "초기 실험에서 GPU OPTIMIZED 모드(cuBLAS + Pool)로 CROWN 검증을 실행했을 때 경과 시간은 229.691800 ms로 기록되었고, 이는 이전 대비 약 100 ms 줄어든 값이었다. 다만 이 감소는 기록자가 CPU보다 여전히 느리다고 평가한 수준으로, GPU 최적화만으로는 실시간성 요구가 충분히 해소되지 않았다. 이에 행렬곱(matmul)만 GPU로 실행하는 하이브리드 프로그램을 시도하는 등, 연산 일부를 GPU로 옮기는 방향의 후속 접근이 이어졌다. [근거:E00027,E00029,E00030]",
+              "이후 측정 정밀도를 높이기 위해 GPU 클록 고정, Persistence mode 설정 같은 환경 통제 방법이 검토되었다. cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12 μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐지만, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 구간에서 역전 현상이 나타났다. [근거:E00277,E00278,E00280,E00281,E00282,E00283,E00284,E00286]"
+            ]
+          }
+        ],
+        "response_normalizations": [
+          {
+            "field": "checks",
+            "item_id": "RI_intro_2",
+            "removed_index": 1
+          }
+        ],
+        "approved": true,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 1,
+          "partial": 0,
+          "not_visible": 0,
+          "total": 1,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "assessment": "LLM assisted; quotes and IDs checked; not independent scientific verification"
+      }
+    ]
+  }
+}

@@ -1,0 +1,225 @@
+{
+  "request_fingerprint": "e6004fc2a126fed37d03a3de9ef02218cf9711ab62ce1df29140bd628f19a5e1",
+  "value": {
+    "facts": [
+      {
+        "statement": "작성자는 해당 측정이 잘못된 것이 아니라 CUDA와 컴퓨터 구조에서 유명한 '초소형 데이터(1 KB)의 역설'이 정직하게 나타난 것이라고 정리했다.",
+        "limits": "이 주장은 gemini 등 외부 조언에 기반한 해석으로, 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "측정이 잘못된 것이 아니라, CUDA와 컴퓨터 구조에서 매우 유명한 '초소형 데이터(1 KB)의 역설'이 정직하게 나타난 것"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p77:e596",
+          "p77:enh:e1"
+        ]
+      },
+      {
+        "statement": "교과서나 강의에서는 Pinned Memory가 무조건 빠르다고 가르치지만, 거기에는 '데이터가 충분히 클 때'라는 숨겨진 전제 조건이 있다고 설명되었다.",
+        "limits": "이 설명은 외부 조언/해석이며 실측 결과가 아니다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [],
+        "observations": [
+          "Pinned Memory가 무조건 빠르다",
+          "데이터가 충분히 클 때라는 숨겨진 전제 조건"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p77:e597",
+          "p77:enh:e2"
+        ]
+      },
+      {
+        "statement": "Pinned Memory는 CPU를 거치지 않고 PCIe 버스의 GPU DMA 엔진(Copy Engine)을 가동하며, PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1~2 마이크로초(0.0015 ms)가 걸린다고 설명되었다.",
+        "limits": "이 수치와 설명은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "Pinned Memory",
+          "GPU DMA 엔진(Copy Engine)"
+        ],
+        "observations": [
+          "PCIe DMA 엔진에 명령 패킷을 쏘고 트랜잭션을 시작(Setup)하는 하드웨어 오버헤드만 약 1~2 마이크로초(0.0015 ms)가 걸림",
+          "옆집(1KB) 가는데 KTX(DMA 엔진) 예매하고 탑승 수속 밟느라 오히려 시간이 더 걸린 것"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "PCIe DMA 엔진 셋업 하드웨어 오버헤드(설명값)",
+            "value": "1",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pinned Memory",
+            "element_ids": [
+              "p77:e602",
+              "p77:enh:e8"
+            ]
+          },
+          {
+            "metric": "PCIe DMA 엔진 셋업 하드웨어 오버헤드(설명값)",
+            "value": "2",
+            "value_kind": "scalar",
+            "unit": "us",
+            "condition": "Pinned Memory",
+            "element_ids": [
+              "p77:e602",
+              "p77:enh:e8"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p77:e602",
+          "p77:enh:e8"
+        ]
+      },
+      {
+        "statement": "92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 μs)가 누적되어 infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것이라고 설명되었다.",
+        "limits": "132초 vs 119초, 92만 번 루프, 1~2 μs 누적은 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "92만 번의 루프",
+          "infer 단계"
+        ],
+        "observations": [
+          "92만 번의 루프 동안 매번 DMA 셋업 오버헤드(1~2 μs)가 누적되다 보니, infer 단계에서 정확히 13초(132초 vs 119초)가 더 걸린 것"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "infer 단계 시간 차이(설명값)",
+            "value": "13",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "Pinned vs No-Pin, 92만 번 루프",
+            "element_ids": [
+              "p77:e603",
+              "p77:enh:e9"
+            ]
+          },
+          {
+            "metric": "Pinned infer 단계 시간(설명값)",
+            "value": "132",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "Pinned, 92만 번 루프",
+            "element_ids": [
+              "p77:e603",
+              "p77:enh:e9"
+            ]
+          },
+          {
+            "metric": "No-Pin infer 단계 시간(설명값)",
+            "value": "119",
+            "value_kind": "scalar",
+            "unit": "s",
+            "condition": "No-Pin, 92만 번 루프",
+            "element_ids": [
+              "p77:e603",
+              "p77:enh:e9"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p77:e603",
+          "p77:enh:e9"
+        ]
+      },
+      {
+        "statement": "작성자는 1,028 Byte(1 KB)에서 No-Pin(일반 메모리)이 더 빠른 이유를 하드웨어적 관점에서 설명하겠다고 제시하였다.",
+        "limits": "이 문장은 설명의 도입부로서, 실제 분석 결과가 아니라 설명을 예고하는 진술이다.",
+        "kind": "setup",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "1,028 Byte(1 KB)",
+          "No-Pin(일반 메모리)"
+        ],
+        "observations": [
+          "1,028 Byte(1 KB)에서 No-Pin(일반 메모리)이 더 빠른 이유를 하드웨어적 비밀을 명쾌하게 풀어드리겠다고 제시"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p77:e597",
+          "p77:enh:e3"
+        ]
+      },
+      {
+        "statement": "No-Pin(일반 메모리) 방식은 CPU가 직접 복사하는 방식이라고 설명되었다.",
+        "limits": "이는 설명의 항목 헤더로서, 구체적인 수치는 하위 항목(e600)에 제시된다.",
+        "kind": "setup",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "No-Pin(일반 메모리)"
+        ],
+        "observations": [
+          "No-Pin(일반 메모리)은 CPU가 직접 복사하는 방식"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p77:e599",
+          "p77:enh:e5"
+        ]
+      },
+      {
+        "statement": "1,028 Byte는 CPU 입장에서 너무나 작은 크기이며, CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝난다고 설명되었다.",
+        "limits": "이 수치는 외부 조언/해석이며 실측 결과로 확인되지는 않았다.",
+        "kind": "result",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "1,028 Byte(1 KB)",
+          "CPU L1 캐시",
+          "드라이버 내부 버퍼",
+          "No-Pin"
+        ],
+        "observations": [
+          "CPU L1 캐시에서 드라이버 내부 버퍼로 복사하는 데 불과 20~30 나노초(0.00003 ms)면 끝남",
+          "걸어서 옆집 가는 것과 같음"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "CPU L1 캐시 → 드라이버 내부 버퍼 복사 시간(설명값)",
+            "value": "20",
+            "value_kind": "scalar",
+            "unit": "ns",
+            "condition": "1,028 Byte(1 KB), No-Pin",
+            "element_ids": [
+              "p77:e600",
+              "p77:enh:e6"
+            ]
+          },
+          {
+            "metric": "CPU L1 캐시 → 드라이버 내부 버퍼 복사 시간(설명값)",
+            "value": "30",
+            "value_kind": "scalar",
+            "unit": "ns",
+            "condition": "1,028 Byte(1 KB), No-Pin",
+            "element_ids": [
+              "p77:e600",
+              "p77:enh:e6"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p77:e600",
+          "p77:enh:e6"
+        ]
+      }
+    ]
+  }
+}

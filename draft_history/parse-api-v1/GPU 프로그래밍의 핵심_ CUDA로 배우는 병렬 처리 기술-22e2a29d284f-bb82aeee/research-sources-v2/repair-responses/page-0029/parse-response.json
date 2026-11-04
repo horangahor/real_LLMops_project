@@ -1,0 +1,243 @@
+{
+  "api": "2.0",
+  "content": {
+    "html": "<p id='0' data-category='paragraph'>해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지?<br>cuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나</p>\n<p id='1' data-category='paragraph'>오후 8:14</p>\n<p id='2' data-category='paragraph'>지금은 cuSPARSE를 계속 확장하지 않는 편이 좋습니다. 24 ms baseline으로 돌아가고, cuSPARSE는 별도 실험으로 두세요.</p>\n<p id='3' data-category='paragraph'>느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다.</p>\n<ul id='4' data-category='list'><li>행렬 크기가 작고 layer가 3개뿐임</li><li>SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼</li><li>매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함</li><li>network_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함</li><li>cuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음</li></ul>\n<p id='5' data-category='paragraph'>특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다.</p>\n<p id='6' data-category='paragraph'>나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다.</p>\n<p id='7' data-category='paragraph'>혹시 몰라서 spMM까지 도입한 후에 결과를 봤다</p>",
+    "markdown": "해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지?\ncuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나\n\n오후 8:14\n\n지금은 cuSPARSE를 계속 확장하지 않는 편이 좋습니다. 24 ms baseline으로 돌아가고, cuSPARSE는 별도 실험으로 두세요.\n\n느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다.\n\n- 행렬 크기가 작고 layer가 3개뿐임\n- SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼\n- 매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함\n- network_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함\n- cuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음\n\n\n특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다.\n\n나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다.\n\n혹시 몰라서 spMM까지 도입한 후에 결과를 봤다",
+    "text": "해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지?\ncuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나\n오후 8:14\n지금은 cuSPARSE를 계속 확장하지 않는 편이 좋습니다. 24 ms baseline으로 돌아가고, cuSPARSE는 별도 실험으로 두세요.\n느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다.\n행렬 크기가 작고 layer가 3개뿐임\nSpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼\n매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함\nnetwork_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함\ncuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음\n특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다.\n나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다.\n혹시 몰라서 spMM까지 도입한 후에 결과를 봤다"
+  },
+  "elements": [
+    {
+      "id": 0,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='0' data-category='paragraph'>해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지?<br>cuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나</p>",
+        "markdown": "해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지?\ncuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나",
+        "text": "해봤는데 27ms 정도 나오네.. 4단계까지 했을때 최소 24ms까지 나왔는데 말이지.. 이러면 계속 진행해야하나? 근데 왜 이러지?\ncuSparse는 Nvidia에서 직접 최적화한 희소행렬 곱셈을 지원하는 거 아니었나"
+      },
+      "coordinates": [
+        {
+          "x": 0.295,
+          "y": 0.103
+        },
+        {
+          "x": 0.761,
+          "y": 0.103
+        },
+        {
+          "x": 0.761,
+          "y": 0.178
+        },
+        {
+          "x": 0.295,
+          "y": 0.178
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='1' data-category='paragraph'>오후 8:14</p>",
+        "markdown": "오후 8:14",
+        "text": "오후 8:14"
+      },
+      "coordinates": [
+        {
+          "x": 0.629,
+          "y": 0.195
+        },
+        {
+          "x": 0.764,
+          "y": 0.195
+        },
+        {
+          "x": 0.764,
+          "y": 0.21
+        },
+        {
+          "x": 0.629,
+          "y": 0.21
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='2' data-category='paragraph'>지금은 cuSPARSE를 계속 확장하지 않는 편이 좋습니다. 24 ms baseline으로 돌아가고, cuSPARSE는 별도 실험으로 두세요.</p>",
+        "markdown": "지금은 cuSPARSE를 계속 확장하지 않는 편이 좋습니다. 24 ms baseline으로 돌아가고, cuSPARSE는 별도 실험으로 두세요.",
+        "text": "지금은 cuSPARSE를 계속 확장하지 않는 편이 좋습니다. 24 ms baseline으로 돌아가고, cuSPARSE는 별도 실험으로 두세요."
+      },
+      "coordinates": [
+        {
+          "x": 0.133,
+          "y": 0.23
+        },
+        {
+          "x": 0.766,
+          "y": 0.23
+        },
+        {
+          "x": 0.766,
+          "y": 0.266
+        },
+        {
+          "x": 0.133,
+          "y": 0.266
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='3' data-category='paragraph'>느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다.</p>",
+        "markdown": "느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다.",
+        "text": "느려진 이유는 cuSPARSE가 최적화되지 않아서가 아니라 현재 workload가 cuSPARSE에 불리하기 때문입니다."
+      },
+      "coordinates": [
+        {
+          "x": 0.133,
+          "y": 0.279
+        },
+        {
+          "x": 0.776,
+          "y": 0.279
+        },
+        {
+          "x": 0.776,
+          "y": 0.315
+        },
+        {
+          "x": 0.133,
+          "y": 0.315
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "page": 1,
+      "category": "list",
+      "sub_category": "ul",
+      "content": {
+        "html": "<ul id='4' data-category='list'><li>행렬 크기가 작고 layer가 3개뿐임</li><li>SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼</li><li>매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함</li><li>network_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함</li><li>cuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음</li></ul>",
+        "markdown": "- 행렬 크기가 작고 layer가 3개뿐임\n- SpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼\n- 매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함\n- network_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함\n- cuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음\n",
+        "text": "행렬 크기가 작고 layer가 3개뿐임\nSpMV 호출 횟수가 적어 kernel/descriptor 생성 비용이 큼\n매 호출마다 cusparseDnVec 생성·삭제와 buffer size 계산을 함\nnetwork_forward() 가 여전히 layer마다 D2H → CPU vec_add → H2D를 수행함\ncuSPARSE는 대규모 sparse throughput에는 강하지만, 작은 연산의 latency에는 custom kernel이 더 빠를 수 있음"
+      },
+      "coordinates": [
+        {
+          "x": 0.139,
+          "y": 0.327
+        },
+        {
+          "x": 0.771,
+          "y": 0.327
+        },
+        {
+          "x": 0.771,
+          "y": 0.492
+        },
+        {
+          "x": 0.139,
+          "y": 0.492
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='5' data-category='paragraph'>특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다.</p>",
+        "markdown": "특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다.",
+        "text": "특히 현재는 cuSPARSE가 적용된 부분이 network_forward() 의 W*x 뿐이라 전체 24 ms 중 일부만 영향을 받는데, 그 일부에 오버헤드가 추가된 상황입니다."
+      },
+      "coordinates": [
+        {
+          "x": 0.133,
+          "y": 0.504
+        },
+        {
+          "x": 0.774,
+          "y": 0.504
+        },
+        {
+          "x": 0.774,
+          "y": 0.541
+        },
+        {
+          "x": 0.133,
+          "y": 0.541
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='6' data-category='paragraph'>나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다.</p>",
+        "markdown": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다.",
+        "text": "나중에 다시 시도한다면 descriptor와 buffer를 미리 만들어 재사용하고, network_forward() 전체를 GPU 상주로 만든 뒤 SpMV 를 평가해야 합니다. 지금은 24 ms 버전을 기준으로 유지하는 것이 합리적입니다."
+      },
+      "coordinates": [
+        {
+          "x": 0.133,
+          "y": 0.554
+        },
+        {
+          "x": 0.763,
+          "y": 0.554
+        },
+        {
+          "x": 0.763,
+          "y": 0.61
+        },
+        {
+          "x": 0.133,
+          "y": 0.61
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "page": 1,
+      "category": "paragraph",
+      "content": {
+        "html": "<p id='7' data-category='paragraph'>혹시 몰라서 spMM까지 도입한 후에 결과를 봤다</p>",
+        "markdown": "혹시 몰라서 spMM까지 도입한 후에 결과를 봤다",
+        "text": "혹시 몰라서 spMM까지 도입한 후에 결과를 봤다"
+      },
+      "coordinates": [
+        {
+          "x": 0.117,
+          "y": 0.634
+        },
+        {
+          "x": 0.524,
+          "y": 0.634
+        },
+        {
+          "x": 0.524,
+          "y": 0.65
+        },
+        {
+          "x": 0.117,
+          "y": 0.65
+        }
+      ]
+    }
+  ],
+  "model": "document-parse-260930",
+  "ocr": true,
+  "usage": {
+    "pages": 1,
+    "enhanced": [
+      1
+    ]
+  }
+}

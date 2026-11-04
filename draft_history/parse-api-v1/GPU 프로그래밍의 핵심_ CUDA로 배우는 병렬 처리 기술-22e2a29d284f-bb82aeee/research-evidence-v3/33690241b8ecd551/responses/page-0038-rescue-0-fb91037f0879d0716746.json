@@ -1,0 +1,255 @@
+{
+  "request_fingerprint": "fb91037f0879d07167463b7289fd61fe70d75bd0b7a86c0b3e6c288435c0e77d",
+  "value": {
+    "facts": [
+      {
+        "statement": "위 코드가 실행될 때 CPU는 net.act[l]이 가리키는 메모리 주소(Pointer)를 GPU에 넘겨주는 것이 아니고, CPU가 자기 메모리에서 net.act[l]의 값(예: Relu면 0, Sigmoid면 1)을 읽은 다음 그 숫자 자체를 GPU 커널 발사 시 매개변수 주머니(Constant Memory/Registers)에 넣어 같이 쏘아 보낸다.",
+        "limits": "net.act[l]의 전달 방식에 대한 설명. gemini(제미나이) 조언 기반.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "gemini에 따르면 섹션의 설명",
+          "CPU가 net.act[l]의 값을 읽어 GPU 커널 매개변수로 전달"
+        ],
+        "observations": [
+          "CPU는 net.act[l]의 포인터가 아닌 값을 읽음",
+          "Relu면 0, Sigmoid면 1과 같은 예시 값",
+          "Constant Memory/Registers에 넣어 GPU로 전달"
+        ],
+        "parameters": [
+          {
+            "name": "net.act[l] 값 예시",
+            "value": "Relu: 0, Sigmoid: 1",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:e261"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p38:e261"
+        ]
+      },
+      {
+        "statement": "ActivationType은 단순한 enum(내부적으로는 4바이트짜리 정수)이다.",
+        "limits": "ActivationType의 데이터 타입 특성. gemini 조언 기반.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "gemini에 따르면 섹션의 설명",
+          "ActivationType이 enum 타입"
+        ],
+        "observations": [
+          "내부적으로는 4바이트짜리 정수",
+          "단순한 enum 구조"
+        ],
+        "parameters": [
+          {
+            "name": "ActivationType 내부 크기",
+            "value": "4바이트",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p38:e262"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p38:e262"
+        ]
+      },
+      {
+        "statement": "ActivationType이 단순한 enum(4바이트 정수)이기 때문에 별도로 cudaMalloc이나 cudaMemcpy를 할 필요가 전혀 없고, 커널을 런칭할 때 값이 자동으로 GPU로 넘어가므로 속도 저하도 없다. 반면에 크기가 엄청나게 큰 배열이나 구조체 내부의 데이터는 값으로 넘기면 터지기 때문에 포인터(*d_out, *g_pool.d_weight)를 써서 cudaMemcpy로 올려두고 주소만 넘겨준 것이다.",
+        "limits": "enum과 대형 데이터 간 전달 방식 대비 설명. gemini 조언 기반.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "gemini에 따르면 섹션의 설명",
+          "enum은 cudaMalloc/cudaMemcpy 불필요",
+          "대형 배열/구조체는 포인터로 cudaMemcpy 후 주소 전달"
+        ],
+        "observations": [
+          "enum은 커널 런칭 시 값이 자동으로 GPU로 넘어감",
+          "속도 저하 없음",
+          "대형 배열/구조체 데이터는 값으로 넘기면 문제 발생",
+          "포인터(*d_out, *g_pool.d_weight)는 cudaMemcpy로 올려두고 주소만 전달"
+        ],
+        "parameters": [
+          {
+            "name": "enum 전달 방식",
+            "value": "자동 GPU 전달, cudaMalloc/cudaMemcpy 불필요",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:e263"
+            ]
+          },
+          {
+            "name": "대형 데이터 전달 방식",
+            "value": "포인터로 cudaMemcpy 후 주소 전달",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:e263"
+            ]
+          },
+          {
+            "name": "예시 포인터 변수",
+            "value": "*d_out, *g_pool.d_weight",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:e263"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p38:e263"
+        ]
+      },
+      {
+        "statement": "용량이 큰 덩어리는 포인터로 넘기고, 작은 숫자나 열거형(Enum)은 그냥 값으로 쏴줄 수 있다.",
+        "limits": "데이터 크기별 전달 방식 요약. gemini 조언 기반.",
+        "kind": "method",
+        "claim_status": "interpretation",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "gemini에 따르면 섹션의 요약 설명"
+        ],
+        "observations": [
+          "큰 덩어리(용량 큰 데이터)는 포인터로 전달",
+          "작은 숫자나 Enum은 값으로 전달 가능"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e264"
+        ]
+      },
+      {
+        "statement": "전환 heading '좀 더 정확히 설명해보자'가 존재하며, 이후 p39 페이지 내용으로 이어진다.",
+        "limits": "섹션 전환 heading. gemini 조언 기반 섹션의 일부.",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "ai_advice",
+        "conditions": [
+          "p38:e265 heading",
+          "p39 페이지로 이어지는 구조"
+        ],
+        "observations": [
+          "'좀 더 정확히 설명해보자' heading 존재",
+          "이후 p39:e266~p39:e269 내용으로 연결"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:e265"
+        ]
+      },
+      {
+        "statement": "이미지 OCR 주석: '// 3. GPU 내부에서 활성화 함수 적용'",
+        "limits": "코드 내 주석 내용. pdf_image_gap_ocr로 추출된 이미지 영역 텍스트.",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "p38 페이지 이미지 영역 OCR",
+          "GPU 내부 활성화 함수 적용 관련 주석"
+        ],
+        "observations": [
+          "GPU 내부에서 활성화 함수 적용하는 코드 섹션 주석"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:img0:e0"
+        ]
+      },
+      {
+        "statement": "이미지 OCR 주석: '// 여기서 CPU 메모리에 있는 net.act[1] 를 사용했는데, CUDA 커널 인자 방식을 이해해야함'",
+        "limits": "코드 내 주석 내용. pdf_image_gap_ocr로 추출된 이미지 영역 텍스트.",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "p38 페이지 이미지 영역 OCR",
+          "CPU 메모리의 net.act[1] 사용 및 CUDA 커널 인자 방식 이해 필요성 언급"
+        ],
+        "observations": [
+          "CPU 메모리에 있는 net.act[1] 사용",
+          "CUDA 커널 인자 방식 이해 필요"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p38:img0:e1"
+        ]
+      },
+      {
+        "statement": "이미지 OCR 코드 스니펫: 'apply_activation_gpu<<blocksPerGrid, 256>>>(net.act[1], d_out);'",
+        "limits": "실제 커널 호출 구문. pdf_image_gap_ocr로 추출된 이미지 영역 코드.",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "p38 페이지 이미지 영역 OCR",
+          "apply_activation_gpu 커널 호출",
+          "블록 수 blocksPerGrid, 스레드 수 256"
+        ],
+        "observations": [
+          "커널 이름: apply_activation_gpu",
+          "실행 구성: blocksPerGrid 블록, 블록당 256 스레드",
+          "인자: net.act[1] (CPU 메모리 enum 값), d_out (GPU 메모리 포인터)"
+        ],
+        "parameters": [
+          {
+            "name": "커널 이름",
+            "value": "apply_activation_gpu",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:img0:e2"
+            ]
+          },
+          {
+            "name": "블록 수",
+            "value": "blocksPerGrid",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:img0:e2"
+            ]
+          },
+          {
+            "name": "블록당 스레드 수",
+            "value": "256",
+            "value_kind": "scalar",
+            "element_ids": [
+              "p38:img0:e2"
+            ]
+          },
+          {
+            "name": "첫 번째 인자",
+            "value": "net.act[1]",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:img0:e2"
+            ]
+          },
+          {
+            "name": "두 번째 인자",
+            "value": "d_out",
+            "value_kind": "text",
+            "element_ids": [
+              "p38:img0:e2"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p38:img0:e2"
+        ]
+      }
+    ]
+  }
+}

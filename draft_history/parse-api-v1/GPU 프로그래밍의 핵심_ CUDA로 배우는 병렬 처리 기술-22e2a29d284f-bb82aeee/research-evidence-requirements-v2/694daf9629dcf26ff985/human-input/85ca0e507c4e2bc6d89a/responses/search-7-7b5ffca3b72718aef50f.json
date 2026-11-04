@@ -1,0 +1,427 @@
+{
+  "request_fingerprint": "7b5ffca3b72718aef50f160df36b707e1ad97489f0077bbdf9201899de73368b",
+  "value": {
+    "title": "구성 요소별 역할·결합 방식·상호작용 효과 근거 검토",
+    "facts": [
+      {
+        "statement": "구성 요소별 역할: forward_only, forward+backward, backward_only의 세 검증 모드가 각각 eps별 T/F 판정, ratio, 연산 시간을 산출한다.",
+        "limits": "p65:e512, p65:e518, p65:e519, p66:e521, p66:e527",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p65:e512",
+          "p65:e518",
+          "p65:e519",
+          "p66:e521",
+          "p66:e527"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: backward_only는 graph로 만들지 않은 상태에서도 bound 평균이 forward 대비 약 2.5배 수준으로 측정되었다.",
+        "limits": "p72:e561",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e561"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: backward_only에서 final_affine까지 복사(true)로 인해 한 번의 bound 계산에서 10번 memcpy가 발생했고, false로 변경 시 memcpy 6번으로 줄었다.",
+        "limits": "p72:e561, p72:e562",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e561",
+          "p72:e562"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: 그래프 적용 후 backward_only가 787.8832s로 측정되어 forward(1029s), forward+backward(1138s)보다 빨랐다.",
+        "limits": "p72:e567",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e567"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: 배치 사이즈 64일 때 약 424초 소요, 배치 사이즈 1024일 때 1024개의 독립 스트림을 만들어 GPU 메모리를 점유하는 방식으로 동작한다.",
+        "limits": "p67:e534, p67:e535",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p67:e534",
+          "p67:e535"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: 현재 C++ 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들며, 각 스트림이 GPU 메모리를 차지한다.",
+        "limits": "p67:e535",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p67:e535"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: 단일 샘플 연산 커널을 64개 스트림에 각각 런치하고 일반 CUDA 코어(FP32 연산기)만 사용하며, 1024개 처리에 수만 번의 커널 호출이 필요해 8분 소요된다.",
+        "limits": "p68:e543",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e543"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: antenna_lirpa(PyTorch)는 1024개 입력을 [1024,16,491] 크기의 3D 텐서 하나로 병합하고 스트림 1개에서 단 1번의 cuBLAS GEMM 커널 호출로 RTX 4070 SUPER의 텐서 코어를 풀가동해 2분 미만 완료된다.",
+        "limits": "p68:e543",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e543"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: 방법 B는 CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산)에 직접 blockIdx.z를 넣어 3차원 배칭 커널을 작성하는 방식이고, 방법 C는 CROWN 연산 시간의 80% 이상을 차지하는 행렬 곱셈만 cuBLAS(cublasSgemmBatched)로 교체하는 하이브리드 방식이다.",
+        "limits": "p71:e555, p71:e557",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e555",
+          "p71:e557"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: 방법 C는 CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS로 교체한다.",
+        "limits": "p71:e557",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e557"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: cudaHostRegister(HostRegister)와 cudaHostAlloc(HostAlloc), No Pinning(일반 메모리) 세 가지 메모리 방식을 비교 측정했다.",
+        "limits": "p72:e571",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e571"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: cudaHostAlloc은 매 루프마다 *pinned_in = dataset[i];(1,028바이트)를 92만 번 수행하며 약 8.64초의 CPU 메모리 복사 지연이 누적되었다.",
+        "limits": "p73:e576",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p73:e576"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: 입력 벡터는 256차원(FP32)으로 1,024 Byte(1 KB)에 불과해 전송 시간이 1~2μs 수준으로 전체 지연에서 미미하다.",
+        "limits": "p73:e579",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p73:e579"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: 단일 샘플 처리 시간(~840μs) 중 85% 이상(약 716μs)이 순수 GPU 커널 연산(CROWN 역전파 행렬 계산) 시간이다.",
+        "limits": "p73:e580",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p73:e580"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: Bound 단계(전체의 85%)에서 cudaHostRegister가 658.80s로 No Pinning 663.17s보다 4.37초 빨랐고, Infer 단계(전체의 15%)에서는 cudaHostRegister가 127.18s로 No Pinning 111.92s보다 15.26초 느렸다.",
+        "limits": "p74:e582",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p74:e582"
+        ]
+      },
+      {
+        "statement": "구성 요소별 역할: GPU 클록을 2800MHz로 고정하고 기존 HostRegister 방식으로 재측정했다.",
+        "limits": "p75:e588",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p75:e588"
+        ]
+      },
+      {
+        "statement": "결합 방식: 현재 C++ 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만드는 방식으로, 각 스트림이 하나의 입력을 처리하고 GPU 메모리를 점유한다.",
+        "limits": "p67:e535",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p67:e535"
+        ]
+      },
+      {
+        "statement": "결합 방식: 현재 C++ 멀티스트림 방식은 단일 샘플 연산 커널을 64개 스트림에 각각 런치하고, 1024개를 처리하려면 수만 번의 커널 호출이 필요하다.",
+        "limits": "p68:e543",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e543"
+        ]
+      },
+      {
+        "statement": "결합 방식: antenna_lirpa는 1024개 입력을 [1024,16,491] 크기의 3D 텐서 하나로 병합하고 스트림 1개에서 단 1번의 cuBLAS GEMM 커널 호출로 동작한다.",
+        "limits": "p68:e543",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p68:e543"
+        ]
+      },
+      {
+        "statement": "결합 방식: 방법 B는 행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 직접 blockIdx.z를 넣어 3차원 배칭 커널로 결합한다.",
+        "limits": "p71:e555",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e555"
+        ]
+      },
+      {
+        "statement": "결합 방식: 방법 C는 CROWN 전용 연산(ReLU 완화 계수 계산 등)은 방법 B의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS(cublasSgemmBatched)로 교체하는 하이브리드 방식으로 결합한다.",
+        "limits": "p71:e557",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p71:e557"
+        ]
+      },
+      {
+        "statement": "결합 방식: backward_only에서 final_affine까지 복사(true) 시 한 번의 bound 계산에서 10번 memcpy가 발생했고, false로 변경 시 memcpy 6번으로 줄었다.",
+        "limits": "p72:e561, p72:e562",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e561",
+          "p72:e562"
+        ]
+      },
+      {
+        "statement": "결합 방식: memcpy 10번에서 6번으로 줄이고 그래프를 적용한 결과 2578초에서 1543초로 줄었고, 그래프 적용 후 787.8832s로 측정되었다.",
+        "limits": "p72:e565, p72:e566, p72:e567",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e565",
+          "p72:e566",
+          "p72:e567"
+        ]
+      },
+      {
+        "statement": "상호작용 효과: cudaHostAlloc은 CPU 루프 내 복사 오버헤드가 그대로 반영되어 약 8.64초의 CPU 메모리 복사 지연이 누적되었다.",
+        "limits": "p73:e576",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p73:e576"
+        ]
+      },
+      {
+        "statement": "상호작용 효과: No Pinning(일반 메모리)과 Pinned 메모리의 차이가 크지 않은 이유는 입력 크기가 1KB로 극히 작고, GPU 연산 시간이 전체의 85% 이상을 차지해 전송 방식 영향이 미미하기 때문이다.",
+        "limits": "p73:e578, p73:e579, p73:e580",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p73:e578",
+          "p73:e579",
+          "p73:e580"
+        ]
+      },
+      {
+        "statement": "상호작용 효과: cudaHostRegister가 No Pinning보다 전체 11초(1.4%) 느리게 측정된 것은 Bound 단계에서는 Register가 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 15.26초 역전되었기 때문이다.",
+        "limits": "p74:e582",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p74:e582"
+        ]
+      },
+      {
+        "statement": "상호작용 효과: backward_only가 graph로 만들지 않았어도 bound 평균이 forward 대비 약 2.5배 수준으로 측정되었다.",
+        "limits": "p72:e561",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e561"
+        ]
+      },
+      {
+        "statement": "상호작용 효과: 그래프 적용 후 backward_only가 787.8832s로 측정되어 forward(1029s), forward+backward(1138s)보다 빨랐다.",
+        "limits": "p72:e567",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p72:e567"
+        ]
+      },
+      {
+        "statement": "상호작용 효과: GPU 클록을 2800MHz로 고정하고 기존 HostRegister 방식으로 재측정했다.",
+        "limits": "p75:e588",
+        "kind": "method",
+        "claim_status": "observed",
+        "source_origin": "implementation_code",
+        "conditions": [],
+        "observations": [],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p75:e588"
+        ]
+      }
+    ],
+    "coverage": {}
+  }
+}

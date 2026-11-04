@@ -1,0 +1,688 @@
+{
+  "status": "validated",
+  "rejected_attempts": [
+    {
+      "response": {
+        "facts": [
+          {
+            "statement": "Forward 테스트와 Backward 테스트는 각각 40000개의 데이터에 대해서만 수행되었다.",
+            "limits": "이 내용은 테스트 데이터 규모에 대한 기록이며, 92만개 데이터 테스트와의 비교 해석은 별도 문맥이 필요하다.",
+            "kind": "setup",
+            "claim_status": "documented_method",
+            "source_origin": "research_note",
+            "conditions": [
+              "Forward 테스트: 40000개 데이터",
+              "Backward 테스트: 40000개 데이터"
+            ],
+            "observations": [],
+            "parameters": [
+              {
+                "name": "Forward 테스트 데이터 규모",
+                "value": "40000",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:e334",
+                  "p47:e335"
+                ]
+              },
+              {
+                "name": "Backward 테스트 데이터 규모",
+                "value": "40000",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:e334",
+                  "p47:e335"
+                ]
+              }
+            ],
+            "measurements": [],
+            "element_ids": [
+              "p47:e334",
+              "p47:e335"
+            ],
+            "requirement_ids": [
+              "methods_Q3",
+              "methods_Q14"
+            ],
+            "supplemental_reason": "테스트 데이터 규모가 40000개로 제한되어 있어, 이후 92만개 데이터 테스트와의 비교 해석에 제약이 있음을 명시한다."
+          },
+          {
+            "statement": "Forward와 Backward의 cudaMemcpy 호출 횟수는 동일하다.",
+            "limits": "이 내용은 호출 횟수에 대한 관측 기록이며, 호출당 시간이나 총 실행 시간과의 관계는 별도 문맥이 필요하다.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "Forward와 Backward의 cudaMemcpy 호출 횟수 동일"
+            ],
+            "observations": [],
+            "parameters": [],
+            "measurements": [],
+            "element_ids": [
+              "p47:e336"
+            ],
+            "requirement_ids": [
+              "methods_Q1",
+              "methods_Q7"
+            ],
+            "supplemental_reason": "호출 횟수가 동일함에도 실행 시간과 cudaMemcpy 시간이 다른 현상이 관측되어, 공정 비교를 위해 호출 횟수 외 시간 분포 분석이 필요함을 시사한다."
+          },
+          {
+            "statement": "Forward 전체 실행 시간은 약 64s, Backward 전체 실행 시간은 약 98s이다. 동일한 호출 횟수임에도 불구하고 forward의 cudaMemcpy 시간이 많이 잡히는 점이 눈에 띈다.",
+            "limits": "이 내용은 전체 실행 시간과 cudaMemcpy 시간에 대한 관측 기록이며, 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "Forward 전체 실행 시간 약 64s",
+              "Backward 전체 실행 시간 약 98s",
+              "동일한 호출 횟수",
+              "Forward의 cudaMemcpy 시간이 많이 잡힘"
+            ],
+            "observations": [
+              "동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 많이 잡히는 점이 의문"
+            ],
+            "parameters": [
+              {
+                "name": "Forward 전체 실행 시간",
+                "value": "64",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:e337"
+                ]
+              },
+              {
+                "name": "Backward 전체 실행 시간",
+                "value": "98",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:e337"
+                ]
+              }
+            ],
+            "measurements": [
+              {
+                "metric": "Forward 전체 실행 시간",
+                "value": "64",
+                "value_kind": "scalar",
+                "unit": "s",
+                "condition": "40000개 데이터 테스트, forward 실행",
+                "element_ids": [
+                  "p47:e337"
+                ]
+              },
+              {
+                "metric": "Backward 전체 실행 시간",
+                "value": "98",
+                "value_kind": "scalar",
+                "unit": "s",
+                "condition": "40000개 데이터 테스트, backward 실행",
+                "element_ids": [
+                  "p47:e337"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p47:e337"
+            ],
+            "requirement_ids": [
+              "methods_Q1",
+              "methods_Q8",
+              "evaluation_Q1"
+            ],
+            "supplemental_reason": "동일 호출 횟수에도 forward의 cudaMemcpy 시간이 더 많이 측정되는 현상은 memcpy 오버헤드 분석의 중요한 관측 지점이다."
+          },
+          {
+            "statement": "단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만, 92만개의 데이터를 돌리면 비슷해진다 (1분 정도 차이). 이 문제는 아직 해결하지 못했다.",
+            "limits": "이 내용은 관측된 현상과 미해결 상태에 대한 기록이며, 원인 분석이나 해결 방안은 제시되지 않았다.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "단일 테스트 forward/backward 3배 차이",
+              "92만개 데이터 실행 시 비슷해짐",
+              "1분 정도 차이",
+              "아직 해결 못함"
+            ],
+            "observations": [
+              "단일 테스트에서는 3배 차이가 나야 하는데 92만개 데이터에서는 비슷해짐"
+            ],
+            "parameters": [
+              {
+                "name": "단일 테스트 예상 차이",
+                "value": "3배",
+                "value_kind": "text",
+                "element_ids": [
+                  "p47:e338"
+                ]
+              },
+              {
+                "name": "92만개 데이터 실행 시 차이",
+                "value": "1분 정도",
+                "value_kind": "text",
+                "element_ids": [
+                  "p47:e338"
+                ]
+              },
+              {
+                "name": "해결 상태",
+                "value": "아직 해결 못함",
+                "value_kind": "text",
+                "element_ids": [
+                  "p47:e338"
+                ]
+              }
+            ],
+            "measurements": [],
+            "element_ids": [
+              "p47:e338"
+            ],
+            "requirement_ids": [
+              "methods_Q13",
+              "evaluation_Q3",
+              "limitations_Q6"
+            ],
+            "supplemental_reason": "데이터 규모에 따라 forward/backward 간 성능 차이가 달라지는 현상은 방법론의 확장성 해석에 중요한 미해결 과제이다."
+          },
+          {
+            "statement": "프로그램 전체 실행에서 memcpy 호출은 총 18번이며, 이 중 내부 6번을 제외하면 외부에서 12번 발생한다. 가중치 행은 3개(가중치 + 가중치 양수부/음수부 + bias)이며, 신경망 구조 256 * 491 * 491 * 16에 따라 개수만큼 복사된다.",
+            "limits": "이 내용은 memcpy 호출 횟수에 대한 분석 기록이며, 실제 복사량이나 성능 영향과의 정량적 관계는 별도 확인이 필요하다.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "프로그램 전체 실행 기준",
+              "memcpy 총 18번",
+              "내부 6번 제외 시 외부 12번",
+              "가중치 행 3개(가중치 + 양수부/음수부 + bias)",
+              "신경망 구조 256 * 491 * 491 * 16"
+            ],
+            "observations": [],
+            "parameters": [
+              {
+                "name": "memcpy 총 호출 횟수",
+                "value": "18",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:e332",
+                  "p47:e333"
+                ]
+              },
+              {
+                "name": "외부 memcpy 호출 횟수",
+                "value": "12",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:e332"
+                ]
+              },
+              {
+                "name": "가중치 행 개수",
+                "value": "3",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:e333"
+                ]
+              },
+              {
+                "name": "신경망 구조",
+                "value": "256 * 491 * 491 * 16",
+                "value_kind": "text",
+                "element_ids": [
+                  "p47:e332"
+                ]
+              }
+            ],
+            "measurements": [],
+            "element_ids": [
+              "p47:e332",
+              "p47:e333"
+            ],
+            "requirement_ids": [
+              "methods_Q1",
+              "methods_Q14"
+            ],
+            "supplemental_reason": "memcpy 호출 횟수 분석은 메모리 복사 최적화 방향 설정에 중요한 근거를 제공한다."
+          },
+          {
+            "statement": "cudaMemcpy 통계: Total Time 40.726s, Num Calls 240000, Avg 169.691μs, Med 18.120μs, Min 3.599μs, Max 7.616ms, StdDev 316.565μs.",
+            "limits": "이 수치는 특정 실행 조건의 cudaMemcpy 통계이며, 다른 조건과의 비교 해석이나 반복 측정 통계는 제시되지 않았다.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "cudaMemcpy 통계 측정"
+            ],
+            "observations": [],
+            "parameters": [
+              {
+                "name": "cudaMemcpy Total Time",
+                "value": "40.726",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "name": "cudaMemcpy Num Calls",
+                "value": "240000",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "name": "cudaMemcpy Avg",
+                "value": "169.691",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "name": "cudaMemcpy Med",
+                "value": "18.120",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "name": "cudaMemcpy Min",
+                "value": "3.599",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "name": "cudaMemcpy Max",
+                "value": "7.616",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "name": "cudaMemcpy StdDev",
+                "value": "316.565",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              }
+            ],
+            "measurements": [
+              {
+                "metric": "cudaMemcpy Total Time",
+                "value": "40.726",
+                "value_kind": "scalar",
+                "unit": "s",
+                "condition": "cudaMemcpy 호출 통계",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy Num Calls",
+                "value": "240000",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "cudaMemcpy 호출 통계",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy Avg",
+                "value": "169.691",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "cudaMemcpy 호출 통계",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy Med",
+                "value": "18.120",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "cudaMemcpy 호출 통계",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy Min",
+                "value": "3.599",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "cudaMemcpy 호출 통계",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy Max",
+                "value": "7.616",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "cudaMemcpy 호출 통계",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy StdDev",
+                "value": "316.565",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "cudaMemcpy 호출 통계",
+                "element_ids": [
+                  "p47:img0:e0"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p47:img0:e0"
+            ],
+            "requirement_ids": [
+              "methods_Q8",
+              "evaluation_Q1"
+            ],
+            "supplemental_reason": "cudaMemcpy의 평균과 중앙값 간 큰 차이(169.691μs vs 18.120μs)는 일부 호출에서 극단적인 지연이 발생함을 시사한다."
+          },
+          {
+            "statement": "CROWN_SWEEP 실행 시간 64.064s.",
+            "limits": "이 수치는 특정 실행 조건의 CROWN_SWEEP 시간이며, 다른 조건과의 비교 해석이나 반복 측정 통계는 제시되지 않았다.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "CROWN_SWEEP 실행 시간 측정"
+            ],
+            "observations": [],
+            "parameters": [
+              {
+                "name": "CROWN_SWEEP 실행 시간",
+                "value": "64.064",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img1:e0"
+                ]
+              }
+            ],
+            "measurements": [
+              {
+                "metric": "CROWN_SWEEP 실행 시간",
+                "value": "64.064",
+                "value_kind": "scalar",
+                "unit": "s",
+                "condition": "CROWN_SWEEP 실행",
+                "element_ids": [
+                  "p47:img1:e0"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p47:img1:e0"
+            ],
+            "requirement_ids": [
+              "methods_Q8",
+              "evaluation_Q1"
+            ],
+            "supplemental_reason": "CROWN_SWEEP 전체 실행 시간은 forward/backward 개별 시간 합계와 차이가 있어, 추가 오버헤드 요소 분석이 필요하다."
+          },
+          {
+            "statement": "실행 통계: cudaLaunchh 18.527s (2160000 calls), cudaMemcpy 11.332s (240000 calls), cudaMemset 2.121s (160000 calls), cuKernelGetN 392.770ms (2160000 calls), cuLibraryGetK 16.718μs (18 calls).",
+            "limits": "이 수치는 특정 실행 조건의 통계이며, 다른 조건과의 비교 해석이나 반복 측정 통계는 제시되지 않았다.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "실행 통계 측정"
+            ],
+            "observations": [],
+            "parameters": [
+              {
+                "name": "cudaLaunchh Total Time",
+                "value": "18.527",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "name": "cudaLaunchh Num Calls",
+                "value": "2160000",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "name": "cudaMemcpy Total Time",
+                "value": "11.332",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "name": "cudaMemcpy Num Calls",
+                "value": "240000",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "name": "cudaMemset Total Time",
+                "value": "2.121",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "name": "cudaMemset Num Calls",
+                "value": "160000",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "name": "cuKernelGetN Total Time",
+                "value": "392.770",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "name": "cuKernelGetN Num Calls",
+                "value": "2160000",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "name": "cuLibraryGetK Total Time",
+                "value": "16.718",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "name": "cuLibraryGetK Num Calls",
+                "value": "18",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              }
+            ],
+            "measurements": [
+              {
+                "metric": "cudaLaunchh Total Time",
+                "value": "18.527",
+                "value_kind": "scalar",
+                "unit": "s",
+                "condition": "실행 통계",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "metric": "cudaLaunchh Num Calls",
+                "value": "2160000",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "실행 통계",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy Total Time",
+                "value": "11.332",
+                "value_kind": "scalar",
+                "unit": "s",
+                "condition": "실행 통계",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemcpy Num Calls",
+                "value": "240000",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "실행 통계",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemset Total Time",
+                "value": "2.121",
+                "value_kind": "scalar",
+                "unit": "s",
+                "condition": "실행 통계",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "metric": "cudaMemset Num Calls",
+                "value": "160000",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "실행 통계",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "metric": "cuKernelGetN Total Time",
+                "value": "392.770",
+                "value_kind": "scalar",
+                "unit": "ms",
+                "condition": "실행 통계",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "metric": "cuKernelGetN Num Calls",
+                "value": "2160000",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "실행 통계",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "metric": "cuLibraryGetK Total Time",
+                "value": "16.718",
+                "value_kind": "scalar",
+                "unit": "μs",
+                "condition": "실행 통계",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              },
+              {
+                "metric": "cuLibraryGetK Num Calls",
+                "value": "18",
+                "value_kind": "scalar",
+                "unit": "회",
+                "condition": "실행 통계",
+                "element_ids": [
+                  "p47:img2:e0"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p47:img2:e0"
+            ],
+            "requirement_ids": [
+              "methods_Q8",
+              "evaluation_Q1"
+            ],
+            "supplemental_reason": "cudaLaunchh가 전체 시간의 가장 큰 비중(18.527s)을 차지하여, 커널 실행 오버헤드 최적화가 중요함을 보여준다."
+          },
+          {
+            "statement": "CROWN_SWEEP 실행 시간 98.995s.",
+            "limits": "이 수치는 특정 실행 조건의 CROWN_SWEEP 시간이며, 다른 조건과의 비교 해석이나 반복 측정 통계는 제시되지 않았다.",
+            "kind": "result",
+            "claim_status": "observed",
+            "source_origin": "research_note",
+            "conditions": [
+              "CROWN_SWEEP 실행 시간 측정"
+            ],
+            "observations": [],
+            "parameters": [
+              {
+                "name": "CROWN_SWEEP 실행 시간",
+                "value": "98.995",
+                "value_kind": "scalar",
+                "element_ids": [
+                  "p47:img3:e0"
+                ]
+              }
+            ],
+            "measurements": [
+              {
+                "metric": "CROWN_SWEEP 실행 시간",
+                "value": "98.995",
+                "value_kind": "scalar",
+                "unit": "s",
+                "condition": "CROWN_SWEEP 실행",
+                "element_ids": [
+                  "p47:img3:e0"
+                ]
+              }
+            ],
+            "element_ids": [
+              "p47:img3:e0"
+            ],
+            "requirement_ids": [
+              "methods_Q8",
+              "evaluation_Q1"
+            ],
+            "supplemental_reason": "Backward CROWN_SWEEP 시간이 Forward보다 약 35초 더 길어, backward 연산의 추가 최적화 필요성을 시사한다."
+          }
+        ],
+        "existing_links": []
+      },
+      "validation_error": "facts[0]: 추출 근거의 원문이 대상 페이지에 없습니다.\nfacts[1]: 추출 근거의 원문이 대상 페이지에 없습니다.\nfacts[2]: 추출 근거의 원문이 대상 페이지에 없습니다.\nfacts[3]: 추출 근거의 원문이 대상 페이지에 없습니다.\nfacts[4]: 추출 근거의 원문이 대상 페이지에 없습니다.\nfacts[5]: 추출 근거의 원문이 대상 페이지에 없습니다.\nfacts[6]: 추출 근거의 원문이 대상 페이지에 없습니다.\nfacts[7]: 추출 근거의 원문이 대상 페이지에 없습니다.\nfacts[8]: 추출 근거의 원문이 대상 페이지에 없습니다."
+    }
+  ],
+  "normalizations": []
+}

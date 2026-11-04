@@ -1,0 +1,596 @@
+{
+  "request_fingerprint": "e32fe92127a2ed1b2768a82deacd3e1e15653e2644e068d5dc06fdac71d64e87",
+  "value": {
+    "facts": [
+      {
+        "statement": "CUDA 커널의 매개변수 중 포인터(배열)는 반드시 cudaMalloc으로 할당된 GPU 메모리여야 하며, cudaMemcpy로 VRAM에 미리 옮겨둔 후 커널에는 주소만 전달해야 한다.",
+        "limits": "배열이나 거대한 행렬은 크기가 너무 커서 CPU가 커널 실행 시 데이터를 모두 싸들고 던져줄 수 없기 때문",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "CUDA 프로그래밍",
+          "커널 매개변수 전달"
+        ],
+        "observations": [
+          "포인터(배열)는 반드시 GPU 메모리여야 함",
+          "cudaMalloc으로 할당하고 cudaMemcpy로 VRAM에 옮겨둔 후 주소만 커널에 전달"
+        ],
+        "parameters": [
+          {
+            "name": "데이터 전달 방식",
+            "value": "cudaMalloc + cudaMemcpy 후 주소 전달",
+            "value_kind": "text",
+            "element_ids": [
+              "p39:e266"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p39:e266"
+        ]
+      },
+      {
+        "statement": "CUDA 커널의 매개변수 중 스칼라(단일 숫자: int, float, double, enum 등)는 CPU 변수를 그대로 사용할 수 있다.",
+        "limits": "스칼라 크기는 4바이트~8바이트로 작아서 CPU가 커널 실행 명령(Launch) 시 실행 명령서 귀퉁이에 포스트잇처럼 값을 붙여서 함께 전달할 수 있음 (Parameter Bank 또는 Constant Memory)",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "CUDA 프로그래밍",
+          "커널 매개변수 전달",
+          "스칼라 값"
+        ],
+        "observations": [
+          "int, float, double, enum 같은 단일 숫자들은 크기가 4바이트~8바이트",
+          "CPU가 커널 실행 명령을 GPU로 쏠 때 cudaMemcpy 없이 값을 함께 전달 가능",
+          "matvec_bias_gpu<<<blocksPerGrid, 256>>>에서 256이나 blocksPerGrid 같은 CPU 쪽 숫자 변수들을 자유롭게 전달 가능"
+        ],
+        "parameters": [
+          {
+            "name": "스칼라 크기 범위",
+            "value": "4바이트~8바이트",
+            "value_kind": "range",
+            "element_ids": [
+              "p39:e266"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p39:e266"
+        ]
+      },
+      {
+        "statement": "포인터 변수는 memcpy를 써서 올려야 하며, 참조할 크기가 매우 크기 때문에 CPU가 그 내용을 전부 직접 복사해서 커널 함수의 매개변수 주머니에 값을 넣어줄 수 없다.",
+        "limits": "크기가 큰 데이터는 CPU가 커널 함수의 매개변수 주머니에 직접 넣을 수 없음",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "포인터 변수",
+          "memcpy 사용"
+        ],
+        "observations": [
+          "포인터 변수는 memcpy를 써서 올려야 함",
+          "참조할 크기가 매우 큼",
+          "CPU가 내용을 전부 직접 복사해서 커널 함수의 매개변수 주머니에 값을 넣어줄 수 없음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e267"
+        ]
+      },
+      {
+        "statement": "값만 나오는 경우(4~8바이트까지는 가능) CPU가 직접 그 부분을 참조해서 값을 쏴줄 수 있다.",
+        "limits": "4~8바이트 크기의 값에 한정",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "스칼라 값 전달",
+          "4~8바이트"
+        ],
+        "observations": [
+          "값만 나오는 경우 4~8바이트까지는 CPU가 직접 참조해서 값을 전달 가능"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e268"
+        ]
+      },
+      {
+        "statement": "p39:e269 요소는 '결과는'이라는 transitional phrase를 포함하며, 이후 p40:e270의 CROWN 검증 결과로 이어짐.",
+        "limits": "독립적 연구 주장이 아닌 문맥 연결 표현",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "'결과는'이라는 문구로 이후 결과 제시를 예고함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p39:e269"
+        ]
+      },
+      {
+        "statement": "CROWN 검증 실행 결과 elapsed time이 16.914800ms로 측정됨",
+        "limits": "eps=1e-06, mempool + warmup calc, Output Dimension 16",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps=1e-06",
+          "mempool + warmup calc",
+          "Output Dimension 16"
+        ],
+        "observations": [
+          "CROWN 검증 실행 완료",
+          "mempool + warmup calc 성공",
+          "Output Dimension 16"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "16.9148",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CROWN 검증, eps=1e-06, mempool + warmup calc, Output Dimension 16",
+            "element_ids": [
+              "p40:e270"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p40:e270"
+        ]
+      },
+      {
+        "statement": "CROWN 검증 출력(p40:e270)은 Output Dimension 16에 대해 Index, Lower Bound, Upper Bound, inference(y) 열로 구성된 경계값 테이블을 포함함",
+        "limits": "각 차원의 구체적 하한/상한/inference 수치는 원문에 표기되어 있으나, 모든 셀을 개별 사실로 나열하지 않음",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps=1e-06",
+          "mempool + warmup calc",
+          "Output Dimension 16"
+        ],
+        "observations": [
+          "CROWN 검증 출력 테이블에 Index, Lower Bound, Upper Bound, inference(y) 열이 존재함",
+          "Output Dimension은 16이며, 인덱스 0~15까지 16개 행의 경계값이 표시됨",
+          "각 행의 Lower Bound, Upper Bound, inference(y) 수치는 p40:e270 원문에 표기됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:e270"
+        ]
+      },
+      {
+        "statement": "제목 '1 6 초 후반까지 나오게 됨'(p40:e271)은 최적화 후 elapsed time이 16ms 후반대에 도달했음을 가리키는 관찰 기록임",
+        "limits": "'16초 후반'이라는 표기는 단위 표기 오류로 보이며, 실제 측정 단위는 ms임(동일 문서 내 p41:e279는 '15ms 후반'으로 표기). 최적화 이전 대비 감소 폭이나 비교 기준은 이 요소 자체에 명시되지 않음.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "제목 '1 6 초 후반까지 나오게 됨'은 최적화 후 elapsed time이 16ms 후반대에 도달했음을 가리키는 관찰 기록"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:e271"
+        ]
+      },
+      {
+        "statement": "Nsight compute에서 memcpy 호출 1건이 확인됨 (전체 66 matches 중 1번째)",
+        "limits": "Begins 0.385727s, Ends 0.38664s (+913.313 μs)",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "Nsight compute 캡처"
+        ],
+        "observations": [
+          "Nsight compute 캡처에서 '1 of 66 matches' 표시",
+          "Call to cudaMemcpy 라벨 확인",
+          "Memory copies 카테고리 확인"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "cudaMemcpy 호출",
+            "value": "1",
+            "value_kind": "scalar",
+            "unit": "건",
+            "condition": "Nsight compute 캡처, Begins 0.385727s, Ends 0.38664s, +913.313 μs",
+            "element_ids": [
+              "p40:e272"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p40:e272"
+        ]
+      },
+      {
+        "statement": "페이지 40의 막대 차트(p40:e273)는 Description, Call to cudaMemcpy, Memory copies, Begins, Ends 열을 가지며 item_01 행에 66, 58, 30, 10, 385727 값이 표기되어 있음. USD 접미사는 OCR/파싱 아티팩트로 추정됨.",
+        "limits": "차트 데이터의 정확한 해석이나 연구 내용 매핑은 원문에서 명확히 확인되지 않음. USD 접미사는 OCR/파싱 아티팩트로 추정됨.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "막대 차트에 Description, Call to cudaMemcpy, Memory copies, Begins, Ends 열이 존재함",
+          "item_01 행에 66, 58, 30, 10, 385727 값이 표기됨",
+          "값에 USD 접미사가 붙어 있음"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:e273"
+        ]
+      },
+      {
+        "statement": "호출 횟수 비교 시 memcpy가 66개에서 56개로 줄어듦",
+        "limits": "호출 횟수 기준 비교",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "memcpy 호출 횟수가 66개에서 56개로 감소"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "memcpy 호출 횟수",
+            "value": "56",
+            "value_kind": "scalar",
+            "unit": "개",
+            "condition": "변경 후",
+            "element_ids": [
+              "p40:e274"
+            ]
+          },
+          {
+            "metric": "memcpy 호출 횟수",
+            "value": "66",
+            "value_kind": "scalar",
+            "unit": "개",
+            "condition": "변경 전",
+            "element_ids": [
+              "p40:e274"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p40:e274"
+        ]
+      },
+      {
+        "statement": "Nsight compute 인터페이스에서 '2 of 56 matches' 위치 표시가 확인됨",
+        "limits": "이는 UI 매치 위치 표시 텍스트로, 56은 변경 후 memcpy 호출 수(p40:e274의 56개와 일치)를 가리킴. '2 of'는 전체 56건 중 두 번째 매칭을 의미.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "Nsight compute 캡처 화면에서 '2 of 56 matches' 텍스트가 표시됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:img2:e0"
+        ]
+      },
+      {
+        "statement": "Nsight compute 테이블의 열 헤더로 'Name'이 확인됨",
+        "limits": "Nsight compute 메모리 복사 분석 테이블의 열 제목.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "Nsight compute 테이블 열 헤더에 'Name' 텍스트가 존재"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:img2:e1"
+        ]
+      },
+      {
+        "statement": "Nsight compute 테이블의 Name 열에 'memcpy' 값이 확인됨",
+        "limits": "이는 메모리 복사 호출의 이름/타입 라벨.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "Name 열에 'memcpy' 텍스트가 표기됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:img2:e2"
+        ]
+      },
+      {
+        "statement": "Nsight compute UI 캡처 화면에 돋보기 아이콘, 왼쪽 화살표 아이콘, 오른쪽 화살표 아이콘, 필름 스트립 아이콘이 관찰됨",
+        "limits": "이는 Nsight compute 인터페이스의 UI 장식/네비게이션 요소로, 연구 데이터나 측정값이 아님. 아이콘의 구체적 기능은 UI 문맥상 추정됨.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "돋보기 아이콘(빛나는 파란색 렌즈와 회색 손잡이)이 존재함",
+          "흰색 왼쪽 화살표 아이콘(회색 테두리와 그림자)이 존재함",
+          "흰색 오른쪽 화살표 아이콘(회색 테두리와 그림자)이 존재함",
+          "파란색 필름 스트립 아이콘(빨강/파랑 가로 밴드, 초록 막대 위)이 존재함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:img2:e3",
+          "p40:img2:e4",
+          "p40:img2:e5",
+          "p40:img2:e6"
+        ]
+      },
+      {
+        "statement": "Nsight compute 테이블에 Start, Duration, TID 열과 함께 memcpy 호출 기록이 표로 존재함. 표에는 0.398832s/26.601μs/14016, 0.398862s/1.084ms/14016, 0.399947s/192.590μs/14016의 값이 표기됨.",
+        "limits": "이는 Nsight compute의 메모리 복사 이벤트 분석 테이블로, Start/Duration/TID 열의 구체적 수치가 OCR을 통해 확인됨. 표의 행 수나 이벤트 수에 대한 명시적 진술은 원문에 없음.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "테이블에 Start, Duration, TID 열이 존재함",
+          "0.398832s, 26.601μs, 14016 값이 표기됨",
+          "0.398862s, 1.084ms, 14016 값이 표기됨",
+          "0.399947s, 192.590μs, 14016 값이 표기됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:img2:e7"
+        ]
+      },
+      {
+        "statement": "Nsight compute 테이블에 'Description:' 열 헤더가 확인됨",
+        "limits": "테이블의 설명(Description) 열 제목.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "테이블에 'Description:' 열 헤더가 존재"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:img2:e8"
+        ]
+      },
+      {
+        "statement": "Nsight compute에 'Call to cudaMemcpy' 라벨이 확인됨",
+        "limits": "메모리 복사 호출 유형을 나타내는 라벨.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "'Call to cudaMemcpy' 텍스트 라벨이 존재"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:img2:e9"
+        ]
+      },
+      {
+        "statement": "Nsight compute에 '■ Memory copies' 카테고리 라벨이 확인됨",
+        "limits": "메모리 복사 관련 이벤트 카테고리 표시.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "'■ Memory copies' 카테고리 라벨이 존재"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:img2:e10"
+        ]
+      },
+      {
+        "statement": "Nsight compute 테이블에 Begins: 0.399947s, Ends: 0.40014s (+192.590 μs) 타이밍 정보가 표로 존재함.",
+        "limits": "이는 특정 메모리 복사 이벤트의 시작/종료 시간 및 지속 시간을 나타내는 타이밍 테이블임. 해당 이벤트가 전체 56건 중 어느 것인지에 대한 명시적 연결은 원문에 없음.",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "Begins: 0.399947s 값이 표기됨",
+          "Ends: 0.40014s (+192.590 μs) 값이 표기됨"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p40:img2:e11"
+        ]
+      },
+      {
+        "statement": "p41:e275 요소는 '============================================================' 구분선을 포함함.",
+        "limits": "독립적 연구 주장이 아닌 시각적 구분자",
+        "kind": "setup",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "구분선 텍스트가 존재함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e275"
+        ]
+      },
+      {
+        "statement": "backward_bound_gpu에서 기존에는 GPU (backward_bound_gpu 계산결과) -> CPU 이후 CPU에서 affine_min/max를 통해 계산을 수행한 후 최종결과를 얻는 방식이었으며, 이 때 affine_min/max도 GPU에서 계산이 돌아가기 때문에 GPU -> CPU -> GPU -> CPU 불필요한 복사가 발생되었다.",
+        "limits": "기존 방식의 불필요한 메모리 복사 패턴",
+        "kind": "problem",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_bound_gpu",
+          "affine_min/max 계산"
+        ],
+        "observations": [
+          "기존 방식: GPU (backward_bound_gpu 계산결과) -> CPU 이후 CPU에서 affine_min/max 계산 수행 후 최종결과 획득",
+          "affine_min/max도 GPU에서 계산이 돌아감",
+          "GPU -> CPU -> GPU -> CPU 불필요한 복사 발생"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e276"
+        ]
+      },
+      {
+        "statement": "affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU -> CPU 메모리 복사를 최소화함",
+        "limits": "개선 방식: affine_min/max를 backward_bound_gpu 내에서 실행",
+        "kind": "method",
+        "claim_status": "documented_method",
+        "source_origin": "research_note",
+        "conditions": [
+          "backward_bound_gpu 개선",
+          "affine_min/max GPU 실행"
+        ],
+        "observations": [
+          "affine_min/max까지 backward_bound_gpu에서 실행되도록 개선",
+          "GPU -> CPU 메모리 복사 최소화"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e277"
+        ]
+      },
+      {
+        "statement": "CROWN 검증 최적화 결과 elapsed time이 15.828400ms로 측정됨",
+        "limits": "eps=1e-06, mempool + warmup calc, Output Dimension 16",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [
+          "eps=1e-06",
+          "mempool + warmup calc",
+          "Output Dimension 16"
+        ],
+        "observations": [
+          "CROWN 검증 실행 완료",
+          "mempool + warmup calc 성공",
+          "Output Dimension 16"
+        ],
+        "parameters": [],
+        "measurements": [
+          {
+            "metric": "Elapsed time",
+            "value": "15.8284",
+            "value_kind": "scalar",
+            "unit": "ms",
+            "condition": "CROWN 검증 최적화 후, eps=1e-06, mempool + warmup calc, Output Dimension 16",
+            "element_ids": [
+              "p41:e278"
+            ]
+          }
+        ],
+        "element_ids": [
+          "p41:e278"
+        ]
+      },
+      {
+        "statement": "CROWN 검증 최적화 결과는 15ms 후반까지 나옴",
+        "limits": "최적화 후 elapsed time이 15ms 후반대에 도달했음을 가리키는 관찰 기록",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "최적화 후 elapsed time이 15ms 후반대까지 감소"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e279"
+        ]
+      },
+      {
+        "statement": "해 본 결과 추가로 최적화 부분을 찾음",
+        "limits": "추가 최적화 가능성 발견",
+        "kind": "result",
+        "claim_status": "observed",
+        "source_origin": "research_note",
+        "conditions": [],
+        "observations": [
+          "추가 최적화 부분을 발견함"
+        ],
+        "parameters": [],
+        "measurements": [],
+        "element_ids": [
+          "p41:e280"
+        ]
+      },
+      {
+        "statement": "GPU 안에서 최종 정답 계산을 위한 커널 퓨전 가능성이 제시됨: affine_min_gpu와 affine_max_gpu 커널을 blocksPerGrid, 256 블록/스레드로 실행",
+        "limits": "커널 퓨전 가능할 것으로 추정됨 (아직 구현되지 않음)",
+        "kind": "method",
+        "claim_status": "hypothesis",
+        "source_origin": "research_note",
+        "conditions": [
+          "affine_min_gpu",
+          "affine_max_gpu",
+          "커널 퓨전"
+        ],
+        "observations": [
+          "affine_min_gpu<<<blocksPerGrid, 256>>>(lower_M, lower_p, d_xl, d_xu, d_final_lower) 커널 호출",
+          "affine_max_gpu<<<blocksPerGrid, 256>>>(upper_M, upper_p, d_xl, d_xu, d_final_upper) 커널 호출",
+          "이 부분 커널 퓨전 가능할듯"
+        ],
+        "parameters": [
+          {
+            "name": "affine_min_gpu 블록/스레드 구성",
+            "value": "blocksPerGrid, 256",
+            "value_kind": "text",
+            "element_ids": [
+              "p41:e281"
+            ]
+          },
+          {
+            "name": "affine_max_gpu 블록/스레드 구성",
+            "value": "blocksPerGrid, 256",
+            "value_kind": "text",
+            "element_ids": [
+              "p41:e281"
+            ]
+          }
+        ],
+        "measurements": [],
+        "element_ids": [
+          "p41:e281",
+          "p41:e282"
+        ]
+      }
+    ]
+  }
+}
