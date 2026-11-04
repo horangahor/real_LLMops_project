@@ -10,6 +10,11 @@ from research_dedup import RELATION_LABELS
 
 ORIGIN_LABELS = {"research_note": "연구노트", "measurement_log": "실행·측정 로그", "implementation_code": "구현 코드",
                  "quoted_instruction": "인용된 안내·요청", "ai_advice": "AI 조언", "unknown": "확인 필요"}
+GATE_CATEGORIES = {"missing_content": "내용 누락", "response_failure": "모델 응답 실패", "source_unavailable": "원문 없음",
+                   "unreviewed": "미검토", "other": "기타", "non_research": "구분선·제목·연결 문장",
+                   "acronym_only": "약어 표기만 다름", "reread_duplicate": "재판독 중복",
+                   "unreadable_image": "판독 불가 이미지", "quarantined_fact": "검증 제외 후보",
+                   "human_accepted": "사람이 진행 허용"}
 
 
 @st.cache_data(show_spinner=False)
@@ -143,6 +148,25 @@ def _render_exclusion_control(package, fact, target_type="fact", measure=None, i
                 st.rerun()
             except (OSError, ValueError, TypeError) as error:
                 st.error(f"제외 기록을 저장하지 못했습니다: {error}")
+
+
+def _render_gate_acceptance(package, blocking):
+    st.caption("원문을 확인한 뒤, 이 항목이 비어 있어도 초안을 써도 되면 이유와 함께 진행을 허용할 수 있습니다. "
+               "허용한 항목은 경고로 남고, 항목 내용이 바뀌면 다시 확인합니다.")
+    with st.form("comprehensive_gate_accept"):
+        item = st.selectbox("항목", [row["item"] for row in blocking], format_func=lambda value: value[:120])
+        reason = st.text_input("허용 이유", placeholder="원문 확인 결과 초안에 필요 없는 전환 문장임")
+        submitted = st.form_submit_button("확인 완료: 작성 진행 허용")
+    if submitted:
+        if not reason.strip():
+            st.warning("허용 이유를 적어주세요.")
+            return
+        from research_extract_v3 import accept_gate_item
+        try:
+            accept_gate_item(package, item, reason)
+            st.rerun()
+        except (OSError, ValueError, TypeError) as error:
+            st.error(f"허용 기록을 저장하지 못했습니다: {error}")
 
 
 def _problem_lines(fact, excluded_measurement_indices=None):
@@ -606,8 +630,25 @@ def render_research_evidence(package):
         if completion := package.get("completion"):
             st.write(f"원문 대조: {completion['pages_reviewed']}/{completion['source_pages']}쪽 · {completion['elements_reviewed']}/{completion['source_elements']}개 요소")
             st.caption("모든 요소를 검토했다는 기록입니다. 문서 전체의 의미가 100% 정확하게 추출됐다는 보증은 아닙니다.")
+            gate = completion.get("gate")
             if not completion["ready_for_drafting"]:
-                st.warning("누락·판독·원문 뒷받침 미해결 항목이 있어 본문 생성을 보류합니다.")
+                if gate:
+                    st.warning(f"작성을 막는 원문 항목 {len(gate['blocking'])}개가 남아 본문 생성을 보류합니다. "
+                               f"경고 {len(gate['warnings'])}개는 생성을 막지 않습니다.")
+                else:
+                    st.warning("누락·판독·원문 뒷받침 미해결 항목이 있어 본문 생성을 보류합니다.")
+            elif gate and gate["warnings"]:
+                st.info(f"본문 생성 가능. 검토 권장 경고 {len(gate['warnings'])}개가 있습니다.")
+            if gate:
+                with st.expander(f"작성을 막는 항목 {len(gate['blocking'])}개", expanded=False):
+                    for row in gate["blocking"]:
+                        st.write(f"[{GATE_CATEGORIES.get(row['category'], row['category'])}] {row['item']}")
+                    if gate["blocking"]:
+                        _render_gate_acceptance(package, gate["blocking"])
+                with st.expander(f"경고 항목 {len(gate['warnings'])}개 (생성을 막지 않음)", expanded=False):
+                    for row in gate["warnings"]:
+                        reason = f" · 허용 사유: {row['reason']}" if row.get("reason") else ""
+                        st.write(f"[{GATE_CATEGORIES.get(row['category'], row['category'])}] {row['item']}{reason}")
             with st.expander("원문별 수집 대장과 미해결 항목", expanded=False):
                 for issue in completion["unresolved_source_items"]:
                     st.write(issue)

@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
+from comprehensive_policy import apply_comprehensive_policy
 from document_parse import filesystem_path, write_json
 from config import SOLAR_MODEL
 from paper_plan import normalize_research, object_schema
@@ -542,6 +543,7 @@ def load_saved_evidence(pdf, base_dir):
             changed = apply_saved_human_reviews(value)
             changed = apply_saved_human_exclusions(value) or changed
             changed = apply_saved_duplicate_decisions(value) or changed
+            changed = apply_policy(value) or changed
             if changed:
                 write_json(candidate, value)
                 (candidate.parent / "evidence.md").write_text(render_evidence(value), encoding="utf-8")
@@ -575,6 +577,38 @@ def _source_element_records(extraction):
         raise ValueError("원문 문맥 자료를 찾을 수 없습니다. 저장된 근거를 다시 불러와 주세요.")
     value = json.loads(path.read_text(encoding="utf-8"))
     return {item["element_id"]: item for item in value.get("elements", [])}
+
+
+def apply_policy(extraction, elements=None):
+    """Comprehensive collection only: decimal-comma flags and the blocking/warning drafting gate."""
+    if extraction.get("run_dir"):
+        path = filesystem_path(Path(extraction["run_dir"]) / "human-gate-decisions.json")
+        if path.is_file():
+            extraction["human_gate_decisions"] = json.loads(path.read_text(encoding="utf-8"))["decisions"]
+    if elements is None:
+        try:
+            elements = _source_element_records(extraction)
+        except ValueError:
+            elements = None
+    return apply_comprehensive_policy(extraction, elements, refresh=_refresh_research_from_review)
+
+
+def accept_gate_item(extraction, item, reason):
+    """Record a person's decision that a blocking source item may stay open while drafting proceeds."""
+    if item not in extraction.get("completion", {}).get("blocking_source_items", []):
+        raise ValueError("현재 작성을 막는 항목이 아닙니다. 저장된 근거를 다시 불러와 주세요.")
+    if not reason.strip():
+        raise ValueError("진행을 허용하는 이유를 적어 주세요.")
+    run_dir = extraction["run_dir"]
+    path = filesystem_path(Path(run_dir) / "human-gate-decisions.json")
+    stored = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {"decisions": []}
+    stored["decisions"].append({"item": item, "decision": "accept", "reason": reason.strip(),
+                                "decided_at": datetime.now(timezone.utc).isoformat()})
+    write_json(path, stored)
+    apply_policy(extraction)
+    write_json(Path(run_dir) / "evidence.json", extraction)
+    (Path(run_dir) / "evidence.md").write_text(render_evidence(extraction), encoding="utf-8")
+    return extraction
 
 
 def _refresh_research_from_review(extraction):
@@ -727,6 +761,7 @@ def set_human_evidence_exclusion(extraction, target_type, fact_id, target_id, re
     stored.setdefault("events", []).append(record)
     write_json(path, stored)
     apply_saved_human_exclusions(extraction)
+    apply_policy(extraction)
     write_json(Path(run_dir) / "evidence.json", extraction)
     (Path(run_dir) / "evidence.md").write_text(render_evidence(extraction), encoding="utf-8")
     return record
@@ -801,6 +836,7 @@ def run_semantic_duplicate_review(extraction, engine):
     diagnostics["duplicate_unassigned_candidate_pairs"] = result["unassigned_candidate_pair_count"]
     diagnostics["duplicate_review_status"] = result["status"]
     write_json(Path(extraction["run_dir"]) / "semantic-duplicate-review.json", result)
+    apply_policy(extraction)
     write_json(Path(extraction["run_dir"]) / "evidence.json", extraction)
     filesystem_path(Path(extraction["run_dir"]) / "evidence.md").write_text(
         render_evidence(extraction), encoding="utf-8")
@@ -849,6 +885,7 @@ def resolve_semantic_duplicate_group(extraction, group_id, decision, keep_fact_i
     stored.setdefault("events", []).append(review)
     write_json(path, stored)
     apply_saved_duplicate_decisions(extraction)
+    apply_policy(extraction)
     write_json(Path(run_dir) / "evidence.json", extraction)
     filesystem_path(Path(run_dir) / "evidence.md").write_text(render_evidence(extraction), encoding="utf-8")
     return review
@@ -951,6 +988,7 @@ def run_unconfirmed_recovery(extraction, engine):
     _refresh_research_from_review(extraction)
     report.update(_recheck_recovery_sources(extraction, engine, elements, changed_pages, folder))
     write_json(folder / "recovery-report.json", report)
+    apply_policy(extraction)
     write_json(Path(extraction["run_dir"]) / "evidence.json", extraction)
     filesystem_path(Path(extraction["run_dir"]) / "evidence.md").write_text(render_evidence(extraction), encoding="utf-8")
     return report
@@ -975,6 +1013,7 @@ def confirm_recovered_duplicate(extraction, fact_id, engine=None):
         record["human_confirmation_source_audit"] = audit
         extraction.setdefault("human_review_warnings", []).extend(audit["ledger_recheck_errors"])
         write_json(folder / "audit.json", audit)
+        apply_policy(extraction)
         write_json(Path(extraction["run_dir"]) / "evidence.json", extraction)
         filesystem_path(Path(extraction["run_dir"]) / "evidence.md").write_text(render_evidence(extraction), encoding="utf-8")
     return saved
@@ -1069,6 +1108,7 @@ def approve_human_fact(extraction, fact_id, review_id, reviewed_fact):
         reviews[existing_index] = review
     write_json(review_path, stored)
     _apply_human_fact_review(extraction, review)
+    apply_policy(extraction)
     write_json(Path(run_dir) / "evidence.json", extraction)
     (Path(run_dir) / "evidence.md").write_text(render_evidence(extraction), encoding="utf-8")
     return review
@@ -1186,6 +1226,7 @@ def approve_rejected_measurement(extraction, fact_id, review_id, edited_measurem
         reviews[existing_index] = review
     write_json(review_path, stored)
     _apply_measurement_review(extraction, review)
+    apply_policy(extraction)
     write_json(Path(run_dir) / "evidence.json", extraction)
     (Path(run_dir) / "evidence.md").write_text(render_evidence(extraction), encoding="utf-8")
     return review
@@ -1740,6 +1781,7 @@ def extract_evidence(pdf, engine):
     progress(engine, 99, "중복 후보를 묶고 원문 문맥으로 관계를 검토 중")
     run_semantic_duplicate_review(result, engine)
     apply_saved_duplicate_decisions(result)
+    apply_policy(result, elements)
     write_json(folder / "evidence.json", result)
     (folder / "evidence.md").write_text(render_evidence(result), encoding="utf-8")
     return result
