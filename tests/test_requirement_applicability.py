@@ -58,6 +58,20 @@ class ApplicabilityTests(unittest.TestCase):
                 assess_applicability(engine, Path(tmp), bank(), original)
         self.assertEqual(engine.call.call_count, 1)
 
+    def test_duplicate_signal_source_ids_are_normalized_before_validation(self):
+        engine = Mock()
+        engine.call.side_effect = [
+            {"signals": [{"requirement_id": "training", "status": "applicable",
+                "element_ids": ["p1:e1", "p1:e1"], "reason": "학습 수행 기록"}]},
+            {"status": "applicable", "support_element_ids": ["p1:e1"], "reason": "적용"}]
+        with TemporaryDirectory() as tmp:
+            _, original = source(Path(tmp), "학습을 수행했다.")
+            result = assess_applicability(engine, Path(tmp), bank(), original)
+            saved = json.loads((Path(tmp) / "applicability.json").read_text(encoding="utf-8"))
+        self.assertEqual(result["training"]["support_element_ids"], ["p1:e1"])
+        self.assertEqual(saved["signals"]["training"][0]["element_ids"], ["p1:e1"])
+        self.assertEqual(saved["normalizations"][0]["kind"], "duplicate_element_ids")
+
     def test_conflicting_signals_can_remain_uncertain_with_preserved_source(self):
         engine = Mock()
         engine.call.side_effect = [{"signals": [

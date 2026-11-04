@@ -226,7 +226,8 @@ with st.sidebar:
         st.caption("기본 학술지 가이드라인 적용")
 
     st.markdown("#### 3. 초안 검토")
-    st.caption("장별 작성 후 근거 검토 → 종합 편집 → 재검토를 진행합니다. 주요 오류가 남으면 후보 초안으로 분리합니다.")
+    st.caption("소절은 본문과 사용 근거를 대조하고, 장별·전체 편집은 중복·연결·문체를 검토합니다." if adaptive else
+               "장별 작성 후 근거 검토 → 종합 편집 → 재검토를 진행합니다. 주요 오류가 남으면 후보 초안으로 분리합니다.")
 
     st.divider()
     requirements_btn = st.button("근거 요구사항만 만들기", use_container_width=True,
@@ -335,7 +336,7 @@ if generate_btn or plan_btn or extract_btn or requirements_btn or resume_request
         def progress_cb(pct, msg):
             progress_bar.progress(pct, text=msg)
 
-        with st.spinner("골든 작성지침에서 공통 질문을 만들고 있습니다..." if requirements_btn else "연구 근거를 수집하고 검토 중입니다..." if extract_btn else "장별 초안을 작성하고 전체 논문의 흐름을 종합 편집 중입니다..."):
+        with st.spinner("골든 작성지침에서 공통 질문을 만들고 있습니다..." if requirements_btn else "연구 근거를 수집하고 검토 중입니다..." if extract_btn else "소절별 작성·검토와 장별·전체 편집을 진행 중입니다..." if adaptive else "장별 초안을 작성하고 전체 논문의 흐름을 종합 편집 중입니다..."):
             pipeline_request = resume_request or dict(
                 research_pdf_path=temp_pdf_path, planning_mode="adaptive" if adaptive else "legacy_cuda",
                 project_id="cuda" if data_source_mode in ("CUDA 원본 PDF 자동 분석", "내장된 CUDA 연구 데이터 사용") else "generic",

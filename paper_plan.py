@@ -82,6 +82,40 @@ def reference_catalog(reference):
     return catalog
 
 
+def prepare_planning_research(research):
+    """Keep planning facts/decisions, leaving extraction audit history in research.json."""
+    result = copy.deepcopy(research)
+    for fact in result["facts"]:
+        # These explain extraction decisions; claim restrictions remain in limits,
+        # support, writing_role, evidence_limitations and the original fact fields.
+        for field in ("support_note", "supplemental_reason"):
+            fact.pop(field, None)
+        if len(result["facts"]) > 40:
+            fact["sources"] = [{k: v for k, v in source.items() if k != "quote"}
+                               for source in fact.get("sources", [])]
+    requirements = result.get("evidence_requirements")
+    if isinstance(requirements, dict):
+        # The current, user-adjusted guides are supplied separately in the packet.
+        for field in ("reference_guides", "input_fingerprint", "run_dir"):
+            requirements.pop(field, None)
+    for row in result.get("requirement_coverage", {}).values():
+        row.pop("original_assessment", None)
+        row.pop("reason", None)
+    for row in result.get("requirement_applicability", {}).values():
+        for field in ("sources", "support_element_ids"):
+            row.pop(field, None)
+    if "human_guidance" in result:
+        question_ids = {q["id"] for q in (requirements or {}).get("requirements", [])} if isinstance(requirements, dict) else set()
+        latest = {row["question_id"]: row for row in result["human_guidance"]}
+        result["human_guidance"] = list(latest.values())
+        for row in result["human_guidance"]:
+            if row["question_id"] in question_ids:
+                row.pop("question", None)
+            for field in ("original_assessment", "created_at", "pending_id"):
+                row.pop(field, None)
+    return result
+
+
 def object_schema(properties):
     return {"type": "object", "properties": properties, "required": list(properties), "additionalProperties": False}
 
@@ -124,8 +158,28 @@ def bind_plan_evidence(plan, research, profile=None):
             section["depends_on"] = [key for key in section["depends_on"] if key not in omitted]
     bindings = []
     labels = []
+    normalizations = copy.deepcopy(result.get("evidence_id_normalizations", []))
+
+    def deduplicate_evidence(owner, section_id, item_id=None):
+        values = owner.get("evidence_ids")
+        if not isinstance(values, list) or any(not isinstance(v, str) or not v.strip() for v in values):
+            raise ValueError(f"장 계획의 evidence_ids 목록이 잘못됐습니다. 장={section_id}, 항목={item_id}")
+        seen, unique, removed = set(), [], []
+        for identifier in values:
+            if identifier in seen:
+                removed.append(identifier)
+            else:
+                seen.add(identifier)
+                unique.append(identifier)
+        if removed:
+            owner["evidence_ids"] = unique
+            normalizations.append({"section_id": section_id, "item_id": item_id,
+                                   "removed_duplicate_ids": removed})
+
     for section in result["sections"]:
+        deduplicate_evidence(section, section["id"])
         for item in section["required_items"]:
+            deduplicate_evidence(item, section["id"], item.get("id"))
             if item.get("guideline_ids") is None:
                 item["guideline_ids"] = []
         for field in ("table_ids", "reference_ids"):
@@ -148,12 +202,13 @@ def bind_plan_evidence(plan, research, profile=None):
             section["evidence_ids"].extend(additions)
             bindings.append({"section_id": section["id"], "added_from_explicit_requirements": additions})
     result["evidence_binding"] = bindings
+    result["evidence_id_normalizations"] = normalizations
     result["label_normalizations"] = labels
     result["omitted_empty_related_work"] = omitted
     return result
 
 
-def validate_plan(plan, research, catalog, profile):
+def validate_plan(plan, research, catalog, profile, allow_table_overlap=False):
     if not isinstance(plan, dict) or not isinstance(plan.get("title"), str) or not plan["title"].strip() or "\n" in plan["title"]:
         raise ValueError("작성 계획의 제목이 필요합니다.")
     sections = plan.get("sections")
@@ -189,8 +244,10 @@ def validate_plan(plan, research, catalog, profile):
             raise ValueError("사용 가능한 역할별 골든 가이드가 계획에 연결되지 않았습니다.")
         if section["reference_ids"] and not section.get("reference_adaptation", "").strip():
             raise ValueError("골든 가이드를 어떻게 적용할지 설명이 필요합니다.")
-        if any(key not in tables or key in used_tables for key in section["table_ids"]):
-            raise ValueError("표가 없거나 여러 장에 중복 배치됐습니다.")
+        if any(key not in tables for key in section["table_ids"]):
+            raise ValueError("계획에 존재하지 않는 표가 있습니다.")
+        if not allow_table_overlap and any(key in used_tables for key in section["table_ids"]):
+            raise ValueError("표가 여러 장에 중복 배치됐습니다.")
         for key in section["table_ids"]:
             if not set(tables[key]["evidence_ids"]) <= set(section["evidence_ids"]):
                 raise ValueError("표의 근거가 해당 장에 없습니다.")

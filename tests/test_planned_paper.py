@@ -42,6 +42,12 @@ class FakeClient:
     def __call__(self, system, packet, schema, path):
         self.calls.append((system, packet))
         properties = schema["properties"]
+        if packet.get("operation") == "editorial_review":
+            return {"issues": [{"section_id": packet["outline"][0]["id"], "paragraph_id": "none", "category": "flow",
+                                "severity": "error", "reason": "검토 미통과 시험"}] if self.reject else []}
+        if "findings" in properties:
+            from review_test_support import confirmed_findings
+            return confirmed_findings(packet, schema)
         if "generation_order" in properties:
             return copy.deepcopy(self.plan)
         if "parts" in properties:
@@ -67,15 +73,22 @@ class PlannedPaperTests(unittest.TestCase):
         section["required_items"][0]["subsection_index"] = 0
         section["required_items"].append({"id": "item_scope", "description": "조건 B의 한계를 설명한다.",
                                           "evidence_ids": ["F2"], "guideline_ids": [], "subsection_index": 1})
+        data = research()
+        data["facts"].append({"id": "F3", "statement": "이번 소절에서 다루지 않는 별도 관측이다.",
+                              "limits": "모의 자료다.", "sources": []})
+        section["evidence_ids"].append("F3")
         with tempfile.TemporaryDirectory() as temporary:
             fake = FakeClient(value)
-            result = PlannedPaper(temporary, fake).run(research(), plan_only=True)
+            result = PlannedPaper(temporary, fake).run(data, plan_only=True)
             folder = Path(result["run_dir"])
             first = json.loads((folder / "contexts/subsections/s1-p0.json").read_text(encoding="utf-8"))
             second = json.loads((folder / "contexts/subsections/s1-p1.json").read_text(encoding="utf-8"))
             self.assertTrue((folder / "context-allocation.json").is_file())
             self.assertEqual([f["id"] for f in first["facts"]], ["F1"])
             self.assertEqual([f["id"] for f in second["facts"]], ["F2"])
+            self.assertEqual(result["context_allocation"][1]["section_only_evidence_ids"], ["F3"])
+            saved_research = json.loads((folder / "research.json").read_text(encoding="utf-8"))
+            self.assertEqual(saved_research["facts"], data["facts"])
             self.assertEqual(first["allocation"], "explicit")
             self.assertFalse((folder / "draft.md").exists())
         self.assertEqual(len(fake.calls), 1)
@@ -115,7 +128,7 @@ class PlannedPaperTests(unittest.TestCase):
         section["required_items"][0]["guideline_ids"] = ["ref1_methods_required_1"]
         validate_plan(value, research(), catalog, project_profile("generic"))
 
-    def test_criterion_links_reach_writer_reviewer_and_saved_report_without_extra_calls(self):
+    def test_criterion_links_reach_scoped_writer_reviewers_and_saved_report(self):
         value = plan()
         section = value["sections"][1]
         section.update(reference_ids=["ref1_methods"], reference_adaptation="동일 입력에서 비교한 조건을 제시한다.")
@@ -126,11 +139,12 @@ class PlannedPaperTests(unittest.TestCase):
             result = PlannedPaper(temporary, fake).run(research(), self.criterion_reference())
             saved = json.loads((Path(result["run_dir"]) / "review.json").read_text(encoding="utf-8"))
         writer = next(packet for _, packet in fake.calls if packet.get("section_plan", {}).get("id") == "s1")
-        reviewer = next(packet for _, packet in fake.calls if "draft_paragraphs" in packet)
+        reviewer = next(packet for _, packet in fake.calls
+                        if "plan" in packet and "draft_paragraphs" in packet and packet["plan"]["sections"][0]["id"] == "s1")
         self.assertEqual(writer["section_plan"]["required_items"][0]["guideline_ids"], ["ref1_methods_required_1"])
-        self.assertEqual(reviewer["plan"]["sections"][1]["required_items"][0]["guideline_ids"], ["ref1_methods_required_1"])
+        self.assertEqual(reviewer["plan"]["sections"][0]["required_items"][0]["guideline_ids"], ["ref1_methods_required_1"])
         self.assertEqual(next(c for c in saved["checks"] if c["item_id"] == "item1")["guideline_ids"], ["ref1_methods_required_1"])
-        self.assertEqual(len(fake.calls), 5)  # plan + three writers + the existing review
+        self.assertEqual(len(fake.calls), 17)  # plan + four leaf pairs + three section pairs + paper pair
 
     def test_cuda_profile_extracts_its_pdf_and_ignores_handwritten_artifacts(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -185,7 +199,8 @@ class PlannedPaperTests(unittest.TestCase):
                 result = request_json("system", {"input": "fixture"}, {}, path, "test-key")
             self.assertEqual(result, {"ok": True})
             self.assertEqual(post.call_count, 2)
-            self.assertEqual(len(list(Path(temporary).glob("*.json"))), 2)
+            self.assertTrue(path.is_file())
+            self.assertTrue(path.with_name("reply.native-json-retry-1.json").is_file())
             self.assertIn("JSON", post.call_args.kwargs["json"]["messages"][-1]["content"])
 
     def test_repeated_malformed_json_does_not_become_a_success_cache(self):
@@ -197,6 +212,17 @@ class PlannedPaperTests(unittest.TestCase):
                     engine.call(Path(temporary), "fixture", "system", {}, {})
             self.assertEqual(post.call_count, 2)
             self.assertFalse(any("value" in json.loads(p.read_text(encoding="utf-8")) for p in Path(temporary).rglob("*.json")))
+
+    def test_context_limit_error_is_reported_explicitly_and_keeps_provider_response(self):
+        native = {"error": {"code": "context_length_exceeded", "message": "request contains 762045 tokens"}}
+        response = Mock(status_code=400, json=lambda: native)
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "reply.native.json"
+            with patch("planned_paper.requests.post", return_value=response) as post:
+                with self.assertRaisesRegex(RuntimeError, "입력 길이 한도"):
+                    request_json("system", {}, {}, path, "test-key")
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8")), native)
+            self.assertEqual(post.call_count, 1)
 
     def test_pdf_source_quote_and_page_are_copied_from_selected_element(self):
         original = {"elements": [{"page": 7, "id": 3, "content": {"text": "동일 입력에서 12를 관측했다."}}]}
@@ -254,7 +280,7 @@ class PlannedPaperTests(unittest.TestCase):
                 engine = PlannedPaper(temporary, fake)
                 result = engine.run(research(title))
                 self.assertEqual(len(result["sections"]), count)
-                self.assertEqual(len(fake.calls), count + 2)
+                self.assertEqual(len(fake.calls), 6 * count - 1)
                 self.assertNotIn("CUDA", result["draft_markdown"])
                 self.assertTrue(all("CROWN" not in system and "CUDA" not in system for system, _ in fake.calls))
                 self.assertNotIn("[근거:", result["draft_markdown"])
@@ -369,7 +395,8 @@ class PlannedPaperTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 PlannedPaper(temporary, FakeClient(plan(), reject=True)).run(research(), output_dir=folder)
             self.assertEqual(target.read_text(encoding="utf-8"), "previous accepted draft")
-            self.assertTrue((folder / "candidate.md").exists())
+            self.assertTrue((folder / "workflow/subsection-s0-p0/candidate.json").exists())
+            self.assertFalse((folder / "workflow/paper/approved.json").exists())
 
     def test_table_values_are_rendered_by_code_at_planned_location(self):
         data = research()
@@ -417,6 +444,52 @@ class PlannedPaperTests(unittest.TestCase):
         self.assertEqual(linked["sections"][1]["subsections"], ["조건", "결과"])
         validate_plan(linked, research(), {}, project_profile("generic"))
 
+    def test_plan_evidence_duplicates_are_removed_in_order_without_mutating_response(self):
+        value = plan()
+        value["sections"][1]["evidence_ids"] = ["F2", "F1", "F2", "F1", "F2"]
+        value["sections"][1]["required_items"][0]["evidence_ids"] = ["F1", "F1"]
+        original = copy.deepcopy(value)
+        linked = bind_plan_evidence(value, research())
+        self.assertEqual(value, original)
+        self.assertEqual(linked["sections"][1]["evidence_ids"], ["F2", "F1"])
+        self.assertEqual(linked["sections"][1]["required_items"][0]["evidence_ids"], ["F1"])
+        self.assertEqual(linked["sections"][0]["evidence_ids"], ["F1", "F2"])
+        self.assertEqual(linked["evidence_id_normalizations"], [
+            {"section_id": "s1", "item_id": None, "removed_duplicate_ids": ["F2", "F1", "F2"]},
+            {"section_id": "s1", "item_id": "item1", "removed_duplicate_ids": ["F1"]}])
+        validate_plan(linked, research(), {}, project_profile("generic"))
+        self.assertEqual(bind_plan_evidence(linked, research())["evidence_id_normalizations"],
+                         linked["evidence_id_normalizations"])
+
+    def test_evidence_deduplication_never_hides_invalid_values_or_unknown_ids(self):
+        for field in ("section", "item"):
+            for ids in (None, "F1", [""], ["F1", " "], ["F1", None], ["F1", {}], ["alien", "alien"]):
+                with self.subTest(field=field, ids=ids), self.assertRaises(ValueError):
+                    value = plan()
+                    owner = value["sections"][1]
+                    if field == "item":
+                        owner = owner["required_items"][0]
+                    owner["evidence_ids"] = ids
+                    linked = bind_plan_evidence(value, research())
+                    validate_plan(linked, research(), {}, project_profile("generic"))
+
+    def test_duplicate_plan_uses_cached_response_without_requesting_model_correction(self):
+        value = plan(2)
+        value["sections"][0]["evidence_ids"] = ["F1", "F2", "F1"]
+        with tempfile.TemporaryDirectory() as temporary:
+            fake = FakeClient(value)
+            engine = PlannedPaper(temporary, fake)
+            first = engine.run(research(), plan_only=True)
+            second = engine.run(research(), plan_only=True)
+            self.assertEqual(len(fake.calls), 1)
+            self.assertEqual(first["plan"], second["plan"])
+            self.assertEqual(first["plan"]["sections"][0]["evidence_ids"], ["F1", "F2"])
+            folder = Path(first["run_dir"])
+            self.assertFalse((folder / "plan-rejected.json").exists())
+            cached = next((folder / "responses").glob("plan-*.json"))
+            self.assertEqual(json.loads(cached.read_text(encoding="utf-8"))["value"]["sections"][0]["evidence_ids"],
+                             ["F1", "F2", "F1"])
+
     def test_empty_part_is_repaired_in_isolation_once_and_revalidated(self):
         packet = {"paper_title": "주제", "subsection_headings": ["### 1.1 조건", "### 1.2 결과"],
                   "section_plan": {"title": "방법", "evidence_ids": ["F1"]}, "facts": [], "context": {}}
@@ -441,7 +514,7 @@ class PlannedPaperTests(unittest.TestCase):
             engine = gateway.PaperDraftOrchestrator("test-key")
             engine.base_dir = root
             fake = FakeClient(plan())
-            with patch("planned_paper.request_json", side_effect=lambda system, packet, schema, path, key: fake(system, packet, schema, path)), \
+            with patch("planned_paper.request_json", side_effect=lambda system, packet, schema, path, *args, **kwargs: fake(system, packet, schema, path)), \
                     patch.object(gateway, "load_extracted_results", side_effect=AssertionError("CUDA-only loader called")), \
                     patch("paper_quality.prepare_research_evidence", side_effect=AssertionError("CUDA evidence applied")), \
                     patch("planned_paper.PlannedPaper.extract_evidence", return_value={"research": research()}) as extract:

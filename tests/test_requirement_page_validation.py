@@ -93,6 +93,21 @@ class PageValidationTests(unittest.TestCase):
         self.assertEqual(report["status"], "pending")
         self.assertEqual(len(report["rejected_attempts"]), 2)
 
+    def test_malformed_correction_response_pauses_only_that_page(self):
+        packet, schema, context, target = page_request(1, 2, self.elements, self.questions, self.applicability, [])
+        engine = Mock()
+        engine.call.side_effect = [
+            {"facts": [raw(2)], "existing_links": []},
+            RuntimeError("모델이 완결된 JSON을 반환하지 못했습니다. 원본과 재시도 응답은 보존했습니다.")]
+        with TemporaryDirectory() as tmp:
+            result = collect_page(engine, Path(tmp), 1, packet, schema, [], self.questions, context, target)
+            report = json.loads((Path(tmp) / "pages/page-0001-validation.json").read_text(encoding="utf-8"))
+        self.assertTrue(result["validation_pending"])
+        self.assertEqual(result["facts"], [])
+        self.assertEqual(engine.call.call_count, 2)
+        self.assertEqual(report["status"], "pending")
+        self.assertEqual(len(report["rejected_attempts"]), 2)
+
     def test_a_pending_page_blocks_drafting_instead_of_becoming_an_empty_success(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)

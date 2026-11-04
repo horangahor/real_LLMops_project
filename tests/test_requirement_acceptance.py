@@ -84,12 +84,15 @@ class LimitedAcceptanceTests(unittest.TestCase):
                                  applicability, [1], pending or [])
 
     def test_gate_is_relaxed_for_current_question_only_and_keeps_missing_metadata(self):
-        for kwargs in ({}, {"pending": [1]}, {"unsupported": True}, {"second_question": True}):
+        for kwargs in ({}, {"pending": [1]}, {"unsupported": True}, {"second_question": True},
+                       {"unsupported": True, "pending": [1]},
+                       {"unsupported": True, "second_question": True}):
             with self.subTest(kwargs=kwargs), TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 self.accept(root)
                 result = self.finish(root, **kwargs)
-                self.assertEqual(result["completion"]["ready_for_drafting"], not bool(kwargs))
+                blocked = bool(kwargs.get("pending") or kwargs.get("second_question"))
+                self.assertEqual(result["completion"]["ready_for_drafting"], not blocked)
                 self.assertEqual(result["completion"]["provisionally_accepted_question_ids"], ["Q1"])
                 self.assertEqual(result["requirement_coverage"]["Q1"]["missing_fields"], ["정확도 지표"])
                 normalized = normalize_research(result["research"])
@@ -100,6 +103,22 @@ class LimitedAcceptanceTests(unittest.TestCase):
                     self.assertEqual(result["completion"]["unresolved_requirement_ids"], ["Q2"])
                 if kwargs.get("unsupported"):
                     self.assertEqual(result["completion"]["quarantined_fact_ids"], ["E00001"])
+                    self.assertNotIn("E00001", result["writing_fact_ids"])
+                    self.assertNotIn("E00001", [f["id"] for f in normalized["facts"]])
+                    self.assertEqual(result["items"][0]["support"], "unsupported")
+                    self.assertEqual(read_json(root / "evidence.json")["items"][0]["support"], "unsupported")
+                    if not blocked:
+                        engine = PlannedPaper(root)
+                        with patch.object(engine, "load_evidence", return_value=result):
+                            self.assertEqual(engine.load_research({}), result["research"])
+
+    def test_quarantined_candidates_alone_do_not_supply_writing_evidence(self):
+        with TemporaryDirectory() as tmp:
+            result = self.finish(Path(tmp), unsupported=True)
+            self.assertFalse(result["completion"]["ready_for_drafting"])
+            self.assertEqual(result["writing_fact_ids"], [])
+            self.assertIsNone(result["research"])
+            self.assertEqual(result["completion"]["unresolved_requirement_ids"], ["Q1"])
 
     def test_limited_scope_reaches_plan_writer_and_review_without_forcing_original_fields(self):
         with TemporaryDirectory() as tmp:
@@ -120,23 +139,30 @@ class LimitedAcceptanceTests(unittest.TestCase):
             def client(system, packet, schema, path):
                 seen.append((system, packet))
                 props = schema["properties"]
+                if packet.get("operation") == "editorial_review":
+                    self.assertNotIn("research", packet)
+                    return {"issues": []}
                 if "generation_order" in props:
                     return copy.deepcopy(plan)
                 if "parts" in props:
                     self.assertEqual(packet["human_guidance"][0]["action"], "accept_limited")
                     self.assertEqual(packet["facts"][0]["support"], "user_accepted")
                     return {"parts": {"p0": "기존 검증 문제의 입력 구성을 그대로 재사용하였다. [근거:" + key + "]"}}
+                if "sections" in props:
+                    return {"sections": {sid: {"parts": {"p0":
+                        "기존 검증 문제의 입력 구성을 그대로 재사용하였다. [근거:" + key + "]"}}
+                        for sid in props["sections"]["properties"]}}
                 if "checks" in props:
                     self.assertEqual(packet["research"]["requirement_coverage"]["Q1"]["status"], "accepted_limited")
                     paragraphs = packet["draft_paragraphs"]
                     return {"checks": [{"item_id": s["required_items"][0]["id"], "verdict": "met", "evidence_ids": [key],
-                        "paragraph_ids": [next(i for i, p in paragraphs.items() if p["section_id"] == s["id"])]} for s in plan["sections"]],
+                        "paragraph_ids": [next(i for i, p in paragraphs.items() if p["section_id"] == s["id"])]} for s in packet["plan"]["sections"]],
                         "issues": [], "reference_checks": []}
                 raise AssertionError(str(path))
             result = PlannedPaper(root, client=client).run(research)
             self.assertTrue(result["review"]["approved"])
             self.assertNotIn("미확인", result["draft_markdown"])
-            self.assertEqual(len(seen), 4)
+            self.assertEqual(len(seen), 11)  # plan + two leaf pairs + two section pairs + paper pair
 
     def test_streamlit_accept_button_bypasses_interpreter_and_resumes(self):
         from streamlit.testing.v1 import AppTest

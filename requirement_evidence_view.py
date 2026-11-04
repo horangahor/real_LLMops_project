@@ -9,6 +9,9 @@ def render_requirement_evidence(package):
     st.markdown("### 요구사항 기준 연구 근거")
     st.caption("질문별로 수집·검토한 결과입니다. 원문 전체의 모든 연구 내용을 수집했다는 의미는 아닙니다.")
     st.write(f"후보 {len(package['items'])}개 · 작성용 {len(package['writing_fact_ids'])}개")
+    quarantined = package["completion"].get("quarantined_fact_ids", [])
+    if quarantined:
+        st.caption(f"검증 탈락 후보 {len(quarantined)}개는 검토 기록에 보존되며 초안 작성에 사용하지 않습니다.")
     if not package["completion"]["ready_for_drafting"]:
         st.warning("필수 질문의 근거 부족·적용 여부 미확인 또는 원문 검토 보류가 있어 전체 초안 작성을 제한합니다.")
     if package["completion"].get("pending_extraction_pages"):

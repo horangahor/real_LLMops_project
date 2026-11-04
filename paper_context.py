@@ -3,7 +3,7 @@
 import copy
 import json
 
-VERSION = "paper-context-v1"
+VERSION = "paper-context-v2"
 
 
 def _select(records, identifiers, label):
@@ -77,13 +77,13 @@ def build_contexts(plan, research, catalog):
         required_facts = {key for item in items for key in item["evidence_ids"]}
         if not required_facts <= set(section["evidence_ids"]):
             raise ValueError("필수 항목의 근거가 장 배정을 벗어났습니다.")
-        shared = [key for key in section["evidence_ids"] if key not in required_facts]
         assignments = {}
         for i in range(count):
             chosen = [item for item in items if not mapped or item["subsection_index"] == i]
-            ids = set(shared) | {key for item in chosen for key in item["evidence_ids"]}
+            ids = {key for item in chosen for key in item["evidence_ids"]}
             if not mapped:
                 ids = set(section["evidence_ids"])
+            explicit_ids = ids.copy()
             # A table comparison must retain both sides, not only the matched cell.
             changed = True
             while changed:
@@ -97,7 +97,9 @@ def build_contexts(plan, research, catalog):
                 "required_item_ids": [item["id"] for item in chosen],
                 "evidence_ids": [key for key in section["evidence_ids"] if key in ids],
                 "guideline_ids": list(dict.fromkeys(key for item in chosen for key in item.get("guideline_ids", []))),
-                "shared_evidence_ids": shared[:],
+                # Section-level leftovers are not implicit evidence for every part.
+                "shared_evidence_ids": [] if mapped else [key for key in section["evidence_ids"] if key not in required_facts],
+                "table_expanded_evidence_ids": [key for key in section["evidence_ids"] if key in ids - explicit_ids],
                 "allocation": "explicit" if mapped else "section_fallback"}
         packet = {"paper_title": plan["title"], "section_plan": section, "subsection_headings": headings,
                   "human_guidance": copy.deepcopy(research.get("human_guidance", [])),
@@ -108,7 +110,9 @@ def build_contexts(plan, research, catalog):
                               for key in section["depends_on"]}}
         sections[section["id"]] = packet
         parts[section["id"]] = {key: part_context(packet, key) for key in assignments}
+        part_ids = {key for assignment in assignments.values() for key in assignment["evidence_ids"]}
         report.append({"section_id": section["id"], "evidence_ids": section["evidence_ids"],
+                       "section_only_evidence_ids": [key for key in section["evidence_ids"] if key not in part_ids],
                        "reference_ids": section["reference_ids"], "parts": assignments,
                        "section_input_characters": len(json.dumps(packet, ensure_ascii=False)),
                        "part_input_characters": {key: len(json.dumps(value, ensure_ascii=False))

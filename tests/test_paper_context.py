@@ -33,8 +33,12 @@ class PaperContextTests(unittest.TestCase):
         bundle = build_contexts(plan, research, catalog)
         first = bundle["subsections"]["methods"]["p0"]
         second = bundle["subsections"]["methods"]["p1"]
-        self.assertEqual([f["id"] for f in first["facts"]], ["A", "B", "SHARED"])
-        self.assertEqual([f["id"] for f in second["facts"]], ["C", "SHARED"])
+        self.assertEqual([f["id"] for f in first["facts"]], ["A", "B"])
+        self.assertEqual([f["id"] for f in second["facts"]], ["C"])
+        self.assertEqual(bundle["allocation_report"][0]["section_only_evidence_ids"], ["SHARED"])
+        self.assertEqual([f["id"] for f in bundle["sections"]["methods"]["facts"]], ["A", "B", "C", "SHARED"])
+        for assignment in bundle["allocation_report"][0]["parts"].values():
+            self.assertEqual(assignment["shared_evidence_ids"], [])
         self.assertNotIn("UNRELATED", json.dumps(bundle, ensure_ascii=False))
         self.assertEqual(first["facts"][0], research["facts"][0])
         self.assertEqual(first["section_plan"]["required_items"][0]["id"], "compare")
@@ -68,8 +72,31 @@ class PaperContextTests(unittest.TestCase):
         research["tables"] = [{"id": "T1", "evidence_ids": ["A", "B"], "columns": ["조건", "시간"],
                                "rows": [["A", "12.5ms"], ["B", "15.2ms"]]}]
         result = build_contexts(plan, research, catalog)["subsections"]["methods"]["p0"]
-        self.assertEqual([f["id"] for f in result["facts"]], ["A", "B", "SHARED"])
+        self.assertEqual([f["id"] for f in result["facts"]], ["A", "B"])
         self.assertEqual(result["tables"], research["tables"])
+
+    def test_common_evidence_is_shared_only_when_explicitly_bound_to_each_part(self):
+        plan, research, catalog = fixture()
+        for item in plan["sections"][0]["required_items"]:
+            item["evidence_ids"].append("SHARED")
+        bundle = build_contexts(plan, research, catalog)
+        self.assertEqual([f["id"] for f in bundle["subsections"]["methods"]["p0"]["facts"]], ["A", "B", "SHARED"])
+        self.assertEqual([f["id"] for f in bundle["subsections"]["methods"]["p1"]["facts"]], ["C", "SHARED"])
+        self.assertEqual(bundle["allocation_report"][0]["section_only_evidence_ids"], [])
+
+    def test_table_expansion_is_audited_without_adding_section_leftovers(self):
+        plan, research, catalog = fixture()
+        section = plan["sections"][0]
+        section["required_items"][0]["evidence_ids"] = ["A"]
+        section["required_items"][1]["evidence_ids"] = ["B", "C"]
+        section["table_ids"] = ["T1", "T2"]
+        research["tables"] = [{"id": "T1", "evidence_ids": ["A", "B"]},
+                              {"id": "T2", "evidence_ids": ["B", "C"]}]
+        bundle = build_contexts(plan, research, catalog)
+        assignment = bundle["allocation_report"][0]["parts"]["p0"]
+        self.assertEqual(assignment["evidence_ids"], ["A", "B", "C"])
+        self.assertEqual(assignment["table_expanded_evidence_ids"], ["B", "C"])
+        self.assertEqual(bundle["allocation_report"][0]["section_only_evidence_ids"], ["SHARED"])
 
     def test_legacy_plan_preserves_full_section_context_and_labels_fallback(self):
         plan, research, catalog = fixture()

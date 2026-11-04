@@ -32,9 +32,25 @@ def source_batches(elements, limit=12000):
         yield batch
 
 
+def _ordered_unique(values):
+    """Remove exact duplicate IDs without changing the model's first-seen order."""
+    return list(dict.fromkeys(values))
+
+
+def _duplicates(values):
+    """Return only repeated occurrences, preserving their original order."""
+    seen, duplicates = set(), []
+    for value in values:
+        if value in seen:
+            duplicates.append(value)
+        else:
+            seen.add(value)
+    return duplicates
+
+
 def assess_applicability(engine, folder, requirements, source):
     elements = {e["element_id"]: e for e in source["elements"]}
-    results, conditional = {}, {}
+    results, conditional, normalizations = {}, {}, []
     for q in requirements["requirements"]:
         if q["applicability"]["kind"] == "universal":
             results[q["id"]] = {"status": "applicable", "support_element_ids": [], "sources": [],
@@ -46,12 +62,19 @@ def assess_applicability(engine, folder, requirements, source):
         for index, batch in enumerate(source_batches(elements), 1):
             signal = object_schema({"requirement_id": {"type": "string", "enum": list(conditional)},
                 "status": {"type": "string", "enum": ["applicable", "not_applicable"]},
-                "element_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "enum": list(batch)}},
+                "element_ids": {"type": "array", "minItems": 1,
+                                "items": {"type": "string", "enum": list(batch)}},
                 "reason": {"type": "string"}})
             value = engine.call(folder, f"applicability-scan-{index:04}", SCAN,
                 {"questions": list(conditional.values()), "elements": source_packet(batch)},
                 object_schema({"signals": {"type": "array", "items": signal}}))
             for row in value["signals"]:
+                raw_ids = row.get("element_ids", [])
+                normalized_ids = _ordered_unique(raw_ids)
+                if normalized_ids != raw_ids:
+                    normalizations.append({"kind": "duplicate_element_ids", "requirement_id": row.get("requirement_id"),
+                                           "removed": _duplicates(raw_ids)})
+                    row = {**row, "element_ids": normalized_ids}
                 ids = row["element_ids"]
                 if (row["requirement_id"] not in conditional or row["status"] not in ("applicable", "not_applicable") or
                         not ids or len(ids) != len(set(ids)) or not set(ids) <= set(batch) or not row["reason"].strip()):
@@ -72,7 +95,12 @@ def assess_applicability(engine, folder, requirements, source):
             "reason": {"type": "string"}})
         result = engine.call(folder, "applicability-check-" + key, DECIDE,
             {"question": q, "candidate_signals": rows, "elements": source_packet({k: elements[k] for k in ids})}, schema)
-        support = result["support_element_ids"]
+        raw_support = result["support_element_ids"]
+        support = _ordered_unique(raw_support)
+        if support != raw_support:
+            normalizations.append({"kind": "duplicate_support_element_ids", "requirement_id": key,
+                                   "removed": _duplicates(raw_support)})
+            result = {**result, "support_element_ids": support}
         if (result["status"] not in ("applicable", "not_applicable", "uncertain") or
                 len(support) != len(set(support)) or not set(support) <= set(ids) or not result["reason"].strip() or
                 (result["status"] != "uncertain" and not support)):
@@ -80,5 +108,5 @@ def assess_applicability(engine, folder, requirements, source):
         result["sources"] = [{"element_id": k, "page": elements[k]["page"], "quote": elements[k]["text"]} for k in support]
         results[key] = result
     write_json(folder / "applicability.json", {"version": VERSION, "source": source["source"],
-        "signals": signals, "decisions": results})
+        "signals": signals, "decisions": results, "normalizations": normalizations})
     return results
