@@ -1,0 +1,33 @@
+{
+  "id": "41ad9943-4e31-4e08-a168-83f9e9e8d202",
+  "object": "chat.completion",
+  "created": 1793884954,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"sections\": {\"S_intro\": {\"parts\": {\"p0\": {\"S_intro_p2_s1\": {\"action\": \"replace\", \"text\": \"신경망 검증은 자율주행, 통신 장비 제어, 안전 임베디드 시스템 등에서 모델의 안전 범위를 보장하는 데 쓰이지만, 검증 연산 자체의 비용이 커서 실제 운용 환경에서 실시간 제약을 만족시키기 어렵다. 특히 CROWN 기반 검증은 대규모 행렬 연산과 반복적 경계 계산이 필요해 CPU 환경에서 처리 시간이 매우 느리다. 이런 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화해, 무선 통신 환경이 요구하는 처리 속도에 맞출 수 있는지가 중요한 문제로 제기된다.\", \"join_previous\": false}, \"S_intro_p3_s1\": {\"action\": \"keep\", \"text\": \"\", \"join_previous\": false}, \"S_intro_p4_s1\": {\"action\": \"replace\", \"text\": \"이 연구는 CROWN 검증을 CPU 환경에만 의존하던 기존 접근에서 벗어나, GPU 병렬화와 메모리·실행 최적화를 통해 실시간성 요구를 충족할 가능성을 탐색하는 데 목표를 둔다. 다만 본 절에서는 연구 배경과 문제 제기에 필요한 범위만 다루며, 구체적인 최적화 기법 비교나 실험 결과는 해당 절에서 별도로 검토한다.\", \"join_previous\": false}}, \"p1\": {\"S_intro_p6_s1\": {\"action\": \"delete\", \"text\": \"\", \"join_previous\": false}}, \"p2\": {\"S_intro_p8_s1\": {\"action\": \"keep\", \"text\": \"\", \"join_previous\": false}, \"S_intro_p9_s1\": {\"action\": \"replace\", \"text\": \"정리하면 본 연구의 목표는 CROWN 검증을 CPU 중심에서 GPU 병렬화 및 실시간성 최적화 방향으로 옮겨, 대규모 연산을 CUDA 기반으로 처리했을 때 무선 통신 환경을 따라잡을 수 있는지 확인하는 데 있다. 기여 방향은 CROWN 파이프라인을 3차원 텐서 구조로 정리하고, 가장 무거운 행렬곱을 최적화 라이브러리로 교체하는 하이브리드 접근을 검토하는 데서 출발한다.\", \"join_previous\": false}}}}, \"S_evaluation\": {\"parts\": {\"p0\": {\"S_evaluation_p2_s1\": {\"action\": \"replace\", \"text\": \"CPU 전용 모드에서 CROWN 검증 실행 시간은 101.237800 ms로 기록되었고, GPU 버전은 353.057200 ms로 측정되었다. GPU OPTIMIZED(cuBLAS + Pool) 모드는 229.691800 ms로 약 100 ms 줄었으나 기록자는 여전히 CPU보다 느리다고 평가했다. 이후 matmul만 GPU로 옮긴 HYBRID 모드는 201.670100 ms, HYBRID V2는 85.785300 ms로 CPU보다 빨라졌다. 메모리 풀과 warmup 도입 뒤에는 128.894800 ms, 결과 벡터 memcpy 제거로 약 10 ms가 더 줄었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 64.716000 ms까지 감소하였다. 커널 퓨전 적용 후에는 22.342900 ms, alpha/beta 메모리 풀 적용 후 21.018800 ms, 최종 커널 퓨전 완료 후에는 15.751000 ms로 기록되었다. 다만 이 수치들은 단일 실행 결과이며, 반복 측정 통계나 CPU/GPU 간 비교 해석은 현재 페이지에 제시되지 않았다.\", \"join_previous\": false}, \"S_evaluation_p3_s1\": {\"action\": \"keep\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p35_s1\": {\"action\": \"keep\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p36_s1\": {\"action\": \"delete\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p37_s1\": {\"action\": \"delete\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p38_s1\": {\"action\": \"keep\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p48_s1\": {\"action\": \"keep\", \"text\": \"\", \"join_previous\": false}}, \"p1\": {\"S_evaluation_p50_s1\": {\"action\": \"delete\", \"text\": \"\", \"join_previous\": false}}, \"p2\": {\"S_evaluation_p52_s1\": {\"action\": \"replace\", \"text\": \"커널 축소와 최적화 효과는 GPU 커널을 CPU로 되돌린 hybrid 구성과 memcpy·커널 퓨전·메모리 풀·cudaGraph·배칭 등 단계별 조치로 정리된다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 CPU for문으로 회귀시킨 버전으로, make_zero_matrix·make_zero_vector·make_eye·mat_add·positive_part·negative_part·rowwise_scale·affine_min·affine_max가 CPU로 바뀌었고 matmul은 cuBLAS+메모리풀로 유지되며, GPU 풀 구조체도 d_mat[4]+d_vec[2]에서 d_A·d_B·d_C 3개로 축소되었다. 실행 시간 관측에서는 forward 함수의 DTOH memcpy 제거 후 64.716ms, lirpa_forward_bound 커널 퓨전 후 22.3429ms, alpha/beta 메모리 풀 적용 후 21.0188ms, 이후 15.8284ms와 커널 퓨전 완료 후 15.751ms가 기록되었고, 기록자는 22ms 초반·21.0ms·15ms 후반까지 나오는 범위와 커널 퓨전 전후 약 0.2ms 하한선 감소를 관측했다. backward_matmul_pair_gpu 적용 후에는 22ms 관측 비율이 늘고 최저점(28ms)이 잘 보이지 않게 되었다는 정성적 판단도 남는다. 다만 이 수치들은 단일 실행 결과이거나 정성적 관측이며, 반복 측정 통계나 조건별 분리 해석은 현재 페이지에 제시되지 않는다.\", \"join_previous\": false}, \"S_evaluation_p53_s1\": {\"action\": \"keep\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p59_s1\": {\"action\": \"keep\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p60_s1\": {\"action\": \"delete\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p61_s1\": {\"action\": \"delete\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p62_s1\": {\"action\": \"delete\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p63_s1\": {\"action\": \"delete\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p64_s1\": {\"action\": \"keep\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p65_s1\": {\"action\": \"keep\", \"text\": \"\", \"join_previous\": false}, \"S_evaluation_p66_s1\": {\"action\": \"delete\", \"text\": \"\", \"join_previous\": false}}}}}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 41937,
+    "completion_tokens": 1437,
+    "total_tokens": 43374,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

@@ -7,10 +7,11 @@ from pathlib import Path
 
 from document_parse import write_json
 from drafting_budget import (DraftingBudgetError, NO_CACHE, cached_response, call_bounded,
-                             compact_packet, fits_request, request_bytes, request_limit)
+                             compact_packet, request_bytes, request_limit)
 from draft_prose import allowed_ids
 from editorial_revision import REVISION_POLICY, editorial_sources, render_editorial_paragraphs
 from paper_plan import object_schema
+from editorial_input import fits_editorial_request, repair_request
 
 ASSEMBLY_POLICY = "editorial-assembly-fixed-spans-v1"
 ASSEMBLY_BATCH_POLICY = "editorial-assembly-batches-v1"
@@ -38,13 +39,21 @@ def preservation_error(raw, exc):
     return error
 
 
-def call_preserving_subsections(engine, folder, name, system, packet, schema):
+def call_preserving_subsections(engine, folder, name, system, packet, schema, *, legacy_packet=None, validate_cached=None):
     # Successful responses from before the new instruction remain reusable.
     old_system = system.removesuffix(PRESERVATION_INSTRUCTION)
-    for old_packet in (packet, compact_packet(packet)):
-        cached = cached_response(engine, folder, name, old_system, old_packet, schema)
-        if cached is not NO_CACHE:
-            return cached
+    for previous in ([legacy_packet, packet] if legacy_packet is not None else [packet]):
+        for cached_system in (system, old_system):
+            for old_packet in (previous, compact_packet(previous)):
+                cached = cached_response(engine, folder, name, cached_system, old_packet, schema)
+                if cached is NO_CACHE:
+                    continue
+                if validate_cached is not None:
+                    try:
+                        validate_cached(cached)
+                    except (ValueError, KeyError, TypeError, AttributeError):
+                        continue
+                return cached
     return call_bounded(engine, folder, name, system, packet, schema, source_protocol=False)
 
 
@@ -225,32 +234,45 @@ def _edit_batches(engine, folder, name, previous, packets, packet, parts, origin
             body["revision"] = {**packet["revision"], "review": {"checks": [], "issues": [
                 copy.deepcopy(issue) for issue, scope in scopes if pids.intersection(scope)]}}
         schema = assembly_schema(targets)
-        if not fits_request(system, body, schema):
+        if not fits_editorial_request(system, body, schema):
             diagnostic = Path(folder) / f"{name}-{policy}-budget-failure.json"
             size = request_bytes(system, compact_packet(body), schema)
             write_json(diagnostic, {"policy": policy, "batch": index, "input_bytes": size,
-                "packing_budget_bytes": int(request_limit() * .75),
+                "limit_bytes": request_limit(), "budget_policy": "actual-request-bytes",
                 "context_bytes": len(json.dumps(context, ensure_ascii=False).encode()),
                 "schema_bytes": len(json.dumps(schema, ensure_ascii=False).encode()),
                 "revision_bytes": len(json.dumps(body.get("revision", {}), ensure_ascii=False).encode()),
                 "review_issues": len(body.get("revision", {}).get("review", {}).get("issues", []))})
             raise DraftingBudgetError(f"{label} 묶음의 전체 본문 문맥이 입력 예산을 넘습니다. "
-                                     f"입력={size}바이트. 완료 응답은 재사용할 수 있습니다. 상세: {diagnostic}")
+                                     f"입력={size}바이트, 상한={request_limit()}바이트. 완료 응답은 재사용할 수 있습니다. 상세: {diagnostic}")
         error = None
         request_name = f"{name}-{policy}-{index}"
+        def expand_response(raw):
+            expand_assembly_slots(raw, targets)
+            candidate = copy.deepcopy(combined)
+            for sid, rows in targets.items():
+                for key in rows:
+                    candidate["sections"][sid]["parts"][key].update(raw["sections"][sid]["parts"][key])
+            expanded = expand_assembly_slots(candidate, parts)
+            return candidate, expanded
+        def validate_response(raw):
+            _, expanded = expand_response(raw)
+            apply_editorial_patch(expanded, previous, packets, parts, origins)
         for repair in range(2):
-            request = body if error is None else {**body, "invalid_response": error,
-                "repair_instruction": "editable_spans의 고정 칸만 채운다. 전체 문맥의 다른 구간은 출력하지 않는다. "
-                                      "action·text·join_previous만 보정한다."}
+            instruction = "editable_spans의 고정 칸만 채운다. 전체 문맥의 다른 구간은 출력하지 않는다. action·text·join_previous만 보정한다."
+            legacy_request = None if error is None else {**body, "invalid_response": error, "repair_instruction": instruction}
+            request = body if error is None else repair_request(body, error, instruction)
+            if error is not None:
+                write_json(Path(folder) / f"{request_name}-repair-input.json", {
+                    "full_context_preserved": request["source_parts"] == body["source_parts"],
+                    "original_error_bytes": len(json.dumps(error, ensure_ascii=False).encode()),
+                    "feedback_bytes": len(json.dumps(request["invalid_response"], ensure_ascii=False).encode()),
+                    "input_bytes": request_bytes(system, compact_packet(request), schema), "limit_bytes": request_limit()})
             raw = call_preserving_subsections(engine, folder, request_name + ("-format-repair" if repair else ""),
-                                             system, request, schema)
+                                             system, request, schema, legacy_packet=legacy_request,
+                                             validate_cached=validate_response if repair else None)
             try:
-                expand_assembly_slots(raw, targets)  # Reject extra/missing output targets first.
-                candidate = copy.deepcopy(combined)
-                for sid, rows in targets.items():
-                    for key in rows:
-                        candidate["sections"][sid]["parts"][key].update(raw["sections"][sid]["parts"][key])
-                expanded = expand_assembly_slots(candidate, parts)  # Validate original paragraph boundaries.
+                candidate, expanded = expand_response(raw)
                 value, trace = apply_editorial_patch(expanded, previous, packets, parts, origins)
                 break
             except (ValueError, KeyError, TypeError, AttributeError) as exc:
@@ -402,7 +424,7 @@ def _edit_fixed_slots(engine, folder, name, level, previous, packets, report=Non
     large = (sum(len(units) for rows in parts.values() for units in rows.values()) > ASSEMBLY_BATCH_SPANS
                     or sum(len(u["text"].encode("utf-8")) for rows in parts.values() for units in rows.values() for u in units)
                        > ASSEMBLY_BATCH_TEXT_BYTES)
-    if large or (not initial and not fits_request(system, packet, schema)):
+    if large or (not initial and not fits_editorial_request(system, packet, schema)):
         # Preserve successful v1 responses, including runs interrupted at review.
         for cached_system, cached_packet in ((s, p) for s in (system, system.removesuffix(PRESERVATION_INSTRUCTION))
                                               for p in (packet, compact_packet(packet))):
@@ -418,17 +440,30 @@ def _edit_fixed_slots(engine, folder, name, level, previous, packets, report=Non
                     "result_fingerprint": fingerprint(value), "slots": cached["sections"], **trace})
                 return value
         return _edit_batches(engine, folder, name, previous, packets, packet, parts, origins)
-    if not fits_request(system, packet, schema):
+    if not fits_editorial_request(system, packet, schema):
         label = "최초 편집" if initial else "편집 보완"
-        raise DraftingBudgetError(f"{label}의 전체 본문 문맥이 입력 예산을 넘습니다. 문맥을 자르거나 부분 수정을 적용하지 않고 중단했습니다.")
+        size = request_bytes(system, compact_packet(packet), schema)
+        raise DraftingBudgetError(f"{label}의 전체 본문 문맥이 입력 예산을 넘습니다. 입력={size}바이트, 상한={request_limit()}바이트. "
+                                 "문맥을 자르거나 부분 수정을 적용하지 않고 중단했습니다.")
     error = None
     for repair in range(2):
-        request = packet if error is None else {**packet, "invalid_response": error,
-            "repair_instruction": ("고정된 sections·parts·구간 칸을 정확히 채운다. 각 칸의 action·text·join_previous를 보정한다. "
+        instruction = ("고정된 sections·parts·구간 칸을 정확히 채운다. 각 칸의 action·text·join_previous를 보정한다. "
                 "문단·spans 래퍼나 위치·출처 ID 필드를 추가하지 않는다." if initial else
-                "고정된 sections·parts·문단·spans 칸을 정확히 채운다. 위치·출처 ID 필드를 추가하지 않고 action·text만 보정한다.")}
+                "고정된 sections·parts·문단·spans 칸을 정확히 채운다. 위치·출처 ID 필드를 추가하지 않고 action·text만 보정한다.")
+        legacy_request = None if error is None else {**packet, "invalid_response": error, "repair_instruction": instruction}
+        request = packet if error is None else repair_request(packet, error, instruction)
+        def validate_response(raw):
+            expanded = expand_assembly_slots(raw, parts) if initial else raw
+            return apply_editorial_patch(expanded, previous, packets, parts, origins)
+        if error is not None:
+            write_json(Path(folder) / f"{name}-{policy}-repair-input.json", {
+                "full_context_preserved": request["source_parts"] == packet["source_parts"],
+                "original_error_bytes": len(json.dumps(error, ensure_ascii=False).encode()),
+                "feedback_bytes": len(json.dumps(request["invalid_response"], ensure_ascii=False).encode()),
+                "input_bytes": request_bytes(system, compact_packet(request), schema), "limit_bytes": request_limit()})
         raw = call_preserving_subsections(engine, folder, f"{name}-{policy}" + ("-format-repair" if repair else ""),
-                                         system, request, schema)
+                                         system, request, schema, legacy_packet=legacy_request,
+                                         validate_cached=validate_response if repair else None)
         try:
             expanded = expand_assembly_slots(raw, parts) if initial else raw
             value, trace = apply_editorial_patch(expanded, previous, packets, parts, origins)

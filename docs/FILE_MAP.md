@@ -25,6 +25,7 @@
 | `editorial_recheck.py` | 편집 재검토의 본문·지적 묶음 구성, 이전 초안 인용문 중복 제거·원래 기록 보존과 배정 검증 |
 | `editorial_revision.py` | 구간별 인용 연결, 기존 최초 편집 캐시 검증·재생, 신규 최초 편집·보완 호출 연결과 본문 변경 감지 |
 | `editorial_patch.py` | 최초 편집·보완 시 전체 본문을 읽히고 고정 구간 칸의 유지·수정·삭제만 반환받아 위치·인용 적용 |
+| `editorial_input.py` | 편집 요청 실제 바이트 상한 검사, 전체 문맥 유지와 보정 입력의 실패 응답 본문 중복 제거 |
 | `drafting_budget.py`, `bounded_drafting.py`, `bounded_review.py` | 작성 요청 원문 중복 제거·입력 예산 검사·분할 작성·승인 근거 사용과 필수 내용 검토 |
 | `paper_context.py`, `docs/WRITING_INPUT_CONTEXT.md` | 3번 작업: 명시적인 계획 배정으로 장·소절별 근거·지침 입력 생성과 배정 기록 |
 | `evaluation/writing/run_chapter_pilot.py`, `docs/CHAPTER_PILOT_REVIEW.md`, `evaluation/writing/pilots/20261031-results/` | CUDA 근거 4개로 결과 장 1개를 생성·진단 검토한 실패 사례와 추가 검사 우선순위. 서비스 초안과 분리 |
