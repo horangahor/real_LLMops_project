@@ -1,0 +1,20 @@
+{
+  "request_fingerprint": "77f5b7122f96fc9a8aa510f3a375ccaebb0ad2fe1729130b0dd4277fe008a0ee",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "커널 퓨전은 backward_bound_gpu()에 먼저 적용되었고, 그 직후 'Starting CROWN Verification' 전체 실행 시간이 23.925200ms로 관측되었다. 다만 이 측정값은 backward_bound_gpu()만의 시간이 아니라 CROWN Verification 전체 실행 시간에 해당하며, 저자가 전체 CROWN Verification 시간을 커널 퓨전 효과의 근거로 인용한 기록이다. 또한 이 관측은 단일 실행 기록이며, 반복 측정 통계나 조건별 분리 측정은 현재 페이지에 제시되지 않았다. 연구 노트에서는 컴퓨터 사정에 따라 26ms까지 뛰는 경우도 있지만 23ms 정도가 보인다는 점이 중요하게 기록되었다. 이후 affine 중복 계산 삭제, new_(upper, lower)_p를 복사 대신 std::swap으로 포인터 스와핑, backward 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu 도입, build_coeff_pair_fused_gpu 및 backward_bias_pair_fused_gpu 커널 퓨전을 적용한 뒤에는 22.157400ms가 관찰되었고, 5번까지 적용 후 최고 성능이 나왔다고 기록되었다. 이어서 1개의 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전을 모두 진행하였다. 이 단계에서는 22ms가 보이는 비율이 늘고 최저점(28ms)이 잘 안 보이게 되었다는 체감상의 관측도 함께 남아 있다. 동기화 제거로는 cudaDeviceSynchronize와 필요한 부분을 제외한 동기화 코드를 제거하여 약 1ms가 줄었고, 이때 25.457200ms가 측정되었다. memcpy 호출 횟수는 호출 횟수 기준으로 66개에서 56개로 감소했으나, 이는 호출 횟수 비교 기록이며 각 호출의 시간이나 총 실행 시간과의 관계는 별도 문맥이 필요하다.",
+          "evidence_ids": [
+            "E00326",
+            "E00329",
+            "H85ca0e507c4e_22",
+            "H85ca0e507c4e_23",
+            "H85ca0e507c4e_24",
+            "E00339"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "request_fingerprint": "ae5a7b254ba444e2036d19f82d8f5d00fecc2c7e8c5a3d66d67384b688ba8593",
+  "value": {
+    "sections": {
+      "S_conclusion": {
+        "parts": {
+          "p0": {
+            "S_conclusion_p2_s1": {
+              "action": "replace",
+              "text": "본 연구는 CPU 환경에서만 수행되던 CROWN 신경망 검증을 CUDA 기반으로 병렬화하고 실시간성에 가깝게 최적화하는 과정을 정리한다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서 실행 시간은 229.691800 ms로 기록되었으나, 여전히 CPU보다 느리다는 평가가 남아 matmul만 GPU로 옮기는 HYBRID 모드가 시도되었다. 이후 HYBRID V2에서 85.785300 ms로 CPU보다 빨라졌고, 메모리 풀과 warmup, 가중치 사전 업로드, 결과 벡터 memcpy 제거, forward 함수의 DTOH memcpy 축소, 커널 퓨전, alpha/beta 메모리 풀 적용 등을 거치며 실행 시간이 단계적으로 줄어들었다. 특히 메모리 풀과 warmup 조합은 기록상 큰 폭의 단축 요인으로 언급되었고, memcpy 병목이 CPU 추월 여부를 좌우하는 핵심 과제로 인식되었다. 다만 이러한 실행 시간 수치는 대부분 단일 실행 결과이며, CPU 버전과의 반복 측정 기반 비교나 동시 변경 효과의 분리 해석은 제한적이다. 실시간성 관점에서는 마이크로초에서 수 밀리초 수준으로 제한되어야 한다는 판단이 제시되었고, cuBLAS와 cuSPARSE는 현재 모델 크기와 호출 패턴에서는 오히려 느려져 기준 코드에서 제외된 상태로, 추후 재도입 검토가 필요한 방향으로 정리되었다.",
+              "join_previous": true
+            },
+            "S_conclusion_p3_s1": {
+              "action": "replace",
+              "text": "본 연구는 CPU 환경에서 느렸던 CROWN 신경망 검증을 CUDA 기반으로 GPU 병렬화·최적화하여 실시간 대규모 연산 처리 가능성을 검토하였다. 핵심 구성으로 제로 memcpy, 커널 실행 횟수 감소(커널 퓨전·커널 graph), GPU SM 구조를 고려한 FP64→FP32·double→float 변경, 멀티 스트림 배칭, cudaGraph 커널 캡처를 적용하였다. 배칭은 기존 데이터셋이 준비된 실험 환경에서 단일 스트림 대비 3배 빨라져 25분에서 8분으로 단축되었고, cudaGraph로 추론과 bound를 따로 캡처했을 때 기준으로 약 400초 정도 줄어든 것으로 관측되었다. 다만 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 한계로 인식되었다.",
+              "join_previous": false
+            },
+            "S_conclusion_p4_s1": {
+              "action": "replace",
+              "text": "실행 시간 측정에서는 cudaMemcpy 총 40.726초(240000회), cudaLaunchh 18.527초(2160000회), cudaMemset 2.121초(160000회) 등의 통계가 기록되었고, CROWN_SWEEP 실행 시간은 98.995초로 측정되었다. auto_LiRPA 포워드+백워드 실행에서는 EPS별 연산 시간 합산 107.30초, 전체 소요 107.32초가 기록되었으며, 백워드_only는 합산 55.77초, 전체 55.78초로 관측되었다. 기록자의 관측으로는 backward_only가 가장 빠르고 forward가 가장 느리게 나타나, 일반적인 기대(forward < forward+backward < backward_only)와 차이가 있었다. 또한 초기화 이후 forward와 backward의 bound 계산 시간은 약 0.2ms 차이로 비슷하게 관측되었다.",
+              "join_previous": false
+            },
+            "S_conclusion_p5_s1": {
+              "action": "replace",
+              "text": "이 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 상황에서, 실시간 환경의 대규모 연산을 CUDA 기반 GPU 병렬화로 따라잡을 수 있는지를 확인하는 데 목적이 있었다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기와 배치 크기는 1로 두고 forward, forward+backward, backward_only 세 실행 방식을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용했고, 검증 결과의 비율 차이는 기존 프로그램과 모두 동일하게 확인되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경하였으며, 각 forward와 backward는 20번씩 측정을 완료해 평균과 분산을 구해 슬라이드에 넣을 예정이었다. 단일 테스트에서는 forward와 backward 간 시간 차이가 3배로 예상되었으나, 92만 개의 데이터를 돌리면 약 1분 정도 차이로 비슷해지는 현상이 관측되었고 이 문제는 아직 해결하지 못했다. 한편 gpu 벤치마크 모범 사례를 참고해 적절한 기준을 다시 세우기로 했고 Nvidia의 warm up 가이드라인을 채택했으나, warm up 적용 후 오히려 걸리는 시간과 평균 시간이 늘어나는 현상이 나타났으며 forward가 warm up 이전 backward 급 속도가 나올 정도였다. 또한 warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 기록되었다. 측정 과정에서는 elapsed 타임과 미세한 오차가 있었지만 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 한 것은 측정 방식 결정에 관한 해석으로 남아 있다.",
+              "join_previous": false
+            },
+            "S_conclusion_p6_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_conclusion_p7_s1": {
+              "action": "replace",
+              "text": "수행한 CUDA 최적화 구성은 제로 memcpy, 커널 자체 실행 횟수 감소(커널 퓨전·커널 graph), GPU SM 구조를 고려한 FP64→FP32 및 double→float 변경, 그리고 cudaGraph를 이용한 커널 캡처로 정리할 수 있다. cudaGraph는 92만 번의 입력값을 계산하는 과정에서 1번의 CROWN 계산 안에 수십 번 호출되는 커널을 하나의 호출로 압축해 커널 런치 오버헤드를 줄이려는 방식이며, 커널 자체 최적화가 끝난 뒤 고려할 수 있는 스냅샷 기반 기능이라는 조건이 붙는다. cudaGraph 실험에서는 추론과 bound를 따로 캡처한 경우와 추론+bound를 한 번에 캡처한 경우를 구분해 커널 런치 비용 최소화를 시도했고, 추론과 bound를 따로 캡처했을 때 기준으로 약 400초 정도 줄어든 것으로 관측되었다. 배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 병렬 처리를 가능하게 하는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 다만 배칭은 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 있어 별도 branch(temp_batching)로 저장해 두었다. 한편 단일 테스트에서는 forward와 backward 간 시간 차이가 3배로 예상되지만 92만 개의 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 확인되었고, 이 문제는 아직 해결하지 못했다. 또한 warm up을 적용해도 스파이크 데이터가 나타나고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 관측되어, 측정 불안정성 역시 남는 한계이다.",
+              "join_previous": false
+            },
+            "S_conclusion_p8_s1": {
+              "action": "replace",
+              "text": "핵심 최적화 구성은 스트림 병렬화, CUDA Graph, 메모리 등록(Pinned/Register) 방식, GPU 클록 고정으로 나뉜다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 이 방식은 기존 단일 샘플 커널을 유지한 채 3.2배 가속(25분→8분)을 얻었지만, 스트림 수의 한계(SM 포화)로 7~8분이 한계선으로 기록되었다. 한편 배치 사이즈 64일 때는 약 424초가 걸렸으며, 현재 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들어 각 스트림이 GPU 메모리를 차지하는 방식이다. 배치 사이즈를 512로 하면 메모리를 넘지 않지만 느리다는 관측이 있었고, 이는 각 스트림마다 CPU가 돌아가면서 다음 커널을 런치해줘야 해서 1024개의 스트림이 각각 CPU가 다음 커널을 런치해줄 때까지 기다리기 때문으로 해석되었다. 스트림 수를 64개 정도로 줄이고 배치 사이즈를 1024로 하는 방안은 하나의 스트림이 하나의 입력을 처리하므로 동시에 돌릴 수 있는 데이터가 64개라는 뜻이고 16번씩 나눠서 처리하게 되어 의미가 없다고 판단되었다. 스트림 수를 줄이면 초기 데이터 H2D 비용은 확실히 줄지만, 연산 병목은 스트림이 64개라 한 번에 64개밖에 대응하지 못하는 제약이 있다. antenna_lirpa는 싱글 스트림으로 동작하면서도 cuBLAS Batched GEMM과 텐서 코어를 활용해 현재 C++ 멀티스트림(8분)보다 약 4배 빠르며, 이 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된다고 해석되었다. 현재 작성자는 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다.",
+              "join_previous": false
+            },
+            "S_conclusion_p9_s1": {
+              "action": "replace",
+              "text": "실행 시간 측면에서는 CUDA Graph 적용 결과가 787.8832초로 3가지 방법 중 가장 빨랐으며, avg 기준 forward는 1029초, forward+backward는 1138초로 비교되었다. 메모리 등록 방식 비교에서는 cudaHostRegister와 No Pinning 간 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 평균 속도에서는 No-Pin이 13초 빨랐지만, 실시간성 관점에서는 최대 지연과 지터 측면에서 치명적인 약점이 있었다.",
+              "join_previous": false
+            },
+            "S_conclusion_p10_s1": {
+              "action": "replace",
+              "text": "핵심 최적화 구성은 CUDA 기반 CROWN 검증에서 호스트-장치 메모리 전송 방식을 No-Pin(일반 메모리)과 Pinned Memory(cudaHostRegister)로 나누어 비교한 것이다. 표에 따르면 No-Pin은 평균 처리 속도가 약 13초 빠르지만, 최대 지연(Max Spike)은 8.8ms~11.6ms로 치명적이고 지터는 118μs로 불안정하다. 반면 Pinned Memory는 최대 지연이 1.64ms로 극도로 안정적이고 지터는 47μs로 안정적이다. 이 차이는 No-Pin이 평소 CPU 캐시 복사로 빠르지만 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 끼어들면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없고, 이것이 1ms 무선 통신 데드라인을 파괴할 수 있기 때문이다. Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. 다만 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다는 점은, Pinned Memory가 항상 평균 시간에서 유리한 것은 아님을 보여준다. 또한 infer 단계에서 40,000번 반복하며 CPU 스레드가 cudaStreamSynchronize로 대기·깨어나는 과정의 미세 지연과 드라이버 동기화 비용이 맞물려 Pinned 쪽이 총 루프 시간에서 약 13초 느려지는 결과가 나온 것도, 평균 시간 지표만으로는 Pinned의 이점이 드러나지 않는 이유로 설명된다. 그럼에도 총 시간(평균 시간)만 보면 No-Pin이 더 빨라 보이지만, 지터와 최악 실행 시간(WCET)을 보면 Pinned가 유리하다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로, Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pageable 메모리의 치명적 지연 스파이크를 피하고 최악 지연시간을 엄격히 제한하기 위해 Pinned Memory 도입이 필수적이다.",
+              "join_previous": false
+            },
+            "S_conclusion_p11_s1": {
+              "action": "replace",
+              "text": "핵심 최적화 구성은 CUDA Graph를 통한 커널 런치 횟수 감소와 pinned memory 적용 방식(hostRegister, hostAlloc)과 noPinning 간 메모리 복사 시간 비교로 정리할 수 있다. 3-layer 네트워크 기준으로 CUDA kernel launch만 세고 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했으며, 이 범위에서 graph mode=1, 샘플 1개 전체 기준으로 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다. 평균값(n=920000) 측정 표에서는 cuda stream synchronize 시간이 hostRegister 323μs, hostAlloc 322μs, noPinning 314μs였고, cudaMemcpyAsync는 hostRegister 5.188μs, hostAlloc 5.351μs, noPinning 4.932μs, memcpy 복사 시간은 hostRegister 1.117μs, hostAlloc 1.142μs, noPinning 340ns로 나타났다. pinned memory 미적용 버전이 추론 종료까지 synchronize 시간이 가장 빨랐으며, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었다. cudaMemcpyAsync 호출 시간에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했고, 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 작은 데이터 크기(현재 입력 기준 1KB)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다는 해석도 제시되었다. pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, backward_only가 왜 제일 빠른지에 대한 질문은 제기되었으나 이 페이지에서 답변이 완료되지는 않았다.",
+              "join_previous": false
+            },
+            "S_conclusion_p12_s1": {
+              "action": "replace",
+              "text": "본 연구의 핵심 구성은 CROWN 검증의 GPU 병렬화 및 실시간성 확보를 위한 CUDA 최적화 실험으로 정리된다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 이 방식은 기존 단일 샘플 커널을 유지한 채 3.2배 가속(25분→8분)을 얻었지만, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 반면 antenna_lirpa는 싱글 스트림으로 동작하면서도 cuBLAS Batched GEMM과 텐서 코어를 활용해 약 4배 빠르며, 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된다. 차기 로드맵(방법 C)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다.",
+              "join_previous": false
+            },
+            "S_conclusion_p13_s1": {
+              "action": "replace",
+              "text": "측정 조건 통제와 관련해서는 GPU 클록 고정이 연구 일지에서 나중에 고정된 사항으로 기록되어 있으며, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)가 작성되었다. 클록 고정 실험은 CUDA 강의 19장의 GPU 클록 고정 방법을 참고하여 진행되었고, 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. 또한 Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. 다만 이 근거들은 figure 캡션/연구일지에 기록된 계획·명령어·코드 구조만 포함하며, 실제 클록 고정 후 측정 결과는 이 근거들만으로 제시되지 않는다.",
+              "join_previous": false
+            },
+            "S_conclusion_p14_s1": {
+              "action": "replace",
+              "text": "추론 커널은 그대로인 상태에서 graph mode=1, 샘플 1개 전체 기준 커널 launch 횟수는 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다.",
+              "join_previous": false
+            },
+            "S_conclusion_p15_s1": {
+              "action": "replace",
+              "text": "본 연구는 CROWN 검증을 CPU 환경에서만 실행하던 기존 상황에서, 실시간 환경의 대규모 연산을 CUDA로 구현·최적화하여 네트워크 환경을 따라잡을 수 있는지를 확인하는 데 초점을 두었다. 이는 연구일지에 직접 기록된 내용은 아니나 연구의 배경으로 이해된다. 핵심 구성은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방법 C(Batched GEMM, 3D 텐서 연산화)로, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이 목표는 p68의 로드맵에 기록된 방식·목표 서술이며 실제 구현·평가 결과는 포함하지 않고, 30초~1분대 진입은 목표치이지 실측값이 아니며 전체 40,000개 규모에서의 실현 여부는 아직 검증되지 않았다. 또한 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계로 지적되었다.",
+              "join_previous": false
+            },
+            "S_conclusion_p16_s1": {
+              "action": "replace",
+              "text": "본 연구는 CPU 환경에서만 제한적으로 수행되던 CROWN 신경망 검증을 CUDA 기반으로 구현하고, 커널 퓨전·메모리 풀·호스트 메모리 핀닝·동기화 제거 등의 GPU 최적화를 통해 실행 시간을 줄이는 데 초점을 두었다. 핵심 구성은 forward·forward+backward·backward_only 세 실행 방식에 대해 커널 호출 통합과 메모리 복사 비용 제거를 적용하는 것이며, Forward에서는 lower/upper matmul, lower/upper bias matvec, matrix scaling + vector affine을 각각 2회에서 1회로 줄여 method 0 기준 레이어당 8회에서 5회로 감소했고, Backward에서는 split_pos_neg + bias accumulation을 2회에서 1회로 통합하고 레이어당 backward 단계를 5회에서 4회로 줄였다. Method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. 다만 graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회로 유지되어 이번 작업이 그래프 발사 횟수 자체를 줄이지는 않았다. backward_bound_gpu()에 커널 퓨전을 먼저 진행한 결과 23ms 후반대까지의 실행 시간이 관측되었고, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 것은 23ms 정도가 보인다는 점이 확인되었다. 전체 실행 시간은 1138s에서 758s로 감소했으며, backward_only_cuda_graph는 787s에서 630s로 약 157초 감소, forward 방식은 1029s에서 668s로 감소하였다. 실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간은 1055.282초, infer는 131.7986초, bound는 920.8438초로 측정되어, GPU 최적화가 실시간 환경의 대규모 연산 부담을 완화할 가능성을 보여주지만, 단일 실행 중심의 관측과 여러 변경이 동시에 적용된 실험 구조 때문에 개별 최적화의 효과를 분리해 해석하기에는 한계가 있다.",
+              "join_previous": false
+            },
+            "S_conclusion_p17_s1": {
+              "action": "replace",
+              "text": "최적화 과정에서는 커널 감소 폭이 실행 방식별로 다르게 나타났다. forward에서는 무거운 커널 연산 호출이 9개 줄었고, backward에서는 forward 부분 12개(9+3)와 실제 backward 부분 3개가 감소했으며, backward_only는 45회에서 33회로 26.7% 감소에 그쳐 감소 폭이 가장 작았다. memcpy 호출 횟수도 66개에서 56개로 줄었다. 한편 커널 횟수가 더 많이 줄면 시간도 더 줄어야 하지 않는지, 왜 forward가 가장 많이 줄었는지에 대한 의문이 남아 있으며, 신경망 크기가 매우 작고 cuBlas·cuSparse 동작 방식에서 오버헤드가 발생한 점 역시 신경망이 작기 때문으로 분석되었다. 현재는 cuBlas·cuSparse의 기본 행렬곱 함수를 사용한 상태라, 변형 함수 도입과 sm 내 분석·Nsight Compute 분석을 함께 진행하는 방향이 향후 검토 과제로 남아 있다.",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

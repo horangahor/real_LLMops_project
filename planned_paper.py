@@ -21,6 +21,8 @@ from hierarchical_drafting import VERSION as WORKFLOW_VERSION, PROMPTS as WORKFL
 from table_placement import resolve_table_placements
 from review_response import candidate_review_system
 
+DEFAULT_TRANSPORT_RETRIES = 1
+
 GROUNDING = """연구 자료의 facts만 연구 주장의 근거다. 각 사실의 limits와 측정 조건을 함께 지킨다.
 참고 가이드는 글의 구성 방식이며 다른 논문의 사실을 가져오지 않는다. 원문에 없는 수치·성과·장비·인과·신규성을 만들지 않는다.
 support=user_accepted는 사용자가 임시 승인한 설명이다. 그 설명 범위의 연구 배경·설정·해석을 짧게 반영할 수 있지만 원문 실측·독립 검증·입증된 성과로 승격하지 않는다. 승인 기록·미확인 표식 자체를 논문 본문에 넣지 않는다.
@@ -95,7 +97,7 @@ def fingerprint(value):
 
 
 def request_json(system, packet, schema, path, api_key=None, inference_settings=None, timeout_seconds=300,
-                 transport_retries=0):
+                 transport_retries=DEFAULT_TRANSPORT_RETRIES):
     key = api_key or UPSTAGE_API_KEY
     if not key:
         raise ValueError("UPSTAGE_API_KEY가 필요합니다.")
@@ -176,14 +178,14 @@ class PlannedPaper:
         self.client = client or (lambda system, packet, schema, path: request_json(system, packet, schema, path, api_key))
 
     def call(self, folder, name, system, packet, schema, inference_settings=None, timeout_seconds=None, cache_only=False,
-             transport_retries=0):
+             transport_retries=DEFAULT_TRANSPORT_RETRIES):
         inputs = {"version": VERSION, "model": SOLAR_MODEL, "system": system, "packet": packet, "schema": schema}
         if inference_settings:
             inputs["inference_settings"] = inference_settings
         identity = fingerprint(inputs)
         path = filesystem_path(Path(folder) / "responses" / f"{name}-{identity[:20]}.json")
         planning_root = self.base_dir / "draft_history/planned"
-        if (name in ("plan", "plan-correction") and not path.is_file()
+        if ((name in ("plan", "plan-correction") or name.startswith("table-placement-")) and not path.is_file()
                 and Path(folder).resolve().is_relative_to(planning_root.resolve())):
             # Writer/context changes create new runs, but cannot invalidate an
             # identical planning request. Changed planning prompts never match.
@@ -223,7 +225,8 @@ class PlannedPaper:
         can_fallback = inference_settings == {"reasoning_effort": "medium"}
         def fallback_to_low():
             value = self.call(folder, name + "-low-fallback", system, packet, schema,
-                              inference_settings={"reasoning_effort": "low"}, timeout_seconds=timeout_seconds, cache_only=cache_only)
+                              inference_settings={"reasoning_effort": "low"}, timeout_seconds=timeout_seconds, cache_only=cache_only,
+                              transport_retries=transport_retries)
             write_json(fallback_path, {"record_type": "inference_profile_fallback", "request_fingerprint": identity,
                        "requested": inference_settings, "effective": {"reasoning_effort": "low"},
                        "reason": "provider returned no valid final JSON after bounded retry"})
@@ -254,7 +257,7 @@ class PlannedPaper:
                 raise RuntimeError("모델이 완결된 JSON을 반환하지 못했습니다. 실패 응답은 보존했으며 해당 항목을 검토 보류해야 합니다.")
         if cache_only:
             raise FileNotFoundError("해당 입력의 완료 캐시가 없습니다.")
-        if inference_settings or timeout_seconds is not None or (transport_retries and not self._custom_client):
+        if inference_settings or timeout_seconds is not None or not self._custom_client:
             if self._custom_client:
                 raise ValueError("사용자 지정 client에서는 명시적 모델 추론 설정을 처리해야 합니다.")
             try:
@@ -412,7 +415,10 @@ class PlannedPaper:
                 parts[key] = validate_body(corrected["text"], {**scoped, "subsection_headings": []})
         return compose_parts({"parts": parts}, packet)
 
-    def run(self, research, reference=None, project="generic", output_dir=None, plan_only=False, progress=None):
+    def run(self, research, reference=None, project="generic", output_dir=None, plan_only=False, progress=None,
+            writing_target_chars=None):
+        from writing_length import POLICY as LENGTH_POLICY, apply_length_targets, resolve_target
+        length_target = resolve_target(writing_target_chars)
         research = normalize_research(research)
         profile = project_profile(project)
         catalog = reference_catalog(reference)
@@ -426,7 +432,9 @@ class PlannedPaper:
         identity = fingerprint({"inputs": inputs, "version": VERSION, "model": SOLAR_MODEL,
                                 "context_version": CONTEXT_VERSION,
                                 "workflow_version": WORKFLOW_VERSION, "workflow_prompts": WORKFLOW_PROMPTS,
-                                "prompts": [GROUNDING, PLANNER, WRITER, REVIEWER_CACHE_IDENTITY, EDITOR]})
+                                "prompts": [GROUNDING, PLANNER, WRITER, REVIEWER_CACHE_IDENTITY, EDITOR],
+                                **({"writing_length": {"policy": LENGTH_POLICY, "target_chars": length_target}}
+                                   if length_target else {})})
         folder = Path(output_dir) if output_dir else self.base_dir / "draft_history/planned" / project / identity[:20]
         manifest_path = folder / "manifest.json"
         if manifest_path.exists() and json.loads(manifest_path.read_text(encoding="utf-8"))["input_fingerprint"] != identity:
@@ -455,6 +463,9 @@ class PlannedPaper:
         validate_plan(plan, research, catalog, profile)
         write_json(folder / "plan.json", plan)
         contexts = build_contexts(plan, research, catalog)
+        length_plan = apply_length_targets(plan, contexts, length_target)
+        if length_plan:
+            write_json(folder / "writing-length-plan.json", length_plan)
         write_json(folder / "context-allocation.json", {"version": CONTEXT_VERSION,
                                                        "sections": contexts["allocation_report"]})
         for identifier, packet in contexts["sections"].items():
@@ -465,13 +476,15 @@ class PlannedPaper:
             if progress:
                 progress(100, "작성 계획 검증·저장 완료")
             return {"plan": plan, "run_dir": str(folder), "research_evidence": research, "draft_markdown": "",
-                    "context_allocation": contexts["allocation_report"]}
+                    "context_allocation": contexts["allocation_report"], "writing_length": length_plan}
         workflow = run_hierarchical(self, folder, research, plan, contexts, catalog, progress)
         sections, drafts = workflow["sections"], workflow["drafts"]
         report, history = workflow["review"], workflow["review_history"]
         # Bind the completed draft's warning snapshot to its hashed review.
         # The standalone summary keeps changing as a later run resumes.
         report["warning_summary"] = workflow["review_warnings"]
+        if workflow.get("writing_length"):
+            report["writing_length"] = workflow["writing_length"]
         write_json(folder / "review-history.json", history)
         draft = render_paper(plan, sections, research)
         write_json(folder / "sections.json", {"initial": drafts, "final": sections})
@@ -498,6 +511,8 @@ class PlannedPaper:
                    "review_warnings_path": str(folder / "review-warnings.json"),
                    "assessment": "Subsection evidence usage checks and editorial review; not independent ground truth",
                    "output_md_path": str(folder / "draft.md"), "review_path": str(folder / "review.json")}
+        if workflow.get("writing_length"):
+            metrics["writing_length"] = workflow["writing_length"]
         write_json(folder / "metrics.json", metrics)
         # Only application-owned runs become the reloadable default; custom validation folders remain separate.
         if folder.resolve().is_relative_to((self.base_dir / "draft_history/planned").resolve()):
@@ -509,7 +524,8 @@ class PlannedPaper:
             progress(100, "계획에 따른 초안·검토 기록 저장 완료")
         return {"draft_markdown": draft, "plan": plan, "sections": sections, "review": report,
                 "review_history": history, "research_evidence": research, "metrics": metrics, "run_dir": str(folder),
-                "workflow": workflow["workflow"], "review_warnings": workflow["review_warnings"]}
+                "workflow": workflow["workflow"], "review_warnings": workflow["review_warnings"],
+                "writing_length": workflow.get("writing_length")}
 
 
 def load_latest(base_dir=BASE):
@@ -755,6 +771,8 @@ def main(argv=None):
     parser.add_argument("--research-pdf", type=Path)
     parser.add_argument("--references", type=Path, default=BASE / "paper_structure_analysis.json")
     parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--writing-target-chars", type=int, default=None,
+                        help="본문 목표 글자 수. 기본 30000 또는 PAPER_DRAFT_TARGET_CHARS. 0이면 미적용")
     stages = parser.add_mutually_exclusive_group()
     stages.add_argument("--plan-only", action="store_true")
     stages.add_argument("--extract-only", action="store_true")
@@ -767,7 +785,7 @@ def main(argv=None):
     research = engine.load_research(project_profile(args.project), research_pdf=args.research_pdf)
     reference = {"profiles": load_profiles(args.references)} if args.references else None
     result = engine.run(research, reference, args.project, args.output_dir, args.plan_only,
-                        lambda _, message: print(message, flush=True))
+                        lambda _, message: print(message, flush=True), writing_target_chars=args.writing_target_chars)
     print(json.dumps({"run_dir": result["run_dir"], "plan_sections": len(result["plan"]["sections"]),
                       "title": result["plan"]["title"], "metrics": result.get("metrics")}, ensure_ascii=False))
 

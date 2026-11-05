@@ -46,7 +46,9 @@ class SimpleReviewTests(unittest.TestCase):
             self.assertNotIn("facts", packet)
             self.assertNotIn("evidence_ids", json.dumps(packet))
             self.assertNotIn("evidence_ids", json.dumps(schema))
-            self.assertIn("source_id", json.dumps(schema))
+            self.assertEqual(packet["output_mode"], "fixed_spans")
+            self.assertIn("action", json.dumps(schema))
+            self.assertNotIn('"source_id"', json.dumps(schema))
         self.assertFalse(any(p.get("operation") in ("repair_review_selection", "verify_review_findings") for _, p, _ in requests))
 
     def test_editorial_rejection_revises_only_editor_and_does_not_repeat_subsection_review(self):

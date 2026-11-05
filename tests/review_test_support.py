@@ -2,6 +2,14 @@
 
 
 def editorial_reply(packet):
+    if packet.get("output_mode") == "fixed_spans":
+        parts = packet["source_parts"]
+        if "editable_spans" in packet:
+            parts = {sid: {key: [u for u in parts[sid][key] if u["id"] in ids]
+                           for key, ids in rows.items()} for sid, rows in packet["editable_spans"].items()}
+        return {"sections": {sid: {"parts": {key: {
+            u["id"]: {"action": "keep", "text": "", "join_previous": False} for u in units}
+            for key, units in rows.items()}} for sid, rows in parts.items()}}
     if packet.get("output_mode") == "fixed_slots":
         sections = {}
         for sid, parts in packet["source_parts"].items():

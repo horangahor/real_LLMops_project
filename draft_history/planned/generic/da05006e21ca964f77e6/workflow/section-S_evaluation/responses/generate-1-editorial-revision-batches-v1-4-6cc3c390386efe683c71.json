@@ -1,0 +1,98 @@
+{
+  "request_fingerprint": "6cc3c390386efe683c7122ea5aaa1d55aae2ac8e4934dcbfef31924b6abca2ea",
+  "value": {
+    "sections": {
+      "S_evaluation": {
+        "parts": {
+          "p2": {
+            "S_evaluation_p84_s1": {
+              "action": "replace",
+              "text": "CUDA 포팅 및 최적화 구성의 실행 시간 비교는 CPU 전용, GPU 전용, cuBLAS+메모리풀, CPU·GPU 하이브리드, 그리고 CUDA 그래프·커널 퓨전 적용 버전 순으로 진행되었다. 초기 비교에서 CPU 전용은 약 101.24ms, GPU 전용(my_lirpa.cu)은 약 353.06ms로 GPU 전환이 곧바로 빠르지는 않았고, cuBLAS와 메모리풀을 도입한 GPU 최적화 버전은 약 229.69ms, matmul만 GPU로 옮긴 하이브리드는 약 201.67ms, 이후 하이브리드 V2에서 약 85.79ms로 줄어들었다. 이후 v0(단독 CPU 96ms), v1(모든 병렬 함수를 커널로 바꾼 355ms), v2(벡터 연산을 다시 CPU로 처리하고 메모리풀·cuBLAS를 도입한 229ms), v3(CPU·GPU 하이브리드에 풀 구조체 축소를 적용한 200ms)로 요약된다. 한편 전체 처리 성능의 명시적 순위나, 구성 요소 단위 성능과 전체 처리 성능 사이의 순위 비교·불일치 분석은 원문에서 확인되지 않는다. 다만 CROWN의 세 실행 방식(forward, forward+backward, backward_only)을 avg 기준으로 비교하면 backward_only가 787.8832s로 가장 빠르고, forward는 1029s, forward+backward는 1138s로 나타난다.",
+              "join_previous": false
+            },
+            "S_evaluation_p85_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p86_s1": {
+              "action": "replace",
+              "text": "커널 축소와 최적화 효과는 함수 수준의 커널 통합, 메모리 풀 기반 전달 제거, 복사 제어 플래그 세분화, 그리고 CUDA 그래프·메모리·복사 조합의 세 가지 축으로 정리된다. 먼저 lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 성능을 개선했고, backward_bound_gpu에서는 affine 중복 계산을 삭제해 커널 2개 함수를 줄였으며, new_(upper, lower)_p를 복사하지 않고 std::swap으로 포인터 스와핑했고, backward에서 쓰던 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합쳤다. 이어서 build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu의 커널 퓨전을 진행했고, 5번까지 적용했을 때 최고 성능이 나왔다고 기록되었다. 이후에는 1개의 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전을 계속 진행하는 방향이 이어졌다. GPU 최종 정답 계산 단계에서는 affine_min_gpu와 affine_max_gpu 커널이 사용되었고, 이 부분을 하나의 커널로 병합하는 커널 퓨전이 미리 작성해둔 퓨전 함수를 이용해 완료되었다. 다만 이 퓨전 가능성 제안과 코드 예시는 실제 적용 결과나 정량 성능 수치를 포함하지 않는다. 메모리 전달 측면에서는 forward-backward 간 전달되는 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가한 뒤 forward에서 GPU에 레이어별로 저장하고 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 바꿨다. 이와 함께 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, bias도 메모리 풀에서 관리하도록 변경했으나 성능 최고점이 올랐는지는 불확실하다고 기록되었다. 복사 제어는 forward_bound_impl의 플래그를 도입해 forward 중간 결과의 CPU 복사 여부를 구분했고, false로 할 경우 memcpy가 현저히 줄어드는 효과가 있었다. 이후 forward의 플래그를 중간 결과(layer_bound 복사용), final_affine 복사용, 최종 결과 복사용의 3개로 늘리고, backward의 플래그도 layer_bound와 affine_bound 복사 제어용으로 각각 2개로 분리했다. 또한 forward 최종 계산(result → lower/upper bounds)의 D2H 복사 과정에서 비효율적인 부분이 있어 정확한 테스트를 위해 최적화를 진행했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용해 H2D 복사를 제거했고, default 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성해 PCIe 통신 오버헤드를 최소화했다. 이 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time은 13.939000 ms로 기록되었고 출력 차원은 16이었으며, 실행 시간은 13ms 후반 거의 14ms 정도로 관측되었다. 단일 데이터 기준 memcpy 호출 횟수는 forward와 backward 각각 6번으로 확인되었고, 초기에는 입력 데이터 ±eps, 가중치, bias, upper/lower bound 결과 총 6개를 복사 대상으로 생각했으나 가중치와 bias는 nvtx 촬영 전에 한 번에 올라간다는 점을 고려해 입력 데이터 ±eps, upper bound, lower bound 결과 총 4회만 복사하면 된다고 재검토했다. CROWN 기준으로는 입력 데이터 ±eps와 upper/lower bound를 포함해 총 6개의 복사 대상이 있다고 정리되었다. cudaMemcpy 호출 횟수는 forward와 backward에서 동일했으나, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 더 많이 잡혀 전체 실행 시간 차이의 원인이 되었다. 단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 뛰어넘지 않았지만, 40000번 루프 반복 시 D2H 복사 오버헤드가 backward 대비 forward 계산의 이득을 초과해 forward가 더 느려지는 현상이 관측되었고, 그 원인은 중간 레이어 결과를 저장하느냐/마느냐의 플래그에 있었다. 단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만 92만개의 데이터를 돌리면 비슷해지고 1분 정도 차이가 나는 현상은 아직 해결하지 못했다. 구성 요소들의 결합 방식은 실제 구현·실행 원문에서 직접 기술된 결합 구조나 연결 방식이 확인되지 않으며, pinned Memory 추가, cudaEvent 제어, 필요한 만큼 계산해서 D2H memcpy, certify topk 자료구조 스택화라는 구성 요소 나열만 확인된다. cudaGraph만 적용된 버전과 pinned Memory 추가 + cudaEvent 제어 + 필요한 만큼 계산 후 D2H memcpy + certify topk 자료구조 스택화 버전을 평균으로 비교했을 때, forward에서는 graph 단일 적용이 전체적으로 우수하고 infer_s 기준 약 20초 차이가 났으나, backward에서는 total 시간이 비슷했고 이는 infer에서 깎은 20초를 bound에서 graph보다 20초 빨리 수행했기 때문이라고 분석되었다. 이 이유로 일단 유지하기로 했다고 기록되었다. 다만 이는 실행 결과 해석·판단의 서술이지 구성 요소 간 상호작용의 측정 구조 자체를 직접 기술한 것은 아니다. backward_only가 아직 graph로 만들지 않았더라도 boun 평균이 약 2.5배 정도로 관측되어 많이 느리다고 기록되었고, 그 이유로 final_affine까지 복사(true) 때문에 한 번의 bound 계산에서 10번 일어나기 때문이라고 추정했다. 이후 memcpy 10번에서 6번으로 줄인 결과와 graph 적용 결과까지 나왔다고 기록되었다. 한편 Nsight System의 kernel 비중 증가나 메모리 비중 감소가 반드시 최적화 성공을 의미하지 않으며, CPU-GPU 메모리 병목은 그대로인데 커널 실행 시간이 잘못된 커널 작성으로 늘어나도 kernel 비중이 증가할 수 있어 단순 지표 비교만으로는 공정 평가가 어렵다는 점이 지적되었다. memcpy 호출 횟수 변화(예: 109→94, 66→56 등)는 측정 시점/구성에 따라 비교 지표로 쓰이지만 복사 제거 여부나 플래그 설정에 따라 횟수가 달라지므로 공정 비교를 위해 해당 조건을 명시해야 한다. cudaHostRegister/Pinned Memory와 No-Pinning 비교는 여러 번 측정 결과가 일관되지 않았으며, pinned 적용 버전의 cudaMemcpyAsync가 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확정하기 어렵다는 한계가 기록되었다. 또한 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않았고, case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여 main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. CROWN 결과를 담는 구조체(ForwardBoundResult, BackwardBoundResult)를 반복문 바깥 main 함수 scope에서 선언해 두고 switch 내부에서 값을 담으면 값에 의한 복사가 발생하여 92만 번 반복 시 구조체 복사 오버헤드가 커져 성능이 저하되었다. 실행 인자 유무, switch 사용 여부, 구조체 복사 제거 여부에 따라 동일 조건처럼 보이는 실행에서도 total elapsed 시간이 1342.47s, 1460.60s, 1560.37s, 1561.72s, 1564.18s, 1636s, 2187s 등으로 크게 변동하여 실행 조건/코드 구조 차이가 공정 비교를 저해하는 요소로 작용하였다. 추가로 최적화 부분을 찾았고, fp32에 단정밀도 연산으로 바꿔보기도 했으며 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. infer의 크기 계산 주석 처리(벡터라 크지 않다는 점)와 certify의 heap 재변경 여부는 추가 최적화 후보로 검토되었으나, 이는 계획·검토 수준의 내용이다. 구조 차이는 함수별 실행 위치(GPU 커널 vs CPU for 문)와 GPU 메모리 풀 구조에서 나타나며, only_GPU는 d_mat[4] + d_vec[2](행렬 4개, 벡터 2개)를 미리 할당하고 hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max가 GPU(커널/cudaMemset)에서 CPU(생성자 초기화/for 문)로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. 다만 출처는 비교 요약 표이며 실제 코드 구현이나 실행 측정값은 별도 제시되지 않았고, 표의 복잡도 표기는 작성자 기재 값이며 독립 검증은 원문에 없다.",
+              "join_previous": false
+            },
+            "S_evaluation_p87_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p88_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p89_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p90_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p91_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p92_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p93_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p94_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p95_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p96_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p97_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p98_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p99_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p100_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

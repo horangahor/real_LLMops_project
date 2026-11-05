@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from bounded_drafting import cited_ids
 from editorial_review import checked_editorial_review, review_editorial
-from editorial_revision import edit_editorial, editorial_sources, revise_editorial, revision_changes
+from editorial_revision import edit_editorial, _edit_editorial_legacy, editorial_sources, revise_editorial, revision_changes
 from paper_context import build_contexts
 from planned_paper import PlannedPaper
 from test_hierarchical_drafting import Client, assigned_plan
@@ -68,7 +68,7 @@ class EditorialRevisionTests(unittest.TestCase):
                 {"text": "두 번째 관측이다.", "source_id": units[1]["id"]}]}]
             return raw
         with TemporaryDirectory() as tmp:
-            result = edit_editorial(PlannedPaper(tmp, client), Path(tmp), "assemble", "section", previous, {"s1": packet})
+            result = _edit_editorial_legacy(PlannedPaper(tmp, client), Path(tmp), "assemble", "section", previous, {"s1": packet})
         self.assertEqual(result["s1"]["parts"]["p0"], "첫 번째 관측이다. [근거:F1] 두 번째 관측이다. [근거:F2]")
 
     def test_existing_joint_citation_is_preserved_without_guessing_which_id_to_remove(self):

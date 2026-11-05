@@ -1,0 +1,33 @@
+{
+  "id": "95f429d5-e2c8-4eae-9a13-e4a9db66b0e7",
+  "object": "chat.completion",
+  "created": 1793882459,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"parts\": {\n    \"p0\": [\n      {\n        \"text\": \"본 연구는 CPU 환경에서만 제한적으로 수행되던 CROWN 신경망 검증을 CUDA 기반으로 구현하고, 커널 퓨전·메모리 풀·호스트 메모리 핀닝·동기화 제거 등의 GPU 최적화를 통해 실행 시간을 줄이는 데 초점을 두었다. 핵심 구성은 forward·forward+backward·backward_only 세 실행 방식에 대해 커널 호출 통합과 메모리 복사 비용 제거를 적용하는 것이며, Forward에서는 lower/upper matmul, lower/upper bias matvec, matrix scaling + vector affine을 각각 2회에서 1회로 줄여 method 0 기준 레이어당 8회에서 5회로 감소했고, Backward에서는 split_pos_neg + bias accumulation을 2회에서 1회로 통합하고 레이어당 backward 단계를 5회에서 4회로 줄였다. Method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. 다만 graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회로 유지되어 이번 작업이 그래프 발사 횟수 자체를 줄이지는 않았다. backward_bound_gpu()에 커널 퓨전을 먼저 진행한 결과 23ms 후반대까지의 실행 시간이 관측되었고, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 것은 23ms 정도가 보인다는 점이 확인되었다. 전체 실행 시간은 1138s에서 758s로 감소했으며, backward_only_cuda_graph는 787s에서 630s로 약 157초 감소, forward 방식은 1029s에서 668s로 감소하였다. 실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간은 1055.282초, infer는 131.7986초, bound는 920.8438초로 측정되어, GPU 최적화가 실시간 환경의 대규모 연산 부담을 완화할 가능성을 보여주지만, 단일 실행 중심의 관측과 여러 변경이 동시에 적용된 실험 구조 때문에 개별 최적화의 효과를 분리해 해석하기에는 한계가 있다.\",\n        \"evidence_ids\": [\"E00314\", \"E00315\", \"E00320\", \"E00326\", \"E00329\", \"E00358\", \"E00361\", \"E00375\"]\n      }\n    ]\n  }\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 17140,
+    "completion_tokens": 518,
+    "total_tokens": 17658,
+    "prompt_tokens_details": {
+      "cached_tokens": 1088,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

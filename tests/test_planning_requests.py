@@ -137,13 +137,13 @@ class PlanningRequestTests(unittest.TestCase):
             self.assertEqual(post.call_count, 1)
             sleep.assert_not_called()
 
-    def test_other_calls_do_not_gain_transport_retries_by_default(self):
+    def test_other_calls_gain_one_transport_retry_by_default(self):
         with tempfile.TemporaryDirectory() as tmp, patch("planned_paper.time.sleep") as sleep:
             with patch("planned_paper.requests.post", side_effect=requests.ReadTimeout()) as post:
-                with self.assertRaisesRegex(RuntimeError, "전송 시도 1회"):
+                with self.assertRaisesRegex(RuntimeError, "전송 시도 2회"):
                     request_json("system", {}, {}, Path(tmp) / "audit.native.json", "test-key")
-            self.assertEqual(post.call_count, 1)
-            sleep.assert_not_called()
+            self.assertEqual(post.call_count, 2)
+            sleep.assert_called_once_with(1)
 
     def test_transport_recovery_and_json_repair_preserve_both_failed_attempts(self):
         with tempfile.TemporaryDirectory() as tmp, patch("planned_paper.time.sleep"):

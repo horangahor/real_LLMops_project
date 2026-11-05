@@ -122,9 +122,9 @@ class JsonStorageTests(unittest.TestCase):
         with TemporaryDirectory() as tmp, patch("document_parse.os.replace", side_effect=PermissionError(errno.EACCES, "locked")), \
                 patch("document_parse.time.sleep"), patch("planned_paper.requests.post", side_effect=requests.ReadTimeout()) as post, \
                 self.assertLogs("document_parse", level="WARNING"):
-            with self.assertRaisesRegex(RuntimeError, "ReadTimeout.*전송 시도 1회"):
+            with self.assertRaisesRegex(RuntimeError, "ReadTimeout.*전송 시도 2회"):
                 request_json("system", {}, {}, Path(tmp) / "review.native.json", "test-key")
-            self.assertEqual(post.call_count, 1)
+            self.assertEqual(post.call_count, 2)
             self.assertTrue(list(Path(tmp).glob("*.tmp")))
 
     @unittest.skipUnless(os.name == "nt", "Windows file sharing semantics")

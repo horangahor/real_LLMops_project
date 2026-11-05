@@ -1,0 +1,33 @@
+{
+  "id": "40b82dfc-6ff5-4f4c-8b88-122bfe68cb51",
+  "object": "chat.completion",
+  "created": 1793877056,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": [{\"text\": \"커널 축소와 최적화 효과는 GPU 커널을 CPU로 되돌리는 구성 변경, 커널 호출 횟수 감소, 메모리 복사 최소화, 동기화 제거, cudaGraph 캡처 등 여러 조치가 누적되며 나타났다. only_GPU와 hybrid를 비교하면, make_zero_matrix·make_zero_vector·make_eye·mat_add·positive_part·negative_part·rowwise_scale·affine_min·affine_max처럼 원래 GPU로 돌리던 함수들이 hybrid에서는 CPU for문으로 회귀했고, matmul만 cuBLAS와 메모리 풀로 유지되었다. 이 과정에서 GPU 풀 구조체도 only_GPU의 d_mat[4]+d_vec[2]에서 hybrid의 d_A, d_B, d_C 3개로 축소되었다. hybrid는 새로 추가된 연산이 아니라 GPU 코드를 삭제해 CPU로 되돌린 방식으로 빨라진 사례였다. 다만 이 비교는 함수별 구현 방식과 복잡도 정리, 한 줄 요약에 그치며 정량 성능 수치는 포함하지 않는다.\\n\\n실행 시간 측면에서는 memcpy 제거와 커널 퓨전, 메모리 풀, 동기화 제거가 단계적으로 반영되었다. forward 함수에서 DTOH memcpy를 극단적으로 없앤 뒤 CROWN Verification 실행 시간이 64.716000 ms로 기록되었고, lirpa_forward_bound 함수에 커널 퓨전을 적용한 뒤에는 22.342900 ms가 관측되었다. 이후 alpha/beta 메모리 풀과 warmup을 적용했을 때 21.018800 ms가 기록되었으며, 21.0ms 정도라는 정성적 요약도 함께 남았다. backward_bound_gpu()에 커널 퓨전을 먼저 적용했을 때는 23.925200 ms가 관측되었고, 컴퓨터 사정에 따라 26 ms까지 뛰는 경우도 있지만 23ms 정도가 보인다는 점이 중요하게 기록되었다. 이후 커널 퓨전 완료 후에는 15.751000 ms가 기록되어 이전 15.828400 ms 대비 약 0.2ms 정도 하한선이 낮아진 듯하다는 관측이 남았으며, 실제 차이는 0.0774 ms이다. cudaDeviceSynchronize와 불필요한 동기화 코드를 제거한 뒤에는 25.457200 ms가 기록되며 1ms 정도 줄었다는 관측도 있었다.\\n\\n커널 호출 횟수 감소는 그래프 모드에서 더 뚜렷하게 정리되었다. 3-layer 네트워크 기준으로 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch를 제외하고 CUDA kernel launch만 세었을 때, 추론 커널은 그대로인 상태에서 graph mode=1, 샘플 1개 전체 기준으로 Forward는 33회에서 24회(9회 감소), Backward는 52회에서 37회(15회 감소), Backward-only는 51회에서 39회(12회 감소)로 줄었다. 감소 내역은 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1과 레이어당 backward 단계 5→4회, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소로 설명된다. 다만 graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회로 유지되어 이번 작업이 graph launch 횟수 자체를 줄이지는 않았다.\\n\\n커널 감소 내역과 시간 감소 사이에는 기록자의 의문도 남아 있다. forward에서는 무거운 커널 연산 호출 횟수가 9개 줄었고, backward에서는 forward 부분 12개(9+3), 실제 backward 부분에서는 3개만 줄었으며, backward_only는 45→33회로 26.7%로 가장 적게 줄었고 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄어든 것이어서 커널 비용도 다르다는 점이 지적되었다. 그럼에도 커널 횟수가 더 많이 줄면 시간도 더 줄어야 하지 않는지, 왜 forward가 가장 많이 줄었는지에 대한 의문은 원인 분석으로 이어지지 않은 채 남아 있다.\\n\\nmemcpy 관련 최적화는 호출 횟수 감소와 복사 크기 변경으로 나뉘었다. 호출 횟수로 비교하면 memcpy가 66개에서 56개로 줄었고, 커널 memcpy에서는 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 데이터 크기만 복사하도록 바꾸었다. 그러나 이 변경은 CPU 계산 오버헤드가 더 커진 것 같고 시간이 늘었다는 관측으로 이어져, 복사 크기 축소가 항상 이득으로 이어지지는 않았다. cudaGraph 관련 실험에서는 추론과 bound를 따로 캡처한 경우와 추론+bound를 한 번에 캡처한 경우를 구분해 커널 런치 비용을 줄이려 했고, 추론과 bound를 따로 캡처했을 때 기준으로 약 400초 정도 줄어든 듯하다는 관측이 있었다. cudaGraph 캡처는 92만 번의 입력값을 계산하면서 1번의 CROWN 계산 내에서도 수십 번 커널이 호출되는 상황에서, 커널 자체 최적화까지 끝난 뒤 고려할 수 있는 스냅샷 방식의 방법으로 설명되었다.\\n\\n배칭과 멀티 스트림 구성은 별도 환경에서 큰 차이를 보였다. 배칭은 싱글 스트림이 아니라 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식이며, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 반면 forward_cuda_graph의 전체 시간은 약 983초였고, CPU에서 필요한 만큼만 계산한 뒤 복사한 버전은 1055초로 72초 더 느려졌다. 실시간 멀티스트림 구성에서 forward_cuda_graph는 전체 1055.282초, infer 131.7986초, bound 920.8438초로 측정되었다. 그래프 적용 결과는 787.8832s로 3가지 방법 중 가장 빠르다고 기록되었으며, avg 기준 forward 1029s, forward+backward 1138s가 비교값으로 함께 언급되었다.\\n\\n정확도 결과 보존 여부는 별도 표 없이, 최적화 과정에서 출력된 Lower Bound, Upper Bound, Normal Pred(y) 또는 inference(y) 값이 계속 표시되었다는 점으로 확인된다. 각 단계의 실행 결과 화면에는 eps=1e-06, Output Dimension 16 조건에서 인덱스별 경계값과 예측값이 그대로 제시되었고, 기록자는 검증 결과가 유지되는지보다 실행 시간 변화에 집중해 관측을 남겼다. 한편 지금까지 수행한 최적화는 제로 memcpy, 커널 자체 실행 횟수 감소(커널 퓨전, 커널 graph), GPU 아키텍처의 SM 구조를 고려한 FP64→FP32 및 double→float 변경까지 포함하며, cuBLAS/cuSparse의 기본 행렬곱 함수를 사용해 온 상태에서 변형 함수들과 SM 내 분석, Nsight compute 분석을 함께 진행할 여지도 검토되었다. 다만 각 최적화의 개별 효과를 체계적으로 분리한 ablation study는 이루어지지 않았고, 여러 변경이 동시에 적용된 상황에서 특정 조치의 기여를 분리해 해석하기는 어렵다는 한계가 남는다.\", \"evidence_ids\": [\"E00036\", \"E00037\", \"E00083\", \"E00119\", \"E00120\", \"E00125\", \"E00131\", \"E00132\", \"E00139\", \"E00140\", \"E00144\", \"E00145\", \"E00212\", \"E00213\", \"E00214\", \"E00215\", \"E00216\", \"E00261\", \"E00262\", \"E00263\", \"E00274\", \"E00311\", \"E00313\", \"E00314\", \"E00315\", \"E00318\", \"E00319\", \"E00326\", \"E00329\", \"E00330\", \"E00331\", \"E00339\", \"E00370\", \"E00374\", \"E00375\", \"H85ca0e507c4e_22\", \"H85ca0e507c4e_23\", \"H85ca0e507c4e_24\", \"H85ca0e507c4e_88\", \"H85ca0e507c4e_89\", \"H85ca0e507c4e_92\"]}]}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 59426,
+    "completion_tokens": 1817,
+    "total_tokens": 61243,
+    "prompt_tokens_details": {
+      "cached_tokens": 31552,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

@@ -1,0 +1,110 @@
+{
+  "request_fingerprint": "ec2b437976867f8b4e883473996c515347c9db1849656333397d4819b18dc4f4",
+  "value": {
+    "sections": {
+      "S_limitations": {
+        "parts": {
+          "p0": {
+            "S_limitations_p2_s1": {
+              "action": "replace",
+              "text": "측정 기록은 대부분 단일 실행 결과를 중심으로 남아 있어, 실행 시간 수치의 반복성이나 조건 간 통계적 비교는 제한적이다. GPU OPTIMIZED 모드에서 229.691800 ms가 기록되었고, 이후 가중치 사전 업로드나 메모리 풀·warmup 조합 등으로 149.820400 ms, 152.902900 ms, 128.894800 ms 등 여러 값이 관측되었지만, 각 값은 해당 시점의 단일 실행 결과로만 제시된다. 기록자는 GPU OPTIMIZED 적용 후 약 100 ms가 줄었음에도 여전히 CPU보다 느리다고 판단했으나, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 없다. 또한 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 행렬만 복사하는 방안처럼 여러 개선 방향이 함께 제안되었지만, 각 방안의 실제 적용 결과나 개별 효과는 분리 측정되지 않았다. mempool과 warmup의 조합처럼 일부 요소가 큰 효과를 보인다는 정성적 평가는 있으나, 약 50 ms 단축이나 거의 200 ms 단축과 같은 수치는 기록자의 관측·판단에 가깝고 정량적으로 분리된 반복 측정으로 뒷받침되지는 않는다. 따라서 실행 시간 개선 폭이나 CPU 대비 우열 해석은 단일 실행 중심의 기록과 동시 변경·측정 조건 통제가 충분하지 않은 범위 안에서만 받아들일 수 있다.",
+              "join_previous": false
+            },
+            "S_limitations_p3_s1": {
+              "action": "replace",
+              "text": "측정 및 반복 조건의 한계는 단일 실행 기록 중심으로 정리되어 있어, 조건별 분리 해석이나 반복 측정 통계를 충분히 제시하지 못한다는 점이다. CROWN_SWEEP 실행 시간은 98.995s로 기록되었으나, 이는 특정 실행 조건에서의 값이며 다른 조건과의 비교 해석이나 반복 측정 통계는 제시되지 않았다. eps_list 기반 sweep 실행에서도 eps=9.0e-03, 1.0e-02, 1.0e-01, 1.0e+00 조건에서 모두 T=0, F=40000, ratio=0.000으로 기록되고 total elapsed가 1447.17s로 측정되었지만, 이 역시 단일 실행 기록이며 반복 측정 통계나 조건별 분리 해석은 포함하지 않는다. eps=1.0e-02, 1.0e-01, 1.0e+00 조건에서도 T=0, F=40000, ratio=0.000으로 기록되고 total elapsed가 1375.97s로 측정되었으나, eps별 개별 elapsed 시간이 아닌 통합 total elapsed만 기록되었다.",
+              "join_previous": false
+            },
+            "S_limitations_p4_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_limitations_p5_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_limitations_p6_s1": {
+              "action": "replace",
+              "text": "현재 실행 시간 비교는 대부분 단일 실행 기록에 기반하며, 반복 측정 통계나 조건별 분리 측정이 충분히 제시되지 않았다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. 이 수치는 figure 캡션에 기록된 값이며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다. Bound 단계에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. Bound와 Infer를 합산한 785.98초는 전체 787.88초와 약 1.9초 차이가 있으며, 이는 certify 단계 등 미분해 오버헤드로 추정된다. 평균 속도 관점에서는 No-Pin이 약 13초 빨랐다고 요약되나, 이 수치는 구체적 테스트 조건(데이터 크기, 반복 횟수, 전체 실행 시간 대비 맥락)이 명시되지 않은 요약값이다. 실시간성 관점에서는 별도의 측정 맥락에서 No-Pin의 최대 지연이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 118.94μs 대 47.28μs로 약 60% 감소했다. 다만 이 실시간성·지터·WCET 비교는 전체 실행 시간·Bound/Infer 단계 비교와 측정 조건과 비교 범위가 다른 별도 표의 결과이며, 지터 값은 118μs/47μs로 반올림된 제시값과 118.94μs/47.28μs의 정밀 제시값이 함께 존재한다. 이러한 차이는 단일 실행 중심의 기록이라는 점과 함께 결과 해석의 범위를 제한한다.",
+              "join_previous": false
+            },
+            "S_limitations_p7_s1": {
+              "action": "replace",
+              "text": "최적화 과정에서는 여러 기법이 함께 적용되거나 번갈아 시도된 사례가 많아, 개별 변경의 효과를 체계적으로 분리하기 어렵다. CUDA Graph 적용으로 전체 실행 시간이 787.8832초로 3가지 방법 중 가장 빠르다고 기록되었으나, avg 기준 forward는 1029초, forward+backward는 1138초로 함께 언급되어 방법 간 비교가 단일 수치로 고정되지 않았다. 커널 launch 횟수 감소도 확인되는데, graph mode=1에서 샘플 1개 전체 기준으로 Forward는 33회→24회(9회 감소), Backward는 52회→37회(15회 감소), Backward-only는 51회→39회(12회 감소)로 줄었고, 이후 실행 시간 요약도 1138s에서 758s로 감소한 것으로 기록되었다. 그러나 커널 감소 폭이 forward에서 가장 컸음에도 시간 감소가 그에 비례하는지, backward_only의 감소율이 26.7%로 가장 낮은 이유 등은 작성자가 의문을 남긴 상태로, 각 최적화 기법의 기여도를 분리해 해석하기에는 한계가 있다.",
+              "join_previous": false
+            },
+            "S_limitations_p13_s1": {
+              "action": "replace",
+              "text": "측정은 대부분 단일 실행 또는 제한된 반복을 기준으로 기록되어 있어, 평균·최대·지터 값의 재현성과 분산 추정이 제한된다. Host Alloc, nopin, 기본 블록처럼 구성별로 측정 블록을 나누어 비교했지만, 각 블록의 수치와 레이블은 해당 figure·문단 원문에만 근거하므로 블록 간 직접 비교의 공정성은 별도로 검증되지 않았다. Pinned와 No-Pin의 경로 차이, 작은 전송에서 DMA 셋업 오버헤드 누적, 평균 속도와 최대 지연·지터 사이의 상충은 관찰되었으나, 이러한 결과가 특정 입력 크기·루프 횟수·실행 환경에 의존한다는 점이 함께 서술된다.",
+              "join_previous": false
+            },
+            "S_limitations_p14_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_limitations_p15_s1": {
+              "action": "replace",
+              "text": "측정 조건 통제도 제한적이다. GPU 클록 고정은 나중에 반영된 사항이고, warm up 적용 여부와 단일 샘플·평균 측정 기준에 따라 bound 계산 시간 해석이 달라질 수 있으며, forward와 backward bound 시간이 약 0.2ms 차이로 비슷하게 관찰된 것도 측정 방식에 따라 다르게 보일 수 있다. 또한 구성 요소 단위 성능과 전체 처리 성능, 또는 서로 다른 실행 모드 간의 명시적 순위 비교나 상호작용 효과의 분리 측정은 원문에서 확인되지 않아, 관찰된 속도 차이와 안정성 개선의 해석 범위가 해당 기록 수준으로 제한된다.",
+              "join_previous": false
+            }
+          },
+          "p1": {
+            "S_limitations_p23_s1": {
+              "action": "replace",
+              "text": "비교 조건 통제의 한계는 단일 실행 중심의 기록과 동시 변경의 효과 분리 부족에서 비롯된다. GPU OPTIMIZED 모드에서 229.691800 ms가 기록되었으나 이는 단일 실행 결과이며, CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. 이후 약 100ms가 줄었다는 평가도 기록자의 정성적 판단이고, CPU보다 느리다는 비교 역시 정확한 CPU 수치나 반복 측정 기반 통계로 뒷받침되지 않는다. 이에 matmul만 GPU로 실행하는 하이브리드 시도가 이어졌지만, 실제 구현 완료와 측정 결과는 이 단계에서 제시되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p23_s2": {
+              "action": "replace",
+              "text": "v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W) GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 정리되었으나, 이는 방안 목록 기록일 뿐 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 없다. 이후 가중치 사전 업로드(PRELOAD ON GPU)를 적용한 CROWN Verification 실행에서 149~155ms 범위가 기록되었고, bias까지 GPU에 미리 업로드하는 시도도 있었으나 bias는 Vector이고 코드상 약 4KB 정도라서 CPU가 연산하기에도 크게 무리가 없는 수준이라 성능 개선 의미가 크지 않다는 판단이 덧붙었으며, bias 업로드 여부에 따른 정량 비교 수치는 없다. MEMPOOL + Weights PRELOAD ON GPU 모드에서 CROWN Verification(eps=1e-06, Output Dimension 16)을 실행한 결과 Elapsed time이 149.820400 ms로 기록되었고, 출력 표에는 [Index], Lower Bound, Upper Bound, Normal Pred (y) 열이 포함되어 0번~15번 출력의 Lower/Upper Bound 및 Normal Pred (y) 값이 표시되었으나, 이 역시 단일 실행 결과이며 다른 GPU 모드나 CPU 버전과의 반복 측정 기반 통계는 없다.",
+              "join_previous": false
+            },
+            "S_limitations_p23_s3": {
+              "action": "replace",
+              "text": "여러 최적화 조합이 함께 적용되면서 개별 변경의 효과를 분리하기 어려운 점도 한계로 남는다. mempool + warmup 조합의 152.902900 ms와 mempool + cuBlas + warmup의 174.978400 ms는 각각 단일 실행으로 기록되었으며, 두 조건 간 비교 해석은 후속 문맥 확인이 필요하다. 기록자는 1회 시도에서 cuBlas가 더 느리게 보였고, 메모리풀 warmup이 각 버전에서 약 50ms 단축에 효과가 있다고 관찰했지만, 이 약 50ms는 기록자의 정성적 추정이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 현재 페이지에 제시되지 않았다. mempool + warmup 조합이 두 요소만으로 매우 효과적이라는 평가와 함께 거의 200ms 단축에 이른다는 언급도 기록자의 정성적 판단이며, 정확한 단축량이나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 50ms만 더 단축하면 CPU를 따라잡을 수 있다는 판단 역시 기록자의 목표·판단이고, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p23_s4": {
+              "action": "replace",
+              "text": "cuSparse 도입 시도에서는 W, W_pos, W_neg를 CSR 형식으로 변환하고 cuSPARSE handle 및 CSR descriptor를 유지하며 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하고, 기존 matmul은 유지한 상황이 기록되었다. spMV만 적용한 결과 27.107400 ms가 기록되었고 이전 27ms 수준보다 느려졌다고 기록되었으나, 비교 기준 시점의 정확한 수치나 반복 측정 통계는 제시되지 않았다. 이후 spMM 도입까지 검토하기로 했으나, 이는 후속 도입 검토 방향의 기록이며 실제 spMM 도입 후 결과는 다음 페이지에 이어진다.",
+              "join_previous": false
+            },
+            "S_limitations_p23_s5": {
+              "action": "replace",
+              "text": "cuBLAS와 cuSPARSE는 실험했으나 현재 모델 크기와 호출 패턴에서는 느려졌으므로 현 기준 코드에는 포함하지 않은 상태이며, 후에 다시 도입해보는 시도가 필요하다는 판단이 기록되었다. spMM 도입 후 거의 40ms로 회귀했고 이러면 안된다는 반응이 기록되었으나, 이는 정성적 판단·반응 기록이며 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. network_forward는 신경망의 일반 추론값을 출력하는데 아직 GPU 파이프라인이 아니라서 최적화가 안 되어 있기도 하다는 설명도 현재 상태에 대한 해석 기록이며, 최적화 적용 결과나 정량 수치는 제시되지 않았다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞다는 판단도 현재 측정 기준 유지에 대한 판단 기록이며, 별도 벤치마크 옵션 비교 가능성은 함께 언급되어 있다.",
+              "join_previous": false
+            },
+            "S_limitations_p23_s6": {
+              "action": "replace",
+              "text": "network_forward()는 전체 타이머에 포함되지만 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 설명도 현재 파이프라인 상태와 오버헤드 구조에 대한 설명 기록이며, 정량 분리 측정 결과는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크며, SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황이라는 해석도 기록자의 원인 해석이며, setup/launch 비용과 계산 이득의 정량 분리 측정은 제시되지 않았다. 공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다는 제안도 공식 결과 유지 및 별도 비교 방식에 대한 제안·판단 기록이며, 실제 별도 벤치마크 결과 수치는 제시되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p23_s7": {
+              "action": "replace",
+              "text": "lirpa_forward_bound 함수 커널 퓨전 적용 후 22.342900 ms가 단일 실행으로 기록되었고, 22ms 초반까지 나오는 경우가 있었다는 관측도 정성적 관측 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. backward_matmul_pair_gpu 적용 후 22ms 보이는 비율이 늘었고 최저점(28ms)도 잘 안 보이게 되어 체감상 효과가 있다는 기록도 정성적 관측·판단 기록이며, 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. alpha/beta 메모리 풀 적용 후 21.018800 ms가 단일 실행으로 기록되었고, 21.0ms 정도 나온다는 요약도 정성적 요약 기록이며 단일 실행의 정밀 수치나 반복 측정 통계는 제시되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p23_s8": {
+              "action": "replace",
+              "text": "단일 실행 기록에서는 CROWN Verification(eps=1e-06, mempool+warmup) 실행 시간이 15.828400 ms로, 커널 퓨전 완료 후 실행 시간이 15.751000 ms로 각각 기록되었다. 두 값 모두 단일 실행 결과이며, 실행 결과가 15ms 후반까지 나온다는 관측과 커널 퓨전 전후 실행 시간 차이가 약 0.2ms 정도라는 관측은 기록자의 정성적 관측에 해당한다. 실제 차이는 15.828400 ms와 15.751000 ms의 차이로 계산되지만, 출처는 이를 느슨하게 근사한 정성적 관측으로 남겼으므로, 이 비교는 반복 측정 통계나 조건별 분리 측정으로 뒷받침되지 않는다. 따라서 이러한 기록은 비교 조건의 통제 수준을 평가하기보다, 단일 실행 중심의 기록과 정성적 관측이 현재 결과의 해석 범위를 제한한다는 점으로 이해해야 한다.",
+              "join_previous": false
+            },
+            "S_limitations_p23_s9": {
+              "action": "replace",
+              "text": "forward 최적화를 통해 backward보다 forward가 느린 문제는 해결되었다. 다만 이 해결 선언은 기록자의 판단이며, 해결 후 정량 성능 수치나 반복 측정 기반 통계는 이 요소만으로 제시되지 않는다. 단일 테스트 결과로 비교하면 다중 데이터셋 테스트 시 forward와 backward 간 3배 차이가 나야 하는데, 실제 관측에서는 그 차이가 나타나지 않아 Nsight System 분석을 사용하기로 했다. 이 기록은 기대 차이와 실제 관측 간 불일치 및 분석 도구 채택 동기를 정리한 것이며, Nsight 분석 결과 수치는 이 요소만으로 제시되지 않는다.",
+              "join_previous": false
+            },
+            "S_limitations_p23_s10": {
+              "action": "replace",
+              "text": "Forward 테스트는 40000개의 데이터에 대해서만 수행되었고, Backward 테스트도 40000개의 데이터에 대해서만 수행되었다는 기록은 테스트 데이터 규모에 대한 기록이며, 92만개 데이터 테스트와의 비교 해석은 별도 문맥이 필요하다. Forward 전체 실행 시간은 약 64s, Backward 전체 실행 시간은 약 98s이며, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 많이 잡히는 점이 눈에 띈다는 관측도 전체 실행 시간과 cudaMemcpy 시간에 대한 관측 기록이며, 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. 단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만, 92만개의 데이터를 돌리면 비슷해진다(1분 정도 차이)는 현상과 이 문제는 아직 해결하지 못했다는 기록도 관측된 현상과 미해결 상태에 대한 기록이며, 원인 분석이나 해결 방안은 제시되지 않았다.",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "805b77f7-bca7-43dc-9817-0228f0ef376f",
+  "object": "chat.completion",
+  "created": 1793876886,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"parts\": {\n    \"p0\": [\n      {\n        \"text\": \"커널 축소와 최적화 효과는 함수 제거·통합, 메모리 풀 활용, 복사 경로 단축, CUDA 그래프 적용이라는 여러 층위로 진행되었다. lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 성능을 개선했고, backward_bound_gpu에서는 affine 중복 계산을 삭제해 커널 2개 함수가 줄어들었으며, new_(upper, lower)_p를 복사하지 않고 std::swap으로 포인터 스와핑했고, backward에서 쓰던 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합쳤다. 이어서 build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu의 커널 퓨전을 진행해 5번까지 적용했을 때 최고 성능이 관측되었다. 이후에는 1개의 커널 호출로 줄일 수 있는 함수들을 대상으로 커널 퓨전을 계속 진행했고, 미리 작성해 둔 퓨전 함수를 사용해 affine_min과 affine_max를 하나의 커널로 병합하는 퓨전이 완료되었다. 다만 최종 정답 계산용 affine_min_gpu·affine_max_gpu는 커널 퓨전 가능성이 검토되었을 뿐 실제 적용 결과로 기록되지는 않았다.\",\n        \"evidence_ids\": [\"E00118\", \"E00122\", \"E00123\", \"E00124\", \"E00126\", \"E00127\", \"E00128\", \"E00129\", \"E00143\"]\n      },\n      {\n        \"text\": \"메모리 풀과 복사 경로 최적화도 함께 적용되었다. forward-backward 사이에 전달되던 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가한 뒤 forward에서 GPU에 레이어별로 저장하고 backward는 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 바꿨다. 이에 따라 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었으나, 이 변경이 성능 최고점을 올렸는지는 불확실하다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용해 H2D 복사를 제거했고, default 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성해 PCIe 통신 오버헤드를 최소화했다. 이 최적화 적용 후 CROWN Verification의 Elapsed time은 13.939000 ms로 기록되었고 출력 차원은 16이었으며, 실행 시간은 13ms 후반에서 거의 14ms 정도로 관측되었다. 한편 fp32 단정밀도 연산으로 바꿔보는 시도도 있었으나 결과는 별도 고찰로 넘겨졌다.\",\n        \"evidence_ids\": [\"E00130\", \"E00133\", \"E00146\", \"E00147\", \"E00148\", \"E00149\", \"E00150\"]\n      },\n      {\n        \"text\": \"복사 제어와 구조체 배치도 성능 변동의 요인으로 기록되었다. forward_bound_impl의 플래그를 true로 두면 중간 결과가 복사되며, 이 플래그는 forward에서 중간 계산 결과와 최종 결과까지 D2H 복사를 제어하는 역할을 했다. 40000번 루프 반복에서는 backward보다 forward가 느리게 관측되었고, 원인은 중간 레이어 결과를 저장하느냐/마느냐를 가르는 플래그에 있었다. 단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 뛰어넘지 않았지만, 40000번 루프 반복 조건에서는 D2H 복사 오버헤드가 backward 대비 forward 계산의 이득을 초과해 forward가 더 느려지는 현상이 나타났다. 이에 따라 forward의 플래그를 중간 결과(layer_bound 복사용), final_affine 복사용, 최종 결과 복사용의 3개로 늘리고, backward의 플래그도 layer_bound와 affine_bound 복사 제어용으로 각각 2개로 분리했다. forward 최종 계산(result → lower/upper bounds)의 D2H 복사 과정에도 비효율적인 부분이 있어 정확한 테스트를 위해 최적화가 진행되었다. 단일 데이터 기준 memcpy 호출 횟수는 forward와 backward 각각 6번으로 확인되었고, 초기에는 입력 데이터 ±eps, 가중치, bias, upper/lower bound 결과를 포함해 총 6개의 복사 대상이 있다고 보았으나, 가중치와 bias는 nvtx 촬영 전에 한 번에 올라간다는 점을 고려해 입력 데이터 ±eps와 upper/lower bound 결과 총 4회만 복사하면 된다고 재검토되었다. CROWN 기준으로는 입력 데이터 ±eps와 upper/lower bound를 포함해 총 6개의 복사 대상이 있다고 정리되었으며, cudaMemcpy 호출 횟수는 forward와 backward에서 동일했지만 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 더 많이 잡혀 전체 실행 시간 차이의 원인이 되었다.\",\n        \"evidence_ids\": [\"E00151\", \"E00152\", \"E00153\", \"E00154\", \"E00155\", \"E00156\", \"E00157\", \"E00160\", \"E00161\", \"E00162\", \"E00165\", \"Hefd7e87bb735_17\"]\n      },\n      {\n        \"text\": \"구성 요소들의 결합 방식과 상호작용 효과는 연구 노트에 부분적으로만 남아 있다. pinned Memory 추가, cudaEvent 제어, 필요한 만큼 계산해서 D2H memcpy, certify topk 자료구조 스택화가 구성 요소로 언급되지만, 이들 구성 요소의 실제 결합 구조나 연결 방식은 구현·실행 원문에서 직접 기술되지 않았다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 infer_s에서 약 20초 차이가 난 반면, backward에서는 total 시간이 비슷해졌는데, 이는 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행했기 때문이라고 서술되었다. 이 이유로 해당 구성은 일단 유지하기로 했다고 기록되었으나, 이는 실행 결과 해석·판단의 서술이지 구성 요소 간 상호작용의 측정 구조 자체를 직접 기술한 것은 아니다. cudaGraph만 적용된 버전과 pinned Memory 추가 + cudaEvent 제어 + 필요한 만큼 계산 후 D2H memcpy + certify topk 자료구조 스택화 버전을 평균으로 비교한 맥락에서도, forward에서는 graph 단일 적용이 전체적으로 우수하고 infer_s 기준 약 20초 차이가 났으며, backward에서는 total 시간이 비슷했고 그 이유가 infer에서 깎은 20초를 bound에서 graph보다 20초 빨리 수행했기 때문이라고 분석되었다.\",\n        \"evidence_ids\": [\"H85ca0e507c4e_95\", \"H85ca0e507c4e_96\", \"H85ca0e507c4e_97\", \"H85ca0e507c4e_98\", \"Hefd7e87bb735_30\"]\n      },\n      {\n        \"text\": \"CUDA 그래프 적용과 제거 실험 성격의 관측 결과도 함께 기록되었다. CUDA 그래프 적용 후 전체 소요 시간이 감소해 787s → 630s, 1029s → 668s로 줄었고, Phase breakdown에서는 bound 단계가 전체 elapsed의 대부분을 차지하고 infer 단계가 그 다음, certify 단계가 가장 작은 비중을 차지했다. 결합 방식 측면에서는 forward+backward 결합이 정방향과 backward 바운드를 함께 실행하는 방식으로, backward_only는 backward 바운드만 실행하는 방식으로 측정되며, CUDA 그래프 적용 버전도 별도로 측정되었다. 관측된 속도 순서는 backward_only가 forward+backward보다 빠르고 forward가 가장 느려, 일반적인 예상(forward < forward+backward < backward_only)과 다르게 기록되었다. backward_only는 아직 graph로 만들지 않았더라도 boun 평균이 약 2.5배 정도로 관측되어 많이 느리다고 기록되었고, 그 이유로 final_affine까지 복사(true) 때문에 한 번의 bound 계산에서 10번 일어나기 때문이라고 추정되었다. 이후 memcpy 10번에서 6번으로 줄인 결과와 graph 적용 결과까지 나왔다고 기록되었다. 다만 Nsight System에서 kernel 비중 증가나 메모리 비중 감소가 반드시 최적화 성공을 의미하지는 않으며, CPU-GPU 메모리 병목은 그대로인데 커널 실행 시간이 잘못된 커널 작성으로 늘어나도 kernel 비중이 증가할 수 있어 단순 지표 비교만으로는 공정 평가가 어렵다는 한계가 함께 지적되었다. memcpy 호출 횟수 변화(예: 109→94, 66→56 등)는 측정 시점/구성에 따라 비교 지표로 쓰이지만 복사 제거 여부나 플래그 설정에 따라 횟수가 달라지므로 공정 비교를 위해 해당 조건을 명시해야 한다는 점도 기록되었다.\",\n        \"evidence_ids\": [\"H85ca0e507c4e_92\", \"H85ca0e507c4e_93\", \"H85ca0e507c4e_94\", \"E00270\", \"E00272\", \"Hefd7e87bb735_13\", \"Hefd7e87bb735_15\"]\n      },\n      {\n        \"text\": \"실행 조건 차이도 결과 해석에 영향을 주는 요인으로 나타났다. CROWN 결과를 담는 구조체(ForwardBoundResult, BackwardBoundResult)를 반복문 바깥 main 함수 scope에서 선언해 두고 switch 내부에서 값을 담으면 값에 의한 복사가 발생하여, 92만 번 반복 시 구조체 복사 오버헤드가 커져 성능이 저하되었다. switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 실행 인자 유무, switch 사용 여부, 구조체 복사 제거 여부에 따라 동일 조건처럼 보이는 실행에서도 total elapsed 시간이 1342.47s, 1460.60s, 1560.37s, 1561.72s, 1564.18s, 1636s, 2187s 등으로 크게 변동하여, 실행 조건/코드 구조 차이가 공정 비교를 저해하는 요소로 작용하였다. 단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만, 92만 개의 데이터를 돌리면 비슷해진다(1분 정도 차이)는 현상도 아직 해결하지 못한 상태로 기록되었다. cudaHostRegister/Pinned Memory와 No-Pinning 비교는 여러 번 측정 결과가 일관되지 않았으며, pinned 적용 버전의 cudaMemcpyAsync가 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확정하기 어렵다는 한계도 함께 기록되었다.\",\n        \"evidence_ids\": [\"Hefd7e87bb735_18\", \"Hefd7e87bb735_20\", \"Hefd7e87bb735_43\", \"E00167\", \"E00353\", \"E00354\"]\n      }\n    ]\n  }\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 46489,
+    "completion_tokens": 2218,
+    "total_tokens": 48707,
+    "prompt_tokens_details": {
+      "cached_tokens": 22848,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

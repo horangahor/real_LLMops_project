@@ -1,0 +1,68 @@
+{
+  "request_fingerprint": "9fc929e3dd89ddf67f89dcd372a4b5d3efd1f71617e572162543e8906b9aa44c",
+  "value": {
+    "sections": {
+      "S_limitations": {
+        "parts": {
+          "p2": {
+            "S_limitations_p47_s1": {
+              "action": "replace",
+              "text": "현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. antenna_lirpa는 싱글 스트림으로 동작하지만 cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 구현보다 약 4배 빠르며, 이 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된다고 해석된다. 현재 작성자는 2차원 block 크기와 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 그래프를 적용했더니 787.8832s로 3가지 방법 중 가장 빠르다고 기록되었으며, avg 기준 forward는 1029s, forward+backward는 1138s라고 비교값이 함께 언급되었다. cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이이다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고(예상대로 DMA 효과), Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해, 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었다. 추론(Infer) 단계에서 시간이 느려졌으며, 이에 대해 기록자가 '일단 추론에서 좀 시간이 느려지긴 했다..'라고 기록했다. GPU 클록을 고정하고 다시 실험해보기로 했으며, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했다. 클록을 2800Mhz로 고정하고 돌린 결과(기존 HostRegister)가 기록되었다. cuda 강의 19장의 GPU 클록 고정을 참고했다. 현재 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행한다. 측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용한다. 평균 속도에서는 No-Pin이 13초 빨랐지만, 실시간성(Real-Time)에서는 치명적인 약점이 있었다. No-Pin(일반 메모리)의 평균 처리 속도는 약 13초 빠름(CPU 캐시 복사 이득), Pinned Memory(Register)는 약간 느림(DMA 셋업 오버헤드)이며, 최대 지연(Max Spike)은 No-Pin이 8.8ms~11.6ms(치명적), Pinned Memory가 1.64ms(극도로 안정적), 지터(Jitter)는 No-Pin이 118μs(불안정), Pinned Memory가 47μs(안정)이다. No-Pin은 평소에는 CPU 캐시빨로 살짝 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 끼어들면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없으며(1ms 무선 통신 데드라인 파괴), Pinned Memory는 매번 정직하게 DMA 셋업 비용(1~2μs)을 치르기 때문에 평균 시간은 살짝 손해를 보지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 절대적인 안정성(결정론적 성능)을 보장한다. 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다. Pageable 메모리는 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory는 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin(일반 메모리)은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 약 0.02~0.05μs(20~50ns)에 복사가 끝나 DMA 셋업보다 30~50배 빠르다. infer 단계에서 40,000번 동안 CPU 스레드가 cudaStreamSynchronize로 대기하고 깨어나는 과정에서의 미세 지연과 드라이버 동기화 비용이 맞물려, Pinned 쪽이 총 루프 시간에서 약 13초 정도 느려지는 결과가 나왔다. 총 시간(평균 시간)만 보면 No-Pin이 더 빨라 보이지만, 지터(Jitter)와 최악 실행 시간(WCET)을 보면 Pinned가 유리하다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. No-Pin은 평소에는 CPU 캐시로 빠르게 동작하지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락(Lock) 경합이 터지는 순간 지연시간이 11ms까지 튀며(5G/6G 기지국 기준 패킷 드랍/통신 두절 발생 가능), Pinned는 매번 1.5μs의 정직한 하드웨어 통행료를 내는 대신 OS 페이징 간섭을 100% 차단하여 아무리 튀어도 1.64ms 안쪽으로 엄격하게 보장된다. 사용자분의 직관대로 1KB밖에 안 되는 작은 데이터를 보내면서 매 루프마다 개별 하드웨어 DMA 셋업을 부르는 오버헤드 때문에 Pinned가 No-Pin보다 총 소요 시간이 더 길게 나왔던 것이다. 추론이 끝나기까지의 동기화(synchronize) 시간이 pinned memory 미적용 버전이 가장 빠르며, 이는 H2D 복사 시간의 영향일 수 있다고 분석했다. cudaMemcpyAsync 호출 시간에서 pinned memory 적용 버전이 미적용 버전보다 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다고 분석했다. 작은 데이터 크기(현재 입력 기준 1KB)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다고 해석했다. 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라서 2copy에서 1copy로 가면서 고정 setup 비용이 줄었다고 생각했으나, 마지막 측정 결과에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다고 기록했다. pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구도 아니고 너무 깊게 들어가면 다른 것도 못할 것 같다고 기록했다. 결론 섹션에서 backward_only가 왜 제일 빠른지에 대한 질문을 제기했다. 평균값(n=920000) 측정 결과 표에서 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 hostRegister, hostAlloc, noPinning 간 비교했다. 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch 횟수만 세었으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했다. 추론 커널은 그대로라서 graph mode=1에서 샘플 1개 전체 기준으로는 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다. 커널 감소의 구체적 내용은 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회이며 method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회이며, 이번 작업은 graph launch 횟수 자체를 줄이지는 않았다. 커널 횟수가 더 많이 줄면 더 시간도 줄어야 하지 않나? 왜 forward가 젤 많이 줄었나?라는 의문이 기록되었다. forward에서는 무거운 커널 연산의 호출 횟수가 9개 줄어듦, backward에서는 forward 부분 12개(9+3(얘는 backward에서 사용하는 cache까지 저장하는 커널을 사용했으니 3개 추가로 줄어듦)), 실제 backward 부분에서는 3개밖에 안줄어듦, backward_only에서는 비율로 따지면 45 ⇒ 33회 즉 커널이 26.7%로 가장 적게 줄어듦 + 단순 가중치, bias 복사 커널 6개, 부호 분리 커널 6개 줄어든 거라 커널 비용도 다름. 1138s ⇒ 758s로 실행 시간이 감소했다고 기록되었다.",
+              "join_previous": false
+            },
+            "S_limitations_p48_s1": {
+              "action": "replace",
+              "text": "커널 launch 횟수 감소와 실행 시간 감소 사이의 관계는 현재 기록만으로 단정하기 어렵다. 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch 횟수만 세었으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했기 때문에, 실제 실행 시간 차이를 구성하는 전송·동기화·그래프 런치 비용은 이 계수에 포함되지 않는다. graph mode=1에서 추론 커널은 그대로 둔 채 샘플 1개 전체 기준으로 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었고, graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회로 이번 작업에서 graph launch 횟수 자체는 줄지 않았다. 감소 내역은 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회이며, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. 그러나 커널 감소 폭이 가장 큰 Forward가 왜 가장 많이 줄었는지, 커널 횟수가 더 많이 줄면 시간도 더 줄어야 하는지에 대한 의문은 남아 있으며, forward에서는 무거운 커널 연산 호출이 9개 줄어든 반면 backward에서는 forward 부분 12개(9+3), 실제 backward 부분 3개 감소에 그쳤고, backward_only는 45→33회(26.7%)로 가장 적게 줄었으며 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄어든 것이어서 커널 비용도 서로 다르다. 실행 시간은 1138s에서 758s로 감소했다고 기록되었으나, 이는 단일 실행 중심의 요약값이며 반복 측정 기반 통계나 정밀 수치는 이 사실만으로 제시되지 않는다.",
+              "join_previous": false
+            },
+            "S_limitations_p49_s1": {
+              "action": "replace",
+              "text": "본 연구의 실행 시간 비교와 최적화 효과 해석은 대부분 단일 실행 관측과 연구 노트 기록에 기반하므로, 반복 측정 통계나 조건별 분리 측정이 충분히 확보되지 않은 상태에서의 수치 해석에는 제약이 있다. v1-1-2의 가중치 사전 업로드 적용 결과는 149~155ms 범위로 기록되었으나, 이 범위가 단일 측정인지 복수 측정 요약인지와 이전 버전 대비 비교 조건은 현재 기록에 제시되지 않는다. backward_bound_gpu()에 커널 퓨전을 먼저 적용한 뒤에도 23ms 후반대 실행 시간이 관측되었지만, 이 값은 전체 CROWN Verification 실행 시간에 가깝고 backward_bound_gpu()만의 분리 측정값으로 보기 어렵다. 또한 컴퓨터 사정에 따라 26ms까지 뛰는 경우가 있다는 정성적 관찰이 함께 남아 있어, 실행 시간 변동의 구체적 요인도 명확히 분리되지 않는다.",
+              "join_previous": false
+            },
+            "S_limitations_p50_s1": {
+              "action": "replace",
+              "text": "성능 문제의 원인 정리 역시 정량적 원인 분리 측정보다는 관찰과 추정에 의존한다. 신경망 크기가 매우 작고 cuBlas/cuSparse 동작 방식에서 오버헤드가 발생했다는 분석은 기록되어 있으나, 각 요인이 실행 시간에 미친 비중을 따로 측정한 결과는 제시되지 않는다. cuBlas/cuSparse의 기본 행렬곱 함수만 사용해 왔으며 변형 함수들은 sm 내 분석과 함께 써야 하므로 Nsight Compute 분석 시 함께 진행할 수 있다는 검토도 남아 있지만, 이는 향후 진행 방향에 대한 계획이지 실제 적용 결과로 확인된 내용은 아니다.",
+              "join_previous": false
+            },
+            "S_limitations_p51_s1": {
+              "action": "replace",
+              "text": "메모리 복사 관련 지표도 해석 범위가 제한된다. memcpy 호출 횟수는 66개에서 56개로 줄어든 것으로 기록되었지만, 호출 횟수 변화가 각 호출의 시간이나 총 실행 시간과 어떤 관계를 갖는지는 별도 문맥이 필요하다. cudaMemcpy 호출의 상세 표에서는 시작 시간과 지속 시간이 서로 다른 단위로 기록되어 있어, 이미지 OCR로 추출된 개별 호출 값이라는 점과 반복 측정 통계가 없다는 점을 함께 고려해야 한다. 특히 커널 memcpy에서 MAXDIM 512 float 고정 복사 대신 필요한 크기만 복사하도록 변경했을 때 CPU 계산 오버헤드가 커져 시간이 늘었다는 관찰은 있으나, 시간 증가의 원인이 memcpy 변경 자체인지 다른 요인인지는 분리 실험 결과로 확인되지 않는다.",
+              "join_previous": false
+            },
+            "S_limitations_p52_s1": {
+              "action": "replace",
+              "text": "여러 최적화 요소가 동시에 적용된 사례에서도 개별 효과의 분리는 어렵다. forward_cuda_graph의 전체 시간은 약 983초이고, CPU에서 필요한 만큼만 계산한 뒤 복사한 버전은 1055초로 72초 더 느리게 관측되었으나, 이 차이의 발생 원인을 정량적으로 분리한 측정 결과는 포함되지 않는다. 실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간, infer, bound 시간이 각각 1055.282초, 131.7986초, 920.8438초로 기록되었지만, 이 값 역시 표의 단일 행 값이며 다른 조건과의 비교 해석이나 반복 측정 통계는 함께 제시되지 않는다.",
+              "join_previous": false
+            },
+            "S_limitations_p53_s1": {
+              "action": "replace",
+              "text": "CROWN 검증 출력 자체는 16개 출력 차원에 대해 Lower Bound, Upper Bound, inference(y) 값이 출력된 단일 실행 기록으로 남아 있으며, 예시 출력값도 확인되지만, 다른 조건과의 수치 동일성이나 정확도 해석은 이 기록만으로 제시되지 않는다. 따라서 본 연구의 결과 해석은 관측된 시간 범위와 출력값의 존재, 그리고 연구 노트에 정리된 원인 추정 범위 안에서만 유효하며, 반복 측정과 조건 통제, 변경 요인 분리가 추가로 필요한 지점으로 남는다.",
+              "join_previous": false
+            },
+            "S_limitations_p54_s1": {
+              "action": "replace",
+              "text": "본 연구의 결과 해석은 단일 실행 중심의 기록과 여러 최적화 기법이 동시에 적용된 개발 과정 특성상, 개별 변경의 효과를 분리하기 어렵다는 제약을 가진다. cudaHostRegister와 No-Pinning 비교에서도 여러 번 측정 결과가 일관되지 않았고, 마지막 측정에서 nopinned가 더 빠르게 나타나 확정하기 어렵다는 한계가 기록되었다. 또한 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 등 일부 측정 조건이 원문에 직접 명시되어 있지 않아, 관찰된 차이의 해석 범위가 제한된다. 아울러 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점도 결과 해석의 제약으로 남는다. 평균·총 시간만 보면 No-Pin이 더 빨라 보이지만, 지터(표준편차)와 최대 지연시간(WCET)에서는 Pinned가 더 안정적이며(No-Pin 최대 8.80~11.6 ms, 지터 118.94 μs vs Pinned 최대 1.64 ms, 지터 47.28 μs), 이는 OS 페이징·백그라운드 작업·드라이버 버퍼 락 경합이 No-Pin에서 간헐적 지연을 유발하기 때문으로 해석된다.",
+              "join_previous": false
+            },
+            "S_limitations_p55_s1": {
+              "action": "replace",
+              "text": "본 연구의 결과 해석은 단일 실행 중심의 측정 기록에 기반하므로, 동일 조건에서 반복 측정한 재현성보다는 개별 실행에서 관측된 시간·지연 지표의 상대적 차이에 의존한다. Pinned Memory와 No-Pin(Pageable) 비교, cudaHostRegister 적용, 커널 퓨전 및 메모리 복사 커널 제거, cuSPARSE·cuBLAS 도입, forward·forward+backward·backward_only 실행 방식 구분 등은 각각 별도 블록이나 개별 실행으로 정리되어 있으나, 여러 변경이 함께 적용된 구간에서 각 요소의 효과를 분리해 해석하기 어렵다. 또한 작은 전송 크기에서의 DMA 셋업 오버헤드 누적, OS 페이징 간섭에 따른 최대 지연 스파이크, warmup 적용 여부에 따른 시간 변동처럼 측정 조건의 통제가 충분히 명시되지 않은 요소들이 결과 해석에 함께 영향을 준다. 따라서 평균 처리 속도, 최대 지연, 지터, 전체 소요 시간의 차이는 관측된 비교 범위 안에서만 해석할 수 있고, 구성 요소 단위 성능과 전체 처리 성능 사이의 순위나 인과적 기여도는 본 기록만으로 단정하기 어렵다.",
+              "join_previous": false
+            },
+            "S_limitations_p56_s1": {
+              "action": "replace",
+              "text": "본 연구의 결과 해석은 단일 실행 중심의 측정 기록에 기반하므로, 동일 조건에서 반복 측정한 재현성보다는 개별 실행에서 관측된 시간·지연 지표의 상대적 차이에 의존한다. Pinned Memory와 No-Pin(Pageable) 비교, cudaHostRegister 적용, 커널 퓨전 및 메모리 복사 커널 제거, cuSPARSE·cuBLAS 도입, forward·forward+backward·backward_only 실행 방식 구분 등은 각각 별도 블록이나 개별 실행으로 정리되어 있으나, 여러 변경이 함께 적용된 구간에서 각 요소의 효과를 분리해 해석하기 어렵다. 또한 작은 전송 크기에서의 DMA 셋업 오버헤드 누적, OS 페이징 간섭에 따른 최대 지연 스파이크, warmup 적용 여부에 따른 시간 변동처럼 측정 조건의 통제가 충분히 명시되지 않은 요소들이 결과 해석에 함께 영향을 준다. 따라서 평균 처리 속도, 최대 지연, 지터, 전체 소요 시간의 차이는 관측된 비교 범위 안에서만 해석할 수 있다. 원문은 forward·forward+backward·backward_only 실행 방식의 total_s, infer_s, bound_s, certify_s 평균값을 표로 제시하지만, 구성 요소 단위 성능과 전체 처리 성능의 순위를 나열하거나 두 순위를 대조한 문장은 확인되지 않는다. 따라서 구성 요소 단계와 전체 처리 성능 사이의 순위나 인과적 기여도를 본 기록만으로 단정하기 어렵다.",
+              "join_previous": false
+            },
+            "S_limitations_p57_s1": {
+              "action": "replace",
+              "text": "본 연구의 실행 기록은 단일 실행 중심으로 남아 있어, 각 최적화 기법의 효과를 개별적으로 분리해 평가하기 어렵다. 여러 변경이 동시에 적용된 구간이 있어 특정 기법의 기여와 전체 처리 성능의 관계를 명확히 구분하기 힘들고, GPU 클록 고정이나 warm up 같은 측정 조건 통제도 연구 후반에 정리된 사항이어서 초기 기록의 비교 조건이 충분히 균일했다고 보기 어렵다. 또한 구성 요소 단위 성능 순위나 전체 처리 성능 순위가 원문에 명시적으로 제시되지 않았고, 두 순위 사이의 차이·불일치를 직접 비교한 서술도 확인되지 않으므로, 실행 시간 값 자체를 순위로 해석하거나 기법 간 우열을 단정하는 데에는 한계가 있다.",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

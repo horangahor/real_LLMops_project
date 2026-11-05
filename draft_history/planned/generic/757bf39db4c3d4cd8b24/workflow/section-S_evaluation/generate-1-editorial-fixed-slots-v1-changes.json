@@ -1,0 +1,59 @@
+{
+  "changed_parts": [
+    {
+      "section_id": "S_evaluation",
+      "part": "p0"
+    },
+    {
+      "section_id": "S_evaluation",
+      "part": "p2"
+    }
+  ],
+  "unchanged_findings": [
+    {
+      "section_id": "S_evaluation",
+      "paragraph_id": "S_evaluation_p21",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "S_evaluation_p12와 동일한 cudaHostRegister/No Pinning 전체 시간, Bound/Infer 단계 역전, 기록자의 관찰, 3가지 기술적 이유 언급이 반복되어, 동일 비교 내용이 중복된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였으며, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 이 역전 현상에 대해 기록자는 추론 단계에서 시간이 느려졌다고 관찰했으며, 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록했다. 다만 현재 기록은 figure 캡션에 제시된 수치와 해석만 포함하며, 3가지 이유의 구체적 내용이나 정량적 원인 분석은 이 근거만으로는 제시되지 않는다. [근거:E00277,E00278,E00279,E00280]"
+    },
+    {
+      "section_id": "S_evaluation",
+      "paragraph_id": "S_evaluation_p39",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "S_evaluation_p6과 유사하게 초기화 이후 forward/backward bound 계산 시간 약 0.2ms 차이, warm up 가이드라인 참고, CV를 통한 스파이크·분산 규명 계획, 추론·bound·검증 분리 측정, warm up 이후 시간 증가, forward가 warm up 이전 backward 급 속도가 된 점, 스파이크가 없을 때 더 안정적인 느낌과 변동 계수 저하 인상이 다시 반복된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "초기화만 하면 forward와 backward의 bound 계산 시간은 약 0.2 ms 차이로 비슷했다. 측정 방식은 Nvidia의 warm up 가이드라인을 참고해 실제 사이클 시간만 측정하고 warm up을 한 번 하며, CV를 통해 스파이크와 분산 정도를 규명하기로 했고, 추론·bound 계산·검증 3가지 값을 나눠서 측정했다. 다만 실제 측정에서는 warm up 이후 걸리는 시간과 각 평균 시간이 더 늘어났고, forward가 warm up 이전 backward 급 속도가 나올 정도였으며, warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았다. 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 느낌으로 변동 계수가 더 낮았다. [근거:H85ca0e507c4e_83]"
+    },
+    {
+      "section_id": "S_evaluation",
+      "paragraph_id": "S_evaluation_p53",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "S_evaluation_p54와 거의 동일한 측정 방식·버전 구분 기록, warmup 코드 주석, 평균 기반 측정 시도 정황, cudaGraph만 적용된 버전 구분, sparse.py와 CUDA의 평균 bound 계산 시간 비교 표, forward/backward 방법의 bound 계산 성능과 추론+bound+검증 성능 제시, cudaHostRegister/No Pinning 비교나 클록·Persistence mode 같은 측정 조건이 원문에 직접 명시되지 않았다는 내용이 반복된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "측정 방식과 버전 구분은 일부 기록되어 있다. warmup 관련 코드 주석이 남아 있고, 평균 기반 측정이 시도된 정황이 있으며, cudaGraph만 적용된 버전이 별도로 구분된다. sparse.py와 CUDA의 평균 bound 계산 시간 비교 표에서는 forward와 backward 방법에서 bound 계산 성능과 추론+bound+검증 성능이 함께 제시된다. cudaHostRegister/No Pinning 비교나 클록·Persistence mode 같은 측정 조건은 원문에 직접 명시되어 있지 않다. [근거:Hefd7e87bb735_58,Hefd7e87bb735_62]"
+    },
+    {
+      "section_id": "S_evaluation",
+      "paragraph_id": "S_evaluation_p93",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "S_evaluation_p78과 거의 동일한 커널 축소와 최적화 효과 정리, backward_bound_gpu 중심의 커널 퓨전·메모리 복사 경로 조정·동기화 제거·cudaGraph 적용 여부로 나누어 정리하는 방식, affine 중복 계산 삭제, new_(upper, lower)_p를 복사 대신 std::swap으로 포인터 스와핑, backward_matmul_pair_gpu 도입, build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu 커널 퓨전 적용, 5가지 적용 후 22.157400ms 관측, 이후 1개 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전 모두 진행, backward_bound_gpu에 커널 퓨전 먼저 진행 시 23ms 후반대까지 실행 시간 관측, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 것은 23ms 정도가 보인다는 기록, 실행 시간 감소 요약으로 1138s→758s 기록이 있으나 인과·귀속 관계가 이 근거에서 확인되지 않으며 단일 실행의 정밀 수치나 반복 측정 기반 통계가 아니라 감소 전·후 값을 함께 진술한 요약 기록이라는 점까지 반복된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "커널 축소와 최적화 효과는 backward_bound_gpu를 중심으로 한 커널 퓨전, 메모리 복사 경로 조정, 동기화 제거, 그리고 cudaGraph 적용 여부로 나누어 정리된다. 먼저 backward_bound_gpu에는 affine 중복 계산 삭제, new_(upper, lower)_p를 복사 대신 std::swap으로 포인터 스와핑, backward 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu 도입, build_coeff_pair_fused_gpu 커널 퓨전, backward_bias_pair_fused_gpu 커널 퓨전이 적용되었다. 이 5가지 적용 후 22.157400 ms가 관측되었고, 이후 1개의 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전을 모두 진행하였다. 다만 backward_bound_gpu에 커널 퓨전을 먼저 진행했을 때 23ms 후반대까지의 실행 시간이 관측되었으며, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 것은 23ms 정도가 보인다는 점으로 기록되었다. 한편 실행 시간 감소 요약으로 1138s에서 758s로 줄었다는 기록이 있으나, 이는 backward_bound_gpu 대상 커널 퓨전이나 해당 최적화 기법들과의 인과·귀속 관계가 이 근거에서 확인되지 않으며, 단일 실행의 정밀 수치나 반복 측정 기반 통계가 아니라 감소 전·후 값을 함께 진술한 요약 기록이다. [근거:H85ca0e507c4e_22,H85ca0e507c4e_23,H85ca0e507c4e_24,H85ca0e507c4e_27,H85ca0e507c4e_28,H85ca0e507c4e_30,H85ca0e507c4e_31,H85ca0e507c4e_32,H85ca0e507c4e_33,H85ca0e507c4e_34,H85ca0e507c4e_35,H85ca0e507c4e_36,H85ca0e507c4e_38,H85ca0e507c4e_44,H85ca0e507c4e_45,H85ca0e507c4e_46,H85ca0e507c4e_47,H85ca0e507c4e_48,H85ca0e507c4e_49,H85ca0e507c4e_51,H85ca0e507c4e_52,H85ca0e507c4e_53,H85ca0e507c4e_54,H85ca0e507c4e_56,H85ca0e507c4e_57,H85ca0e507c4e_58,H85ca0e507c4e_59,H85ca0e507c4e_60,H85ca0e507c4e_62,H85ca0e507c4e_63,H85ca0e507c4e_64,H85ca0e507c4e_66,H85ca0e507c4e_67,H85ca0e507c4e_68,H85ca0e507c4e_69,H85ca0e507c4e_70,H85ca0e507c4e_71,H85ca0e507c4e_72,H85ca0e507c4e_74,H85ca0e507c4e_75,H85ca0e507c4e_78,H85ca0e507c4e_79,H85ca0e507c4e_80,H85ca0e507c4e_81,H85ca0e507c4e_83,H85ca0e507c4e_84,H85ca0e507c4e_85,H85ca0e507c4e_86,H85ca0e507c4e_87,H85ca0e507c4e_88]"
+    }
+  ],
+  "prose_changed": true
+}

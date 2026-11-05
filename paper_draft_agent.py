@@ -397,7 +397,8 @@ class PaperDraftOrchestrator:
                      planning_mode: str = "adaptive", project_id: str = "generic",
                      plan_only: bool = False, output_dir: Optional[str | Path] = None,
                      extract_only: bool = False, evidence_mode: str = "comprehensive",
-                     research_scope: str = "", requirements_only: bool = False) -> Dict[str, Any]:
+                     research_scope: str = "", requirements_only: bool = False,
+                     writing_target_chars: Optional[int] = None) -> Dict[str, Any]:
         # The default path extracts from the supplied source; fixed chapters require explicit comparison mode.
         # research_scope is accepted for older callers but never used to generate common questions.
         if planning_mode == "adaptive":
@@ -429,7 +430,8 @@ class PaperDraftOrchestrator:
             research = engine.load_research(project_profile(project_id), results_json_path, research_pdf_path)
             if reference is None:
                 reference = load_paper_structure(structure_json_path)
-            result = engine.run(research, reference, project_id, output_dir, plan_only, progress_callback)
+            result = engine.run(research, reference, project_id, output_dir, plan_only, progress_callback,
+                                writing_target_chars=writing_target_chars)
             result["evidence_extraction"] = getattr(engine, "last_extraction", None)
             result["evidence_requirements"] = requirements
             return result

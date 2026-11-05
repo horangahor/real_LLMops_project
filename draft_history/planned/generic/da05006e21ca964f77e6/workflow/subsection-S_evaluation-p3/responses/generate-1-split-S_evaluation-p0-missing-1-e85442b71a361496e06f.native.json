@@ -1,0 +1,33 @@
+{
+  "id": "21a1efc4-2855-4e9f-83ef-e2cdab95c92c",
+  "object": "chat.completion",
+  "created": 1793878491,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\":{\"p0\":[{\"text\":\"메모리 전송 방식 비교에서 cudaStreamSynchronize는 hostRegister 323μs, hostAlloc 322μs, noPinning 314μs로, cudaMemcpyAsync는 5.188μs, 5.351μs, 4.932μs로, memcpy 복사 시간은 1.117μs, 1.142μs, 340ns로 측정되었다. 이 표는 평균값(n=920000) 기준이며 단일 측정 요약이다. 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch 횟수만 세었고 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했다. graph mode 1은 샘플당 cudaGraphLaunch가 infer 1회, bound 1회로 총 2회이며 이번 작업은 graph launch 횟수를 줄이지 않았다. v1-1-2에서 가중치만 미리 업로드했을 때 149~155ms 범위가 기록되었다. backward_bound_gpu()에 커널 퓨전을 먼저 진행해 23ms 후반대 실행 시간이 관측되었고, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있으나 23ms 정도가 보인다는 점이 중요했다. 원인 분석 결과 신경망이 매우 작고 cuBlas/cuSparse 동작 방식에서 오버헤드가 생겼으며 이 또한 신경망이 작기 때문으로 정리되었다. 현재까지 cuBlas/cuSparse의 기본 행렬곱 함수를 사용했고 변형 함수가 많아 sm 내 분석과 함께 사용해야 하므로 Nsight compute 분석 때 함께 진행하면 될 것으로 검토되었다. memcpy 호출 횟수는 66개에서 56개로 감소했다. cudaMemcpy 호출 상세 표에서는 Start 0.398832s(Duration 26.601μs, TID 14016), 0.398862s(1.084ms, 14016), 0.399947s(192.590μs, 14016)가 기록되었고, Begins 0.399947s, Ends 0.40014s, 지속 시간 192.590μs가 확인되었다. 4주차 랩미팅 후 CROWN 출력 16개 값의 정렬 방식(신경망 기준 또는 lower_bound/upper_bound 간격 기준)에 대한 답지를 교수님이 제공하기로 정리되었다. 메모리 사이즈 문제로 전체를 한 번에 처리하기 어려울 때 일부만 올려 계산하는 타일링 방식에 대한 질문이 있었고, 신경망이 매우 커서 GPU 램에 다 올라가지 않는 상황인지와 현재 처리 방식에 대한 질문으로 이해되었다. forward+backward 방식일 경우 고정값인 가중치·편향 행렬이 3쌍 있어 신경망 모델 사이즈의 3배정도 메모리를 차지할 것으로 추정했고, 스택 메모리 128MB 필요 여부에 대한 의문이 기록되었다. 수행할 작업으로 CPU보다 빠른 성능 개선 프로그램을 가져가기로 했고, 지금까지 테스트한 것들을 가져가면 될 듯하며 더 찾아보기로 했다. 가져갈 개선 버전으로 메모리 풀(할당·해제 제거)+memcpy 비용 제거 버전(고정된 W, B 값)과 cuBlas, cuSparse가 정리되었다. 버전별 실행 시간 요약으로 v0 단독 CPU 처리 96ms, v1 모든 병렬처리 함수를 커널 함수로 바꿈 355ms(my_lirpa.cu), v2 벡터 연산은 다시 CPU로 처리·메모리풀·cuBlas 도입 229ms(crown_test_op_only_GPU.cu), v3 CPU·GPU 하이브리드·풀 구조체 축소 200ms(crown_test_op_hybrid.cu)가 기록되었다. 커널 memcpy에서 MAXDIM 512 float 고정 복사를 필요한 데이터 크기만 복사하도록 변경했으나 CPU 계산 오버헤드가 더 커져 시간이 늘었다. forward_cuda_graph 전체 시간은 약 983초이고, CPU에서 필요한 만큼만 계산한 뒤 복사한 버전 1055초가 72초 더 느려 더 늦어진 결과였다. 실시간 멀티스트림 구성에서 forward_cuda_graph 전체 시간은 1055.282초, infer 131.7986초, bound 920.8438초로 측정되었다.\",\"evidence_ids\":[\"E00309\",\"E00311\",\"E00315\",\"E00322\",\"E00326\",\"E00329\",\"E00330\",\"E00331\",\"E00339\",\"E00343\",\"E00344\",\"E00363\",\"E00364\",\"E00365\",\"E00366\",\"E00367\",\"E00368\",\"E00370\",\"E00374\",\"E00375\"]}]}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 31141,
+    "completion_tokens": 1029,
+    "total_tokens": 32170,
+    "prompt_tokens_details": {
+      "cached_tokens": 1088,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

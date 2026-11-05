@@ -5,7 +5,8 @@ import re
 
 from drafting_budget import (DraftingBudgetError, NO_CACHE, SOURCE_PROTOCOL, cached_response,
                              call_bounded, compact_packet, fits_request)
-from draft_prose import PROTOCOL, prose_schema, render_generation, render_parts
+from draft_prose import (PROTOCOL, JoinedParagraphsError, prose_schema, render_generation,
+                         render_parts, structured_system)
 from paper_plan import object_schema
 
 FRAGMENT = """\n현재 요청은 큰 작성·편집 단계의 일부다. 전체 목차는 outline에 있다.
@@ -19,6 +20,15 @@ fragment.operation=missing_evidence이면 이전 본문 전체를 다시 쓰지 
 이때 fragment.missing_evidence_ids의 내용을 조건·한계에 맞게 서술하고 실제 해당 문단에 연결한다. 이미 있는 내용의 반복은 피한다.
 관측·해석·계획·인용된 조언을 구별하고 facts.limits의 단일 관측·미검증·기대 효과 등의 한계를 문장에 반영한다.
 검토 통과를 위해 근거 ID만 붙이거나 추정·조언을 구현 결과·확정 원인으로 바꾸지 않는다."""
+
+
+def call_structured(engine, folder, name, system, packet, schema):
+    # Read completed old requests before sending a request with one citation rule.
+    for old_system, old_packet in ((system, packet), (system + SOURCE_PROTOCOL, compact_packet(packet))):
+        cached = cached_response(engine, folder, name, old_system, old_packet, schema)
+        if cached is not NO_CACHE:
+            return cached
+    return call_bounded(engine, folder, name, structured_system(system), packet, schema)
 
 
 def cited_ids(text):
@@ -286,13 +296,17 @@ def generation_fragments(system, packet, packets):
                 for index, batch in enumerate(pack_groups(groups, make_gap, system + FRAGMENT + PROTOCOL, schema)):
                     request = make_gap(batch)
                     tasks.append((sid, key, f"missing-{index}", request, prose_schema(request)))
-    return tasks
+    from writing_length import allocate_fragment_targets
+    return allocate_fragment_targets(tasks, packets)
 
 
 def generate_bounded(engine, folder, name, system, packet, schema, packets, single, *, on_warning=None):
     """Generate valid prose; report exhausted content gaps separately from format errors."""
     from document_parse import write_json
     from planned_paper import parts_schema
+    from writing_length import INSTRUCTION as LENGTH_INSTRUCTION
+    if packet.get("writing_budget"):
+        system += LENGTH_INSTRUCTION
     if packet.get("revision", {}).get("previous_sections"):
         # Changed repair semantics must not replay an old whole-body rewrite.
         system += REVISION
@@ -308,7 +322,15 @@ def generate_bounded(engine, folder, name, system, packet, schema, packets, sing
     structured_schema = (prose_schema(next(iter(packets.values()))) if single else
                          object_schema({"sections": object_schema({key: prose_schema(p) for key, p in packets.items()})}))
     if fits_request(system + PROTOCOL, packet, structured_schema):
-        return call_bounded(engine, folder, name, system + PROTOCOL, packet, structured_schema)
+        response = call_structured(engine, folder, name, system + PROTOCOL, packet, structured_schema)
+        try:
+            render_generation(response, packets, single)
+        except JoinedParagraphsError:
+            from prose_format_repair import repair_joined_paragraphs
+            return repair_joined_paragraphs(engine, folder, name, response, packets, single)
+        except (ValueError, KeyError, TypeError):
+            pass  # Other format errors retain the existing outer repair path.
+        return response
     tasks = generation_fragments(system, packet, packets)
     result = {key: {"parts": {}} for key in packets}
     manifest, warnings = [], []
@@ -323,8 +345,14 @@ def generate_bounded(engine, folder, name, system, packet, schema, packets, sing
             fragment_name = f"{name}-split-{sid}-{key}-{index}" + ("-repair" if repair else "")
             legacy_schema = parts_schema(request)
             response = NO_CACHE
-            for old_system, old_packet in ((system + FRAGMENT, bounded_packet),
-                                          (system + FRAGMENT + SOURCE_PROTOCOL, compact_packet(bounded_packet))):
+            if repair and error.get("validation_code") == "joined_paragraphs":
+                from prose_format_repair import repair_joined_paragraphs
+                response = repair_joined_paragraphs(engine, folder, fragment_name, error["response"],
+                                                   {sid: request}, True)
+            legacy_candidates = [] if response is not NO_CACHE else [
+                (system + FRAGMENT, bounded_packet),
+                (system + FRAGMENT + SOURCE_PROTOCOL, compact_packet(bounded_packet))]
+            for old_system, old_packet in legacy_candidates:
                 legacy = cached_response(engine, folder, fragment_name, old_system, old_packet, legacy_schema)
                 if legacy is not NO_CACHE:
                     try:
@@ -333,8 +361,8 @@ def generate_bounded(engine, folder, name, system, packet, schema, packets, sing
                     except (ValueError, KeyError, TypeError):
                         pass
             if response is NO_CACHE:
-                response = call_bounded(engine, folder, fragment_name, system + FRAGMENT + PROTOCOL,
-                                        bounded_packet, fragment_schema)
+                response = call_structured(engine, folder, fragment_name, system + FRAGMENT + PROTOCOL,
+                                          bounded_packet, fragment_schema)
             try:
                 body = render_parts(response, request)["parts"]["p0"]
                 missing = set(request["fragment"].get("missing_evidence_ids", [])) - cited_ids(body)
@@ -353,6 +381,8 @@ def generate_bounded(engine, folder, name, system, packet, schema, packets, sing
                 break
             except (ValueError, KeyError, TypeError) as exc:
                 error = {"error": str(exc), "response": response}
+                if isinstance(exc, JoinedParagraphsError):
+                    error["validation_code"] = "joined_paragraphs"
                 write_json(folder / f"{name}-split-{sid}-{key}-{index}-invalid-{repair}.json", error)
         else:
             raise ValueError(f"분할 본문 {sid}/{key}/{index}이 보정 후에도 근거·구조 검증에 실패했습니다. "

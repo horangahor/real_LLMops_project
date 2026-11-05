@@ -1,0 +1,267 @@
+{
+  "stage": "section-S_methods",
+  "approved": true,
+  "review_kind": "editorial",
+  "items": [],
+  "paragraphs": {
+    "S_methods_p2": {
+      "section_id": "S_methods",
+      "text": "본 연구의 평가 대상은 CROWN 신경망 검증을 구현한 C++ 프로그램이며, 입력 조건은 최광훈 안테나 선택 신경망의 Fully Connected 구조를 기준으로 한다. 이 신경망은 Fully Layer 1, Fully Layer 2, Fully Layer 3(output)으로 구성되고, 입력 벡터 길이는 NR × Ng = 256이다. 입력 뉴런 수는 N(0)=256, 1층과 2층의 뉴런 수는 각각 N(1)=491, N(2)=491, 출력 뉴런 수는 N(3)=16으로 설정된다. 입력은 16×16 형태로 256개, 출력은 16개이며 히든 계층은 2개이다. CROWN 알고리즘의 1차 목표는 테스트 데이터 1개와 eps=10^-6을 입력으로 사용해 16개 출력을 추출하는 것이다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했으며, 새로운 FullyConnectedNetwork를 heap에 할당해 신경망을 로드한 뒤 .Pickle로 된 데이터셋을 CUDA로 읽기 위해 .bin 파일로 변환하였다. 테스트 단계에서는 입력 256개 1세트만 변환하였고, 이후 GPU에 신경망을 로드(Memcpy)하고 CROWN을 호출하는 절차를 따랐다. 프로그램 전체 실행에서 memcpy 호출은 총 18번이며, 내부 6번을 제외하면 외부에서 12번 발생한다. 가중치 행은 3개(가중치 + 가중치 양수부/음수부 + bias)이고, 신경망 구조 256 * 491 * 491 * 16에 따라 개수만큼 복사된다. Forward 테스트와 Backward 테스트는 각각 40000개의 데이터에 대해서만 수행되었으며, 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적 때문이다. 실행 방식은 CROWN의 3가지 방법인 forward, forward+backward, backward_only를 대상으로 하며, 배치 사이즈는 1이다. 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용했고, 이는 기존 신경망 검증팀의 구현과 시간을 비교하기 위한 것이다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 확인했으며, 결과는 모두 동일했다. GPU 클록 고정은 연구 일지에서 확인된 바와 같이 나중에 고정된 사항이고, warm up은 초기에 적용되었다. 각 최적화 기법은 체계적으로 분리해 ablation study로 검증하지 못한 한계가 있다. [근거:E00011,E00012,E00013,E00016,E00163,E00164,E00219,E00264,U531b24e3633dee74c4f7,U8602da87af586b3567f6,U3e01c50082e40f98631d]"
+    },
+    "S_methods_p4": {
+      "section_id": "S_methods",
+      "text": "CUDA 포팅은 기존 C++ 기반 CROWN 구현의 기본 틀을 유지한 채, 병렬 연산이 필요한 부분만 GPU에서 동작하는 커널로 바꾸는 방식으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 nvcc(NVIDIA C Compiler)로 컴파일이 가능하다. 이 과정에서 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 kernel 함수로 바꾸는 구상을 검토했고, mat_add처럼 배열을 통한 연산이 여러 번 호출되어 메모리 할당·해제가 반복되는 부분은 비효율적이라고 판단했으나 최적화는 나중에 진행하기로 했다. [근거:E00001,E00002,E00005]"
+    },
+    "S_methods_p5": {
+      "section_id": "S_methods",
+      "text": "실행 플랫폼 구성에서는 CUDA Toolkit과 함께 NVIDIA cuBLAS를 활용했다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이며, CUDA Toolkit 설치 시 자동으로 포함되어 별도 설치는 필요하지 않다. 컴파일 옵션 -lcublas를 넣어 라이브러리를 링크했으며, my_lirpa_op.cu에서 GPU 최적화 행렬곱 함수인 cublasDgemm()를 사용하기 때문에 이 라이브러리 연결이 필요했다. 이후 v1-1-1-1에서는 메모리풀에 cuBLAS를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBLAS를 활용하도록 변경했으며, 관련 파일은 my_lirpa_mempool_cuBlas.cu이다. [근거:E00024,E00025,E00026,E00034,E00054]"
+    },
+    "S_methods_p6": {
+      "section_id": "S_methods",
+      "text": "가중치 처리 측면에서는 GPU에 가중치를 사전 업로드하는 함수 pre_upload_weights_to_gpu를 구현했다. 이 함수는 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 GPU 메모리를 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하여 net->d_W[i]에 저장한다. 신경망 구조체에는 GPU 메모리 주소를 저장할 수 있는 포인터 배열을 미리 만들어 두었으며, 이 포인터 배열의 크기는 MAX_LAYERS를 기준으로 하므로 신경망이 작으면 공간이 낭비될 수 있다. 또한 double보다 float가 접근 속도가 더 빠르다고 알려져 있으나, 행렬·벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰기 위해서는 전체적으로 구조를 바꿔야 하는 상황이다. [근거:E00042,E00323,E00324]"
+    },
+    "S_methods_p7": {
+      "section_id": "S_methods",
+      "text": "실행 및 측정 방식과 관련해서는 CPU에서 GPU로 신경망 메모리를 어떻게 나누어 복사하는지에 대한 질문이 있었고, GPU 메모리 사용량을 확인하는 방법으로 Nsight System이 제시되었다. Nsight System 계열 도구에서 GPU VRAM 사용량이 310.00 MiB로 표시되었는데, 이는 Gemini가 메모리 풀의 행렬·벡터 기준으로 계산한 약 114MB와 차이가 있어 이상하다고 기록되었다. 이에 대해 CUDA 실행 시 CUDA Context가 생성되고, 이 Context가 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하며 VRAM을 사용하므로, 런타임 오버헤드를 감안하면 프로파일러에 보이는 VRAM 사용량이 코드 계산값보다 작을 수 있다고 해석되었다. [근거:E00087,E00088,E00089]"
+    },
+    "S_methods_p8": {
+      "section_id": "S_methods",
+      "text": "최적화 과정에서는 스트림 구성과 메모리 전송 방식에 대한 실험이 이어졌다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 배치 사이즈 64일 때 약 424초가 걸렸고, 현재 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들어 각 스트림이 GPU 메모리를 차지하는 방식이다. 배치 사이즈를 512로 하면 메모리를 넘지 않지만 느리며, 그 이유는 각 스트림마다 CPU가 돌아가면서 다음 커널을 런치해줘야 해서 1024개의 스트림이 각각 CPU가 다음 커널을 런치해줄 때까지 기다리기 때문이다. 스트림 수를 64개 정도로 줄이고 배치 사이즈를 1024로 하는 방안은 하나의 스트림이 하나의 입력을 처리하므로 동시에 돌릴 수 있는 데이터가 64개라는 뜻이고 16번씩 나눠서 처리하게 되어 의미가 없다고 판단했다. 이 경우 초기 데이터 H2D 비용은 확실히 줄지만, 연산 병목은 스트림이 64개라 한 번에 64개밖에 대응하지 못하는 제약이 있다. [근거:E00252,E00253,E00254,E00255,E00257]"
+    },
+    "S_methods_p9": {
+      "section_id": "S_methods",
+      "text": "antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 현재 작성자는 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. auto_lirpa가 빠른 이유에 대한 고민은 이후 커널 런치 횟수 감소와 관련된 설명으로 이어진다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. [근거:E00260,E00261,E00262,E00263]"
+    },
+    "S_methods_p10": {
+      "section_id": "S_methods",
+      "text": "3D Grid 방식에서는 그리드 크기를 dim3 grid(num_blocks_x, num_blocks_y, 1024)로 설정하여 Z축(배치 축)을 1024로 만들고, 1024개 샘플을 하나의 3D 큐브(텐서)로 GPU 메모리에 적재한다. 이 방식에서는 CPU가 커널을 단 1번만 발사하고, GPU의 56개 SM들이 1024층을 나누어 동시에 연산하여 7,168개 GPU 코어가 1024개 샘플을 동시에 연산한다. [근거:E00264,E00265]"
+    },
+    "S_methods_p11": {
+      "section_id": "S_methods",
+      "text": "메모리 전송 최적화 실험에서는 cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)였으며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었으며, 추론(Infer) 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남았다. [근거:E00277,E00278,E00279,E00280]"
+    },
+    "S_methods_p12": {
+      "section_id": "S_methods",
+      "text": "GPU 클록 고정 실험에서는 클록을 2800MHz로 고정하고 돌린 결과(기존 HostRegister)를 확인했으며, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행한다. 측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용하며, CUDA 강의 19장의 GPU 클록 고정을 참고했다. [근거:E00281,E00282,E00283,E00284,E00286,E00287]"
+    },
+    "S_methods_p13": {
+      "section_id": "S_methods",
+      "text": "CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. No-Pin(일반 메모리)일 때 CPU는 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 전혀 나지 않는다. 데이터가 수 MB~수백 MB일 때는 데이터가 커지면 CPU 복사 속도가 감당이 안 되며, 이때는 DMA의 고속 대역폭(1224GB/s)이 압도적이어서 Pinned Memory가 일반 메모리보다 23배 빠르다. 그러나 우리 데이터처럼 1KB일 때는 대역폭은 아무 의미가 없고 셋업 지연시간(Latency)이 지배한다. 1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory는 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin(일반 메모리)은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사(staging)로 약 0.02~0.05μs(20~50ns)에 복사가 끝나 DMA 셋업보다 30~50배 빠르다. [근거:E00287,E00288,E00290,E00291,E00297]"
+    },
+    "S_methods_p14": {
+      "section_id": "S_methods",
+      "text": "코드 수준에서는 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 점을 확인하였다. 또한 switch 문 안의 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 다만 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 점은 한계로 남는다. [근거:E00337,E00353,E00354,E00376]"
+    },
+    "S_methods_p16": {
+      "section_id": "S_methods",
+      "text": "GPU 가속 효과를 확인하기 위해 CPU 전용 계산 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 측정했다. CPU 반복 실행 환경은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe 파일로 구성했으며, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘려 컴파일이 되었다. 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했고, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다. [근거:E00017,E00095,E00203,E00023,E00030,E00031,E00035]"
+    },
+    "S_methods_p17": {
+      "section_id": "S_methods",
+      "text": "실행 방식 구성 과정에서 backward_only 대신 forward+backward로 계속 진행하고 최적화하는 방향이 더 낫다는 의견이 있었고, CROWN range 정렬 문제에 대한 해답도 함께 검토 대상으로 정리되었다. CUDA 포팅 및 최적화 구성에서는 AI를 통해 대충 최적화한 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어 보았다. 이후 CROWN Verification을 HYBRID 모드(matmul=GPU, rest=CPU)로 실행한 결과 Elapsed time이 201.670100 ms로 기록되었고, HYBRID V2 모드에서는 85.785300 ms로 기록되어 CPU보다 빨라졌다고 평가되었다. only_GPU와 hybrid의 변경점은 함수별 실행 위치(GPU 커널 대 CPU for 문)와 GPU 메모리 풀 구조에서 나타나며, only_GPU는 d_mat[4]+d_vec[2]를 미리 할당하고 hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. [근거:E00333,E00023,E00030,E00031,E00035,E00036]"
+    },
+    "S_methods_p18": {
+      "section_id": "S_methods",
+      "text": "v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)를 GPU에 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. 가중치 사전 업로드(PRELOAD ON GPU) 적용 후 실행 시간이 149~155ms 범위로 기록되었고, bias까지 GPU에 미리 업로드하는 시도를 했으나 bias는 Vector이고 코드상 약 4KB 정도라 CPU 연산에도 무리가 없는 수준이라 성능 개선에 큰 의미를 미치지 못하는 것으로 판단되었다. MEMPOOL + Weights PRELOAD ON GPU 모드에서 CROWN Verification(eps=1e-06)을 실행한 결과 Elapsed time이 149.820400 ms로 기록되었다. mempool + warmup 조합의 실행 결과는 152.902900 ms로, mempool + cuBlas + warmup 조합은 174.978400 ms로 기록되었다. 기록자는 1번의 시도에서 cuBlas가 더 느린 모습이라고 관찰했고, 미리 메모리풀을 warm up 하는 것은 확실히 효과가 있어 각 버전에서 약 50ms 정도 단축된다고 기록했다. 메모리 풀 + warm up 조합은 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었고, 동일 조합 적용 후 실행 결과는 128.894800 ms로 기록되었다. [근거:E00033,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075]"
+    },
+    "S_methods_p19": {
+      "section_id": "S_methods",
+      "text": "실행 및 측정은 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 평가 대상은 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list를 그대로 사용했다. 신경망 크기는 256-491-491-16이고 배치 크기는 1로 고정했으며, 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only를 기준으로 삼았다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이고, warm up은 초기에 적용되었다. 최적화 과정에서는 memcpy 제거, cudaDeviceSynchronize 제거, 커널 퓨전, 메모리 풀 적용, 그래프 적용 등 여러 기법을 차례로 적용하거나 되돌리며 실행 시간을 관측했다. 예를 들어 forward 함수에서 DTOH하는 memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716000 ms로 기록되었고, cudaDeviceSynchronize를 필요한 부분을 제외하고 제거한 뒤에는 26.529100 ms에서 25.457200 ms로 약 1 ms 정도 줄었다. lirpa_forward_bound 함수에 커널 퓨전을 적용한 뒤에는 22.342900 ms가 관측되었고, alpha/beta 메모리 풀을 적용한 뒤에는 21.018800 ms, mempool + warmup 조건에서는 15.828400 ms가 기록되었다. 반면 cuSparse를 spMV에만 적용한 경우에는 27.107400 ms로 이전 27ms 수준보다 느려졌다고 기록되었다. backward_bound_gpu()에 커널 퓨전을 먼저 진행했을 때는 23.925200 ms가 관측되었고, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있었지만 중요한 것은 23ms 정도가 보인다는 점으로 정리되었다. 그래프 적용 결과는 787.8832s로 3가지 방법 중 가장 빠르다고 기록되었으며, avg 기준 forward는 1029s, forward+backward는 1138s로 비교값이 함께 언급되었다. memcpy는 10번에서 6번으로 줄인 결과와 graph 적용 결과까지 확보되었다고 기록되었다. 한편 CPU ONLY iteration ver의 실행 시간은 193.665600 ms로 기록되었고, 이는 기존 backward보다 약 93ms 느린 수준으로 서술되었다. 중간 작업으로 커맨드라인 실행 인자를 받아 forward 또는 backward를 실행하도록 코드를 변경한 뒤에는 실행 결과가 2164s로, 기존 backward 실행 결과 1560s보다 느려졌다. 이후 반복 측정과 시간 분리 측정이 진행되었다. forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며, 교수님은 이를 초기화 비용 때문으로 언급했다. sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경했으며, elapsed 타임과 미세한 오차가 있으나 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 하였다. 각 forward, backward를 20번씩 측정을 완료했고, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, 측정 시작을 기준으로 추론 이후 타임스탬프와 이후 추론 시간을 계산하도록 하였다. warm up을 하니까 걸리는 시간과 각 평균 시간이 더 늘어났으며, forward가 warm up 이전 backward 급 속도가 나올 정도였다. 다만 warm up을 해도 스파이크 데이터가 뜨고, 가끔은 10번 측정했을 때 평균 시간이 느려지는 문제가 생겼다. warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다고 기록되었다. 측정 제어를 위해 measure_gpu 시스템 인자를 두었으며, 0은 비활성화, 1은 마지막 샘플만 1회 측정, 2는 매 샘플마다 측정하는 방식으로 정의되었고, 2 모드에서는 호출당 20~50us 드라이버 오버헤드가 발생할 수 있어 주의가 필요하다고 기록되었다. infer 단계에서 40,000번 동안 CPU 스레드가 cudaStreamSynchronize로 대기하고 깨어나는 과정에서의 미세 지연과 드라이버 동기화 비용이 맞물려, Pinned 쪽이 총 루프 시간에서 약 13초 정도 느려지는 결과가 나왔다. backward_only가 아직 graph로 만들지 않았더라도 boun 평균이 약 2.5배 정도로 관측되어 많이 느리다고 기록되었으며, 그 이유로 final_affine까지 복사(true) 때문에 한 번의 bound 계산에서 10번 일어나기 때문이라고 추정했다. 이후 false로 줘서 다시 측정해야 한다고 기록했으며, memcpy 6번으로 조정해 재측정하려는 계획이 언급되었다. 수행할 작업으로는 성능이 개선된 프로그램(CPU보다 빠르도록)을 가져가기로 했으며, 지금까지 테스트한 것들을 가져가면 될 듯하고 더 찾아보기로 했다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 보았고, 모두 동일했다고 기록되었다. 다만 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것은 한계로 남았다. [근거:E00081,E00083,E00094,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00198,E00199,E00202,E00205,E00206,E00207,E00208,E00221,E00270,E00271,E00272,E00274,E00275,E00276,E00298,E00326,E00329,E00366]"
+    }
+  },
+  "issues": [
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p2",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "이전 지적(finding-0)이 지적한 평가 대상·신경망 구조·입력 조건·실행 방식·정확도·클록 고정·warm up·ablation 한계가 뒤쪽 문단들과 중복되는 문제가 해결되지 않았다. 현재 문단에도 동일 항목이 그대로 남아 있어 절 도입부로서의 범위를 좁히거나 뒤쪽 중복 문단과 통합해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "본 연구의 평가 대상은 CROWN 신경망 검증을 구현한 C++ 프로그램이며, 입력 조건은 최광훈 안테나 선택 신경망의 Fully Connected 구조를 기준으로 한다. 이 신경망은 Fully Layer 1, Fully Layer 2, Fully Layer 3(output)으로 구성되고, 입력 벡터 길이는 NR × Ng = 256이다. 입력 뉴런 수는 N(0)=256, 1층과 2층의 뉴런 수는 각각 N(1)=491, N(2)=491, 출력 뉴런 수는 N(3)=16으로 설정된다. 입력은 16×16 형태로 256개, 출력은 16개이며 히든 계층은 2개이다. CROWN 알고리즘의 1차 목표는 테스트 데이터 1개와 eps=10^-6을 입력으로 사용해 16개 출력을 추출하는 것이다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했으며, 새로운 FullyConnectedNetwork를 heap에 할당해 신경망을 로드한 뒤 .Pickle로 된 데이터셋을 CUDA로 읽기 위해 .bin 파일로 변환하였다. 테스트 단계에서는 입력 256개 1세트만 변환하였고, 이후 GPU에 신경망을 로드(Memcpy)하고 CROWN을 호출하는 절차를 따랐다. 프로그램 전체 실행에서 memcpy 호출은 총 18번이며, 내부 6번을 제외하면 외부에서 12번 발생한다. 가중치 행은 3개(가중치 + 가중치 양수부/음수부 + bias)이고, 신경망 구조 256 * 491 * 491 * 16에 따라 개수만큼 복사된다. Forward 테스트와 Backward 테스트는 각각 40000개의 데이터에 대해서만 수행되었으며, 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적 때문이다. 실행 방식은 CROWN의 3가지 방법인 forward, forward+backward, backward_only를 대상으로 하며, 배치 사이즈는 1이다. 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용했고, 이는 기존 신경망 검증팀의 구현과 시간을 비교하기 위한 것이다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 확인했으며, 결과는 모두 동일했다. GPU 클록 고정은 연구 일지에서 확인된 바와 같이 나중에 고정된 사항이고, warm up은 초기에 적용되었다. 각 최적화 기법은 체계적으로 분리해 ablation study로 검증하지 못한 한계가 있다. [근거:E00011,E00012,E00013,E00016,E00163,E00164,E00219,E00264,U531b24e3633dee74c4f7,U8602da87af586b3567f6,U3e01c50082e40f98631d]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p16",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "이전 지적(finding-1)이 지적한 평가 대상·신경망 구조·입력/eps_list·배치 사이즈·실행 방식·정확도·클록 고정·warm up·ablation 한계가 반복되고, switch 문 스코프 문제가 같은 문단에 섞여 있는 상태가 유지되었다. 평가 조건 요약과 코드 수준 이슈가 여전히 한 문단에 함께 있어 절 내 중복과 산만을 유발한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "GPU 가속 효과를 확인하기 위해 CPU 전용 계산 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 측정했다. CPU 반복 실행 환경은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe 파일로 구성했으며, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘려 컴파일이 되었다. 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했고, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다. [근거:E00017,E00095,E00203,E00023,E00030,E00031,E00035]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p18",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "이전 지적(finding-2)이 지적한 평가 대상·신경망 크기·입력/eps_list 출처·배치 사이즈·실행 방식·정확도·클록 고정·warm up 서술이 뒤쪽 문단들과 중복되는 문제가 해결되지 않았다. CPU 전용 버전 측정이라는 고유 내용보다 중복 서술이 먼저 나와 절 내 정보 중복이 남아 있다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)를 GPU에 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. 가중치 사전 업로드(PRELOAD ON GPU) 적용 후 실행 시간이 149~155ms 범위로 기록되었고, bias까지 GPU에 미리 업로드하는 시도를 했으나 bias는 Vector이고 코드상 약 4KB 정도라 CPU 연산에도 무리가 없는 수준이라 성능 개선에 큰 의미를 미치지 못하는 것으로 판단되었다. MEMPOOL + Weights PRELOAD ON GPU 모드에서 CROWN Verification(eps=1e-06)을 실행한 결과 Elapsed time이 149.820400 ms로 기록되었다. mempool + warmup 조합의 실행 결과는 152.902900 ms로, mempool + cuBlas + warmup 조합은 174.978400 ms로 기록되었다. 기록자는 1번의 시도에서 cuBlas가 더 느린 모습이라고 관찰했고, 미리 메모리풀을 warm up 하는 것은 확실히 효과가 있어 각 버전에서 약 50ms 정도 단축된다고 기록했다. 메모리 풀 + warm up 조합은 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었고, 동일 조합 적용 후 실행 결과는 128.894800 ms로 기록되었다. [근거:E00033,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p2",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적(finding-4)이 지적한 절 전체 구성 문제(평가 대상/입력 조건 → CUDA 포팅/최적화 구성 → 실행·측정 방식으로 정리되지 않고 동일 주제가 여러 문단에 분산·반복됨)가 해결되지 않았다. 평가 대상·입력 조건·실행 방식·정확도·클록 고정·warm up·ablation 한계가 여전히 여러 문단에서 반복되고, 메모리 전송 실험과 클록 고정도 각각 중복되어 절 도입부에서 한 번 정리한 뒤 순차적으로 묶이도록 재배열해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "본 연구의 평가 대상은 CROWN 신경망 검증을 구현한 C++ 프로그램이며, 입력 조건은 최광훈 안테나 선택 신경망의 Fully Connected 구조를 기준으로 한다. 이 신경망은 Fully Layer 1, Fully Layer 2, Fully Layer 3(output)으로 구성되고, 입력 벡터 길이는 NR × Ng = 256이다. 입력 뉴런 수는 N(0)=256, 1층과 2층의 뉴런 수는 각각 N(1)=491, N(2)=491, 출력 뉴런 수는 N(3)=16으로 설정된다. 입력은 16×16 형태로 256개, 출력은 16개이며 히든 계층은 2개이다. CROWN 알고리즘의 1차 목표는 테스트 데이터 1개와 eps=10^-6을 입력으로 사용해 16개 출력을 추출하는 것이다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했으며, 새로운 FullyConnectedNetwork를 heap에 할당해 신경망을 로드한 뒤 .Pickle로 된 데이터셋을 CUDA로 읽기 위해 .bin 파일로 변환하였다. 테스트 단계에서는 입력 256개 1세트만 변환하였고, 이후 GPU에 신경망을 로드(Memcpy)하고 CROWN을 호출하는 절차를 따랐다. 프로그램 전체 실행에서 memcpy 호출은 총 18번이며, 내부 6번을 제외하면 외부에서 12번 발생한다. 가중치 행은 3개(가중치 + 가중치 양수부/음수부 + bias)이고, 신경망 구조 256 * 491 * 491 * 16에 따라 개수만큼 복사된다. Forward 테스트와 Backward 테스트는 각각 40000개의 데이터에 대해서만 수행되었으며, 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적 때문이다. 실행 방식은 CROWN의 3가지 방법인 forward, forward+backward, backward_only를 대상으로 하며, 배치 사이즈는 1이다. 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용했고, 이는 기존 신경망 검증팀의 구현과 시간을 비교하기 위한 것이다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 확인했으며, 결과는 모두 동일했다. GPU 클록 고정은 연구 일지에서 확인된 바와 같이 나중에 고정된 사항이고, warm up은 초기에 적용되었다. 각 최적화 기법은 체계적으로 분리해 ablation study로 검증하지 못한 한계가 있다. [근거:E00011,E00012,E00013,E00016,E00163,E00164,E00219,E00264,U531b24e3633dee74c4f7,U8602da87af586b3567f6,U3e01c50082e40f98631d]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p14",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적(finding-6)이 지적한 10주차 세미나 이후 생각할 사항, auto_lirpa repo 주소 등 회의·후속 작업 기록이 방법 절에 남아 있다. 세미나 후속 항목이나 repo 주소는 방법 절의 평가·실행·측정 서술과 성격이 다르므로 절 목적에 맞는 내용만 남기고 나머지는 다른 절 또는 부록 성격으로 옮기는 것이 적절하다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "코드 수준에서는 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 점을 확인하였다. 또한 switch 문 안의 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 다만 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 점은 한계로 남는다. [근거:E00337,E00353,E00354,E00376]"
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p18",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적(finding-7)이 지적한 6번째 세미나 이후 할 일(논문 영상 재확인, 슬라이드 RAM 추가, cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 유지, 논문 작성 검토, Nsight Compute 점유율 목표 등)이 방법 절에 그대로 남아 있다. 실행·측정 방식 자체보다 회의 액션 아이템에 가까워 절 구성과 어울리지 않는다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)를 GPU에 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. 가중치 사전 업로드(PRELOAD ON GPU) 적용 후 실행 시간이 149~155ms 범위로 기록되었고, bias까지 GPU에 미리 업로드하는 시도를 했으나 bias는 Vector이고 코드상 약 4KB 정도라 CPU 연산에도 무리가 없는 수준이라 성능 개선에 큰 의미를 미치지 못하는 것으로 판단되었다. MEMPOOL + Weights PRELOAD ON GPU 모드에서 CROWN Verification(eps=1e-06)을 실행한 결과 Elapsed time이 149.820400 ms로 기록되었다. mempool + warmup 조합의 실행 결과는 152.902900 ms로, mempool + cuBlas + warmup 조합은 174.978400 ms로 기록되었다. 기록자는 1번의 시도에서 cuBlas가 더 느린 모습이라고 관찰했고, 미리 메모리풀을 warm up 하는 것은 확실히 효과가 있어 각 버전에서 약 50ms 정도 단축된다고 기록했다. 메모리 풀 + warm up 조합은 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었고, 동일 조합 적용 후 실행 결과는 128.894800 ms로 기록되었다. [근거:E00033,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075]"
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p9",
+      "category": "terminology",
+      "severity": "warning",
+      "reason": "이전 지적(finding-8)이 지적한 antenna_lirpa, auto_lirpa, 방법 A/C, 3D 텐서 연산화, Batched GEMM, cublasSgemmBatched 등 최적화 로드맵 관련 용어가 현재 구현 상태와 향후 목표가 한 문단에 섞여 있는 상태가 유지되었다. ‘CUDA 포팅 및 최적화 구성’ 내에서 현재 구성과 향후 방향을 구분하면 용어 흐름이 더 안정된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 현재 작성자는 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. auto_lirpa가 빠른 이유에 대한 고민은 이후 커널 런치 횟수 감소와 관련된 설명으로 이어진다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. [근거:E00260,E00261,E00262,E00263]"
+    }
+  ],
+  "editorial_status": "needs_attention",
+  "editorial_warnings": [
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p2",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "이전 지적(finding-0)이 지적한 평가 대상·신경망 구조·입력 조건·실행 방식·정확도·클록 고정·warm up·ablation 한계가 뒤쪽 문단들과 중복되는 문제가 해결되지 않았다. 현재 문단에도 동일 항목이 그대로 남아 있어 절 도입부로서의 범위를 좁히거나 뒤쪽 중복 문단과 통합해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "본 연구의 평가 대상은 CROWN 신경망 검증을 구현한 C++ 프로그램이며, 입력 조건은 최광훈 안테나 선택 신경망의 Fully Connected 구조를 기준으로 한다. 이 신경망은 Fully Layer 1, Fully Layer 2, Fully Layer 3(output)으로 구성되고, 입력 벡터 길이는 NR × Ng = 256이다. 입력 뉴런 수는 N(0)=256, 1층과 2층의 뉴런 수는 각각 N(1)=491, N(2)=491, 출력 뉴런 수는 N(3)=16으로 설정된다. 입력은 16×16 형태로 256개, 출력은 16개이며 히든 계층은 2개이다. CROWN 알고리즘의 1차 목표는 테스트 데이터 1개와 eps=10^-6을 입력으로 사용해 16개 출력을 추출하는 것이다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했으며, 새로운 FullyConnectedNetwork를 heap에 할당해 신경망을 로드한 뒤 .Pickle로 된 데이터셋을 CUDA로 읽기 위해 .bin 파일로 변환하였다. 테스트 단계에서는 입력 256개 1세트만 변환하였고, 이후 GPU에 신경망을 로드(Memcpy)하고 CROWN을 호출하는 절차를 따랐다. 프로그램 전체 실행에서 memcpy 호출은 총 18번이며, 내부 6번을 제외하면 외부에서 12번 발생한다. 가중치 행은 3개(가중치 + 가중치 양수부/음수부 + bias)이고, 신경망 구조 256 * 491 * 491 * 16에 따라 개수만큼 복사된다. Forward 테스트와 Backward 테스트는 각각 40000개의 데이터에 대해서만 수행되었으며, 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적 때문이다. 실행 방식은 CROWN의 3가지 방법인 forward, forward+backward, backward_only를 대상으로 하며, 배치 사이즈는 1이다. 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용했고, 이는 기존 신경망 검증팀의 구현과 시간을 비교하기 위한 것이다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 확인했으며, 결과는 모두 동일했다. GPU 클록 고정은 연구 일지에서 확인된 바와 같이 나중에 고정된 사항이고, warm up은 초기에 적용되었다. 각 최적화 기법은 체계적으로 분리해 ablation study로 검증하지 못한 한계가 있다. [근거:E00011,E00012,E00013,E00016,E00163,E00164,E00219,E00264,U531b24e3633dee74c4f7,U8602da87af586b3567f6,U3e01c50082e40f98631d]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-S_methods"
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p16",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "이전 지적(finding-1)이 지적한 평가 대상·신경망 구조·입력/eps_list·배치 사이즈·실행 방식·정확도·클록 고정·warm up·ablation 한계가 반복되고, switch 문 스코프 문제가 같은 문단에 섞여 있는 상태가 유지되었다. 평가 조건 요약과 코드 수준 이슈가 여전히 한 문단에 함께 있어 절 내 중복과 산만을 유발한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "GPU 가속 효과를 확인하기 위해 CPU 전용 계산 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 측정했다. CPU 반복 실행 환경은 testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe 파일로 구성했으며, 이 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘려 컴파일이 되었다. 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했고, 그 기준으로 Nvidia의 warm up 가이드라인을 채택했다. [근거:E00017,E00095,E00203,E00023,E00030,E00031,E00035]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-S_methods"
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p18",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "이전 지적(finding-2)이 지적한 평가 대상·신경망 크기·입력/eps_list 출처·배치 사이즈·실행 방식·정확도·클록 고정·warm up 서술이 뒤쪽 문단들과 중복되는 문제가 해결되지 않았다. CPU 전용 버전 측정이라는 고유 내용보다 중복 서술이 먼저 나와 절 내 정보 중복이 남아 있다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)를 GPU에 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. 가중치 사전 업로드(PRELOAD ON GPU) 적용 후 실행 시간이 149~155ms 범위로 기록되었고, bias까지 GPU에 미리 업로드하는 시도를 했으나 bias는 Vector이고 코드상 약 4KB 정도라 CPU 연산에도 무리가 없는 수준이라 성능 개선에 큰 의미를 미치지 못하는 것으로 판단되었다. MEMPOOL + Weights PRELOAD ON GPU 모드에서 CROWN Verification(eps=1e-06)을 실행한 결과 Elapsed time이 149.820400 ms로 기록되었다. mempool + warmup 조합의 실행 결과는 152.902900 ms로, mempool + cuBlas + warmup 조합은 174.978400 ms로 기록되었다. 기록자는 1번의 시도에서 cuBlas가 더 느린 모습이라고 관찰했고, 미리 메모리풀을 warm up 하는 것은 확실히 효과가 있어 각 버전에서 약 50ms 정도 단축된다고 기록했다. 메모리 풀 + warm up 조합은 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었고, 동일 조합 적용 후 실행 결과는 128.894800 ms로 기록되었다. [근거:E00033,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-S_methods"
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p2",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적(finding-4)이 지적한 절 전체 구성 문제(평가 대상/입력 조건 → CUDA 포팅/최적화 구성 → 실행·측정 방식으로 정리되지 않고 동일 주제가 여러 문단에 분산·반복됨)가 해결되지 않았다. 평가 대상·입력 조건·실행 방식·정확도·클록 고정·warm up·ablation 한계가 여전히 여러 문단에서 반복되고, 메모리 전송 실험과 클록 고정도 각각 중복되어 절 도입부에서 한 번 정리한 뒤 순차적으로 묶이도록 재배열해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "본 연구의 평가 대상은 CROWN 신경망 검증을 구현한 C++ 프로그램이며, 입력 조건은 최광훈 안테나 선택 신경망의 Fully Connected 구조를 기준으로 한다. 이 신경망은 Fully Layer 1, Fully Layer 2, Fully Layer 3(output)으로 구성되고, 입력 벡터 길이는 NR × Ng = 256이다. 입력 뉴런 수는 N(0)=256, 1층과 2층의 뉴런 수는 각각 N(1)=491, N(2)=491, 출력 뉴런 수는 N(3)=16으로 설정된다. 입력은 16×16 형태로 256개, 출력은 16개이며 히든 계층은 2개이다. CROWN 알고리즘의 1차 목표는 테스트 데이터 1개와 eps=10^-6을 입력으로 사용해 16개 출력을 추출하는 것이다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했으며, 새로운 FullyConnectedNetwork를 heap에 할당해 신경망을 로드한 뒤 .Pickle로 된 데이터셋을 CUDA로 읽기 위해 .bin 파일로 변환하였다. 테스트 단계에서는 입력 256개 1세트만 변환하였고, 이후 GPU에 신경망을 로드(Memcpy)하고 CROWN을 호출하는 절차를 따랐다. 프로그램 전체 실행에서 memcpy 호출은 총 18번이며, 내부 6번을 제외하면 외부에서 12번 발생한다. 가중치 행은 3개(가중치 + 가중치 양수부/음수부 + bias)이고, 신경망 구조 256 * 491 * 491 * 16에 따라 개수만큼 복사된다. Forward 테스트와 Backward 테스트는 각각 40000개의 데이터에 대해서만 수행되었으며, 평가 샘플 수가 10만개로 제한된 이유는 표본 측정 목적 때문이다. 실행 방식은 CROWN의 3가지 방법인 forward, forward+backward, backward_only를 대상으로 하며, 배치 사이즈는 1이다. 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용했고, 이는 기존 신경망 검증팀의 구현과 시간을 비교하기 위한 것이다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 확인했으며, 결과는 모두 동일했다. GPU 클록 고정은 연구 일지에서 확인된 바와 같이 나중에 고정된 사항이고, warm up은 초기에 적용되었다. 각 최적화 기법은 체계적으로 분리해 ablation study로 검증하지 못한 한계가 있다. [근거:E00011,E00012,E00013,E00016,E00163,E00164,E00219,E00264,U531b24e3633dee74c4f7,U8602da87af586b3567f6,U3e01c50082e40f98631d]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-S_methods"
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p14",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적(finding-6)이 지적한 10주차 세미나 이후 생각할 사항, auto_lirpa repo 주소 등 회의·후속 작업 기록이 방법 절에 남아 있다. 세미나 후속 항목이나 repo 주소는 방법 절의 평가·실행·측정 서술과 성격이 다르므로 절 목적에 맞는 내용만 남기고 나머지는 다른 절 또는 부록 성격으로 옮기는 것이 적절하다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "코드 수준에서는 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 점을 확인하였다. 또한 switch 문 안의 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 다만 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 점은 한계로 남는다. [근거:E00337,E00353,E00354,E00376]",
+      "stage": "section-S_methods"
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p18",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "이전 지적(finding-7)이 지적한 6번째 세미나 이후 할 일(논문 영상 재확인, 슬라이드 RAM 추가, cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 유지, 논문 작성 검토, Nsight Compute 점유율 목표 등)이 방법 절에 그대로 남아 있다. 실행·측정 방식 자체보다 회의 액션 아이템에 가까워 절 구성과 어울리지 않는다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)를 GPU에 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. 가중치 사전 업로드(PRELOAD ON GPU) 적용 후 실행 시간이 149~155ms 범위로 기록되었고, bias까지 GPU에 미리 업로드하는 시도를 했으나 bias는 Vector이고 코드상 약 4KB 정도라 CPU 연산에도 무리가 없는 수준이라 성능 개선에 큰 의미를 미치지 못하는 것으로 판단되었다. MEMPOOL + Weights PRELOAD ON GPU 모드에서 CROWN Verification(eps=1e-06)을 실행한 결과 Elapsed time이 149.820400 ms로 기록되었다. mempool + warmup 조합의 실행 결과는 152.902900 ms로, mempool + cuBlas + warmup 조합은 174.978400 ms로 기록되었다. 기록자는 1번의 시도에서 cuBlas가 더 느린 모습이라고 관찰했고, 미리 메모리풀을 warm up 하는 것은 확실히 효과가 있어 각 버전에서 약 50ms 정도 단축된다고 기록했다. 메모리 풀 + warm up 조합은 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었고, 동일 조합 적용 후 실행 결과는 128.894800 ms로 기록되었다. [근거:E00033,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075]",
+      "stage": "section-S_methods"
+    },
+    {
+      "section_id": "S_methods",
+      "paragraph_id": "S_methods_p9",
+      "category": "terminology",
+      "severity": "warning",
+      "reason": "이전 지적(finding-8)이 지적한 antenna_lirpa, auto_lirpa, 방법 A/C, 3D 텐서 연산화, Batched GEMM, cublasSgemmBatched 등 최적화 로드맵 관련 용어가 현재 구현 상태와 향후 목표가 한 문단에 섞여 있는 상태가 유지되었다. ‘CUDA 포팅 및 최적화 구성’ 내에서 현재 구성과 향후 방향을 구분하면 용어 흐름이 더 안정된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 현재 작성자는 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. auto_lirpa가 빠른 이유에 대한 고민은 이후 커널 런치 횟수 감소와 관련된 설명으로 이어진다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. [근거:E00260,E00261,E00262,E00263]",
+      "stage": "section-S_methods"
+    }
+  ],
+  "editorial_completion": {
+    "policy": "editorial-fixed-slots-v1",
+    "status": "needs_attention",
+    "revisions": 2,
+    "reason": "revision_limit"
+  },
+  "inherited_content_coverage": {
+    "met": 3,
+    "total": 3,
+    "value": 1.0,
+    "scope": "inherited_subsection_reviews",
+    "rechecked": false
+  }
+}

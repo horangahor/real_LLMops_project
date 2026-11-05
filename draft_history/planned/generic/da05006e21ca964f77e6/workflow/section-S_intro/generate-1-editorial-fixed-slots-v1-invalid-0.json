@@ -1,0 +1,133 @@
+{
+  "response": {
+    "sections": {
+      "S_intro": {
+        "parts": {
+          "p0": {
+            "S_intro_p2": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p2_s1": {
+                  "action": "replace",
+                  "text": "신경망 검증은 자율주행, 통신 장비 제어, 안전 임베디드 시스템 등에서 모델의 안전 범위를 보장하는 데 쓰이지만, 검증 연산 자체의 비용이 커서 실제 운용 환경에서 실시간 제약을 만족시키기 어렵다. 특히 CROWN 기반 검증은 대규모 행렬 연산과 반복적 경계 계산이 필요해 CPU 환경에서 처리 시간이 매우 느리고, 기존 신경망 검증팀도 오프라인 환경에서만 제한적으로 빠른 수준에 머무는 경우가 많다. 이런 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화해, 무선 통신 환경이 요구하는 처리 속도에 맞출 수 있는지가 중요한 문제로 제기된다."
+                }
+              }
+            },
+            "S_intro_p3": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p3_s1": {
+                  "action": "replace",
+                  "text": "실시간성을 확보하려면 검증 지연을 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 요구가 제기된다. 이 조건은 단순히 평균 처리 속도만이 아니라, 운영체제 개입이나 메모리 관리 방식에 따라 발생할 수 있는 지연 변동까지 함께 고려해야 함을 뜻한다. 예를 들어 메모리 전송 방식만 비교해도, 일반 메모리 방식은 평소에는 CPU 캐시 효과로 다소 빠를 수 있지만 운영체제 개입이나 백그라운드 작업이 끼어들면 큰 지연 스파이크가 발생할 수 있어 짧은 데드라인을 파괴할 위험이 있다. 반면 Pinned Memory는 매번 작은 DMA 셋업 비용을 치르지만 운영체제 페이징을 차단해 어떤 상황에서도 일정 수준을 넘지 않는 결정론적 안정성을 보장한다. 즉, 실시간 환경에서는 평균 속도뿐 아니라 최악 지연과 지터 안정화가 함께 중요해진다."
+                }
+              }
+            },
+            "S_intro_p4": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p4_s1": {
+                  "action": "replace",
+                  "text": "이 연구는 CROWN 검증을 CPU 환경에만 의존하던 기존 접근에서 벗어나, GPU 병렬화와 메모리·실행 최적화를 통해 실시간성 요구를 충족할 가능성을 탐색하는 데 목표를 둔다. 다만 본 절에서는 연구 배경과 문제 제기에 필요한 범위만 다루며, 구체적인 최적화 기법 비교나 실험 결과는 해당 절에서 별도로 검토한다."
+                }
+              }
+            }
+          },
+          "p1": {
+            "S_intro_p6": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p6_s1": {
+                  "action": "delete",
+                  "text": ""
+                }
+              }
+            },
+            "S_intro_p7": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p7_s1": {
+                  "action": "delete",
+                  "text": ""
+                }
+              }
+            },
+            "S_intro_p8": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p8_s1": {
+                  "action": "delete",
+                  "text": ""
+                }
+              }
+            },
+            "S_intro_p9": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p9_s1": {
+                  "action": "delete",
+                  "text": ""
+                }
+              }
+            }
+          },
+          "p2": {
+            "S_intro_p11": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p11_s1": {
+                  "action": "delete",
+                  "text": ""
+                }
+              }
+            },
+            "S_intro_p12": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p12_s1": {
+                  "action": "replace",
+                  "text": "이 문제를 다루기 위해 CROWN의 GPU 병렬화 방식으로 두 가지 구도가 검토되었다. 하나는 CROWN의 모든 커널에 직접 3차원 배칭 구조를 적용해 알고리즘과 메모리를 최대한 통제하는 방식이고, 다른 하나는 CROWN 연산 시간의 대부분이 행렬 곱셈에 집중된다는 점에 착안해 가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리에 맡기고 나머지 전용 연산은 자체 커널로 유지하는 하이브리드 방식이다. 본 절에서는 이 두 구도를 연구 목표와 연결해 소개하되, 실제 구현 결과를 일반화된 계열 구분으로 확장하지 않고 현재 확인되는 개념·구도와 배칭 관련 최적화 논의의 범위 안에서만 제한적으로 사용한다."
+                }
+              }
+            },
+            "S_intro_p13": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p13_s1": {
+                  "action": "delete",
+                  "text": ""
+                }
+              }
+            },
+            "S_intro_p14": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p14_s1": {
+                  "action": "delete",
+                  "text": ""
+                }
+              }
+            },
+            "S_intro_p15": {
+              "join_previous": false,
+              "spans": {
+                "S_intro_p15_s1": {
+                  "action": "replace",
+                  "text": "정리하면 본 연구의 목표는 CROWN 검증을 CPU 중심에서 GPU 병렬화 및 실시간성 최적화 방향으로 옮겨, 대규모 연산을 CUDA 기반으로 처리했을 때 무선 통신 환경을 따라잡을 수 있는지 확인하는 데 있다. 기여 방향은 CROWN 파이프라인을 3차원 텐서 구조로 정리하고, 가장 무거운 행렬곱을 최적화 라이브러리로 교체하는 하이브리드 접근을 검토하는 데서 출발한다. 다만 각 최적화 기법을 체계적으로 분리해 비교하지 못한 점은 한계로 남는다."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "reason": "소절 전체 삭제는 허용하지 않습니다: S_intro/p1 (### 1.2 기존 접근과 한계). 각 소절의 기존 핵심 설명·조건·한계를 담은 본문을 남기도록 keep 또는 replace로 보정하세요.",
+  "validation_code": "subsection_removal",
+  "protected_subsections": [
+    {
+      "section_id": "S_intro",
+      "part": "p1",
+      "heading": "### 1.2 기존 접근과 한계"
+    }
+  ]
+}

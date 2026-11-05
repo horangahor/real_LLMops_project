@@ -95,7 +95,7 @@ def finish_editorial(report, stage, completion):
     return report
 
 
-def review_editorial(engine, folder, name, level, plan, bodies, children, pending_issues=None):
+def _review_editorial_legacy(engine, folder, name, level, plan, bodies, children, pending_issues=None):
     from planned_paper import index_paragraphs
     paragraphs = index_paragraphs(bodies)
     outline = [{k: copy.deepcopy(s[k]) for k in ("id", "title", "purpose", "subsections")} for s in plan["sections"]]
@@ -154,3 +154,19 @@ def review_editorial(engine, folder, name, level, plan, bodies, children, pendin
             raise ValueError(f"편집 검토 {name}의 JSON·문단 ID 보정에 실패했습니다.")
     combined["issues"] = list({str(sorted(i.items())): i for i in combined["issues"]}.values())
     return combined, checked_editorial_review(combined, plan, bodies, children)
+
+
+def review_editorial(engine, folder, name, level, plan, bodies, children, pending_issues=None):
+    if pending_issues is None:
+        return _review_editorial_legacy(engine, folder, name, level, plan, bodies, children)
+    class CachedEngine:
+        def call(self, *args, **kwargs):
+            kwargs["cache_only"] = True
+            return engine.call(*args, **kwargs)
+    try:
+        return _review_editorial_legacy(CachedEngine(), folder, name, level, plan, bodies, children, pending_issues)
+    except (FileNotFoundError, ValueError):
+        # Reuse valid completed old responses, but never send the oversized
+        # history again just because a prior recheck failed or was interrupted.
+        from editorial_recheck import review_editorial_recheck
+        return review_editorial_recheck(engine, folder, name, level, plan, bodies, children, pending_issues)

@@ -115,7 +115,7 @@ class DraftProseTests(unittest.TestCase):
                 if count in (1, 3):
                     raw["parts"]["p0"] = "두 번째 근거 연결이 빠진 본문이다. [근거:F1]"
                 elif count == 2:
-                    raw["parts"]["p0"] = paragraphs("연결이 불명확한 첫 문단\n\n두 번째 문단", ["F1"])
+                    raw["parts"]["p0"] = paragraphs("연결이 불명확한 본문 [근거:unknown]", ["F1"])
             return raw
         with TemporaryDirectory() as tmp:
             result = PlannedPaper(tmp, response).run(research())

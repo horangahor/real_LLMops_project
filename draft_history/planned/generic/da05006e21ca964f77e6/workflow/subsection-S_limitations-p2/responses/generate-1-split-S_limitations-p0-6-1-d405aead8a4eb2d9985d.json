@@ -1,0 +1,21 @@
+{
+  "request_fingerprint": "d405aead8a4eb2d9985d7a0a3f7abced222e6262e4525cd72a46d64581979078",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "커널 launch 횟수 감소와 실행 시간 감소 사이의 관계는 현재 기록만으로 단정하기 어렵다. 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch 횟수만 세었으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했기 때문에, 실제 실행 시간 차이를 구성하는 전송·동기화·그래프 런치 비용은 이 계수에 포함되지 않는다. graph mode=1에서 추론 커널은 그대로 둔 채 샘플 1개 전체 기준으로 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었고, graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회로 이번 작업에서 graph launch 횟수 자체는 줄지 않았다. 감소 내역은 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회이며, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. 그러나 커널 감소 폭이 가장 큰 Forward가 왜 가장 많이 줄었는지, 커널 횟수가 더 많이 줄면 시간도 더 줄어야 하는지에 대한 의문은 남아 있으며, forward에서는 무거운 커널 연산 호출이 9개 줄어든 반면 backward에서는 forward 부분 12개(9+3), 실제 backward 부분 3개 감소에 그쳤고, backward_only는 45→33회(26.7%)로 가장 적게 줄었으며 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄어든 것이어서 커널 비용도 서로 다르다. 실행 시간은 1138s에서 758s로 감소했다고 기록되었으나, 이는 단일 실행 중심의 요약값이며 반복 측정 기반 통계나 정밀 수치는 이 사실만으로 제시되지 않는다.",
+          "evidence_ids": [
+            "E00311",
+            "E00313",
+            "E00314",
+            "E00315",
+            "E00318",
+            "E00319",
+            "E00320"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,4465 @@
+{
+  "paper_title": "CUDA 기반 CROWN 신경망 검증의 GPU 병렬화 및 실시간성 최적화 연구",
+  "section_plan": {
+    "id": "S_intro",
+    "title": "서론",
+    "role": "introduction",
+    "purpose": "연구 배경과 문제 맥락, 기존 CPU 중심 검증의 한계, 본 연구의 목표와 기여 방향을 정리한다.",
+    "status": "write",
+    "subsections": [
+      "연구 배경 및 문제 제기",
+      "기존 접근과 한계",
+      "연구 목표와 기여"
+    ],
+    "evidence_ids": [
+      "E00348",
+      "E00101",
+      "E00294",
+      "E00296",
+      "E00267",
+      "E00268",
+      "E00269",
+      "E00027",
+      "E00029",
+      "E00030",
+      "E00277",
+      "E00278",
+      "E00279",
+      "E00280",
+      "E00281",
+      "E00282",
+      "E00283",
+      "E00284",
+      "E00286",
+      "U209b56cf1c8267aea36d",
+      "U9ff240a30b03c6835449"
+    ],
+    "reference_ids": [
+      "ref1_introduction"
+    ],
+    "table_ids": [],
+    "depends_on": [],
+    "reference_adaptation": "ref1_introduction의 서론 구성 방식을 따르되, 식물 스트레스 분류 관련 내용은 제외하고 CUDA 기반 CROWN 검증의 실시간성 문제와 GPU 최적화 동기로 대체한다.",
+    "required_items": [
+      {
+        "id": "RI_intro_1",
+        "description": "연구 대상 영역의 실용적 중요성과 문제 발생 맥락을 정리한다.",
+        "evidence_ids": [
+          "E00348",
+          "E00101",
+          "E00294",
+          "E00296",
+          "U209b56cf1c8267aea36d"
+        ],
+        "guideline_ids": [
+          "ref1_introduction_required_1"
+        ],
+        "subsection_index": 0
+      },
+      {
+        "id": "RI_intro_2",
+        "description": "기존 CPU 중심 검증 접근과 실시간 환경에서의 한계를 정리한다.",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "U9ff240a30b03c6835449"
+        ],
+        "guideline_ids": [
+          "ref1_introduction_required_3"
+        ],
+        "subsection_index": 1
+      },
+      {
+        "id": "RI_intro_3",
+        "description": "본 연구의 목표와 기여 방향을 요약한다.",
+        "evidence_ids": [
+          "E00267",
+          "E00268",
+          "E00269",
+          "E00027",
+          "E00029",
+          "E00030",
+          "U209b56cf1c8267aea36d"
+        ],
+        "guideline_ids": [
+          "ref1_introduction_required_1"
+        ],
+        "subsection_index": 2
+      }
+    ]
+  },
+  "subsection_headings": [
+    "### 1.1 연구 배경 및 문제 제기",
+    "### 1.2 기존 접근과 한계",
+    "### 1.3 연구 목표와 기여"
+  ],
+  "human_guidance": [
+    {
+      "action": "recheck",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "",
+      "explanation": "사용자 지시에 따라 연구 원문 전체에서 '주요 목표'와 '주요 기여'를 직접 서술한 부분을 재탐색합니다. 기존 근거(E00027~E00287)는 GPU 최적화, CUDA 메모리 비교, 클록 고정 실험 등 실행·측정·방법 관련 내용이므로 이 질문의 답으로 연결하지 않습니다. 목표·기여를 직접 뒷받침하는 원문이 발견되면 해당 페이지를 근거로 연결하고, 없으면 missing 상태를 유지하며 임의 보완이나 추론을 하지 않습니다.",
+      "question_id": "introduction_Q4",
+      "question": {
+        "id": "introduction_Q4",
+        "question": "연구의 주요 목표와 기여는 무엇이며, 이를 한 문장으로 요약하면 어떻게 표현할 수 있는가?",
+        "expected_fields": [
+          "주요 목표",
+          "주요 기여 요약"
+        ],
+        "priority": "required",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref1_introduction_required_4"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref1_s1"
+        ]
+      },
+      "instruction": "연구 원문 전체에서 이 질문에 직접 답하는 연구의 주요 목표와 주요 기여를 다시 찾아주세요. 목표·기여를 직접 뒷받침하는 원문이 있으면 그 페이지를 재탐색하고 근거로 연결하세요. 기존 근거가 질문에 직접 답하지 않으면 해당 evidence_ids를 연결하지 마세요. 원문에 직접 답하는 내용이 없으면 missing을 유지하고 임의로 보완하거나 추론하지 마세요.",
+      "pending_id": "072ad78eebafe5a66de7",
+      "created_at": "2026-11-03T11:29:15.266886+00:00",
+      "id": "d090792a3ac6bae50801"
+    },
+    {
+      "action": "recheck",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "이 질문은 GPU/CUDA 실험의 비교 맥락으로 한정하여 재검토해야 한다. 발표자료·슬라이드 구성·대본 작성 피드백(E00181, E00182 등)처럼 연구 비교 조건을 직접 말하지 않는 근거는 제외하고, 실제 cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 있는 경우에만 연결한다. 계획·제안·AI 조언은 수행된 비교 결과나 공정성 조건으로 바꾸지 않는다.",
+      "explanation": "기존 평가는 E00181, E00182를 '비교 시 발생하는 어려움'과 '공정 비교를 위한 구분·조건'의 근거로 사용했으나, 이는 발표자료·슬라이드 구성·대본 작성 피드백으로 GPU/CUDA 실험의 비교 조건을 직접 말하지 않는다. 사용자 지시에 따라 해당 근거는 제외해야 한다. 또한 E00282, E00284, E00285, E00287은 클록 고정 재실험 계획, CUDA 강의 참고, 명령어 확인, Persistence mode 설정 등 계획·제안·AI 조언 성격이 강해 '수행된 비교 결과나 공정성 조건'으로 바꾸기 어렵다. 따라서 GPU/CUDA 실험의 비교 맥락에 직접 해당하는 원문만 남기고 다시 판정해야 하므로 recheck로 처리한다. 직접 답하는 원문이 부족하면 임의로 보완하지 않고 missing_fields를 구체적으로 명시한다.",
+      "question_id": "introduction_Q5",
+      "question": {
+        "id": "introduction_Q5",
+        "question": "비교를 수행할 때 어떤 어려움이나 공정 비교를 저해하는 요소가 있으며, 공정한 비교를 위해 어떤 구분이나 조건이 필요한가?",
+        "expected_fields": [
+          "비교 시 발생하는 어려움",
+          "공정 비교를 위해 필요한 구분 또는 조건"
+        ],
+        "priority": "context",
+        "applies_when": "비교를 수행했거나 비교할 계획이 있는 경우",
+        "guideline_ids": [
+          "ref2_introduction_required_2"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "비교를 수행했거나 비교할 계획이 있는 경우"
+        },
+        "section_ids": [
+          "ref2_s1"
+        ]
+      },
+      "instruction": "이 질문을 GPU/CUDA 실험의 비교 맥락에 한정하여 다시 검토하세요. 발표자료·슬라이드 구성·대본 작성 피드백(E00181, E00182 등)처럼 연구 비교 조건을 직접 말하지 않는 근거는 제외하세요. 실제 cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 있는 경우에만 연결하세요. 계획·제안·AI 조언은 수행된 비교 결과나 공정성 조건으로 바꾸지 마세요. sufficient라면 missing_fields는 빈 배열이어야 하고, 어떤 필수 항목이 부족하면 partial 또는 missing과 구체적인 missing_fields를 반환하세요. 직접 답하는 원문이 없으면 임의로 보완하지 마세요.",
+      "pending_id": "7170204db229b59c9c6d",
+      "created_at": "2026-11-03T12:04:51.871864+00:00",
+      "id": "efd7e87bb7350089cc8d"
+    },
+    {
+      "action": "recheck",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "",
+      "explanation": "사용자 지시에 따라 기존 연구 원문을 다시 검색하여 전체 처리 파이프라인의 단계를 구분하고 각 단계가 추가한 시간·자원·복잡도 비용을 별도로 측정한 직접 근거가 있는지 확인했다. 제시된 연구 노트(E00027~E00287)는 개별 GPU 최적화 시도와 그 결과 실행 시간, 메모리 비교, 클록 설정, 계획·제안·AI 조언 등을 기록하고 있으나, 전체 처리 과정을 여러 단계로 나누고 각 단계가 추가하는 비용을 분리해 검토한 직접 근거는 확인되지 않았다. 따라서 처리 단계, 단계별 부가 비용, 측정 방식, 한계에 대한 정보가 모두 부재하므로 expected_fields를 충족하지 못한다. 개별 최적화 실험의 총 실행시간, 메모리 비교, 클록 설정, 계획·제안·AI 조언은 단계별 부가 비용의 직접 근거가 아니므로 연결하지 않았다. 직접 답하는 원문이 없으므로 missing 상태와 구체적인 missing_fields를 유지하고 evidence_ids는 빈 배열로 한다. 비용을 계산하거나 추론하지 않았다.",
+      "question_id": "related_work_Q2",
+      "question": {
+        "id": "related_work_Q2",
+        "question": "전체 처리 과정에서 각 단계가 추가하는 비용(시간·자원·복잡도 등)을 분리해 검토했는가?",
+        "expected_fields": [
+          "처리 단계",
+          "단계별 부가 비용",
+          "측정 방식",
+          "한계"
+        ],
+        "priority": "context",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref2_related_work_required_2"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref2_s2"
+        ],
+        "priority_reason": "관련 연구는 문헌 근거가 있을 때 작성하며 연구 일지의 필수 실험 근거로 요구하지 않음"
+      },
+      "instruction": "이 메시지는 새로운 사실이나 답을 제공하는 것이 아니다. 반드시 recheck로 처리하고, 사용자 제공 정보로 분류하지 말라. 원문에서 전체 처리 파이프라인의 단계를 구분하고 각 단계가 추가한 시간·자원·복잡도 비용을 별도로 측정한 직접 근거가 있는지 다시 검색하라. 개별 GPU 최적화 실험의 총 실행시간, 메모리 비교, 클록 설정, 계획·제안·AI 조언은 단계별 부가 비용의 직접 근거가 아니므로 연결하지 말라. 처리 단계와 단계별 추가 비용 및 측정 방식·한계를 같은 원문이 직접 뒷받침할 때만 evidence_ids를 연결하라. 직접 답하는 원문이 없으면 missing과 구체적인 missing_fields를 유지하고 evidence_ids는 빈 배열로 하라. 비용을 계산하거나 추론하지 말라.",
+      "pending_id": "0f1710375afa6b019911",
+      "created_at": "2026-11-03T12:28:09.298482+00:00",
+      "id": "c4fc4c22ca004bd2c2e8"
+    },
+    {
+      "action": "recheck",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "methods_Q5의 세 필드(구성 요소별 역할, 결합 방식, 상호작용 효과)를 실제 구현·실행 원문에서 직접 뒷받침하는 근거만 연결한다. 구상·계획·AI 조언·단순 코드 해석만으로는 결합 방식이나 상호작용 효과를 채우지 않는다. 세 필드 중 하나라도 직접 근거가 부족하면 status=partial 또는 missing과 구체적인 missing_fields를 반환하고, 충분한 근거가 있으면 status=sufficient와 missing_fields=[]를 반환한다. 없는 결합·효과는 추론하지 않는다.",
+      "explanation": "사용자 지시는 새 사실 제공이 아니라 재검토 지시이므로 recheck로 처리한다. 현재 assessment는 missing_fields를 세 항목 모두로 두고 있으나, 이는 제공된 근거 목록(E00002 등)이 구상·계획·해석·시도 중심이라는 판단에 따른 것이다. 실제 구현·실행 원문에서 각 구성 요소의 역할, 결합 방식, 상호작용 효과를 직접 서술한 근거를 다시 확인해, 세 필드 중 어느 것이 직접 뒷받침되는지(또는 여전히 부족한지)를 구체적으로 재판정해야 한다. 충분한 직접 근거가 확인되면 status=sufficient와 missing_fields=[]로, 일부만 확인되면 status=partial과 남은 missing_fields로, 모두 부족하면 status=missing과 missing_fields를 유지한다. 단, 충분한 근거가 있는데도 missing_fields를 채우는 모순은 만들지 않는다.",
+      "question_id": "methods_Q5",
+      "question": {
+        "id": "methods_Q5",
+        "question": "각 구성 요소의 역할과 결합 방식은 어떻게 되는가?",
+        "expected_fields": [
+          "구성 요소별 역할",
+          "결합 방식",
+          "상호작용 효과"
+        ],
+        "priority": "required",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref1_methods_required_5"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref1_s2",
+          "ref1_s2_s1",
+          "ref1_s2_s1_s1",
+          "ref1_s2_s1_s2",
+          "ref1_s2_s1_s3",
+          "ref1_s2_s2",
+          "ref1_s2_s2_s1",
+          "ref1_s2_s2_s2",
+          "ref1_s2_s2_s3",
+          "ref1_s2_s2_s4",
+          "ref1_s2_s2_s5",
+          "ref1_s2_s2_s6"
+        ]
+      },
+      "instruction": "이 메시지는 새 사실 제공이 아니라 재검토 지시이므로 반드시 recheck로 처리하세요. 실제 구현·실행 원문에서 각 구성 요소의 역할, 구성 요소들의 결합 방식, 상호작용 효과를 직접 뒷받침하는 근거만 연결하세요. 구상·계획·AI 조언·단순 코드 해석만으로 결합 방식이나 상호작용 효과를 만들지 마세요. 세 필드를 모두 직접 뒷받침하면 status=sufficient와 missing_fields=[]를 반환하고, 하나라도 부족하면 status=partial 또는 missing과 구체적인 missing_fields를 반환하세요. sufficient인데 missing_fields를 채우는 모순을 만들지 마세요. 없는 결합·효과는 추론하지 마세요.",
+      "pending_id": "d6af38eee8aede7a1c0a",
+      "created_at": "2026-11-03T13:10:19.391838+00:00",
+      "id": "85ca0e507c4e2bc6d89a"
+    },
+    {
+      "action": "recheck",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "",
+      "explanation": "재검토 지시로 처리했습니다. 현재 제공된 facts에는 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도만 포함되어 있으며, '기존 접근들'을 어떤 계열로 구분하는지, 각 계열의 강점과 한계가 무엇인지에 대한 체계적인 서술은 확인되지 않습니다. 방법 B의 장점·아쉬운 점과 방법 C의 착안점·하이브리드 특성은 일부 확인되나, 이는 연구자가 시도한 개별 방식의 설명일 뿐 기존 접근 전반의 계열 구분과 각 계열의 강점·한계로 보기에는 충분하지 않습니다. 따라서 원문 재검토가 필요하며, CUDA 구현·GPU 최적화·실험 결과·계획·AI 조언은 기존 접근 문헌의 강점/한계 근거로 사용하지 않도록 유지합니다. 원문 재검토 후 직접 답하는 관련 접근 원문이 모두 확인되면 sufficient로, 일부만 확인되면 partial로, 직접 답하는 관련 접근 원문이 없으면 missing으로 판정하고 구체적인 missing_fields와 evidence_ids를 반환하겠습니다.",
+      "question_id": "introduction_Q2",
+      "question": {
+        "id": "introduction_Q2",
+        "question": "기존 접근들은 어떤 계열로 구분할 수 있으며, 각 계열의 강점과 한계는 무엇인가?",
+        "expected_fields": [
+          "기존 접근의 계열 구분",
+          "각 계열의 강점",
+          "각 계열의 한계"
+        ],
+        "priority": "required",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref1_introduction_required_2"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref1_s1"
+        ]
+      },
+      "instruction": "이 메시지는 새 사실 제공이 아니라 재검토 지시이므로 반드시 recheck로 처리하세요. 질문에 직접 답하는 관련 연구·기존 접근의 계열 구분, 각 계열의 강점, 각 계열의 한계를 원문에서 직접 찾으세요. 현재 연구의 CUDA 구현·GPU 최적화·실험 결과·계획·AI 조언은 기존 접근 문헌의 강점/한계 근거로 사용하지 마세요. 세 기대 필드를 직접 뒷받침하는 원문이 모두 있으면 sufficient와 missing_fields=[]를 반환하고, 일부만 있으면 partial과 남은 missing_fields를 반환하세요. 직접 답하는 관련 접근 원문이 없으면 missing과 구체적인 missing_fields 및 evidence_ids=[]를 반환하고 임의의 문헌 분류를 만들지 마세요.",
+      "pending_id": "ea500d3ca9754228e577",
+      "created_at": "2026-11-03T13:29:52.297853+00:00",
+      "id": "f4f4abf2bae858954e24"
+    },
+    {
+      "action": "recheck",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "기준 모델과 변형 모델을 명시적으로 짝지어 각 구조, 구조 차이, 그 차이가 성능에 미치는 영향 해석을 직접 서술한 원문만 연결한다. only_GPU/hybrid 구현 변경 목록, 라이브러리 도입 시도, 함수·커널 호출 변경, 계획·검토 의견은 기준/변형 모델 구조 비교로 임의 변환하지 않는다. 네 필드를 모두 직접 뒷받침하면 sufficient와 missing_fields=[]를, 일부만 있으면 partial과 남은 missing_fields를, 직접 비교 원문이 없으면 missing과 구체적 missing_fields 및 evidence_ids=[]를 반환한다.",
+      "explanation": "사용자 지시는 새 사실 제공이 아니라 재검토 지시이므로 recheck로 처리한다. 현재 근거는 특정 기준 모델과 변형 모델을 짝지어 구조 차이를 설명한 내용이 없어, 기준 모델 구조·변형 모델 구조·차이점·성능 영향 해석 모두 직접 뒷받침되지 않는다. 재검토 시에는 실제 기준/변형 모델 구조 비교가 명시된 원문만 연결해야 하며, 구현 변경 목록이나 라이브러리 도입 결과 등은 구조 비교로 변환하지 않는다.",
+      "question_id": "methods_Q4",
+      "question": {
+        "id": "methods_Q4",
+        "question": "기준 모델과 변형 모델의 구조 차이는 무엇인가?",
+        "expected_fields": [
+          "기준 모델의 구조",
+          "변형 모델의 구조",
+          "차이점",
+          "차이가 성능에 미치는 영향 해석"
+        ],
+        "priority": "required",
+        "applies_when": "비교 대상이 존재하는 경우",
+        "guideline_ids": [
+          "ref1_methods_required_4"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "비교 대상이 존재하는 경우"
+        },
+        "section_ids": [
+          "ref1_s2",
+          "ref1_s2_s1",
+          "ref1_s2_s1_s1",
+          "ref1_s2_s1_s2",
+          "ref1_s2_s1_s3",
+          "ref1_s2_s2",
+          "ref1_s2_s2_s1",
+          "ref1_s2_s2_s2",
+          "ref1_s2_s2_s3",
+          "ref1_s2_s2_s4",
+          "ref1_s2_s2_s5",
+          "ref1_s2_s2_s6"
+        ]
+      },
+      "instruction": "이 메시지는 새 사실 제공이 아니라 재검토 지시이므로 반드시 recheck로 처리하세요. 실제 기준 모델과 변형 모델을 명시적으로 짝지어 각 구조, 구조 차이, 그 차이가 성능에 미치는 영향 해석을 직접 뒷받침하는 원문만 연결하세요. only_GPU/hybrid 구현 변경 목록, 라이브러리 도입 시도, 함수·커널 호출 변경, 계획·검토 의견은 기준/변형 모델 구조 비교로 임의 변환하지 마세요. 네 필드를 모두 직접 뒷받침하면 sufficient와 missing_fields=[]를 반환하고, 일부만 있으면 partial과 남은 missing_fields를 반환하세요. 직접 비교 원문이 없으면 missing과 구체적 missing_fields 및 evidence_ids=[]를 반환하세요.",
+      "pending_id": "25c92a785269c47444c3",
+      "created_at": "2026-11-03T13:31:50.119953+00:00",
+      "id": "40849fcc17fe5e1e9a41"
+    },
+    {
+      "action": "recheck",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "이 질문은 새 사실 제공이 아니라 재검토 지시이므로, 실제 원문에서 구성 요소 단위 성능의 명시적 순위, 전체 처리 성능의 명시적 순위, 두 순위의 차이·불일치가 비교되었는지 확인하세요. 단순히 여러 실행시간·가속 배수·단계별 비교가 있다는 이유로 순위를 만들거나 계산하지 마세요.",
+      "explanation": "사용자가 명시한 recheck 지시에 따라, 제공된 근거(E00044, E00045, E00046, E00081, E00083, E00174, E00187~E00199, E00216, E00257, E00259~E00263, E00277~E00284, E00286, E00375 등)를 다시 확인했습니다. 해당 근거에는 구성 요소 단위 성능과 전체 처리 성능에 대한 개별 실행 시간·가속 배수·단계별 비교 수치가 존재하지만, '구성 요소 단위 성능 순위'와 '전체 처리 성능 순위'를 명시적으로 매기고 두 순위를 대조한 비교 결과는 확인되지 않습니다. 따라서 세 필드(구성 요소 단위 성능 순위, 전체 처리 성능 순위, 순위 간 차이 또는 불일치)를 직접 뒷받침하는 내용은 없으며, 임의의 순위를 추론하지 않습니다.",
+      "question_id": "evaluation_Q13",
+      "question": {
+        "id": "evaluation_Q13",
+        "question": "구성 요소 단위 성능과 전체 처리 성능의 순위가 비교되었는가? 비교되었다면 어떤 순위와 차이가 나타났는가?",
+        "expected_fields": [
+          "구성 요소 단위 성능 순위",
+          "전체 처리 성능 순위",
+          "순위 간 차이 또는 불일치"
+        ],
+        "priority": "required",
+        "applies_when": "구성 요소 단위와 전체 처리 성능을 모두 평가한 경우",
+        "guideline_ids": [
+          "ref2_evaluation_required_6"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "구성 요소 단위와 전체 처리 성능을 모두 평가한 경우"
+        },
+        "section_ids": [
+          "ref2_s4",
+          "ref2_s4_s1",
+          "ref2_s4_s2",
+          "ref2_s4_s3"
+        ]
+      },
+      "instruction": "이 메시지는 새 사실 제공이 아니라 재검토 지시이므로 반드시 recheck로 처리하세요. 실제 원문에서 구성 요소 단위 성능의 명시적 순위, 전체 처리 성능의 명시적 순위, 두 순위의 차이·불일치가 비교되었는지 확인하세요. 단순히 여러 실행시간·가속 배수·단계별 비교가 있다는 이유로 순위를 만들거나 계산하지 마세요. 세 필드를 모두 직접 뒷받침하면 sufficient와 missing_fields=[]를 반환하고, 일부만 있으면 partial과 남은 missing_fields를 반환하세요. 명시적인 순위 비교가 없으면 missing과 구체적 missing_fields 및 evidence_ids=[]를 반환하고 임의의 순위를 추론하지 마세요.",
+      "pending_id": "04329bfc16750dc889eb",
+      "created_at": "2026-11-03T13:37:31.819137+00:00",
+      "id": "cdbfb7147ce4d50f2e80"
+    },
+    {
+      "action": "exclude",
+      "provided_text": "저 방법론 b, c는 중간의 나와 다른 신경망 검증팀이 1024의 배칭을 실시했을 때 아주 속도가 빨라져서\n나도 그렇게 구현을 하려면 어떻게 해야 하는지를 확인받느라 나온 방법일 뿐이지 실제로 구현한 내용은 아니다.\n\n음 뭘 말하는건지 모르겠어\n\n내가 보기에 지금 최적화 과정의 기록이잖아, 이 프로그램들의 성격이 달라진 건 아니라서 아마 이 절은 작성하기 힘들것같은데, 이 절을 작성에서 제외하고 해당 근거에서 발견된 사실만 제한적으로 사용해",
+      "pages": [],
+      "writing_instruction": "introduction_Q2(기존 접근들의 계열 구분 및 각 계열의 강점과 한계)는 이 절에서 작성하지 않는다. 제공된 근거는 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도 및 일부 장단점, 그리고 1024 배칭 관련 속도 개선 확인 과정에서 나온 논의만 포함하므로, 이를 '기존 접근 전반'의 계열 구분·강점·한계로 확장하거나 추정하지 않는다. 해당 근거에서 확인되는 사실(방법 B·C의 성격, 배칭 관련 최적화 논의 등)만 제한적으로 사용하고, 계열 구분·강점·한계 관련 내용은 포함하지 않는다.",
+      "explanation": "사용자는 해당 절이 최적화 과정 기록에 가깝고 프로그램 성격이 달라진 것이 아니어서 작성하기 어렵다고 판단했으며, 절 자체를 작성에서 제외하고 근거에서 발견된 사실만 제한적으로 사용하라고 명시했다. 따라서 질문의 기대 필드(계열 구분, 각 계열의 강점, 각 계열의 한계)를 충족하는 원문이 없다는 assessment의 missing 판정과도 일치하므로 exclude로 처리한다. provided_text는 사용자 메시지에 실제 있는 내용만 그대로 복사했으며, 별도 페이지 정보가 없어 pages는 빈 배열로 두었다.",
+      "question_id": "introduction_Q2",
+      "question": {
+        "id": "introduction_Q2",
+        "question": "기존 접근들은 어떤 계열로 구분할 수 있으며, 각 계열의 강점과 한계는 무엇인가?",
+        "expected_fields": [
+          "기존 접근의 계열 구분",
+          "각 계열의 강점",
+          "각 계열의 한계"
+        ],
+        "priority": "required",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref1_introduction_required_2"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref1_s1"
+        ]
+      },
+      "instruction": "저 방법론 b, c는 중간의 나와 다른 신경망 검증팀이 1024의 배칭을 실시했을 때 아주 속도가 빨라져서\n나도 그렇게 구현을 하려면 어떻게 해야 하는지를 확인받느라 나온 방법일 뿐이지 실제로 구현한 내용은 아니다.\n\n음 뭘 말하는건지 모르겠어\n\n내가 보기에 지금 최적화 과정의 기록이잖아, 이 프로그램들의 성격이 달라진 건 아니라서 아마 이 절은 작성하기 힘들것같은데, 이 절을 작성에서 제외하고 해당 근거에서 발견된 사실만 제한적으로 사용해\n",
+      "pending_id": "361fdf13e34e31f5fe4f",
+      "created_at": "2026-11-04T04:47:43.836719+00:00",
+      "id": "40d3dc0127ef09bee067"
+    },
+    {
+      "action": "accept_limited",
+      "provided_text": "현재 cpu는 CROWN 검증에 대해 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황인데, 실시간 환경에서의 대규모 연산을 CUDA로 구현, 최적화함으로써 네트워크 환경을 따라잡을 수 있는가? 그걸 보는거지 , recheck 해도 안나올거야, 원문에는 없어 내 말을 들어",
+      "pages": [],
+      "acceptance_method": "explicit_button",
+      "writing_instruction": "이 질문은 사용자가 설명한 범위에서 짧게 반영한다. 부족한 세부 기준·수치·실험을 추가하지 않는다.",
+      "explanation": "현재 질문을 사용자 판단으로 임시 승인했습니다. 설명한 범위로 작성하고 부족 항목과 원래 판정은 검토 기록에 보존합니다.",
+      "question_id": "introduction_Q4",
+      "question": {
+        "id": "introduction_Q4",
+        "question": "연구의 주요 목표와 기여는 무엇이며, 이를 한 문장으로 요약하면 어떻게 표현할 수 있는가?",
+        "expected_fields": [
+          "주요 목표",
+          "주요 기여 요약"
+        ],
+        "priority": "required",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref1_introduction_required_4"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref1_s1"
+        ]
+      },
+      "instruction": "현재 cpu는 CROWN 검증에 대해 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황인데, 실시간 환경에서의 대규모 연산을 CUDA로 구현, 최적화함으로써 네트워크 환경을 따라잡을 수 있는가? 그걸 보는거지 , recheck 해도 안나올거야, 원문에는 없어 내 말을 들어",
+      "pending_id": "53cb8c229cd63e21782c",
+      "created_at": "2026-11-04T04:52:48.849931+00:00",
+      "original_assessment": {
+        "status": "missing",
+        "evidence_ids": [],
+        "missing_fields": [
+          "주요 목표",
+          "주요 기여 요약"
+        ],
+        "reason": "제공된 근거(E00027~E00287)는 GPU 최적화 실행 시간, cudaHostRegister vs No Pinning 비교, 클록 고정 실험 등 실행·측정·방법 관련 내용만 포함하며, 연구의 주요 목표나 주요 기여를 직접 서술한 원문이 확인되지 않습니다. recheck 지시에 따라도 목표·기여를 직접 뒷받침하는 원문이 발견되지 않아 missing을 유지하며, 임의 보완이나 추론은 하지 않았습니다."
+      },
+      "acceptance_scope": "current_question_in_current_source_run",
+      "id": "209b56cf1c8267aea36d"
+    },
+    {
+      "action": "accept_limited",
+      "provided_text": "음.. 내가 아까 말했던 기존 연구라 하면 CROWN을 CPU환경에서만 실행해봤다, 그래서 실시간 환경에서 이런 대규모 연산을 충족할 수 있는가에 대한 연구가 이번연구야\n\n그리고 이건 원문에 없어(연구일지에 없다고) 이부분은 너가 내 추가 정보를 참고해서 써야지\n",
+      "pages": [],
+      "acceptance_method": "explicit_button",
+      "writing_instruction": "이 질문은 사용자가 설명한 범위에서 짧게 반영한다. 부족한 세부 기준·수치·실험을 추가하지 않는다.",
+      "explanation": "현재 질문을 사용자 판단으로 임시 승인했습니다. 설명한 범위로 작성하고 부족 항목과 원래 판정은 검토 기록에 보존합니다.",
+      "question_id": "introduction_Q6",
+      "question": {
+        "id": "introduction_Q6",
+        "question": "기존 연구가 충분히 다루지 못한 지점은 무엇이며, 본 연구의 초점은 그 지점과 어떻게 연결되는가?",
+        "expected_fields": [
+          "기존 연구가 다루지 못한 지점",
+          "본 연구의 초점"
+        ],
+        "priority": "required",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref2_introduction_required_1",
+          "ref2_introduction_required_3"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref2_s1"
+        ]
+      },
+      "instruction": "음.. 내가 아까 말했던 기존 연구라 하면 CROWN을 CPU환경에서만 실행해봤다, 그래서 실시간 환경에서 이런 대규모 연산을 충족할 수 있는가에 대한 연구가 이번연구야\n\n그리고 이건 원문에 없어(연구일지에 없다고) 이부분은 너가 내 추가 정보를 참고해서 써야지\n",
+      "pending_id": "cb50e5e3f5cd3984d7e1",
+      "created_at": "2026-11-04T04:58:30.168742+00:00",
+      "original_assessment": {
+        "status": "missing",
+        "evidence_ids": [],
+        "missing_fields": [
+          "기존 연구가 다루지 못한 지점",
+          "본 연구의 초점"
+        ],
+        "reason": "제공된 근거(E00027~E00363)는 GPU 최적화, cudaHostRegister/No Pinning 비교, 클록 고정 실험, pinned memory 분석 등 구현·측정·해석 중심의 연구 노트 사실만 포함하며, 서론(ref2_s1)에서 기존 연구의 공백이나 본 연구의 초점을 진술한 내용은 확인되지 않는다. 따라서 두 필수 항목 모두 현재 자료로 답할 수 없다."
+      },
+      "acceptance_scope": "current_question_in_current_source_run",
+      "id": "9ff240a30b03c6835449"
+    },
+    {
+      "action": "accept_limited",
+      "provided_text": "256 - 491 -491 -16 크기의 신경망 / 입력 데이터셋이나, eps_list는 기존 신경망 팀이 사용하던 인풋을 사용했다.\n\n평가 대상은 CROWN을 구현한 C++ 프로그램을 대상으로 진행했고\nGPU 클록 고정은 연구 일지에서 봤듯이 나중에 고정된 사항이고, warm up은 초기에 되었고..\n\n일단 잘 모르겠어",
+      "pages": [],
+      "acceptance_method": "explicit_button",
+      "writing_instruction": "이 질문은 사용자가 설명한 범위에서 짧게 반영한다. 부족한 세부 기준·수치·실험을 추가하지 않는다.",
+      "explanation": "현재 질문을 사용자 판단으로 임시 승인했습니다. 설명한 범위로 작성하고 부족 항목과 원래 판정은 검토 기록에 보존합니다.",
+      "question_id": "methods_Q1",
+      "question": {
+        "id": "methods_Q1",
+        "question": "평가 대상과 입력 조건은 무엇이며, 어떤 요소를 통제했는가?",
+        "expected_fields": [
+          "평가 대상의 정의",
+          "입력 조건의 구성",
+          "통제된 변수와 통제 방법"
+        ],
+        "priority": "required",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref1_methods_required_1"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref1_s2",
+          "ref1_s2_s1",
+          "ref1_s2_s1_s1",
+          "ref1_s2_s1_s2",
+          "ref1_s2_s1_s3",
+          "ref1_s2_s2",
+          "ref1_s2_s2_s1",
+          "ref1_s2_s2_s2",
+          "ref1_s2_s2_s3",
+          "ref1_s2_s2_s4",
+          "ref1_s2_s2_s5",
+          "ref1_s2_s2_s6"
+        ]
+      },
+      "instruction": "256 - 491 -491 -16 크기의 신경망 / 입력 데이터셋이나, eps_list는 기존 신경망 팀이 사용하던 인풋을 사용했다.\n\n평가 대상은 CROWN을 구현한 C++ 프로그램을 대상으로 진행했고\nGPU 클록 고정은 연구 일지에서 봤듯이 나중에 고정된 사항이고, warm up은 초기에 되었고..\n\n일단 잘 모르겠어",
+      "pending_id": "be23f1ee58f7febaf858",
+      "created_at": "2026-11-04T05:03:46.187907+00:00",
+      "original_assessment": {
+        "status": "partial",
+        "evidence_ids": [
+          "E00003",
+          "E00006",
+          "E00007",
+          "E00008",
+          "E00010",
+          "E00011",
+          "E00012",
+          "E00013",
+          "E00014",
+          "E00015",
+          "E00016",
+          "E00021",
+          "E00023",
+          "E00024",
+          "E00025",
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00031",
+          "E00035",
+          "E00044",
+          "E00045",
+          "E00046",
+          "E00068",
+          "E00069",
+          "E00070",
+          "E00071",
+          "E00072",
+          "E00073",
+          "E00074",
+          "E00075",
+          "E00076",
+          "E00077",
+          "E00081",
+          "E00083",
+          "E00085",
+          "E00086",
+          "E00093",
+          "E00094",
+          "E00095",
+          "E00096",
+          "E00097",
+          "E00100",
+          "E00102",
+          "E00105",
+          "E00106",
+          "E00107",
+          "E00119",
+          "E00120",
+          "E00131",
+          "E00132",
+          "E00139",
+          "E00140",
+          "E00163",
+          "E00174",
+          "E00176",
+          "E00178",
+          "E00187",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00202",
+          "E00203",
+          "E00205",
+          "E00211",
+          "E00233",
+          "E00252",
+          "E00253",
+          "E00254",
+          "E00255",
+          "E00256",
+          "E00257",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00264",
+          "E00265",
+          "E00270",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00288",
+          "E00290",
+          "E00291",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00298",
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00333",
+          "E00337",
+          "E00353",
+          "E00354",
+          "E00376"
+        ],
+        "missing_fields": [
+          "평가 대상의 정의: 연구 노트에는 '최광훈 안테나 선택 신경망' 등 대상 언급이 있으나, 평가 대상 자체의 명확한 정의(예: 어떤 모델/시스템/알고리즘을 평가하는지)가 연구 노트만으로 충분히 규정되지 않음",
+          "입력 조건의 구성: eps=1e-6, 테스트 데이터 1개, 출력 차원 16 등 일부 입력 조건은 기록되어 있으나, 전체 입력 조건 구성(예: 데이터 출처·형식·범위 등)이 연구 노트만으로 완전히 특정되지 않음",
+          "통제된 변수와 통제 방법: GPU 클록 고정, Persistence mode, warm up 삽입 등 일부 통제 시도가 기록되어 있으나, 평가 전반에 걸쳐 어떤 변수를 어떻게 통제했는지(예: 비교 기준, 반복 측정, 환경 통제 등)가 연구 노트만으로 충분히 제시되지 않음"
+        ],
+        "reason": "연구 노트에는 평가 대상 관련 언급(최광훈 안테나 선택 신경망 등), 입력 조건 일부(eps=1e-6, 테스트 데이터 1개, 출력 차원 16), 그리고 통제 시도로 볼 수 있는 요소(GPU 클록 고정, Persistence mode, warm up 코드 삽입 등)가 산발적으로 기록되어 있다. 그러나 평가 대상의 정의가 연구 노트만으로 명확히 특정되지 않고, 입력 조건 구성도 일부 매개변수 중심으로만 확인되며, 통제된 변수와 통제 방법이 평가 설계 차원에서 체계적으로 제시되었다고 보기 어렵다. 따라서 expected_fields 세 항목 모두 연구 노트 기반만으로는 완전히 충족되었다고 판단하기 어려워 'partial'로 판정한다."
+      },
+      "acceptance_scope": "current_question_in_current_source_run",
+      "id": "531b24e3633dee74c4f7"
+    },
+    {
+      "action": "exclude",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "methods_Q4(기준 모델과 변형 모델의 구조 차이)는 초안 작성에서 제외한다. 해당 질문에 대한 구조 비교·차이점·성능 영향 해석을 새로 작성하거나 다른 근거로 대체하지 않는다.",
+      "explanation": "사용자가 '이 질문은 넘어가 이 질문을 초안 작성에 반영하지 마'라고 명시했으므로, 해당 질문의 내용을 계획·초안에서 제외한다. 이는 근거 부족 판정과 별개로 사용자의 명시적 제외 지시에 따른 처리이며, 다른 질문의 근거 처리 방식에는 확대 적용하지 않는다.",
+      "question_id": "methods_Q4",
+      "question": {
+        "id": "methods_Q4",
+        "question": "기준 모델과 변형 모델의 구조 차이는 무엇인가?",
+        "expected_fields": [
+          "기준 모델의 구조",
+          "변형 모델의 구조",
+          "차이점",
+          "차이가 성능에 미치는 영향 해석"
+        ],
+        "priority": "required",
+        "applies_when": "비교 대상이 존재하는 경우",
+        "guideline_ids": [
+          "ref1_methods_required_4"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "비교 대상이 존재하는 경우"
+        },
+        "section_ids": [
+          "ref1_s2",
+          "ref1_s2_s1",
+          "ref1_s2_s1_s1",
+          "ref1_s2_s1_s2",
+          "ref1_s2_s1_s3",
+          "ref1_s2_s2",
+          "ref1_s2_s2_s1",
+          "ref1_s2_s2_s2",
+          "ref1_s2_s2_s3",
+          "ref1_s2_s2_s4",
+          "ref1_s2_s2_s5",
+          "ref1_s2_s2_s6"
+        ]
+      },
+      "instruction": "이 질문은 넘어가 이 질문을 초안 작성에 반영하지 마\n",
+      "pending_id": "815be0bebb72342d41b2",
+      "created_at": "2026-11-04T05:08:00.327183+00:00",
+      "id": "24db96ec57ca36fece99"
+    },
+    {
+      "action": "accept_limited",
+      "provided_text": "신경망 크기, 배치 사이즈는 1 , 실행 방식은 CROWN의 3가지 방법 forward, forward+backward, backward_only , 데이터셋은 기존 신경망 검증팀의 구현과 시간을 비교하기 위함이므로 신경망 검증팀이 사용하던 데이터셋과 eps_list\n\n이것 말고는 전부 최적화 과정에서 적용했다가 안했다가 하는 부분이네",
+      "pages": [],
+      "acceptance_method": "explicit_button",
+      "writing_instruction": "이 질문은 사용자가 설명한 범위에서 짧게 반영한다. 부족한 세부 기준·수치·실험을 추가하지 않는다.",
+      "explanation": "현재 질문을 사용자 판단으로 임시 승인했습니다. 설명한 범위로 작성하고 부족 항목과 원래 판정은 검토 기록에 보존합니다.",
+      "question_id": "methods_Q9",
+      "question": {
+        "id": "methods_Q9",
+        "question": "공통으로 고정하는 요소는 무엇인가? 배치, 실행 방식, 평가 입력 등은 어떻게 통제되었는가?",
+        "expected_fields": [
+          "고정 요소 목록",
+          "배치 설정",
+          "실행 방식",
+          "평가 입력 구성"
+        ],
+        "priority": "required",
+        "applies_when": "비교 실험이 있는 경우",
+        "guideline_ids": [
+          "ref2_methods_required_3"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "비교 실험이 있는 경우"
+        },
+        "section_ids": [
+          "ref2_s3",
+          "ref2_s3_s1",
+          "ref2_s3_s2",
+          "ref2_s3_s3",
+          "ref2_s3_s4",
+          "ref2_s3_s5"
+        ]
+      },
+      "instruction": "신경망 크기, 배치 사이즈는 1 , 실행 방식은 CROWN의 3가지 방법 forward, forward+backward, backward_only , 데이터셋은 기존 신경망 검증팀의 구현과 시간을 비교하기 위함이므로 신경망 검증팀이 사용하던 데이터셋과 eps_list\n\n이것 말고는 전부 최적화 과정에서 적용했다가 안했다가 하는 부분이네",
+      "pending_id": "47ff863de72f472d30a8",
+      "created_at": "2026-11-04T05:10:02.616494+00:00",
+      "original_assessment": {
+        "status": "partial",
+        "evidence_ids": [
+          "E00036",
+          "E00174",
+          "E00311",
+          "E00315",
+          "E00321",
+          "E00339"
+        ],
+        "missing_fields": [
+          "배치 설정",
+          "실행 방식",
+          "평가 입력 구성"
+        ],
+        "reason": "공통 고정 요소는 GPU OPTIMIZED 모드 이후 CPU보다 느린 문제, matmul만 GPU로 실행하는 하이브리드 방식 시도, eps=1e-06, Output Dimension 16, 3-layer 네트워크 기준 CUDA kernel launch만 계수(H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch 제외), graph mode 1에서 샘플당 cudaGraphLaunch infer 1회 + bound 1회 총 2회 유지, pinned memory 입력층 제거(Graph manager에는 선택 할당 가능 유지), memcpy 호출 횟수 66→56개 감소 등으로 일부 확인된다. 그러나 배치 설정(데이터셋 배칭 방식 판단, pinned Memory 지정, cudaMemcpyAsync 사용 등은 언급되나 공통 고정 배치 구성은 불명확), 실행 방식(method=0/1 분기, eps_list 이중 루프 등은 있으나 공통 실행 방식 통제 전반), 평가 입력 구성(네트워크/입력 사양 등)의 구체적 통제 내용은 현재 사실만으로는 충분하지 않다."
+      },
+      "acceptance_scope": "current_question_in_current_source_run",
+      "id": "8602da87af586b3567f6"
+    },
+    {
+      "action": "accept_limited",
+      "provided_text": "정확도 지표는 기존 신경망 검증팀의 프로그램과 얼마나 검증 결과, 비율이 차이나는지인데, 모두 동일했어\n\n",
+      "pages": [],
+      "acceptance_method": "explicit_button",
+      "writing_instruction": "이 질문은 사용자가 설명한 범위에서 짧게 반영한다. 부족한 세부 기준·수치·실험을 추가하지 않는다.",
+      "explanation": "현재 질문을 사용자 판단으로 임시 승인했습니다. 설명한 범위로 작성하고 부족 항목과 원래 판정은 검토 기록에 보존합니다.",
+      "question_id": "methods_Q10",
+      "question": {
+        "id": "methods_Q10",
+        "question": "워크로드와 데이터셋은 어떻게 선택되었으며, 정확도 지표는 무엇인가?",
+        "expected_fields": [
+          "워크로드 선택 기준",
+          "데이터셋 선택 기준",
+          "정확도 지표",
+          "지표 선정 이유"
+        ],
+        "priority": "required",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref2_methods_required_4"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref2_s3",
+          "ref2_s3_s1",
+          "ref2_s3_s2",
+          "ref2_s3_s3",
+          "ref2_s3_s4",
+          "ref2_s3_s5"
+        ]
+      },
+      "instruction": "정확도 지표는 기존 신경망 검증팀의 프로그램과 얼마나 검증 결과, 비율이 차이나는지인데, 모두 동일했어\n\n",
+      "pending_id": "d604c64188878d2a81f9",
+      "created_at": "2026-11-04T05:11:39.483565+00:00",
+      "original_assessment": {
+        "status": "partial",
+        "evidence_ids": [
+          "E00013",
+          "E00216",
+          "E00240",
+          "E00257",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301"
+        ],
+        "missing_fields": [
+          "워크로드 선택 기준",
+          "데이터셋 선택 기준",
+          "정확도 지표",
+          "지표 선정 이유"
+        ],
+        "reason": "현재 자료는 CROWN Verification 및 auto_LiRPA 실행의 eps, 출력 차원(16), 반복 횟수, 모드별 elapsed time 등 측정 조건과 시간 지표, 그리고 Pinned/No-Pin 메모리 비교의 지연·지터·WCET 지표는 다수 포함하고 있으나, 워크로드를 어떤 기준으로 선택했는지와 데이터셋을 어떤 기준으로 선택했는지에 대한 선택 기준은 명시되어 있지 않다. 또한 '정확도 지표'와 그 '선정 이유'는 현재 페이지에서 확인되지 않으며, 관측된 값들은 주로 실행 시간·bound·인증 성공/실패 여부·지연 특성 중심이어서 정확도 지표 자체를 특정할 수 없다. 따라서 expected_fields 중 워크로드 선택 기준, 데이터셋 선택 기준, 정확도 지표, 지표 선정 이유는 모두 현재 자료만으로는 답할 수 없다."
+      },
+      "acceptance_scope": "current_question_in_current_source_run",
+      "id": "3e01c50082e40f98631d"
+    },
+    {
+      "action": "exclude",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "methods_Q11(환경별 설정, 적용 범위, 환경 간 차이)은 초안 작성에서 제외한다. 현재 근거로는 해당 필드를 충분히 답할 수 없으며, 사용자 지시에 따라 초안 반영을 하지 않는다.",
+      "explanation": "사용자 지시에 따라 해당 질문은 초안 작성에 반영하지 않는다. 평가에서도 환경별 설정·적용 범위·환경 간 차이를 체계화한 내용이 없어 세 필드 모두 현재 사실만으로 충분히 답할 수 없다고 판정되었다.",
+      "question_id": "methods_Q11",
+      "question": {
+        "id": "methods_Q11",
+        "question": "환경별 설정은 무엇이며, 적용 범위는 어떻게 되는가?",
+        "expected_fields": [
+          "환경별 설정",
+          "적용 범위",
+          "환경 간 차이"
+        ],
+        "priority": "required",
+        "applies_when": "여러 환경에서 평가한 경우",
+        "guideline_ids": [
+          "ref2_methods_required_5"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "여러 환경에서 평가한 경우"
+        },
+        "section_ids": [
+          "ref2_s3",
+          "ref2_s3_s1",
+          "ref2_s3_s2",
+          "ref2_s3_s3",
+          "ref2_s3_s4",
+          "ref2_s3_s5"
+        ]
+      },
+      "instruction": "해당 질문은 초안 작성에 반영하지마",
+      "pending_id": "b1b5c396b00cfd3fdea2",
+      "created_at": "2026-11-04T05:12:22.217164+00:00",
+      "id": "1e1183b5a965343b0af1"
+    },
+    {
+      "action": "accept_limited",
+      "provided_text": "각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계네",
+      "pages": [],
+      "acceptance_method": "explicit_button",
+      "writing_instruction": "이 질문은 사용자가 설명한 범위에서 짧게 반영한다. 부족한 세부 기준·수치·실험을 추가하지 않는다.",
+      "explanation": "현재 질문을 사용자 판단으로 임시 승인했습니다. 설명한 범위로 작성하고 부족 항목과 원래 판정은 검토 기록에 보존합니다.",
+      "question_id": "methods_Q13",
+      "question": {
+        "id": "methods_Q13",
+        "question": "변경 요인의 효과를 분리해 확인했는가? 확인하지 못했다면 해석의 한계는 무엇인가?",
+        "expected_fields": [
+          "변경 요인",
+          "효과 분리 방법",
+          "확인 결과",
+          "해석 한계"
+        ],
+        "priority": "required",
+        "applies_when": "요인 변경 실험이 있는 경우",
+        "guideline_ids": [
+          "ref1_methods_required_4"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "요인 변경 실험이 있는 경우"
+        },
+        "section_ids": [
+          "ref1_s2",
+          "ref1_s2_s1",
+          "ref1_s2_s1_s1",
+          "ref1_s2_s1_s2",
+          "ref1_s2_s1_s3",
+          "ref1_s2_s2",
+          "ref1_s2_s2_s1",
+          "ref1_s2_s2_s2",
+          "ref1_s2_s2_s3",
+          "ref1_s2_s2_s4",
+          "ref1_s2_s2_s5",
+          "ref1_s2_s2_s6"
+        ]
+      },
+      "instruction": "각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계네",
+      "pending_id": "67e992e2cd6ebe04d60b",
+      "created_at": "2026-11-04T05:13:41.442754+00:00",
+      "original_assessment": {
+        "status": "partial",
+        "evidence_ids": [
+          "E00047",
+          "E00048",
+          "E00049",
+          "E00050",
+          "E00070",
+          "E00071",
+          "E00076",
+          "E00077",
+          "E00078",
+          "E00102",
+          "E00106",
+          "E00119",
+          "E00148",
+          "E00154",
+          "E00166",
+          "E00167",
+          "E00172",
+          "E00277",
+          "E00278",
+          "E00313",
+          "E00319"
+        ],
+        "missing_fields": [
+          "효과 분리 방법",
+          "확인 결과",
+          "해석 한계"
+        ],
+        "reason": "변경 요인 자체는 다수 확인된다(예: GPU warmup/preload, mempool, memcpy 제거, cudaDeviceSynchronize 제거, cuBLAS/cuSparse 도입, 커널 퓨전, 플래그 분리, cudaHostRegister, GPU 클록 고정, cudaGraph 등). 그러나 요인 변경 실험이 개별 요인의 효과를 분리해 확인하도록 설계·수행되었다는 근거는 부족하다. 대부분 단일 실행 결과나 기록자의 정성적 관찰·해석에 그치며, 요인별 반복 측정·통제 비교·통계는 제시되지 않았다. 따라서 '효과 분리 방법'과 '확인 결과'는 충족되었다고 보기 어렵고, 해석 한계도 명시적 진술보다는 개별 사실의 limits(예: 단일 실행, 반복 측정 통계 부재, 기록자의 메커니즘 해석)로만 드러난다. 다만 일부 항목에서 요인 혼입에 대한 해석적 한계는 확인된다(예: E00047·E00049의 preload가 의도치 않은 GPU warmup 역할을 했다는 해석, E00167의 단일 테스트 3배 차이와 92만 개 데이터에서 비슷해지는 미해결 현상, E00277·E00278의 cudaHostRegister가 Bound에서는 빠르지만 Infer에서 역전된 현상)."
+      },
+      "acceptance_scope": "current_question_in_current_source_run",
+      "id": "5d2b168fab4a92747ee6"
+    },
+    {
+      "action": "exclude",
+      "provided_text": "해당 질문은 초안 작성에 반영하지마, 시각화 판단 근거는 없다",
+      "pages": [],
+      "writing_instruction": "evaluation_Q4(시각화 기반 판단 근거)를 초안 작성에서 제외한다. 시각화 유형/내용 및 시각화가 지지하는 판단 항목은 초안에 포함하지 않는다.",
+      "explanation": "사용자 지시에 따라 해당 질문은 초안 작성에서 제외하며, 시각화 판단 근거는 없는 것으로 처리한다.",
+      "question_id": "evaluation_Q4",
+      "question": {
+        "id": "evaluation_Q4",
+        "question": "시각화 기반 판단 근거가 제시되었는가? 제시되었다면 어떤 판단을 뒷받침하기 위한 시각화인가?",
+        "expected_fields": [
+          "시각화 유형 또는 내용",
+          "시각화가 지지하는 판단"
+        ],
+        "priority": "required",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref1_evaluation_required_4"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref1_s3",
+          "ref1_s3_s1",
+          "ref1_s3_s2",
+          "ref1_s3_s3",
+          "ref1_s3_s4",
+          "ref1_s3_s5",
+          "ref1_s3_s6",
+          "ref1_s3_s7"
+        ]
+      },
+      "instruction": "해당 질문은 초안 작성에 반영하지마, 시각화 판단 근거는 없다",
+      "pending_id": "1428ac018968350f9680",
+      "created_at": "2026-11-04T05:14:00.034851+00:00",
+      "id": "f532677474caef8d656a"
+    },
+    {
+      "action": "accept_limited",
+      "provided_text": "따로 정리한 표도 없다. ",
+      "pages": [],
+      "acceptance_method": "explicit_button",
+      "writing_instruction": "이 질문은 사용자가 설명한 범위에서 짧게 반영한다. 부족한 세부 기준·수치·실험을 추가하지 않는다.",
+      "explanation": "현재 질문을 사용자 판단으로 임시 승인했습니다. 설명한 범위로 작성하고 부족 항목과 원래 판정은 검토 기록에 보존합니다.",
+      "question_id": "evaluation_Q9",
+      "question": {
+        "id": "evaluation_Q9",
+        "question": "정확도 결과가 표로 제시되었는가? 제시되었다면 어떤 대상, 조건, 지표가 표에 포함되었는가?",
+        "expected_fields": [
+          "표에 포함된 대상 또는 방법",
+          "비교 조건",
+          "정확도 지표",
+          "표에서 확인 가능한 결과 요약"
+        ],
+        "priority": "required",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref2_evaluation_required_2"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref2_s4",
+          "ref2_s4_s1",
+          "ref2_s4_s2",
+          "ref2_s4_s3"
+        ]
+      },
+      "instruction": "따로 정리한 표도 없다. ",
+      "pending_id": "d64048156476ecdc1abe",
+      "created_at": "2026-11-04T05:14:26.712290+00:00",
+      "original_assessment": {
+        "status": "partial",
+        "evidence_ids": [
+          "E00019",
+          "E00021",
+          "E00022",
+          "E00027",
+          "E00029",
+          "E00031",
+          "E00035",
+          "E00036",
+          "E00037",
+          "E00039",
+          "E00040",
+          "E00043",
+          "E00044",
+          "E00045",
+          "E00046",
+          "E00064",
+          "E00068",
+          "E00069",
+          "E00075",
+          "E00081",
+          "E00083",
+          "E00096",
+          "E00106",
+          "E00119",
+          "E00120",
+          "E00131",
+          "E00132",
+          "E00139",
+          "E00140",
+          "E00144",
+          "E00168",
+          "E00170",
+          "E00174",
+          "E00176",
+          "E00178",
+          "E00215",
+          "E00227",
+          "E00228",
+          "E00238",
+          "E00239",
+          "E00240",
+          "E00245",
+          "E00246",
+          "E00247",
+          "E00249",
+          "E00250",
+          "E00251",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00320",
+          "E00337",
+          "E00341",
+          "E00368"
+        ],
+        "missing_fields": [
+          "표에 포함된 대상 또는 방법",
+          "비교 조건",
+          "정확도 지표",
+          "표에서 확인 가능한 결과 요약"
+        ],
+        "reason": "원문에는 CROWN Verification 실행 결과 표(출력 차원별 Lower/Upper Bound, Normal Pred(inference) 값)와 실행 시간(Elapsed time) 기록이 다수 존재하지만, 이는 정확도(accuracy) 지표가 아니라 검증 bound 및 소요 시간이다. 정확도 결과를 담은 표는 확인되지 않으며, 따라서 expected_fields 중 ‘정확도 지표’와 이를 포함한 ‘표에 포함된 대상/방법, 비교 조건, 결과 요약’을 원문만으로 충족할 수 없다. 실행 시간 표/요약은 존재하나 정확도 표가 아니므로 partial로 판정한다."
+      },
+      "acceptance_scope": "current_question_in_current_source_run",
+      "id": "ddaf99929cc833972b2b"
+    },
+    {
+      "action": "accept_limited",
+      "provided_text": "없다. ",
+      "pages": [],
+      "acceptance_method": "explicit_button",
+      "writing_instruction": "이 질문은 사용자가 설명한 범위에서 짧게 반영한다. 부족한 세부 기준·수치·실험을 추가하지 않는다.",
+      "explanation": "현재 질문을 사용자 판단으로 임시 승인했습니다. 설명한 범위로 작성하고 부족 항목과 원래 판정은 검토 기록에 보존합니다.",
+      "question_id": "evaluation_Q10",
+      "question": {
+        "id": "evaluation_Q10",
+        "question": "시스템 수준 지연 시간 결과가 표로 제시되었는가? 제시되었다면 어떤 측정 조건과 지표가 포함되었는가?",
+        "expected_fields": [
+          "측정 대상 또는 구성",
+          "측정 조건",
+          "지연 시간 지표",
+          "표에서 확인 가능한 결과 요약"
+        ],
+        "priority": "required",
+        "applies_when": "시스템 수준 지연 시간을 측정한 경우",
+        "guideline_ids": [
+          "ref2_evaluation_required_3"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "시스템 수준 지연 시간을 측정한 경우"
+        },
+        "section_ids": [
+          "ref2_s4",
+          "ref2_s4_s1",
+          "ref2_s4_s2",
+          "ref2_s4_s3"
+        ]
+      },
+      "instruction": "없다. ",
+      "pending_id": "b9a376a36bb28027af98",
+      "created_at": "2026-11-04T05:14:38.935659+00:00",
+      "original_assessment": {
+        "status": "partial",
+        "evidence_ids": [
+          "E00018",
+          "E00020",
+          "E00027",
+          "E00031",
+          "E00044",
+          "E00046",
+          "E00055",
+          "E00057",
+          "E00058",
+          "E00064",
+          "E00083",
+          "E00101",
+          "E00119",
+          "E00131",
+          "E00132",
+          "E00166",
+          "E00169",
+          "E00171",
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00215",
+          "E00240",
+          "E00257",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00337",
+          "E00375"
+        ],
+        "missing_fields": [
+          "측정 대상 또는 구성",
+          "측정 조건",
+          "지연 시간 지표",
+          "표에서 확인 가능한 결과 요약"
+        ],
+        "reason": "시스템 수준 지연 시간 결과가 표로 제시되었는지 여부는 제공된 근거에서 확인되지 않는다. E00018, E00027, E00031, E00046, E00055, E00057, E00064, E00083, E00119, E00131, E00166, E00169, E00171, E00240, E00257, E00277, E00278, E00337, E00375 등에 개별 실행 시간(ms/s) 수치가 기록되어 있으나, 이는 표 형태가 아닌 개별 결과 기록으로 보이며, 측정 대상/구성, 측정 조건, 지연 시간 지표, 표에서 확인 가능한 결과 요약 등 expected_fields를 표 기반으로 충족하는지 판단할 수 없다. 따라서 '표 제시 여부'와 '표에 포함된 측정 조건·지표'를 확정할 수 없어 partial로 판정한다."
+      },
+      "acceptance_scope": "current_question_in_current_source_run",
+      "id": "d1d80aa107ced8543e3f"
+    },
+    {
+      "action": "exclude",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "해당 질문(evaluation_Q12)은 초안에 반영하지 않는다. 개선 조합 수·목록, 예외 사례 설명, 예외 발생 조건을 작성 계획·초안·근거 서술에서 모두 제외한다.",
+      "explanation": "사용자가 user_instruction으로 '해당 질문은 초안에 반영하지 마'라고 명시했으므로, 평가 상태(partial)나 evidence_ids와 무관하게 해당 질문의 내용을 초안·계획·근거 서술에서 제외한다. 다른 질문의 지시로 확대하지 않는다.",
+      "question_id": "evaluation_Q12",
+      "question": {
+        "id": "evaluation_Q12",
+        "question": "여러 구성 간 개선 조합 수와 예외 사례가 보고되었는가? 보고되었다면 어떤 조합과 예외가 다루어졌는가?",
+        "expected_fields": [
+          "개선 조합 수 또는 목록",
+          "예외 사례 설명",
+          "예외 발생 조건"
+        ],
+        "priority": "required",
+        "applies_when": "여러 구성 간 조합 또는 개선 조합을 분석한 경우",
+        "guideline_ids": [
+          "ref2_evaluation_required_5"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "여러 구성 간 조합 또는 개선 조합을 분석한 경우"
+        },
+        "section_ids": [
+          "ref2_s4",
+          "ref2_s4_s1",
+          "ref2_s4_s2",
+          "ref2_s4_s3"
+        ]
+      },
+      "instruction": "해당 질문은 초안에 반영하지 마",
+      "pending_id": "88e04b9e490ea59a8b3c",
+      "created_at": "2026-11-04T05:14:56.636106+00:00",
+      "id": "950d4ea1a03d912cacef"
+    },
+    {
+      "action": "exclude",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "해당 질문(evaluation_Q13)은 초안에 반영하지 않는다. 구성 요소 단위 성능 순위와 전체 처리 성능 순위, 그리고 순위 간 차이/불일치에 대한 내용은 계획·초안에서 제외한다.",
+      "explanation": "사용자가 '해당 질문은 초안에 반영하지 마'라고 명시했으므로, 이 질문의 내용을 작성 계획·초안에서 제외한다. 제공된 근거에는 구성 요소 단위 성능과 전체 처리 성능의 개별 수치는 있으나 두 순위를 명시적으로 매기고 대조한 비교 결과가 확인되지 않는다는 평가 이유도 함께 유지하되, 실제 작성에서는 해당 질문을 다루지 않는다.",
+      "question_id": "evaluation_Q13",
+      "question": {
+        "id": "evaluation_Q13",
+        "question": "구성 요소 단위 성능과 전체 처리 성능의 순위가 비교되었는가? 비교되었다면 어떤 순위와 차이가 나타났는가?",
+        "expected_fields": [
+          "구성 요소 단위 성능 순위",
+          "전체 처리 성능 순위",
+          "순위 간 차이 또는 불일치"
+        ],
+        "priority": "required",
+        "applies_when": "구성 요소 단위와 전체 처리 성능을 모두 평가한 경우",
+        "guideline_ids": [
+          "ref2_evaluation_required_6"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "구성 요소 단위와 전체 처리 성능을 모두 평가한 경우"
+        },
+        "section_ids": [
+          "ref2_s4",
+          "ref2_s4_s1",
+          "ref2_s4_s2",
+          "ref2_s4_s3"
+        ]
+      },
+      "instruction": "해당 질문은 초안에 반영하지 마",
+      "pending_id": "f510af0f08aa1ecf1bb1",
+      "created_at": "2026-11-04T05:15:11.196695+00:00",
+      "id": "72277fc9a7a856e814d4"
+    },
+    {
+      "action": "exclude",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "해당 질문(초안 반영 금지)은 초안에 반영하지 않는다. 추가 이득의 범위, 동시 변경 관련 해석상 제약, 해석 시 주의점은 이 초안에 포함하지 않는다.",
+      "explanation": "사용자가 해당 질문을 초안에 반영하지 말라고 명시했으므로, expected_fields(추가 이득의 범위, 동시 변경 관련 해석상 제약, 해석 시 주의점)는 초안에서 제외한다. 제공된 평가 근거에는 개별 기법의 조건·한계가 일부 있으나, 여러 변경 동시 적용 시의 해석상 제약이나 추가 이득 범위를 체계적으로 논의한 진술은 확인되지 않아 partial 판정과도 일치한다.",
+      "question_id": "evaluation_Q14",
+      "question": {
+        "id": "evaluation_Q14",
+        "question": "추가 이득의 범위와 동시 변경의 해석상 제약이 논의되었는가? 논의되었다면 어떤 범위와 제약이 제시되었는가?",
+        "expected_fields": [
+          "추가 이득의 범위",
+          "동시 변경 관련 해석상 제약",
+          "해석 시 주의점"
+        ],
+        "priority": "required",
+        "applies_when": "여러 변경을 동시에 적용하거나 추가 이득의 범위를 해석한 경우",
+        "guideline_ids": [
+          "ref2_evaluation_required_7"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "여러 변경을 동시에 적용하거나 추가 이득의 범위를 해석한 경우"
+        },
+        "section_ids": [
+          "ref2_s4",
+          "ref2_s4_s1",
+          "ref2_s4_s2",
+          "ref2_s4_s3"
+        ]
+      },
+      "instruction": "해당 질문은 초안에 반영하지 마",
+      "pending_id": "5372703fed146dae0478",
+      "created_at": "2026-11-04T05:15:25.215749+00:00",
+      "id": "7f751fba0390d03f7188"
+    },
+    {
+      "action": "exclude",
+      "provided_text": "",
+      "pages": [],
+      "writing_instruction": "해당 질문(limitations_Q2)은 초안에 반영하지 않는다. 방법·구현·설정의 효율이나 배포·운용 측면의 최적화 가능성 검토 범위, 미검토 항목, 검토하지 않은 이유와 해석상 한계에 관한 내용은 계획·초안에서 제외한다.",
+      "explanation": "사용자가 user_instruction으로 '해당 질문은 초안에 반영하지 마'라고 명시했으므로, 해당 근거 질문의 내용을 작성 계획·초안에서 제외하도록 처리한다. 이는 다른 근거 질문의 지시와 별개로 해당 질문에만 적용되는 명시적 제외 지시로 해석한다.",
+      "question_id": "limitations_Q2",
+      "question": {
+        "id": "limitations_Q2",
+        "question": "방법·구현·설정의 효율이나 배포·운용 측면의 최적화 가능성은 어디까지 검토되었는가?",
+        "expected_fields": [
+          "효율 또는 배포·운용 관련 검토 내용",
+          "최적화 가능성의 범위",
+          "검토하지 않았다면 그 이유와 해석상 한계"
+        ],
+        "priority": "required",
+        "applies_when": null,
+        "guideline_ids": [
+          "ref1_limitations_required_2"
+        ],
+        "applicability": {
+          "kind": "universal",
+          "condition": "모든 연구에서 확인"
+        },
+        "section_ids": [
+          "ref1_s4"
+        ]
+      },
+      "instruction": "해당 질문은 초안에 반영하지 마",
+      "pending_id": "f324be25ba90f5600854",
+      "created_at": "2026-11-04T05:15:32.125196+00:00",
+      "id": "f023f72345f22f84c8a1"
+    },
+    {
+      "action": "exclude",
+      "provided_text": "그런 내용은 없어 현재 확인된 근거만 부분적으로 사용하고 이 질문은 초안에 반영하지 마",
+      "pages": [],
+      "writing_instruction": "limitations_Q5는 초안에 반영하지 않는다. 해당 질문에 대한 서술·추론·가정 채우기를 모두 생략한다.",
+      "explanation": "사용자가 '그런 내용은 없다'고 명시했고, 현재 확인된 근거만 부분적으로 사용하며 초안에 반영하지 말라고 지시했다. 따라서 이 질문은 제외 처리한다. 평가 상태(partial)와 missing_fields는 유지하되, 작성 계획·초안에서는 해당 항목을 다루지 않는다.",
+      "question_id": "limitations_Q5",
+      "question": {
+        "id": "limitations_Q5",
+        "question": "기준선 또는 구성 요소 단위 비교에서 공정한 비교를 위해 의도적으로 제한한 최적화가 있는가? 있다면 무엇이며, 그 제한이 해석에 미치는 영향은 무엇인가?",
+        "expected_fields": [
+          "제한한 최적화의 내용",
+          "제한한 이유",
+          "제한으로 인한 해석상 영향 또는 한계"
+        ],
+        "priority": "required",
+        "applies_when": "기준선 또는 구성 요소 단위 비교를 수행했고, 비교를 위해 최적화 일부를 제한한 경우",
+        "guideline_ids": [
+          "ref2_limitations_required_2"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "기준선 또는 구성 요소 단위 비교를 수행했고, 비교를 위해 최적화 일부를 제한한 경우"
+        },
+        "section_ids": [
+          "ref2_s4_s4"
+        ]
+      },
+      "instruction": "그런 내용은 없어 현재 확인된 근거만 부분적으로 사용하고 이 질문은 초안에 반영하지 마",
+      "pending_id": "adc230dbeca84307045b",
+      "created_at": "2026-11-04T05:16:25.163634+00:00",
+      "id": "5784bee683f8682455ef"
+    },
+    {
+      "action": "exclude",
+      "provided_text": "그런 내용은 없어 현재 확인된 근거만 부분적으로 사용하고 이 질문은 초안에 반영하지 마",
+      "pages": [],
+      "writing_instruction": "limitations_Q8은 초안에 반영하지 않는다. 평가에서 제외한 지표와 제외 이유는 다른 근거(E00029, E00030, E00045)에 따라 기록될 수 있으나, 제외로 인한 해석 범위 제한에 대한 서술은 현재 자료에 없으므로 이 질문 전체를 초안 작성에서 제외한다.",
+      "explanation": "사용자가 해당 내용이 없다고 명시했고, 현재 확인된 근거만 부분적으로 사용하며 이 질문을 초안에 반영하지 말라고 지시했으므로, 제외 지표·제외 이유·해석 범위 제한을 모두 이 질문의 초안 반영 대상에서 제외한다.",
+      "question_id": "limitations_Q8",
+      "question": {
+        "id": "limitations_Q8",
+        "question": "평가에서 제외한 지표가 있는가? 있다면 무엇을 왜 제외했으며, 그 제외가 결과 해석의 범위를 어떻게 제한하는가?",
+        "expected_fields": [
+          "제외한 지표",
+          "제외 이유",
+          "제외로 인한 해석 범위 제한"
+        ],
+        "priority": "required",
+        "applies_when": "일부 지표를 평가에서 제외한 경우",
+        "guideline_ids": [
+          "ref2_limitations_required_5"
+        ],
+        "applicability": {
+          "kind": "conditional",
+          "condition": "일부 지표를 평가에서 제외한 경우"
+        },
+        "section_ids": [
+          "ref2_s4_s4"
+        ]
+      },
+      "instruction": "그런 내용은 없어 현재 확인된 근거만 부분적으로 사용하고 이 질문은 초안에 반영하지 마",
+      "pending_id": "d1922b81c421062b477a",
+      "created_at": "2026-11-04T05:16:30.918775+00:00",
+      "id": "9bb5c48bef6fea438657"
+    }
+  ],
+  "facts": [
+    {
+      "id": "E00348",
+      "statement": "CUDA로 구현한 이유로, CUDA 프로그래밍 역량을 가진 사람이라는 점과 안테나 신경망 검증 알고리즘을 하드웨어에 구현하여 실시간 검증에 관심이 있으며, 하드웨어에 구현(실시간 검증)할 수 있는 여지가 있다는 논문의 뒷받침 논문으로 작성 가능하다는 점이 기록되었다.",
+      "limits": "이 내용은 CUDA 구현 이유·목적에 대한 기록이며, 실제 실시간 검증 구현 결과나 논문 작성 결과는 포함하지 않는다.",
+      "sources": [
+        {
+          "element_id": "p44:e296",
+          "page": 44,
+          "quote": "C UDA로 왜 구현 했는가(그걸 나한테 시킨 이유)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p44:e297",
+          "page": 44,
+          "quote": "1. CUDA 프로그래밍 역량을 가진 사람\n2. 안테나 신경망 검증 알고리즘을 하드웨어에 구현해서 실시간 검증에 관심있음 ->\n하드웨어에 구현을 할 수 있는(실시간 검증) 여지가 있다. 는 논문의 뒷받침 논문으로\n작성 가능",
+          "origin": "standard_parse"
+        }
+      ],
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p44:e296~p44:e297과 일치: CUDA 프로그래밍 역량을 가진 사람이라는 점, 안테나 신경망 검증 알고리즘을 하드웨어에 구현하여 실시간 검증에 관심이 있으며 하드웨어에 구현(실시간 검증)할 수 있는 여지가 있다는 논문의 뒷받침 논문으로 작성 가능하다는 점이 기록되어 있음.",
+      "conditions": [
+        "CUDA 프로그래밍 역량 보유",
+        "안테나 신경망 검증 알고리즘의 하드웨어 구현 및 실시간 검증 관심",
+        "실시간 검증 여지 관련 뒷받침 논문 작성 가능성"
+      ],
+      "measurements": [],
+      "parameters": [],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "introduction_Q1",
+        "introduction_Q3"
+      ],
+      "supplemental_reason": "연구 동기·목적 관련 기록",
+      "evidence_limitations": [
+        "실제 실시간 검증 구현 결과나 논문 작성 결과는 포함하지 않으며, CUDA 구현 이유·목적에 대한 기록임"
+      ]
+    },
+    {
+      "id": "E00101",
+      "statement": "실시간성을 확인하려면 마이크로초 ~ 수 밀리초(ms) 내로 제한해야 한다고 기록되었다.",
+      "limits": "이 진술은 실시간성 목표 범위에 대한 기록자의 판단이며, 실제 달성 여부나 측정 근거는 이 요소만으로 제시되지 않았다.",
+      "sources": [
+        {
+          "element_id": "p25:e178",
+          "page": 25,
+          "quote": "근 데 실시간성을 확인하려면 마이크로초 ~ 수 밀리초(ms) 내로 제한해야 함",
+          "origin": "standard_parse"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p25:e178에 '실시간성을 확인하려면 마이크로초 ~ 수 밀리초(ms) 내로 제한해야 함'이라고 명시되어 있어 진술과 일치함.",
+      "conditions": [
+        "실시간성 확인 필요",
+        "마이크로초 ~ 수 밀리초(ms) 내로 제한 필요"
+      ],
+      "measurements": [],
+      "parameters": [],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "introduction_Q1",
+        "methods_Q8",
+        "methods_Q10",
+        "evaluation_Q2",
+        "evaluation_Q10",
+        "evaluation_Q11",
+        "limitations_Q1",
+        "limitations_Q9",
+        "conclusion_Q6"
+      ],
+      "supplemental_reason": "",
+      "evidence_limitations": [
+        "실시간성 목표 범위에 대한 기록자의 판단이며, 실제 달성 여부나 측정 근거는 이 요소만으로 제시되지 않음"
+      ]
+    },
+    {
+      "id": "E00294",
+      "statement": "No-Pin은 평소에는 CPU 캐시빨로 살짝 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 끼어들면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없으며(1ms 무선 통신 데드라인 파괴), Pinned Memory는 매번 정직하게 DMA 셋업 비용(1~2μs)을 치르기 때문에 평균 시간은 살짝 손해를 보지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 절대적인 안정성(결정론적 성능)을 보장한다.",
+      "limits": "이 내용은 No-Pin과 Pinned Memory의 동작 특성과 안정성 비교 설명이며, 실제 측정 결과나 정량 수치는 별도 요소에서 다룬다.",
+      "sources": [
+        {
+          "element_id": "p78:e617",
+          "page": 78,
+          "quote": "● No-Pin: 평소에는 CPU 캐시빨로 살짝 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 끼어들면 최대 11.6ms까지 튀는 대\n형 스파이크를 피할 수 없습니다 (1ms 무선 통신 데드라인 파괴).\n● Pinned Memory: 매번 정직하게 DMA 셋업 비용(1~2 $\\mu\\text{s}$)을 치르기 때문에 평균 시간은 살짝 손해를 보지만, OS 페이징을 차단하여\n**어떤 상황에서도 1.64ms를 넘지 않는 절대적인 안정성(결정론적 성능)**올 보장합니다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p80:img0:e9",
+          "page": 80,
+          "quote": "No-Pin: 평소에는 CPU 캐시 별로 쌩쌩 달리다가, OS 백그라운드 작업, 페이징, 드라이버 임시 버퍼 락(Lock) 경합이 터지는 순간 지연시간이 11ms까지 튀어버립니다. (5G/6G 기지국 기준 패킷 드랍/통신 두절 발생)\nPinned: 매번 1.5 μs의 “정직한 하드웨어 통행료”를 내는 대신, OS 페이징 간섭을 100% 차단하여 아무리 튀어도 1.64 ms 안쪽으로 엄격하게 보장됩니다.",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p78:e617의 목록 항목과 직접 일치. 11.6ms, 1~2μs, 1.64ms 모두 원문 수치 그대로 인용. OS 페이징 차단과 결정론적 안정성 설명도 원문에 존재.",
+      "conditions": [
+        "No-Pin(일반 메모리) 방식",
+        "윈도우 OS 가상 메모리 정리 또는 백그라운드 작업 개입 시",
+        "최대 11.6ms까지 튀는 대형 스파이크 발생 가능",
+        "1ms 무선 통신 데드라인 파괴 가능성",
+        "Pinned Memory 방식",
+        "매번 DMA 셋업 비용(1~2μs) 발생",
+        "OS 페이징 차단",
+        "어떤 상황에서도 1.64ms를 넘지 않는 절대적 안정성(결정론적 성능) 보장"
+      ],
+      "measurements": [
+        {
+          "metric": "최대 지연 스파이크 No-Pin",
+          "value": "11.6",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "No-Pin(일반 메모리)에서 윈도우 OS 가상 메모리 정리 또는 백그라운드 작업 개입 시 발생 가능한 최대 지연 스파이크",
+          "element_ids": [
+            "p78:e617"
+          ],
+          "raw_value": "11.6",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "DMA 셋업 비용",
+          "value": "1~2",
+          "value_kind": "range",
+          "unit": "μs",
+          "condition": "Pinned Memory에서 매번 발생하는 DMA 셋업 비용",
+          "element_ids": [
+            "p78:e617"
+          ],
+          "raw_value": "1~2",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "최대 지연 Pinned Memory",
+          "value": "1.64",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "Pinned Memory가 어떤 상황에서도 넘지 않는 최대 지연",
+          "element_ids": [
+            "p78:e617"
+          ],
+          "raw_value": "1.64",
+          "normalization_status": "normalized"
+        }
+      ],
+      "parameters": [],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "methods_Q1",
+        "methods_Q5",
+        "methods_Q12",
+        "evaluation_Q1",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "limitations_Q1",
+        "limitations_Q7",
+        "introduction_Q1",
+        "introduction_Q3",
+        "methods_Q7",
+        "methods_Q9",
+        "methods_Q10",
+        "methods_Q14",
+        "evaluation_Q5",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q4",
+        "conclusion_Q6",
+        "related_work_Q1"
+      ],
+      "supplemental_reason": "No-Pin의 스파이크 발생 원인과 Pinned Memory의 결정론적 안정성 보장 이유를 상세히 설명함.",
+      "evidence_limitations": [
+        "윈도우 OS 가상 메모리 정리/백그라운드 작업 개입 시 11.6ms 스파이크 발생이라는 주장의 구체적 재현 조건(어떤 OS 버전, 어떤 작업 부하, 측정 방법) 미기재",
+        "DMA 셋업 비용 1~2μs와 Pinned Memory 최대 1.64ms 보장 주장의 측정 조건 및 반복 측정 통계 미기재",
+        "'1ms 무선 통신 데드라인 파괴' 주장의 구체적 시스템 맥락(통신 프로토콜, 데드라인 설정 근거) 미기재"
+      ]
+    },
+    {
+      "id": "E00296",
+      "statement": "Pageable 메모리는 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다.",
+      "limits": "이 내용은 Pageable 메모리와 Pinned Memory의 지연 특성 비교 및 실시간 무선 안테나 선택 시스템에서의 Pinned Memory 도입 필요성에 대한 결론 설명이며, 실제 측정 결과나 정량 수치는 별도 요소에서 다룬다.",
+      "sources": [
+        {
+          "element_id": "p78:e619",
+          "page": 78,
+          "quote": "\"단일 채널 벡터(1 KB)와 같은 초소형 실시간 데이터 환경에서는 PCle DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가\nPageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다.\n*lou\n그러나 Pageable 메모리는 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발하는 반면, Pinned Memory는\n최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned\nMemory 도입이 필수적이다.\"",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p80:img0:e10",
+          "page": 80,
+          "quote": "요약하자면:",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p78:e619 원문에 Pageable 메모리 최대 11.6ms 지연 스파이크, Pinned Memory WCET 1.64ms, 지터 60% 이상 안정화, 실시간 무선 안테나 선택 시스템에서 Pinned Memory 도입 필수라는 결론이 그대로 명시되어 있음. 측정값(11.6ms, 1.64ms, 60%)도 원문과 일치함. '필수적이다'는 규범적 결론이나 원문이 결론으로 제시한 내용이므로 supported로 판정함.",
+      "conditions": [
+        "Pageable 메모리",
+        "OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크 유발",
+        "Pinned Memory",
+        "최악 지연시간(WCET)을 1.64ms로 엄격히 제한",
+        "지터를 60% 이상 안정화",
+        "실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적"
+      ],
+      "measurements": [
+        {
+          "metric": "Pageable 메모리 최대 지연 스파이크",
+          "value": "11.6",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "OS 페이징 간섭으로 인해 Pageable 메모리가 유발하는 최대 지연 스파이크",
+          "element_ids": [
+            "p78:e619"
+          ],
+          "raw_value": "11.6",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "Pinned Memory 최악 지연시간(WCET)",
+          "value": "1.64",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "Pinned Memory가 엄격히 제한하는 최악 지연시간",
+          "element_ids": [
+            "p78:e619"
+          ],
+          "raw_value": "1.64",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "Pinned Memory 지터 안정화 비율",
+          "value": "6E+1",
+          "value_kind": "scalar",
+          "unit": "%",
+          "condition": "Pinned Memory가 Pageable 메모리 대비 지터를 안정화하는 비율",
+          "element_ids": [
+            "p78:e619"
+          ],
+          "raw_value": "6E+1",
+          "normalization_status": "normalized"
+        }
+      ],
+      "parameters": [],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "methods_Q1",
+        "methods_Q5",
+        "methods_Q12",
+        "evaluation_Q1",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "limitations_Q1",
+        "limitations_Q7",
+        "conclusion_Q1",
+        "conclusion_Q2",
+        "conclusion_Q3",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "conclusion_Q8",
+        "introduction_Q1",
+        "introduction_Q3",
+        "methods_Q7",
+        "methods_Q9",
+        "methods_Q10",
+        "methods_Q14",
+        "evaluation_Q5",
+        "limitations_Q9",
+        "related_work_Q1"
+      ],
+      "supplemental_reason": "Pageable 메모리의 치명적 지연 스파이크와 Pinned Memory의 WCET 제한 및 지터 안정화 효과를 비교하고, 실시간 무선 안테나 선택 시스템에서 Pinned Memory 도입이 필수적이라는 결론을 명시함.",
+      "evidence_limitations": []
+    },
+    {
+      "id": "E00267",
+      "statement": "방법 B는 CROWN의 모든 커널(행렬 곱, ReLU 완화, 바운드 합산 등)에 직접 blockIdx.z를 넣어 3차원 배칭 커널을 처음부터 끝까지 직접 작성하는 Custom Implementation 방식이며, 장점은 알고리즘과 메모리를 100% 통제할 수 있다는 점이고, 아쉬운 점은 C++ CUDA 코드를 잘 짜도 엔비디아 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝한 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기 어렵다는 점이다.",
+      "limits": "현재 페이지는 방법 B와 방법 C의 개념·구도 설명만 포함하며, 실제 구현 완료 여부나 정량 성능 수치는 포함하지 않는다.",
+      "sources": [
+        {
+          "element_id": "p71:e552",
+          "page": 71,
+          "quote": "● 방법 B: \"내가 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것\" (Custom\nImplementation)\n● 방법 C: \"가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리( cuBLAS )에 맡기는\n것\" (Library Integration)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p71:e554",
+          "page": 71,
+          "quote": "[방법 B] \"모든 걸 내 손으로 3D화하기\"",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p71:e555",
+          "page": 71,
+          "quote": "● 행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 우리가 직접 blockIdx.z 를 넣\n어서 3차원 배칭 커널을 작성하는 것입니다.\n● 장점: 알고리즘과 메모리를 내가 100% 완벽히 통제할 수 있습니다.\n● 아쉬운 점: 우리가 아무리 C++ CUDA 코드를 잘 짜도, 엔비디아 본사 엔지니어들이 GPU 회\n로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기\n는 어렵습니다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p71:enh:e4",
+          "page": 71,
+          "quote": "방법 B: \"내가 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것\" (Custom Implementation)\n방법 C: \"가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리( cuBLAS )에 맡기는 것\" (Library Integration)",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p71:enh:e6",
+          "page": 71,
+          "quote": "[방법 B] \"모든 걸 내 손으로 3D화하기\"",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p71:enh:e7",
+          "page": 71,
+          "quote": "행렬 곱, ReLU 완화, 바운드 합산 등 CROWN의 모든 커널에 우리가 직접 blockIdx.z 를 넣어서 3차원 배칭 커널을 작성하는 것입니다.\n장점: 알고리즘과 메모리를 내가 100% 완벽히 통제할 수 있습니다.\n아쉬운 점: 우리가 아무리 C++ CUDA 코드를 잘 짜도, 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝해 둔 텐서 코어(Tensor Core) 어셈블리 성능을 손으로 따라잡기는 어렵습니다.",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "방법 B가 CROWN 모든 커널(행렬 곱, ReLU 완화, 바운드 합산 등)에 blockIdx.z를 넣어 3차원 배칭 커널을 직접 작성하는 Custom Implementation 방식이라는 설명, 장점(알고리즘·메모리 100% 통제), 아쉬운 점(엔비디아 엔지니어의 텐서 코어 어셈블리 성능 따라잡기 어려움)이 p71:e552, p71:e555 및 enh:e4, enh:e7과 정확히 일치한다.",
+      "conditions": [
+        "방법 B: Custom Implementation",
+        "3차원 배칭 커널 직접 작성",
+        "CROWN 모든 커널에 blockIdx.z 적용"
+      ],
+      "measurements": [],
+      "parameters": [],
+      "observations": [
+        "장점: 알고리즘과 메모리를 100% 완벽히 통제 가능",
+        "아쉬운 점: 엔비디아 본사 엔지니어들이 GPU 회로(하드웨어) 레벨까지 튜닝한 텐서 코어 어셈블리 성능을 손으로 따라잡기 어려움"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "introduction_Q2",
+        "introduction_Q3",
+        "methods_Q4",
+        "methods_Q5",
+        "methods_Q13"
+      ],
+      "supplemental_reason": "",
+      "evidence_limitations": [
+        "현재 페이지(p71:e552, p71:e554, p71:e555)는 방법 B의 개념·구도 설명만 포함하며, 실제 구현 완료 여부나 정량 성능 수치는 포함하지 않는다."
+      ]
+    },
+    {
+      "id": "E00268",
+      "statement": "방법 C는 CROWN 연산 시간의 80% 이상이 행렬 곱셈(A × W)이라는 점에 착안해, 가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리(cuBLAS, 구체적으로는 cublasSgemmBatched)에 맡기고, CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌리는 하이브리드 방식이다. 이는 파이토치가 내부적으로 동작하는 방식과 100% 동일하다.",
+      "limits": "현재 페이지는 방법 C의 개념·구도 설명만 포함하며, 실제 cuBLAS 교체 후 정량 성능 수치는 포함하지 않는다.",
+      "sources": [
+        {
+          "element_id": "p71:e552",
+          "page": 71,
+          "quote": "● 방법 B: \"내가 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것\" (Custom\nImplementation)\n● 방법 C: \"가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리( cuBLAS )에 맡기는\n것\" (Library Integration)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p71:e556",
+          "page": 71,
+          "quote": "[방법 C] \"가장 힘든 일(행렬곱)만 전문가(cuBLAS)에게 외주 주기\"",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p71:e557",
+          "page": 71,
+          "quote": "● CROWN 연산 시간의 **80% 이상은 행렬 곱셈($A \\times W$)**입니다.\n● \"이 무거운 행렬 곱셈까지 굳이 우리가 손수 짤 필요가 있을까? 엔비디아가 텐서 코어용으로\n극한까지 깎아놓은 공식 라이브러리( cublasSgemmBatched 쓰자!\" 하는 것이 방법 C입니\n를(\n다.\n● 핵심: CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B\n의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식입\n니다. (파이토치가 내부적으로 동작하는 방식과 100% 동일)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p71:enh:e4",
+          "page": 71,
+          "quote": "방법 B: \"내가 직접 3차원 배칭 커널을 처음부터 끝까지 다 만드는 것\" (Custom Implementation)\n방법 C: \"가장 무거운 행렬 곱셈만 엔비디아의 공식 최적화 라이브러리( cuBLAS )에 맡기는 것\" (Library Integration)",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p71:enh:e8",
+          "page": 71,
+          "quote": "[방법 C] \"가장 힘든 일(행렬곱)만 전문가(cuBLAS)에게 외주 주기\"",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p71:enh:e9",
+          "page": 71,
+          "quote": "CROWN 연산 시간의 **80% 이상은 행렬 곱셈($A \\times W$)**입니다.\n\"이 무거운 행렬 곱셈까지 굳이 우리가 손수 짤 필요가 있을까? 엔비디아가 텐서 코어용으로 극한까지 깎아놓은 공식 라이브러리( cuBlasSgemmBatched )를 쓰자!\" 하는 것이 방법 C입니다.\n핵심: CROWN 전용 연산(ReLU 완화 계수 계산 등)은 라이브러리에 없으므로 여전히 방법 B의 자체 3D 커널로 돌리고, 오직 무거운 행렬 곱셈만 cuBLAS로 교체하는 하이브리드 방식입니다. (파이토치가 내부적으로 동작하는 방식과 100% 동일)",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "CROWN 연산 시간의 80% 이상이 행렬 곱셈(A×W)이라는 점, 가장 무거운 행렬 곱셈만 cuBLAS(cublasSgemmBatched)에 외주, CROWN 전용 연산은 방법 B의 자체 3D 커널로 유지하는 하이브리드 방식, 파이토치 내부 동작 방식과 100% 동일하다는 설명이 p71:e557 및 enh:e9와 정확히 일치한다.",
+      "conditions": [
+        "방법 C: Library Integration",
+        "가장 무거운 행렬 곱셈만 cuBLAS(cublasSgemmBatched)에 외주",
+        "CROWN 전용 연산은 방법 B의 자체 3D 커널로 유지",
+        "하이브리드 방식",
+        "파이토치 내부 동작 방식과 100% 동일"
+      ],
+      "measurements": [],
+      "parameters": [],
+      "observations": [
+        "CROWN 연산 시간의 80% 이상은 행렬 곱셈(A × W)"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "introduction_Q2",
+        "introduction_Q3",
+        "methods_Q4",
+        "methods_Q5",
+        "methods_Q13"
+      ],
+      "supplemental_reason": "",
+      "evidence_limitations": [
+        "현재 페이지(p71:e556, p71:e557)는 방법 C의 개념·구도 설명만 포함하며, 실제 cuBLAS 교체 후 정량 성능 수치는 포함하지 않는다."
+      ]
+    },
+    {
+      "id": "E00269",
+      "statement": "방법 B와 방법 C의 결합 흐름은 \"B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것\"이다.",
+      "limits": "현재 페이지는 방법 B·C 결합 흐름에 대한 요약 설명만 포함하며, 실제 구현·평가 결과는 포함하지 않는다.",
+      "sources": [
+        {
+          "element_id": "p71:e559",
+          "page": 71,
+          "quote": "\"B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱\n엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 것\"\n바로 이 흐름으로 이해하시면 완벽합니다!",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p71:enh:e11",
+          "page": 71,
+          "quote": "\"B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 그중 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 같아 끼우는 것\"",
+          "origin": "enhanced_page_image"
+        },
+        {
+          "element_id": "p71:enh:e12",
+          "page": 71,
+          "quote": "바로 이 흐름으로 이해하시면 완벽합니다!",
+          "origin": "enhanced_page_image"
+        }
+      ],
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "B를 통해 전체 파이프라인을 3차원 텐서 구조로 만들어두고, 가장 무거운 행렬곱 엔진만 C(cuBLAS 라이브러리)로 갈아 끼우는 흐름이라는 설명이 p71:e559 및 enh:e11과 정확히 일치한다.",
+      "conditions": [
+        "방법 B로 전체 파이프라인을 3차원 텐서 구조로 구성",
+        "가장 무거운 행렬곱 엔진만 방법 C(cuBLAS)로 교체"
+      ],
+      "measurements": [],
+      "parameters": [],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "introduction_Q3",
+        "methods_Q5"
+      ],
+      "supplemental_reason": "",
+      "evidence_limitations": [
+        "현재 페이지(p71:e559)는 방법 B·C 결합 흐름에 대한 요약 설명만 포함하며, 실제 구현·평가 결과는 포함하지 않는다."
+      ]
+    },
+    {
+      "id": "E00027",
+      "statement": "GPU OPTIMIZED 모드(cuBLAS + Pool)에서 CROWN Verification 실행 결과 Elapsed time이 229.691800 ms로 기록되었다.",
+      "limits": "이 수치는 GPU OPTIMIZED 모드의 단일 실행 결과이며, CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다.",
+      "sources": [
+        {
+          "element_id": "p5:e43",
+          "page": 5,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) ** MODE: GPU OPTIMIZED (cuBLAS + Pool) ** calc success Elapsed time: 229,691800 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) [ 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] [ 13] [ 14] [ 15] 0.081772 0.082159 0.273538 0.273823 0.102147 0.102482 0.114244 0.114541 2.670552 2,670843 1.846574 1.846872 -1.714750 -1,714490 -1.880139 -1.879695 0.706986 0.707275 -2.612086 -2.611722 0.003713 0.003976 1.310476 1.310817 2,049539 2,049839 -1.025923 -1.025597 1,082576 1,082852 -3,404772 | -3,404355 C: :₩UsersMuser\\Desktop#cuda#crown: 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1,310646 2,049689 -1.025760 1,082714 -3,404563",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p5:review:e0",
+          "page": 5,
+          "quote": "![image](/image/placeholder)\n- Figure Type: screenshot\n- CROWN 검증 프로그램의 실행 결과 화면으로, GPU 최적화 설정과 계산 성공 메시지가 표시되어 있으며, 16개의 행에 대한 하위 범례와 수치 데이터가 표 형태로 나열되어 있다.\n- Starting CROWN Verification (eps = 1e-06)\n** MODE: GPU OPTIMIZED (cuBLAS + Pool) **\n\ncalc success\nElapsed time: 229.691800 ms\nOutput Dimension: 16\n\n[Index] | Lower Bound | Upper Bound | Normal | Pred (y)\n\n[ 0] | 0.081772 | 0.082159 | 0.081966\n[ 1] | 0.273538 | 0.273823 | 0.273680\n[ 2] | 0.102147 | 0.102482 | 0.102314\n[ 3] | 0.114244 | 0.114541 | 0.114393\n[ 4] | 2.670552 | 2.670843 | 2.670697\n[ 5] | 1.846574 | 1.846872 | 1.846723\n[ 6] | -1.714750 | -1.714490 | -1.714620\n[ 7] | -1.880139 | -1.879695 | -1.879916\n[ 8] | 0.706986 | 0.707275 | 0.707131\n[ 9] | -2.612086 | -2.611722 | -2.611904\n[ 10] | 0.003713 | 0.003976 | 0.003845\n[ 11] | 1.310476 | 1.310817 | 1.310646\n[ 12] | 2.049539 | 2.049839 | 2.049689\n[ 13] | -1.025923 | -1.025597 | -1.025760\n[ 14] | 1.082576 | 1.082852 | 1.082714\n[ 15] | -3.404772 | -3.404355 | -3.404563\n\nC:\\Users\\user\\Desktop\\cuda\\crown>",
+          "origin": "enhanced_numeric_ocr_review"
+        },
+        {
+          "element_id": "p6:e48",
+          "page": 6,
+          "quote": "![image](/image/placeholder)\nStarting CROWN Verification (eps = 1e-06) ** MODE: HYBRID (matmul=GPU, rest=CPU) ** calc success Elapsed time: 201.670100 ms Output Dimension: 16 [Index] | Lower Bound | Upper Bound | Normal Pred (y) [ 0] 1] 2] 3] 4] 5] 6] 7] 8] 9] 10] 11] 12] 13] 14] [ 15] 0.081772 | 0.273538 0.102147 0.114244 2.670552 1.846574 -1.714750 -1.880139 0.706986 -2.612086 0.003713 1,310476 2,049539 -1.025923 1.082576 -3,404772 0.082159 | 0.273823 0.102482 0.114541 2,670843 1.846872 -1,714490 -1.879695 0.707275 -2.611722 0.003976 1.310817 2,049839 -1.025597 1.082852 -3,404355 0.081966 0.273680 0.102314 0.114393 2.670697 1.846723 -1.714620 -1.879916 0.707131 -2.611904 0.003845 1.310646 2.049689 -1.025760 1.082714 -3,404563",
+          "origin": "standard_parse"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p5:e43 및 p5:review:e0에 'Elapsed time: 229.691800 ms', 'MODE: GPU OPTIMIZED (cuBLAS + Pool)', 'eps = 1e-06', 'Output Dimension: 16'이 모두 기록되어 측정값과 조건이 원문과 일치함.",
+      "conditions": [
+        "CROWN Verification 실행",
+        "eps = 1e-06",
+        "MODE: GPU OPTIMIZED (cuBLAS + Pool)",
+        "Output Dimension: 16"
+      ],
+      "measurements": [
+        {
+          "metric": "Elapsed time",
+          "value": "229.6918",
+          "value_kind": "scalar",
+          "unit": "ms",
+          "condition": "GPU OPTIMIZED (cuBLAS + Pool), eps=1e-06, Output Dimension 16",
+          "element_ids": [
+            "p5:e43",
+            "p5:review:e0"
+          ],
+          "raw_value": "229.6918",
+          "normalization_status": "normalized"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "eps",
+          "value": "1e-06",
+          "value_kind": "text",
+          "element_ids": [
+            "p5:e43",
+            "p5:review:e0"
+          ]
+        },
+        {
+          "name": "출력 차원",
+          "value": "16",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p5:e43",
+            "p5:review:e0"
+          ]
+        }
+      ],
+      "observations": [
+        "출력 표에 [Index], Lower Bound, Upper Bound, Normal Pred (y) 열이 포함됨",
+        "0번~15번 출력의 Lower/Upper Bound 및 Normal Pred (y) 값이 표시됨"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "methods_Q1",
+        "methods_Q2",
+        "methods_Q3",
+        "methods_Q6",
+        "methods_Q10",
+        "methods_Q12",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q1",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q5",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q6",
+        "limitations_Q7",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q2",
+        "conclusion_Q3",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "conclusion_Q8",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4",
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7",
+        "evaluation_Q10"
+      ],
+      "supplemental_reason": "",
+      "evidence_limitations": [
+        "단일 실행 결과이며 CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없음"
+      ]
+    },
+    {
+      "id": "E00029",
+      "statement": "GPU OPTIMIZED 모드 적용 후 실행 시간이 229.691ms로 약 100ms 줄었지만 여전히 CPU보다 느리다고 기록되었다.",
+      "limits": "이 비교 판단은 기록자의 정성적 평가이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다.",
+      "sources": [
+        {
+          "element_id": "p5:e46",
+          "page": 5,
+          "quote": "2 29.691ms로 100ms정도 줄었지만 여전히 CPU보다 느림",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p5:review:e3",
+          "page": 5,
+          "quote": "229.691ms 로 100ms정도 줄었지만 여전히 CPU보다 느림",
+          "origin": "enhanced_numeric_ocr_review"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p5:e46 및 p5:review:e3에 '229.691ms로 100ms정도 줄었지만 여전히 CPU보다 느림'이라고 기록되어 있어 실행 시간 감소 폭과 CPU 대비 느리다는 평가가 원문에 존재함.",
+      "conditions": [
+        "GPU OPTIMIZED (cuBLAS + Pool) 모드 적용",
+        "이전 대비 약 100ms 감소"
+      ],
+      "measurements": [],
+      "parameters": [],
+      "observations": [
+        "실행 시간이 줄었으나 CPU보다 느리다는 평가"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "methods_Q1",
+        "methods_Q2",
+        "methods_Q3",
+        "methods_Q6",
+        "methods_Q10",
+        "methods_Q12",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q1",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q5",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q6",
+        "limitations_Q7",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q2",
+        "conclusion_Q3",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "conclusion_Q8",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4",
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7"
+      ],
+      "supplemental_reason": "",
+      "evidence_limitations": [
+        "CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없음. '약 100ms 감소'는 기록자의 정성적 평가임."
+      ]
+    },
+    {
+      "id": "E00030",
+      "statement": "GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 만들어보았다.",
+      "limits": "이 내용은 후속 시도 동기와 방향 기록이며, 하이브리드 프로그램의 실제 구현 완료·측정 결과는 현재 페이지에 없다.",
+      "sources": [
+        {
+          "element_id": "p5:e47",
+          "page": 5,
+          "quote": "⇒ matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 만들어봄",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p5:review:e4",
+          "page": 5,
+          "quote": "⇒ matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 만들어봄",
+          "origin": "enhanced_numeric_ocr_review"
+        }
+      ],
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p5:e47 및 p5:review:e4에 '⇒ matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 만들어봄'이라고 기록되어 있으며, 선행 문맥(p5:e46)에서 GPU OPTIMIZED 모드 이후에도 CPU보다 느리다는 평가가 확인됨.",
+      "conditions": [
+        "GPU OPTIMIZED 모드에서 CPU보다 느린 문제",
+        "matmul만 GPU로 실행하는 하이브리드 방식 시도"
+      ],
+      "measurements": [],
+      "parameters": [],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "methods_Q1",
+        "methods_Q2",
+        "methods_Q3",
+        "methods_Q5",
+        "methods_Q6",
+        "methods_Q7",
+        "methods_Q9",
+        "methods_Q10",
+        "methods_Q11",
+        "methods_Q12",
+        "methods_Q13",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q1",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q5",
+        "evaluation_Q7",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q6",
+        "limitations_Q7",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q2",
+        "conclusion_Q3",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "conclusion_Q8",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4",
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7"
+      ],
+      "supplemental_reason": "",
+      "evidence_limitations": [
+        "하이브리드 프로그램의 실제 구현 완료·측정 결과는 현재 페이지에 없음. 이는 후속 시도 동기와 방향 기록임."
+      ]
+    },
+    {
+      "id": "E00277",
+      "statement": "cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이이다.",
+      "limits": "현재 페이지는 figure 캡션에 기록된 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다.",
+      "sources": [
+        {
+          "element_id": "p74:e582",
+          "page": 74,
+          "quote": "![image](/image/placeholder)\n그럼 Register 한 게 더 느린 이유는 뭔데 Thought for 24s > 결과를 자세히 보시면 전체 시간 차이는 787.88초 VS 776.70초로 단 1.4%(약 11초) 차이이며, 92만 번의 루프 중 1회당 불과 약 12 $\\mu\\text{s}$ 수준의 미세한 차이입니다. 하지만 *\"이론상 다이렉트 DMA를 쓰는 Pinned Memory( Register )가 왜 일반 메모리( NoPin )보다 11초 더 느리게 측정되었는가?\"*에 대해서는 컴 퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있습니다. 1. 세부 수치 비교: 어디서 차이가 났는가? 항목 cudaHostRegister (787.88s) No Pinning (776.70s) 분석 Bound 단계 (전체의 85%) 658.80s 663.17s ◀ Register가 4.37초 더 빠름! (예상대로 DMA 효과) Infer 단계 (전체의 15%) 127.18s 111.92s ◀ 여기서 Register가 15.26초 더 느림 연산량이 많은 Bound 단계에서는 오히려 Register가 4초 이상 빨랐지만, 데이터 전송 직후 바로 동기화가 일어나는 Infer 단계에서 15초가 역전되었 습니다. 그 이유는 다음과 같습니다:",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e586",
+          "page": 75,
+          "quote": "쿠다 강의 19장의 GPU 클록 고정을 참고했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e587",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\n# 현재 클록 확인 nvidia-smi -q -d CLOCK # 클록 고정 (root 필요) sudo nvidia-smi -pm 1 # Persistence mode sudo nvidia-smi -lgc 1410 # Lock graphics clock",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e588",
+          "page": 75,
+          "quote": "클 록을 2800Mhz로 고정하고 돌린 결과 (기존 HostRegister)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e589",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\neps= eps= eps= eps= 9.0e-03: T= 1.0e-02: T= 1.0e-01: T= 1.0e+00: T= 1 F=39999 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 total elapsed: 798.78s Phase Timing Breakdown (all eps × all data) infer : 128,893s (16.1%) bound : 667.159s 83.5%) certify : 1,644s (0.2%) --- === Real-Time Single-Sample (B=1) Latency Analysis === Evaluated Samples : 100000 Min Latency : 832.10 us Mean Latency : 873.54 us (0.87 ms) Median (P50) : 860.10 us P95 Tail Latency : 971.40 us P99 Tail Latency : 1087.80 us Max Latency : 10943.50 us Jitter (StdDev) : 77.94 us Throughput : 1144.77 samples/sec Pure GPU Execution: 717.09 us (last sample)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:img0:e0",
+          "page": 75,
+          "quote": "GPU 클록과 Throttling",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e1",
+          "page": 75,
+          "quote": "일관된 측정을 위한 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e2",
+          "page": 75,
+          "quote": "클록 상태 확인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e3",
+          "page": 75,
+          "quote": "# 현재 클록 확인\n        nvidia-smi -q -d CLOCK\n\n        # 클록 고정 (root 필요)\n        sudo nvidia-smi -pm 1   # Persistence mode\n        sudo nvidia-smi -lgc 1410  # Lock graphics clock",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e4",
+          "page": 75,
+          "quote": "Throttling 원인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e5",
+          "page": 75,
+          "quote": "| 원인 | 증상 | 해결 |\n| --- | --- | --- |\n| 온도 | 클록 저하 | 냉각 개선 |\n| 전력 | 성능 저하 | 전력 제한 확인 |\n| API | 간헐적 지연 | 백그라운드 작업 확인 |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e6",
+          "page": 75,
+          "quote": "측정 환경 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e7",
+          "page": 75,
+          "quote": "# Persistence mode (초기화 지연 제거)\n        sudo nvidia-smi -pm 1",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p76:e591",
+          "page": 76,
+          "quote": "![image](/image/placeholder)\ntotal elapsed: 806.54s Phase Timing Breakdown (all eps × all data) infer : 132,586s (16.4%) bound : 670.122s (83.1%) certify : 2,077s (0.3%) --- === Real-Time Single-Sample (B=1) Latency Analysis [cudaHostAlloc] === Evaluated Samples : 100000 Min Latency : 832.80 us Mean Latency : 869.34 us (0.87 ms) Median (P50) : 859.80 us P95 Tail Latency : 899.60 us P99 Tail Latency : 1095.90 us Max Latency : 13996.40 us Jitter (StdDev) : 73.27 us Throughput : 1150.30 samples/sec Pure GPU Execution: 705.89 us (last sample) -",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p76:e593",
+          "page": 76,
+          "quote": "![image](/image/placeholder)\neps= 1.0e+00: T= 0 F=40000 ratio=0.000 total elapsed: 790.64s Phase Timing Breakdown (all eps × all data) infer : 119,466s (15.1%) bound : 667.611s (84.4%) certify : 2,004s (0.3%) --- Real-Time Single-Sample (B=1) Latency Analysis [Pageable Memory / NO PINNING] === Evaluated Samples : 100000 Min Latency : 822.10 us Mean Latency : 859.20 us (0.86 ms) Median (P50) : 847.90 us P95 Tail Latency : 899.40 us P99 Tail Latency : 1089.30 us Max Latency : 14400,40 us Jitter (StdDev) : 105.84 us Throughput : 1163.87 samples/sec Pure GPU Execution: 695.42 us (last sample)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p76:e594",
+          "page": 76,
+          "quote": "클 록고정까지 했는데, 이런 결과면 받아들여야겠네 왜 nopin이 더 빠른가?\n⇒ gemini 대답",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p77:e595",
+          "page": 77,
+          "quote": "Worked for 1m >",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p79:e621",
+          "page": 79,
+          "quote": "![image](/image/placeholder)\n코드는 수정하지말고 DMA 셋업을 매번해?\n네, 정확히 짚으셨습니다. 매 루프마다 드라이버와 하드웨어가 \"DMA 전송 셋업(Descriptor 생성 및 큐 제출)\"을 매번 새로 수행합니다.\n사용자분이 느끼신 *\"왜 No-Pin(일반 메모리)이 총 시간에서 13초나 더 빠르지?\"*라는 의문의 핵심 이유가 바로 여기에 있습니다.\n1. 매번 무슨 일이 일어나는가? (Pinned VS No-Pin)\n현재 코드의 run_infer 를 보면 cudaMemcpyAsync 가 CUDA Graph 바깥에 있습니다.\ncpp\ncudaMemcpyAsync(d_x0, &x0, in_bytes, cudaMemcpyHostToDevice, stream); // <-- 매 반복문마다 개별 호출\ncudaGraphLaunch(instance_infer, stream);\n이 1,028 바이트(약 1 KB)를 보낼 때 두 방식의 드라이버 내부 동작이 완전히 다릅니다.\n① Pinned Memory ( cudaHostRegister / cudaHostAlloc\n1. CPU 드라이버: &x0 의 가상 주소로부터 물리 페이지 주소를 조회합니다.\n2. DMA 셋업: PCle Copy Engine에 보낼 DMA 디스크립터 패킷(출발지 물리주소, 목적지 VRAM 주소, 전송 길이=1,028B)을 생성합니다.\n3. 큐 제출 (Doorbell): GPU의 하드웨어 전송 큐에 MMIO 방식으로 명령을 밀어 넣습니다.\n4. GPU 하드웨어 DMA 엔진: PCle TLP 읽기 요청을 보내고 버스 트랜잭션을 개시합니다.\n● 이 하드웨어 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0 ~ 1.5 μs가 소모됩니다.\n② No-Pin (일반 Pageable 메모리)\n1. OS 페이징 메모리는 물리 주소가 언제든 바뀔 수 있으므로 GPU 하드웨어 DMA 엔진이 직접 읽을 수 없습니다.\n2. CPU 내부 즉시 복사 (Staging): 드라이버가 하드웨어 DMA를 부르지 않고, CPU의 초고속 L1/L2 캐시를 이용해 드라이버의 내부 임시 버퍼로\nmemcpy 를 해버립니다.\n● 최신 CPU(Core i7/19, Ryzen)의 L1/L2 캐시에서 1,028 바이트 복사는 **0.02 ~ 0.05 μs (20~50 나노초)**면 끝납니다. DMA 셋업보다\n30~50배 빠릅니다.\n3. 그 후 드라이버가 커널 런치 패킷(Pushbuffer) 뒤에 데이터를 슬쩍 얹어서 함께 보냅니다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p80:img0:e1",
+          "page": 80,
+          "quote": "| 구분 | 1회 전송 오버헤드 | 920,000회 누적 오버헤드 |\n| --- | --- | --- |\n| No-Pin (CPU 캐시 복사) | ~0.03 μs | ~0.03초 |\n| Pinned (하드웨어 DMA 셋업) | ~1.50 μs | ~1.38초 |",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p74:e582 원문 '전체 시간 차이는 787.88초 VS 776.70초로 단 1.4%(약 11초) 차이이며, 92만 번의 루프 중 1회당 불과 약 12 μs 수준의 미세한 차이입니다'와 진술 내용이 정확히 일치한다. 수치(787.88s, 776.70s, 1.4%, 11초, 92만 번, 12μs)가 모두 원문에 존재한다. measurements의 element_ids에는 p74:e582 외에 관련 실험 맥락(클록 고정, Throttling 표, HostAlloc/NoPin 결과, DMA 설명 등)이 광범위하게 포함되어 있으나, 실제 수치 787.88s/776.70s가 직접 기록된 출처는 p74:e582이다. supplemental_reason에서 이 통합 보존 의도를 명시하고 있다.",
+      "conditions": [
+        "cudaHostRegister vs No Pinning 비교",
+        "전체 실행 시간 787.88s vs 776.70s",
+        "92만 번 루프",
+        "1회당 약 12μs 차이"
+      ],
+      "measurements": [
+        {
+          "metric": "전체 실행 시간(cudaHostRegister)",
+          "value": "787.88",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "cudaHostRegister(Pinned/Register), 92만 번 루프, backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p74:e582",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p76:e591",
+            "p77:e595",
+            "p79:e621"
+          ],
+          "raw_value": "787.88",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "전체 실행 시간(No Pinning)",
+          "value": "776.7",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "No Pinning(일반 메모리/Pageable), 92만 번 루프, backward_only(method=2), CUDA Graph Separate(graph_mode=1)",
+          "element_ids": [
+            "p74:e582",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p76:e593",
+            "p77:e595",
+            "p79:e621"
+          ],
+          "raw_value": "776.7",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "전체 실행 시간 차이",
+          "value": "11",
+          "value_kind": "scalar",
+          "unit": "초",
+          "condition": "cudaHostRegister vs No Pinning, 92만 번 루프",
+          "element_ids": [
+            "p74:e582",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p76:e594",
+            "p77:e595",
+            "p79:e621"
+          ],
+          "raw_value": "11",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "1회당 차이",
+          "value": "12",
+          "value_kind": "scalar",
+          "unit": "μs",
+          "condition": "92만 번 루프 기준 cudaHostRegister vs No Pinning",
+          "element_ids": [
+            "p74:e582",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p76:e594",
+            "p77:e595",
+            "p79:e621"
+          ],
+          "raw_value": "12",
+          "normalization_status": "normalized"
+        }
+      ],
+      "parameters": [],
+      "observations": [
+        "전체 시간 차이는 787.88초 VS 776.70초로 단 1.4%(약 11초) 차이",
+        "92만 번의 루프 중 1회당 불과 약 12μs 수준의 미세한 차이"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "methods_Q1",
+        "methods_Q3",
+        "methods_Q4",
+        "methods_Q7",
+        "methods_Q9",
+        "evaluation_Q1",
+        "evaluation_Q5",
+        "evaluation_Q7",
+        "limitations_Q6",
+        "conclusion_Q2",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q8",
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7",
+        "methods_Q2",
+        "methods_Q5",
+        "methods_Q6",
+        "methods_Q8",
+        "methods_Q10",
+        "methods_Q11",
+        "methods_Q12",
+        "methods_Q13",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q6",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "evaluation_Q10",
+        "evaluation_Q11",
+        "evaluation_Q12",
+        "evaluation_Q13",
+        "evaluation_Q14",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q7",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q3",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4"
+      ],
+      "supplemental_reason": "cudaHostRegister와 No Pinning 간 Bound/Infer 단계 세부 수치 및 Register가 더 느린 이유에 대한 기술적 해석은 동일 figure 캡션(p74:e582)에 함께 기록되어 있어, 비교 조건·측정값을 함께 보존하기 위해 별도 사실로 분리하지 않고 위 사실에 통합했다.\ncudaHostRegister와 No Pinning 간 전체 실행 시간 차이 및 단계별 차이, 클록 고정 실험 계획, GPU 클록 고정 코드, Throttling 원인 표, 측정 환경 설정 코드 등 현재 페이지의 핵심 실험·설정 내용을 보존한다.\ncudaHostRegister와 No Pinning 간 전체 실행 시간 차이 및 1회당 차이 수치\ncudaHostRegister와 No Pinning의 전체 실행 시간 차이 및 1회당 차이 수치를 figure 캡션에서 보존함.\ncudaHostRegister와 No Pinning의 전체 실행 시간 차이 및 1회당 차이 수치를 figure 캡션에서 추출하여 보존함.",
+      "evidence_limitations": [
+        "현재 페이지는 figure 캡션(p74:e582)에 기록된 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다.",
+        "측정값 787.88s/776.70s는 p74:e582 figure 캡션에 기록되어 있으며, 동일 문서의 다른 실행 결과(p75:e589: 798.78s, p76:e591: 806.54s, p76:e593: 790.64s)는 별도 실행의 값으로 본 사실의 수치와 직접 동일하지 않다."
+      ]
+    },
+    {
+      "id": "E00278",
+      "statement": "Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고(예상대로 DMA 효과), Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다.",
+      "limits": "현재 페이지는 figure 캡션에 기록된 단계별 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다.",
+      "sources": [
+        {
+          "element_id": "p74:e582",
+          "page": 74,
+          "quote": "![image](/image/placeholder)\n그럼 Register 한 게 더 느린 이유는 뭔데 Thought for 24s > 결과를 자세히 보시면 전체 시간 차이는 787.88초 VS 776.70초로 단 1.4%(약 11초) 차이이며, 92만 번의 루프 중 1회당 불과 약 12 $\\mu\\text{s}$ 수준의 미세한 차이입니다. 하지만 *\"이론상 다이렉트 DMA를 쓰는 Pinned Memory( Register )가 왜 일반 메모리( NoPin )보다 11초 더 느리게 측정되었는가?\"*에 대해서는 컴 퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있습니다. 1. 세부 수치 비교: 어디서 차이가 났는가? 항목 cudaHostRegister (787.88s) No Pinning (776.70s) 분석 Bound 단계 (전체의 85%) 658.80s 663.17s ◀ Register가 4.37초 더 빠름! (예상대로 DMA 효과) Infer 단계 (전체의 15%) 127.18s 111.92s ◀ 여기서 Register가 15.26초 더 느림 연산량이 많은 Bound 단계에서는 오히려 Register가 4초 이상 빨랐지만, 데이터 전송 직후 바로 동기화가 일어나는 Infer 단계에서 15초가 역전되었 습니다. 그 이유는 다음과 같습니다:",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e586",
+          "page": 75,
+          "quote": "쿠다 강의 19장의 GPU 클록 고정을 참고했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e587",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\n# 현재 클록 확인 nvidia-smi -q -d CLOCK # 클록 고정 (root 필요) sudo nvidia-smi -pm 1 # Persistence mode sudo nvidia-smi -lgc 1410 # Lock graphics clock",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e588",
+          "page": 75,
+          "quote": "클 록을 2800Mhz로 고정하고 돌린 결과 (기존 HostRegister)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e589",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\neps= eps= eps= eps= 9.0e-03: T= 1.0e-02: T= 1.0e-01: T= 1.0e+00: T= 1 F=39999 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 total elapsed: 798.78s Phase Timing Breakdown (all eps × all data) infer : 128,893s (16.1%) bound : 667.159s 83.5%) certify : 1,644s (0.2%) --- === Real-Time Single-Sample (B=1) Latency Analysis === Evaluated Samples : 100000 Min Latency : 832.10 us Mean Latency : 873.54 us (0.87 ms) Median (P50) : 860.10 us P95 Tail Latency : 971.40 us P99 Tail Latency : 1087.80 us Max Latency : 10943.50 us Jitter (StdDev) : 77.94 us Throughput : 1144.77 samples/sec Pure GPU Execution: 717.09 us (last sample)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:img0:e0",
+          "page": 75,
+          "quote": "GPU 클록과 Throttling",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e1",
+          "page": 75,
+          "quote": "일관된 측정을 위한 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e2",
+          "page": 75,
+          "quote": "클록 상태 확인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e3",
+          "page": 75,
+          "quote": "# 현재 클록 확인\n        nvidia-smi -q -d CLOCK\n\n        # 클록 고정 (root 필요)\n        sudo nvidia-smi -pm 1   # Persistence mode\n        sudo nvidia-smi -lgc 1410  # Lock graphics clock",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e4",
+          "page": 75,
+          "quote": "Throttling 원인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e5",
+          "page": 75,
+          "quote": "| 원인 | 증상 | 해결 |\n| --- | --- | --- |\n| 온도 | 클록 저하 | 냉각 개선 |\n| 전력 | 성능 저하 | 전력 제한 확인 |\n| API | 간헐적 지연 | 백그라운드 작업 확인 |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e6",
+          "page": 75,
+          "quote": "측정 환경 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e7",
+          "page": 75,
+          "quote": "# Persistence mode (초기화 지연 제거)\n        sudo nvidia-smi -pm 1",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p76:e591",
+          "page": 76,
+          "quote": "![image](/image/placeholder)\ntotal elapsed: 806.54s Phase Timing Breakdown (all eps × all data) infer : 132,586s (16.4%) bound : 670.122s (83.1%) certify : 2,077s (0.3%) --- === Real-Time Single-Sample (B=1) Latency Analysis [cudaHostAlloc] === Evaluated Samples : 100000 Min Latency : 832.80 us Mean Latency : 869.34 us (0.87 ms) Median (P50) : 859.80 us P95 Tail Latency : 899.60 us P99 Tail Latency : 1095.90 us Max Latency : 13996.40 us Jitter (StdDev) : 73.27 us Throughput : 1150.30 samples/sec Pure GPU Execution: 705.89 us (last sample) -",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p76:e593",
+          "page": 76,
+          "quote": "![image](/image/placeholder)\neps= 1.0e+00: T= 0 F=40000 ratio=0.000 total elapsed: 790.64s Phase Timing Breakdown (all eps × all data) infer : 119,466s (15.1%) bound : 667.611s (84.4%) certify : 2,004s (0.3%) --- Real-Time Single-Sample (B=1) Latency Analysis [Pageable Memory / NO PINNING] === Evaluated Samples : 100000 Min Latency : 822.10 us Mean Latency : 859.20 us (0.86 ms) Median (P50) : 847.90 us P95 Tail Latency : 899.40 us P99 Tail Latency : 1089.30 us Max Latency : 14400,40 us Jitter (StdDev) : 105.84 us Throughput : 1163.87 samples/sec Pure GPU Execution: 695.42 us (last sample)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p76:e594",
+          "page": 76,
+          "quote": "클 록고정까지 했는데, 이런 결과면 받아들여야겠네 왜 nopin이 더 빠른가?\n⇒ gemini 대답",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p77:e595",
+          "page": 77,
+          "quote": "Worked for 1m >",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p80:img0:e8",
+          "page": 80,
+          "quote": "| 지표 | No-Pin (일반 RAM) | Pinned ( cudaHostRegister ) | 차이 |\n| --- | --- | --- | --- |\n| 최대 지연시간 (Max) | 8.80 ms ~ 11.6 ms ✨ | 1.64 ms 🛡️ | 7배 안정 (1ms 통신 타임아웃 방어) |\n| 지터 (표준편차) | 118.94 μs | 47.28 μs | 60% 감소 |",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p74:e582 원문 'Bound 단계 (전체의 85%) 658.80s 663.17s ◀ Register가 4.37초 더 빠름! (예상대로 DMA 효과) Infer 단계 (전체의 15%) 127.18s 111.92s ◀ 여기서 Register가 15.26초 더 느림'과 진술 내용이 정확히 일치한다. 모든 수치(658.80s, 663.17s, 4.37초, 127.18s, 111.92s, 15.26초)와 '데이터 전송 직후 바로 동기화가 일어나는 Infer 단계에서 15초가 역전' 해석이 원문에 존재한다.",
+      "conditions": [
+        "Bound 단계 비교",
+        "Infer 단계 비교",
+        "cudaHostRegister vs No Pinning",
+        "전체 85% Bound, 전체 15% Infer"
+      ],
+      "measurements": [
+        {
+          "metric": "Bound 단계 실행 시간(cudaHostRegister)",
+          "value": "658.8",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "cudaHostRegister, 전체 85% Bound 단계",
+          "element_ids": [
+            "p74:e582",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p76:e591",
+            "p77:e595"
+          ],
+          "raw_value": "658.8",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "Bound 단계 실행 시간(No Pinning)",
+          "value": "663.17",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "No Pinning, 전체 85% Bound 단계",
+          "element_ids": [
+            "p74:e582",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p76:e593",
+            "p77:e595"
+          ],
+          "raw_value": "663.17",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "Bound 단계 차이",
+          "value": "4.37",
+          "value_kind": "scalar",
+          "unit": "초",
+          "condition": "cudaHostRegister vs No Pinning, Bound 단계",
+          "element_ids": [
+            "p74:e582",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p76:e594",
+            "p77:e595"
+          ],
+          "raw_value": "4.37",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "Infer 단계 실행 시간(cudaHostRegister)",
+          "value": "127.18",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "cudaHostRegister, 전체 15% Infer 단계",
+          "element_ids": [
+            "p74:e582",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p76:e591",
+            "p77:e595"
+          ],
+          "raw_value": "127.18",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "Infer 단계 실행 시간(No Pinning)",
+          "value": "111.92",
+          "value_kind": "scalar",
+          "unit": "s",
+          "condition": "No Pinning, 전체 15% Infer 단계",
+          "element_ids": [
+            "p74:e582",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p76:e593",
+            "p77:e595"
+          ],
+          "raw_value": "111.92",
+          "normalization_status": "normalized"
+        },
+        {
+          "metric": "Infer 단계 차이",
+          "value": "15.26",
+          "value_kind": "scalar",
+          "unit": "초",
+          "condition": "cudaHostRegister vs No Pinning, Infer 단계",
+          "element_ids": [
+            "p74:e582",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p76:e594",
+            "p77:e595"
+          ],
+          "raw_value": "15.26",
+          "normalization_status": "normalized"
+        }
+      ],
+      "parameters": [],
+      "observations": [
+        "Bound 단계: cudaHostRegister 658.80s vs No Pinning 663.17s → Register가 4.37초 더 빠름",
+        "Infer 단계: cudaHostRegister 127.18s vs No Pinning 111.92s → Register가 15.26초 더 느림",
+        "데이터 전송 직후 바로 동기화가 일어나는 Infer 단계에서 15초가 역전됨"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "methods_Q1",
+        "methods_Q4",
+        "methods_Q7",
+        "methods_Q9",
+        "evaluation_Q1",
+        "evaluation_Q5",
+        "evaluation_Q7",
+        "limitations_Q6",
+        "conclusion_Q2",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q8",
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7",
+        "methods_Q2",
+        "methods_Q3",
+        "methods_Q5",
+        "methods_Q6",
+        "methods_Q8",
+        "methods_Q10",
+        "methods_Q11",
+        "methods_Q12",
+        "methods_Q13",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q6",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "evaluation_Q10",
+        "evaluation_Q11",
+        "evaluation_Q12",
+        "evaluation_Q13",
+        "evaluation_Q14",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q7",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q3",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4"
+      ],
+      "supplemental_reason": "Bound/Infer 단계별 세부 수치는 동일 figure 캡션(p74:e582)에 함께 기록되어 있어, 비교 조건·측정값을 함께 보존하기 위해 별도 사실로 분리하지 않고 위 사실에 통합했다.\ncudaHostRegister와 No Pinning 간 전체 실행 시간 차이 및 단계별 차이, 클록 고정 실험 계획, GPU 클록 고정 코드, Throttling 원인 표, 측정 환경 설정 코드 등 현재 페이지의 핵심 실험·설정 내용을 보존한다.\nBound 단계와 Infer 단계별 cudaHostRegister vs No Pinning 실행 시간 비교 및 역전 현상\nBound 단계와 Infer 단계의 cudaHostRegister/No Pinning 단계별 실행 시간 및 역전 현상을 figure 캡션에서 보존함.",
+      "evidence_limitations": [
+        "현재 페이지는 figure 캡션(p74:e582)에 기록된 단계별 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다.",
+        "Bound+Infer 합산(658.80+127.18=785.98s)이 전체 787.88s와 약 1.9s 차이가 있으나, 이는 certify 단계 등 미분해 오버헤드로 추정되며 figure 캡션의 비교 표는 Bound/Infer 두 단계만 제시하고 있다."
+      ]
+    },
+    {
+      "id": "E00279",
+      "statement": "cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해, 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었다.",
+      "limits": "현재 페이지는 figure 캡션에 기록된 원인 제시 문장만 포함하며, 3가지 이유의 구체적 내용은 이 요소만으로는 제시되지 않는다.",
+      "sources": [
+        {
+          "element_id": "p74:e582",
+          "page": 74,
+          "quote": "![image](/image/placeholder)\n그럼 Register 한 게 더 느린 이유는 뭔데 Thought for 24s > 결과를 자세히 보시면 전체 시간 차이는 787.88초 VS 776.70초로 단 1.4%(약 11초) 차이이며, 92만 번의 루프 중 1회당 불과 약 12 $\\mu\\text{s}$ 수준의 미세한 차이입니다. 하지만 *\"이론상 다이렉트 DMA를 쓰는 Pinned Memory( Register )가 왜 일반 메모리( NoPin )보다 11초 더 느리게 측정되었는가?\"*에 대해서는 컴 퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있습니다. 1. 세부 수치 비교: 어디서 차이가 났는가? 항목 cudaHostRegister (787.88s) No Pinning (776.70s) 분석 Bound 단계 (전체의 85%) 658.80s 663.17s ◀ Register가 4.37초 더 빠름! (예상대로 DMA 효과) Infer 단계 (전체의 15%) 127.18s 111.92s ◀ 여기서 Register가 15.26초 더 느림 연산량이 많은 Bound 단계에서는 오히려 Register가 4초 이상 빨랐지만, 데이터 전송 직후 바로 동기화가 일어나는 Infer 단계에서 15초가 역전되었 습니다. 그 이유는 다음과 같습니다:",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e586",
+          "page": 75,
+          "quote": "쿠다 강의 19장의 GPU 클록 고정을 참고했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e587",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\n# 현재 클록 확인 nvidia-smi -q -d CLOCK # 클록 고정 (root 필요) sudo nvidia-smi -pm 1 # Persistence mode sudo nvidia-smi -lgc 1410 # Lock graphics clock",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e588",
+          "page": 75,
+          "quote": "클 록을 2800Mhz로 고정하고 돌린 결과 (기존 HostRegister)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e589",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\neps= eps= eps= eps= 9.0e-03: T= 1.0e-02: T= 1.0e-01: T= 1.0e+00: T= 1 F=39999 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 total elapsed: 798.78s Phase Timing Breakdown (all eps × all data) infer : 128,893s (16.1%) bound : 667.159s 83.5%) certify : 1,644s (0.2%) --- === Real-Time Single-Sample (B=1) Latency Analysis === Evaluated Samples : 100000 Min Latency : 832.10 us Mean Latency : 873.54 us (0.87 ms) Median (P50) : 860.10 us P95 Tail Latency : 971.40 us P99 Tail Latency : 1087.80 us Max Latency : 10943.50 us Jitter (StdDev) : 77.94 us Throughput : 1144.77 samples/sec Pure GPU Execution: 717.09 us (last sample)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:img0:e0",
+          "page": 75,
+          "quote": "GPU 클록과 Throttling",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e1",
+          "page": 75,
+          "quote": "일관된 측정을 위한 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e2",
+          "page": 75,
+          "quote": "클록 상태 확인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e3",
+          "page": 75,
+          "quote": "# 현재 클록 확인\n        nvidia-smi -q -d CLOCK\n\n        # 클록 고정 (root 필요)\n        sudo nvidia-smi -pm 1   # Persistence mode\n        sudo nvidia-smi -lgc 1410  # Lock graphics clock",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e4",
+          "page": 75,
+          "quote": "Throttling 원인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e5",
+          "page": 75,
+          "quote": "| 원인 | 증상 | 해결 |\n| --- | --- | --- |\n| 온도 | 클록 저하 | 냉각 개선 |\n| 전력 | 성능 저하 | 전력 제한 확인 |\n| API | 간헐적 지연 | 백그라운드 작업 확인 |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e6",
+          "page": 75,
+          "quote": "측정 환경 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e7",
+          "page": 75,
+          "quote": "# Persistence mode (초기화 지연 제거)\n        sudo nvidia-smi -pm 1",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p76:e594",
+          "page": 76,
+          "quote": "클 록고정까지 했는데, 이런 결과면 받아들여야겠네 왜 nopin이 더 빠른가?\n⇒ gemini 대답",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p77:e595",
+          "page": 77,
+          "quote": "Worked for 1m >",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p80:img0:e11",
+          "page": 80,
+          "quote": "사용자분의 직관대로 “1KB밖에 안 되는 작은 데이터를 보내면서 매 루프마다 개별 하드웨어 DMA 셋업을 부르는 오버헤드” 때문에 Pinned가 No-Pin보다 총 소요 시간이 더 길게 나왔던 것입니다.",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p74:e582 원문 '컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있습니다'와 진술 내용이 정확히 일치한다. '3가지 기술적 이유가 있다'는 존재 언급이 원문에 있으며, 구체적 이유 내용은 별도 요소(p77:e596 이후)에 기록되어 있다. E00280은 존재 언급만 주장하므로 원문으로 충분히 뒷받침된다.",
+      "conditions": [
+        "cudaHostRegister vs No Pinning 비교",
+        "전체 시간 차이 787.88s vs 776.70s",
+        "1회당 약 12μs 차이"
+      ],
+      "measurements": [],
+      "parameters": [],
+      "observations": [
+        "이론상 다이렉트 DMA를 쓰는 Pinned Memory(Register)가 왜 일반 메모리(NoPin)보다 11초 더 느리게 측정되었는지에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록됨"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "methods_Q4",
+        "methods_Q7",
+        "methods_Q9",
+        "evaluation_Q1",
+        "evaluation_Q5",
+        "evaluation_Q7",
+        "limitations_Q6",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q8",
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7",
+        "methods_Q1",
+        "methods_Q2",
+        "methods_Q3",
+        "methods_Q5",
+        "methods_Q6",
+        "methods_Q8",
+        "methods_Q10",
+        "methods_Q11",
+        "methods_Q12",
+        "methods_Q13",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q6",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "evaluation_Q10",
+        "evaluation_Q11",
+        "evaluation_Q12",
+        "evaluation_Q13",
+        "evaluation_Q14",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q7",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q2",
+        "conclusion_Q3",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4"
+      ],
+      "supplemental_reason": "Register가 더 느린 이유에 대한 3가지 기술적 이유의 구체적 내용은 동일 figure 캡션(p74:e582)에 함께 기록되어 있어, 비교 조건·측정값을 함께 보존하기 위해 별도 사실로 분리하지 않고 위 사실에 통합했다.\ncudaHostRegister와 No Pinning 간 전체 실행 시간 차이 및 단계별 차이, 클록 고정 실험 계획, GPU 클록 고정 코드, Throttling 원인 표, 측정 환경 설정 코드 등 현재 페이지의 핵심 실험·설정 내용을 보존한다.\ncudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대한 3가지 기술적 이유 존재 언급\ncudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대한 3가지 기술적 이유 존재 기록을 보존함.",
+      "evidence_limitations": [
+        "현재 페이지는 figure 캡션(p74:e582)에 기록된 원인 제시 문장만 포함하며, 3가지 이유의 구체적 내용은 이 요소만으로는 제시되지 않는다.",
+        "3가지 기술적 이유의 구체적 내용은 동일 figure 캡션 및 후속 페이지(p77:e596 이후 Gemini 응답 인용 등)에 기록되어 있으나, E00280은 존재 언급만 보존하고 있다."
+      ]
+    },
+    {
+      "id": "E00280",
+      "statement": "추론(Infer) 단계에서 시간이 느려졌으며, 이에 대해 기록자가 '일단 추론에서 좀 시간이 느려지긴 했다..'라고 기록했다.",
+      "limits": "현재 페이지는 heading 텍스트에 기록된 정성적 관찰만 포함하며, 정량 수치나 원인 분석은 이 요소만으로는 제시되지 않는다.",
+      "sources": [
+        {
+          "element_id": "p74:e583",
+          "page": 74,
+          "quote": "일단 추론에서 좀 시간이 느려지긴 했다..",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e586",
+          "page": 75,
+          "quote": "쿠다 강의 19장의 GPU 클록 고정을 참고했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e587",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\n# 현재 클록 확인 nvidia-smi -q -d CLOCK # 클록 고정 (root 필요) sudo nvidia-smi -pm 1 # Persistence mode sudo nvidia-smi -lgc 1410 # Lock graphics clock",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e588",
+          "page": 75,
+          "quote": "클 록을 2800Mhz로 고정하고 돌린 결과 (기존 HostRegister)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e589",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\neps= eps= eps= eps= 9.0e-03: T= 1.0e-02: T= 1.0e-01: T= 1.0e+00: T= 1 F=39999 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 total elapsed: 798.78s Phase Timing Breakdown (all eps × all data) infer : 128,893s (16.1%) bound : 667.159s 83.5%) certify : 1,644s (0.2%) --- === Real-Time Single-Sample (B=1) Latency Analysis === Evaluated Samples : 100000 Min Latency : 832.10 us Mean Latency : 873.54 us (0.87 ms) Median (P50) : 860.10 us P95 Tail Latency : 971.40 us P99 Tail Latency : 1087.80 us Max Latency : 10943.50 us Jitter (StdDev) : 77.94 us Throughput : 1144.77 samples/sec Pure GPU Execution: 717.09 us (last sample)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:img0:e0",
+          "page": 75,
+          "quote": "GPU 클록과 Throttling",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e1",
+          "page": 75,
+          "quote": "일관된 측정을 위한 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e2",
+          "page": 75,
+          "quote": "클록 상태 확인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e3",
+          "page": 75,
+          "quote": "# 현재 클록 확인\n        nvidia-smi -q -d CLOCK\n\n        # 클록 고정 (root 필요)\n        sudo nvidia-smi -pm 1   # Persistence mode\n        sudo nvidia-smi -lgc 1410  # Lock graphics clock",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e4",
+          "page": 75,
+          "quote": "Throttling 원인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e5",
+          "page": 75,
+          "quote": "| 원인 | 증상 | 해결 |\n| --- | --- | --- |\n| 온도 | 클록 저하 | 냉각 개선 |\n| 전력 | 성능 저하 | 전력 제한 확인 |\n| API | 간헐적 지연 | 백그라운드 작업 확인 |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e6",
+          "page": 75,
+          "quote": "측정 환경 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e7",
+          "page": 75,
+          "quote": "# Persistence mode (초기화 지연 제거)\n        sudo nvidia-smi -pm 1",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p76:e592",
+          "page": 76,
+          "quote": "n opin 결과",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p77:e595",
+          "page": 77,
+          "quote": "Worked for 1m >",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p80:img0:e2",
+          "page": 80,
+          "quote": "여기에 infer 단계에서 40,000번 동안 CPU 스레드가 cudaStreamSynchronize 로 대기하고 깨어나는 과정에서의 미세 지연과 드라이버 동기화 비용이 맞물리면서, Pinned 쪽이 총 루프 시간에서 약 13초 정도 느려지는 결과가 나온 것입니다.",
+          "origin": "pdf_image_gap_ocr"
+        }
+      ],
+      "kind": "result",
+      "claim_status": "observed",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p74:e583 heading1에 '일단 추론에서 좀 시간이 느려지긴 했다..'가 그대로 기록되어 있어 기록자의 정성적 관찰로서 직접 뒷받침됨. p74:e582 figure 캡션에 Infer 단계 Register 127.18s vs No Pinning 111.92s로 Register가 15.26초 더 느렸다는 정량 맥락이 함께 있으나, 본 주장은 관찰 기록 문장만 대상으로 함.",
+      "conditions": [
+        "추론(Infer) 단계 시간 느려짐 관측"
+      ],
+      "measurements": [],
+      "parameters": [],
+      "observations": [
+        "일단 추론에서 좀 시간이 느려지긴 했다.."
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "methods_Q1",
+        "methods_Q4",
+        "methods_Q7",
+        "methods_Q9",
+        "evaluation_Q1",
+        "evaluation_Q5",
+        "evaluation_Q7",
+        "limitations_Q6",
+        "conclusion_Q2",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q8",
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7",
+        "methods_Q2",
+        "methods_Q3",
+        "methods_Q5",
+        "methods_Q6",
+        "methods_Q8",
+        "methods_Q10",
+        "methods_Q11",
+        "methods_Q12",
+        "methods_Q13",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q6",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "evaluation_Q10",
+        "evaluation_Q11",
+        "evaluation_Q12",
+        "evaluation_Q13",
+        "evaluation_Q14",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q7",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q3",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4"
+      ],
+      "supplemental_reason": "추론 단계 시간 느려짐에 대한 정성적 관찰은 heading(p74:e583)에 기록되어 있으며, 관련 정량 수치와 원인 해석은 동일 figure 캡션(p74:e582)에 함께 기록되어 있어 비교 조건·측정값을 함께 보존하기 위해 별도 사실로 분리하지 않고 위 사실들에 통합했다.\ncudaHostRegister와 No Pinning 간 전체 실행 시간 차이 및 단계별 차이, 클록 고정 실험 계획, GPU 클록 고정 코드, Throttling 원인 표, 측정 환경 설정 코드 등 현재 페이지의 핵심 실험·설정 내용을 보존한다.\n추론(Infer) 단계에서 시간이 느려졌다는 정성적 관찰 기록\nInfer 단계 시간 느려짐에 대한 정성적 관찰 기록을 보존함.",
+      "evidence_limitations": [
+        "정성적 관찰 기록만 포함하며, 정량 수치나 원인 분석은 이 요소만으로는 제시되지 않음",
+        "Infer 단계 시간 느려짐에 대한 정량적 맥락(전체 127.18s vs 111.92s, 15.26초 차이)은 p74:e582에 함께 기록되어 있으나, 본 주장은 기록자의 정성적 관찰 문장 자체만 다룸"
+      ]
+    },
+    {
+      "id": "E00281",
+      "statement": "GPU 클록을 고정하고 다시 실험해보기로 했으며, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했다.",
+      "limits": "현재 페이지는 figure 캡션에 기록된 실험 재시도 방향과 코드 구조만 포함하며, 실제 클록 고정 후 측정 결과는 이 요소만으로는 제시되지 않는다.",
+      "sources": [
+        {
+          "element_id": "p74:e584",
+          "page": 74,
+          "quote": "그 래서 다시 클록을 고정하고 해보자",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p74:e585",
+          "page": 74,
+          "quote": "![image](/image/placeholder)\n// GPU 클록 자동 잠금 & 자동 해제 구조체 (RAII) struct ScopedGpuClockLock { bool locked = false; }; ScopedGpuClockLock(int clock_mhz = 2475) { char cmd[128]; snprintf(cmd, sizeof(cmd), \"nvidia-smi -1gc %d,%d > nul 2>&1\", clock_mhz, clock_mhz); if (std::system(cmd) -- 0) { locked = true; std::cout << \"[GPU Clock] Successfully locked to HE << clock_mhz << \" MHz (Admin enabled).\" << std::endl; } else { std::cerr << \"\\n[GPU Clock ERROR] Failed to lock clock to 원 << clock_mhz << : MHz!\" << std::endl; std::cerr << \"[GPU Clock ERROR] Administrator privileges are required to change GPU clocks.\" << std::endl; std::cerr << \"[GPU Clock ERROR] Terminating program as requested.\\n\" << std::endl; exit(1); } } ~ScopedGpuClockLock() { if (locked) { std::system(\"nvidia-smi -rgc > nul 2>&1\"); std::cout << \"[GPU Clock] Reset to default dynamic boost.\" << std::endl; } }",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e586",
+          "page": 75,
+          "quote": "쿠다 강의 19장의 GPU 클록 고정을 참고했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e587",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\n# 현재 클록 확인 nvidia-smi -q -d CLOCK # 클록 고정 (root 필요) sudo nvidia-smi -pm 1 # Persistence mode sudo nvidia-smi -lgc 1410 # Lock graphics clock",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e588",
+          "page": 75,
+          "quote": "클 록을 2800Mhz로 고정하고 돌린 결과 (기존 HostRegister)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e589",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\neps= eps= eps= eps= 9.0e-03: T= 1.0e-02: T= 1.0e-01: T= 1.0e+00: T= 1 F=39999 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 total elapsed: 798.78s Phase Timing Breakdown (all eps × all data) infer : 128,893s (16.1%) bound : 667.159s 83.5%) certify : 1,644s (0.2%) --- === Real-Time Single-Sample (B=1) Latency Analysis === Evaluated Samples : 100000 Min Latency : 832.10 us Mean Latency : 873.54 us (0.87 ms) Median (P50) : 860.10 us P95 Tail Latency : 971.40 us P99 Tail Latency : 1087.80 us Max Latency : 10943.50 us Jitter (StdDev) : 77.94 us Throughput : 1144.77 samples/sec Pure GPU Execution: 717.09 us (last sample)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:img0:e0",
+          "page": 75,
+          "quote": "GPU 클록과 Throttling",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e1",
+          "page": 75,
+          "quote": "일관된 측정을 위한 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e2",
+          "page": 75,
+          "quote": "클록 상태 확인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e3",
+          "page": 75,
+          "quote": "# 현재 클록 확인\n        nvidia-smi -q -d CLOCK\n\n        # 클록 고정 (root 필요)\n        sudo nvidia-smi -pm 1   # Persistence mode\n        sudo nvidia-smi -lgc 1410  # Lock graphics clock",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e4",
+          "page": 75,
+          "quote": "Throttling 원인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e5",
+          "page": 75,
+          "quote": "| 원인 | 증상 | 해결 |\n| --- | --- | --- |\n| 온도 | 클록 저하 | 냉각 개선 |\n| 전력 | 성능 저하 | 전력 제한 확인 |\n| API | 간헐적 지연 | 백그라운드 작업 확인 |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e6",
+          "page": 75,
+          "quote": "측정 환경 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e7",
+          "page": 75,
+          "quote": "# Persistence mode (초기화 지연 제거)\n        sudo nvidia-smi -pm 1",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p77:e595",
+          "page": 77,
+          "quote": "Worked for 1m >",
+          "origin": "standard_parse"
+        }
+      ],
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p74:e584 heading1 '그래서 다시 클록을 고정하고 해보자'와 p74:e585 figure 캡션의 ScopedGpuClockLock 구조체 코드(RAII 방식 자동 잠금·해제)가 함께 기록되어 있어 실험 계획과 코드 구조가 직접 뒷받침됨.",
+      "conditions": [
+        "GPU 클록 고정 후 재실험 계획",
+        "ScopedGpuClockLock 구조체 작성",
+        "RAII 방식 자동 잠금·해제"
+      ],
+      "measurements": [],
+      "parameters": [
+        {
+          "name": "기본 클록 목표값",
+          "value": "2475 MHz",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p74:e585",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p77:e595"
+          ]
+        },
+        {
+          "name": "클록 고정 명령어",
+          "value": "nvidia-smi -1gc <clock_mhz>,<clock_mhz>",
+          "value_kind": "text",
+          "element_ids": [
+            "p74:e585",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p77:e595"
+          ]
+        },
+        {
+          "name": "클록 해제 명령어",
+          "value": "nvidia-smi -rgc",
+          "value_kind": "text",
+          "element_ids": [
+            "p74:e585",
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p77:e595"
+          ]
+        }
+      ],
+      "observations": [
+        "그래서 다시 클록을 고정하고 해보자"
+      ],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "methods_Q2",
+        "methods_Q6",
+        "methods_Q11",
+        "methods_Q12",
+        "evaluation_Q10",
+        "limitations_Q7",
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7",
+        "methods_Q1",
+        "methods_Q3",
+        "methods_Q4",
+        "methods_Q5",
+        "methods_Q7",
+        "methods_Q8",
+        "methods_Q9",
+        "methods_Q10",
+        "methods_Q13",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q1",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q5",
+        "evaluation_Q6",
+        "evaluation_Q7",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "evaluation_Q11",
+        "evaluation_Q12",
+        "evaluation_Q13",
+        "evaluation_Q14",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q6",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q2",
+        "conclusion_Q3",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "conclusion_Q8",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4"
+      ],
+      "supplemental_reason": "GPU 클록 고정 재시도 방향과 ScopedGpuClockLock 구조체 코드는 동일 페이지(p74)의 heading(p74:e584)과 figure 캡션(p74:e585)에 함께 기록되어 있어, 실험 조건·방법을 함께 보존하기 위해 별도 사실로 분리하지 않고 위 사실에 통합했다.\ncudaHostRegister와 No Pinning 간 전체 실행 시간 차이 및 단계별 차이, 클록 고정 실험 계획, GPU 클록 고정 코드, Throttling 원인 표, 측정 환경 설정 코드 등 현재 페이지의 핵심 실험·설정 내용을 보존한다.\nGPU 클록 고정 재실험 계획과 ScopedGpuClockLock 구조체 작성 사실을 보존함.",
+      "evidence_limitations": [
+        "실험 재시도 방향과 ScopedGpuClockLock 구조체 코드만 포함하며, 실제 클록 고정 후 측정 결과는 이 요소만으로는 제시되지 않음",
+        "ScopedGpuClockLock 기본 생성자의 기본 클록 목표값은 2475 MHz이나, 실제 실험에서는 2800 MHz가 사용되었음(p75:e588). 이는 구조체 파라미터 전달 방식의 차이로 모순은 아님"
+      ]
+    },
+    {
+      "id": "E00282",
+      "statement": "클록을 2800Mhz로 고정하고 돌린 결과(기존 HostRegister)",
+      "limits": "현재 페이지는 클록 고정 실험 재시도 사실과 조건만 포함하며, 실제 측정 결과 수치는 이 요소만으로는 제시되지 않는다.",
+      "sources": [
+        {
+          "element_id": "p75:e586",
+          "page": 75,
+          "quote": "쿠다 강의 19장의 GPU 클록 고정을 참고했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e587",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\n# 현재 클록 확인 nvidia-smi -q -d CLOCK # 클록 고정 (root 필요) sudo nvidia-smi -pm 1 # Persistence mode sudo nvidia-smi -lgc 1410 # Lock graphics clock",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e588",
+          "page": 75,
+          "quote": "클 록을 2800Mhz로 고정하고 돌린 결과 (기존 HostRegister)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e589",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\neps= eps= eps= eps= 9.0e-03: T= 1.0e-02: T= 1.0e-01: T= 1.0e+00: T= 1 F=39999 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 total elapsed: 798.78s Phase Timing Breakdown (all eps × all data) infer : 128,893s (16.1%) bound : 667.159s 83.5%) certify : 1,644s (0.2%) --- === Real-Time Single-Sample (B=1) Latency Analysis === Evaluated Samples : 100000 Min Latency : 832.10 us Mean Latency : 873.54 us (0.87 ms) Median (P50) : 860.10 us P95 Tail Latency : 971.40 us P99 Tail Latency : 1087.80 us Max Latency : 10943.50 us Jitter (StdDev) : 77.94 us Throughput : 1144.77 samples/sec Pure GPU Execution: 717.09 us (last sample)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:img0:e0",
+          "page": 75,
+          "quote": "GPU 클록과 Throttling",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e1",
+          "page": 75,
+          "quote": "일관된 측정을 위한 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e2",
+          "page": 75,
+          "quote": "클록 상태 확인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e3",
+          "page": 75,
+          "quote": "# 현재 클록 확인\n        nvidia-smi -q -d CLOCK\n\n        # 클록 고정 (root 필요)\n        sudo nvidia-smi -pm 1   # Persistence mode\n        sudo nvidia-smi -lgc 1410  # Lock graphics clock",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e4",
+          "page": 75,
+          "quote": "Throttling 원인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e5",
+          "page": 75,
+          "quote": "| 원인 | 증상 | 해결 |\n| --- | --- | --- |\n| 온도 | 클록 저하 | 냉각 개선 |\n| 전력 | 성능 저하 | 전력 제한 확인 |\n| API | 간헐적 지연 | 백그라운드 작업 확인 |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e6",
+          "page": 75,
+          "quote": "측정 환경 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e7",
+          "page": 75,
+          "quote": "# Persistence mode (초기화 지연 제거)\n        sudo nvidia-smi -pm 1",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p77:e595",
+          "page": 77,
+          "quote": "Worked for 1m >",
+          "origin": "standard_parse"
+        }
+      ],
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p75:e588 paragraph에 '클 록을 2800Mhz로 고정하고 돌린 결과 (기존 HostRegister)'가 그대로 기록되어 있어 실험 조건과 방식(HostRegister 사용)이 직접 뒷받침됨.",
+      "conditions": [
+        "클록 2800Mhz 고정",
+        "기존 HostRegister 방식 사용"
+      ],
+      "measurements": [],
+      "parameters": [
+        {
+          "name": "고정 클록",
+          "value": "2800 MHz",
+          "value_kind": "scalar",
+          "element_ids": [
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p77:e595"
+          ]
+        }
+      ],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7",
+        "methods_Q1",
+        "methods_Q2",
+        "methods_Q3",
+        "methods_Q4",
+        "methods_Q5",
+        "methods_Q6",
+        "methods_Q7",
+        "methods_Q8",
+        "methods_Q9",
+        "methods_Q10",
+        "methods_Q11",
+        "methods_Q12",
+        "methods_Q13",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q1",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q5",
+        "evaluation_Q6",
+        "evaluation_Q7",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "evaluation_Q10",
+        "evaluation_Q11",
+        "evaluation_Q12",
+        "evaluation_Q13",
+        "evaluation_Q14",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q6",
+        "limitations_Q7",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q2",
+        "conclusion_Q3",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "conclusion_Q8",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4"
+      ],
+      "supplemental_reason": "cudaHostRegister와 No Pinning 간 전체 실행 시간 차이 및 단계별 차이, 클록 고정 실험 계획, GPU 클록 고정 코드, Throttling 원인 표, 측정 환경 설정 코드 등 현재 페이지의 핵심 실험·설정 내용을 보존한다.\n클록 2800MHz 고정 실험 조건과 HostRegister 방식 사용 사실을 보존함.",
+      "evidence_limitations": [
+        "클록 고정 실험 재시도 사실과 조건만 포함하며, 실제 측정 결과 수치는 이 요소만으로는 제시되지 않음",
+        "실제 측정 결과(total elapsed 798.78s, infer 128,893s 등)는 p75:e589에 별도로 기록되어 있음"
+      ]
+    },
+    {
+      "id": "E00283",
+      "statement": "cuda 강의 19장의 GPU 클록 고정을 참고했다.",
+      "limits": "현재 페이지는 참고 출처만 포함하며, 실제 적용 결과나 측정 수치는 이 요소만으로는 제시되지 않는다.",
+      "sources": [
+        {
+          "element_id": "p75:e586",
+          "page": 75,
+          "quote": "쿠다 강의 19장의 GPU 클록 고정을 참고했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e587",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\n# 현재 클록 확인 nvidia-smi -q -d CLOCK # 클록 고정 (root 필요) sudo nvidia-smi -pm 1 # Persistence mode sudo nvidia-smi -lgc 1410 # Lock graphics clock",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e588",
+          "page": 75,
+          "quote": "클 록을 2800Mhz로 고정하고 돌린 결과 (기존 HostRegister)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e589",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\neps= eps= eps= eps= 9.0e-03: T= 1.0e-02: T= 1.0e-01: T= 1.0e+00: T= 1 F=39999 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 total elapsed: 798.78s Phase Timing Breakdown (all eps × all data) infer : 128,893s (16.1%) bound : 667.159s 83.5%) certify : 1,644s (0.2%) --- === Real-Time Single-Sample (B=1) Latency Analysis === Evaluated Samples : 100000 Min Latency : 832.10 us Mean Latency : 873.54 us (0.87 ms) Median (P50) : 860.10 us P95 Tail Latency : 971.40 us P99 Tail Latency : 1087.80 us Max Latency : 10943.50 us Jitter (StdDev) : 77.94 us Throughput : 1144.77 samples/sec Pure GPU Execution: 717.09 us (last sample)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:img0:e0",
+          "page": 75,
+          "quote": "GPU 클록과 Throttling",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e1",
+          "page": 75,
+          "quote": "일관된 측정을 위한 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e2",
+          "page": 75,
+          "quote": "클록 상태 확인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e3",
+          "page": 75,
+          "quote": "# 현재 클록 확인\n        nvidia-smi -q -d CLOCK\n\n        # 클록 고정 (root 필요)\n        sudo nvidia-smi -pm 1   # Persistence mode\n        sudo nvidia-smi -lgc 1410  # Lock graphics clock",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e4",
+          "page": 75,
+          "quote": "Throttling 원인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e5",
+          "page": 75,
+          "quote": "| 원인 | 증상 | 해결 |\n| --- | --- | --- |\n| 온도 | 클록 저하 | 냉각 개선 |\n| 전력 | 성능 저하 | 전력 제한 확인 |\n| API | 간헐적 지연 | 백그라운드 작업 확인 |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e6",
+          "page": 75,
+          "quote": "측정 환경 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e7",
+          "page": 75,
+          "quote": "# Persistence mode (초기화 지연 제거)\n        sudo nvidia-smi -pm 1",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p77:e595",
+          "page": 77,
+          "quote": "Worked for 1m >",
+          "origin": "standard_parse"
+        }
+      ],
+      "kind": "setup",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p75:e586 paragraph에 '쿠다 강의 19장의 GPU 클록 고정을 참고했다.'가 그대로 기록되어 있어 참고 출처가 직접 뒷받침됨.",
+      "conditions": [
+        "CUDA 강의 19장 참고",
+        "GPU 클록 고정 방법 참고"
+      ],
+      "measurements": [],
+      "parameters": [],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7",
+        "methods_Q1",
+        "methods_Q2",
+        "methods_Q3",
+        "methods_Q4",
+        "methods_Q5",
+        "methods_Q6",
+        "methods_Q7",
+        "methods_Q8",
+        "methods_Q9",
+        "methods_Q10",
+        "methods_Q11",
+        "methods_Q12",
+        "methods_Q13",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q1",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q5",
+        "evaluation_Q6",
+        "evaluation_Q7",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "evaluation_Q10",
+        "evaluation_Q11",
+        "evaluation_Q12",
+        "evaluation_Q13",
+        "evaluation_Q14",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q6",
+        "limitations_Q7",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q2",
+        "conclusion_Q3",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "conclusion_Q8",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4"
+      ],
+      "supplemental_reason": "cudaHostRegister와 No Pinning 간 전체 실행 시간 차이 및 단계별 차이, 클록 고정 실험 계획, GPU 클록 고정 코드, Throttling 원인 표, 측정 환경 설정 코드 등 현재 페이지의 핵심 실험·설정 내용을 보존한다.\nGPU 클록 고정 참고 출처(CUDA 강의 19장) 기록을 보존함.",
+      "evidence_limitations": [
+        "참고 출처만 포함하며, 실제 적용 결과나 측정 수치는 이 요소만으로는 제시되지 않음"
+      ]
+    },
+    {
+      "id": "E00284",
+      "statement": "현재 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행한다.",
+      "limits": "현재 페이지는 figure 캡션에 기록된 명령어 예시만 포함하며, 실제 실행 결과나 고정 후 측정 수치는 이 요소만으로는 제시되지 않는다.",
+      "sources": [
+        {
+          "element_id": "p75:e586",
+          "page": 75,
+          "quote": "쿠다 강의 19장의 GPU 클록 고정을 참고했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e587",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\n# 현재 클록 확인 nvidia-smi -q -d CLOCK # 클록 고정 (root 필요) sudo nvidia-smi -pm 1 # Persistence mode sudo nvidia-smi -lgc 1410 # Lock graphics clock",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e588",
+          "page": 75,
+          "quote": "클 록을 2800Mhz로 고정하고 돌린 결과 (기존 HostRegister)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e589",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\neps= eps= eps= eps= 9.0e-03: T= 1.0e-02: T= 1.0e-01: T= 1.0e+00: T= 1 F=39999 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 total elapsed: 798.78s Phase Timing Breakdown (all eps × all data) infer : 128,893s (16.1%) bound : 667.159s 83.5%) certify : 1,644s (0.2%) --- === Real-Time Single-Sample (B=1) Latency Analysis === Evaluated Samples : 100000 Min Latency : 832.10 us Mean Latency : 873.54 us (0.87 ms) Median (P50) : 860.10 us P95 Tail Latency : 971.40 us P99 Tail Latency : 1087.80 us Max Latency : 10943.50 us Jitter (StdDev) : 77.94 us Throughput : 1144.77 samples/sec Pure GPU Execution: 717.09 us (last sample)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:img0:e0",
+          "page": 75,
+          "quote": "GPU 클록과 Throttling",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e1",
+          "page": 75,
+          "quote": "일관된 측정을 위한 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e2",
+          "page": 75,
+          "quote": "클록 상태 확인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e3",
+          "page": 75,
+          "quote": "# 현재 클록 확인\n        nvidia-smi -q -d CLOCK\n\n        # 클록 고정 (root 필요)\n        sudo nvidia-smi -pm 1   # Persistence mode\n        sudo nvidia-smi -lgc 1410  # Lock graphics clock",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e4",
+          "page": 75,
+          "quote": "Throttling 원인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e5",
+          "page": 75,
+          "quote": "| 원인 | 증상 | 해결 |\n| --- | --- | --- |\n| 온도 | 클록 저하 | 냉각 개선 |\n| 전력 | 성능 저하 | 전력 제한 확인 |\n| API | 간헐적 지연 | 백그라운드 작업 확인 |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e6",
+          "page": 75,
+          "quote": "측정 환경 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e7",
+          "page": 75,
+          "quote": "# Persistence mode (초기화 지연 제거)\n        sudo nvidia-smi -pm 1",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p77:e595",
+          "page": 77,
+          "quote": "Worked for 1m >",
+          "origin": "standard_parse"
+        }
+      ],
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p75:e587 figure와 p75:img0:e3 code에 'nvidia-smi -q -d CLOCK', 'sudo nvidia-smi -pm 1', 'sudo nvidia-smi -lgc 1410' 명령어가 그대로 기록되어 있어 직접 뒷받침됨.",
+      "conditions": [
+        "현재 클록 확인 명령어",
+        "클록 고정 명령어",
+        "Persistence mode 활성화",
+        "Graphics clock 잠금"
+      ],
+      "measurements": [],
+      "parameters": [
+        {
+          "name": "클록 확인 명령어",
+          "value": "nvidia-smi -q -d CLOCK",
+          "value_kind": "text",
+          "element_ids": [
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p77:e595"
+          ]
+        },
+        {
+          "name": "Persistence mode 활성화 명령어",
+          "value": "sudo nvidia-smi -pm 1",
+          "value_kind": "text",
+          "element_ids": [
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p77:e595"
+          ]
+        },
+        {
+          "name": "Graphics clock 잠금 명령어",
+          "value": "sudo nvidia-smi -lgc 1410",
+          "value_kind": "text",
+          "element_ids": [
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p77:e595"
+          ]
+        }
+      ],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7",
+        "methods_Q1",
+        "methods_Q2",
+        "methods_Q3",
+        "methods_Q4",
+        "methods_Q5",
+        "methods_Q6",
+        "methods_Q7",
+        "methods_Q8",
+        "methods_Q9",
+        "methods_Q10",
+        "methods_Q11",
+        "methods_Q12",
+        "methods_Q13",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q1",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q5",
+        "evaluation_Q6",
+        "evaluation_Q7",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "evaluation_Q10",
+        "evaluation_Q11",
+        "evaluation_Q12",
+        "evaluation_Q13",
+        "evaluation_Q14",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q6",
+        "limitations_Q7",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q2",
+        "conclusion_Q3",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "conclusion_Q8",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4"
+      ],
+      "supplemental_reason": "cudaHostRegister와 No Pinning 간 전체 실행 시간 차이 및 단계별 차이, 클록 고정 실험 계획, GPU 클록 고정 코드, Throttling 원인 표, 측정 환경 설정 코드 등 현재 페이지의 핵심 실험·설정 내용을 보존한다.\n클록 확인·고정 명령어와 Persistence mode 설정 명령어 기록을 보존함.",
+      "evidence_limitations": [
+        "figure 캡션에 기록된 명령어 예시만 포함하며, 실제 실행 결과나 고정 후 측정 수치는 이 요소만으로는 제시되지 않음",
+        "ScopedGpuClockLock 코드(p74:e585)는 'nvidia-smi -1gc'를 사용하나, 본 주장은 figure 캡션(p75:e587, p75:img0:e3)의 'nvidia-smi -lgc 1410'을 다룸. -1gc(그래픽+메모리 클록 동시 설정)와 -lgc(그래픽 클록만 잠금)는 다른 명령어로, 서로 다른 접근 방식임"
+      ]
+    },
+    {
+      "id": "E00286",
+      "statement": "측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용한다.",
+      "limits": "현재 페이지는 figure 캡션에 기록된 측정 환경 설정 코드만 포함하며, 실제 적용 결과나 측정 수치는 이 요소만으로는 제시되지 않는다.",
+      "sources": [
+        {
+          "element_id": "p75:e586",
+          "page": 75,
+          "quote": "쿠다 강의 19장의 GPU 클록 고정을 참고했다.",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e587",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\n# 현재 클록 확인 nvidia-smi -q -d CLOCK # 클록 고정 (root 필요) sudo nvidia-smi -pm 1 # Persistence mode sudo nvidia-smi -lgc 1410 # Lock graphics clock",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e588",
+          "page": 75,
+          "quote": "클 록을 2800Mhz로 고정하고 돌린 결과 (기존 HostRegister)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:e589",
+          "page": 75,
+          "quote": "![image](/image/placeholder)\neps= eps= eps= eps= 9.0e-03: T= 1.0e-02: T= 1.0e-01: T= 1.0e+00: T= 1 F=39999 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 0 F=40000 ratio=0.000 total elapsed: 798.78s Phase Timing Breakdown (all eps × all data) infer : 128,893s (16.1%) bound : 667.159s 83.5%) certify : 1,644s (0.2%) --- === Real-Time Single-Sample (B=1) Latency Analysis === Evaluated Samples : 100000 Min Latency : 832.10 us Mean Latency : 873.54 us (0.87 ms) Median (P50) : 860.10 us P95 Tail Latency : 971.40 us P99 Tail Latency : 1087.80 us Max Latency : 10943.50 us Jitter (StdDev) : 77.94 us Throughput : 1144.77 samples/sec Pure GPU Execution: 717.09 us (last sample)",
+          "origin": "standard_parse"
+        },
+        {
+          "element_id": "p75:img0:e0",
+          "page": 75,
+          "quote": "GPU 클록과 Throttling",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e1",
+          "page": 75,
+          "quote": "일관된 측정을 위한 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e2",
+          "page": 75,
+          "quote": "클록 상태 확인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e3",
+          "page": 75,
+          "quote": "# 현재 클록 확인\n        nvidia-smi -q -d CLOCK\n\n        # 클록 고정 (root 필요)\n        sudo nvidia-smi -pm 1   # Persistence mode\n        sudo nvidia-smi -lgc 1410  # Lock graphics clock",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e4",
+          "page": 75,
+          "quote": "Throttling 원인",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e5",
+          "page": 75,
+          "quote": "| 원인 | 증상 | 해결 |\n| --- | --- | --- |\n| 온도 | 클록 저하 | 냉각 개선 |\n| 전력 | 성능 저하 | 전력 제한 확인 |\n| API | 간헐적 지연 | 백그라운드 작업 확인 |",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e6",
+          "page": 75,
+          "quote": "측정 환경 설정",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p75:img0:e7",
+          "page": 75,
+          "quote": "# Persistence mode (초기화 지연 제거)\n        sudo nvidia-smi -pm 1",
+          "origin": "pdf_image_gap_ocr"
+        },
+        {
+          "element_id": "p77:e595",
+          "page": 77,
+          "quote": "Worked for 1m >",
+          "origin": "standard_parse"
+        }
+      ],
+      "kind": "method",
+      "claim_status": "documented_method",
+      "source_origin": "research_note",
+      "support": "supported",
+      "support_note": "p75:e587 figure의 'sudo nvidia-smi -pm 1 # Persistence mode'와 p75:img0:e7 code의 '# Persistence mode (초기화 지연 제거)\n        sudo nvidia-smi -pm 1'이 함께 기록되어 있어 명령어와 목적(초기화 지연 제거)이 직접 뒷받침됨.",
+      "conditions": [
+        "Persistence mode 설정",
+        "초기화 지연 제거 목적",
+        "sudo nvidia-smi -pm 1 사용"
+      ],
+      "measurements": [],
+      "parameters": [
+        {
+          "name": "Persistence mode 활성화 명령어",
+          "value": "sudo nvidia-smi -pm 1",
+          "value_kind": "text",
+          "element_ids": [
+            "p75:e586",
+            "p75:e587",
+            "p75:e588",
+            "p75:e589",
+            "p75:img0:e0",
+            "p75:img0:e1",
+            "p75:img0:e2",
+            "p75:img0:e3",
+            "p75:img0:e4",
+            "p75:img0:e5",
+            "p75:img0:e6",
+            "p75:img0:e7",
+            "p77:e595"
+          ]
+        }
+      ],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "research_fact",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "introduction_Q1",
+        "introduction_Q2",
+        "introduction_Q3",
+        "introduction_Q4",
+        "introduction_Q5",
+        "introduction_Q6",
+        "introduction_Q7",
+        "methods_Q1",
+        "methods_Q2",
+        "methods_Q3",
+        "methods_Q4",
+        "methods_Q5",
+        "methods_Q6",
+        "methods_Q7",
+        "methods_Q8",
+        "methods_Q9",
+        "methods_Q10",
+        "methods_Q11",
+        "methods_Q12",
+        "methods_Q13",
+        "methods_Q14",
+        "methods_Q15",
+        "methods_Q16",
+        "evaluation_Q1",
+        "evaluation_Q2",
+        "evaluation_Q3",
+        "evaluation_Q4",
+        "evaluation_Q5",
+        "evaluation_Q6",
+        "evaluation_Q7",
+        "evaluation_Q8",
+        "evaluation_Q9",
+        "evaluation_Q10",
+        "evaluation_Q11",
+        "evaluation_Q12",
+        "evaluation_Q13",
+        "evaluation_Q14",
+        "limitations_Q1",
+        "limitations_Q2",
+        "limitations_Q3",
+        "limitations_Q4",
+        "limitations_Q5",
+        "limitations_Q6",
+        "limitations_Q7",
+        "limitations_Q8",
+        "limitations_Q9",
+        "conclusion_Q1",
+        "conclusion_Q2",
+        "conclusion_Q3",
+        "conclusion_Q4",
+        "conclusion_Q5",
+        "conclusion_Q6",
+        "conclusion_Q7",
+        "conclusion_Q8",
+        "related_work_Q1",
+        "related_work_Q2",
+        "related_work_Q3",
+        "related_work_Q4"
+      ],
+      "supplemental_reason": "cudaHostRegister와 No Pinning 간 전체 실행 시간 차이 및 단계별 차이, 클록 고정 실험 계획, GPU 클록 고정 코드, Throttling 원인 표, 측정 환경 설정 코드 등 현재 페이지의 핵심 실험·설정 내용을 보존한다.\nPersistence mode 설정을 통한 초기화 지연 제거 측정 환경 설정 기록을 보존함.",
+      "evidence_limitations": [
+        "figure 캡션에 기록된 측정 환경 설정 코드만 포함하며, 실제 적용 결과나 측정 수치는 이 요소만으로는 제시되지 않음"
+      ]
+    },
+    {
+      "id": "U209b56cf1c8267aea36d",
+      "statement": "사용자 제공 설명: 현재 cpu는 CROWN 검증에 대해 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황인데, 실시간 환경에서의 대규모 연산을 CUDA로 구현, 최적화함으로써 네트워크 환경을 따라잡을 수 있는가? 그걸 보는거지 , recheck 해도 안나올거야, 원문에는 없어 내 말을 들어",
+      "limits": "사용자가 이 질문에 한해 현재 정보로 진행하도록 임시 승인한 설명이다. PDF 대조·독립 검증 완료를 뜻하지 않는다. 설명 밖의 세부 기준·수치·실험·입증된 원인을 만들지 않는다.\n문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다.",
+      "sources": [
+        {
+          "element_id": "user:209b56cf1c8267aea36d",
+          "page": 0,
+          "origin": "user_addendum",
+          "quote": "현재 cpu는 CROWN 검증에 대해 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황인데, 실시간 환경에서의 대규모 연산을 CUDA로 구현, 최적화함으로써 네트워크 환경을 따라잡을 수 있는가? 그걸 보는거지 , recheck 해도 안나올거야, 원문에는 없어 내 말을 들어"
+        }
+      ],
+      "kind": "setup",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "support": "user_accepted",
+      "support_note": "원문 검증과 별도로 기록한 사용자 임시 승인",
+      "conditions": [],
+      "measurements": [],
+      "parameters": [],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "context_only",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "introduction_Q4"
+      ],
+      "supplemental_reason": "질문별 사용자 임시 승인 설명",
+      "user_provided": true,
+      "provisional_decision_id": "209b56cf1c8267aea36d"
+    },
+    {
+      "id": "U9ff240a30b03c6835449",
+      "statement": "사용자 제공 설명: 음.. 내가 아까 말했던 기존 연구라 하면 CROWN을 CPU환경에서만 실행해봤다, 그래서 실시간 환경에서 이런 대규모 연산을 충족할 수 있는가에 대한 연구가 이번연구야\n\n그리고 이건 원문에 없어(연구일지에 없다고) 이부분은 너가 내 추가 정보를 참고해서 써야지\n",
+      "limits": "사용자가 이 질문에 한해 현재 정보로 진행하도록 임시 승인한 설명이다. PDF 대조·독립 검증 완료를 뜻하지 않는다. 설명 밖의 세부 기준·수치·실험·입증된 원인을 만들지 않는다.\n문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다.",
+      "sources": [
+        {
+          "element_id": "user:9ff240a30b03c6835449",
+          "page": 0,
+          "origin": "user_addendum",
+          "quote": "음.. 내가 아까 말했던 기존 연구라 하면 CROWN을 CPU환경에서만 실행해봤다, 그래서 실시간 환경에서 이런 대규모 연산을 충족할 수 있는가에 대한 연구가 이번연구야\n\n그리고 이건 원문에 없어(연구일지에 없다고) 이부분은 너가 내 추가 정보를 참고해서 써야지\n"
+        }
+      ],
+      "kind": "setup",
+      "claim_status": "interpretation",
+      "source_origin": "research_note",
+      "support": "user_accepted",
+      "support_note": "원문 검증과 별도로 기록한 사용자 임시 승인",
+      "conditions": [],
+      "measurements": [],
+      "parameters": [],
+      "observations": [],
+      "numeric_issues": [],
+      "writing_role": "context_only",
+      "attribution_preserved": true,
+      "requirement_ids": [
+        "introduction_Q6"
+      ],
+      "supplemental_reason": "질문별 사용자 임시 승인 설명",
+      "user_provided": true,
+      "provisional_decision_id": "9ff240a30b03c6835449"
+    }
+  ],
+  "tables": [],
+  "reference_guides": [
+    {
+      "id": "ref1_introduction",
+      "role": "introduction",
+      "purpose": "연구 배경과 문제 제기, 기존 방법의 한계, 제안 목표와 기여 요약",
+      "required_content": [
+        "연구 분야의 실용적 중요성과 문제 발생 맥락",
+        "제안 방법이 해결하려는 구체적 과제"
+      ],
+      "paragraph_flow": [
+        "분야 전반의 중요성과 문제 상황을 제시한다.",
+        "기존 방법들의 발전 흐름과 한계를 대조한다.",
+        "단일 모달 또는 기존 융합의 제약을 지적한다.",
+        "제안 프레임워크와 목표를 목록 형태로 정리한다."
+      ],
+      "figures_tables": [],
+      "style_rules": [
+        "연구 문제의 실용적 중요성과 기존 방법의 한계를 먼저 제시하여, 제안 방법이 필요한 맥락을 명확히 한다.",
+        "관련 선행연구를 방법 계열별로 묶어 서술하되, 각 계열의 강점과 약점을 대조하여 제안 설계의 근거를 만든다.",
+        "실험 조건과 데이터 구성, 장치·플랫폼 정보를 하나의 절에서 단계적으로 제시해 재현성과 현장 적용 맥락을 함께 전달한다.",
+        "모델 구조는 기준 설계에서 출발하여 구성 요소를 순차적으로 추가하고, 각 변형이 해결하려는 정보 융합 수준을 명시적으로 구분한다.",
+        "성능 비교는 정량 지표 표와 시각 해석 자료를 함께 제시하여, 수치 차이와 판단 근거를 상호 보완한다.",
+        "제거·변형 실험을 통해 개별 구성 요소의 기여도를 분리해 보이고, 계산 부담 변화도 함께 보고한다.",
+        "한계와 향후 과제는 데이터 범위, 일반화, 배포 효율성으로 나누어 서술해 개선 방향을 구체화한다.",
+        "결론은 문제, 방법, 핵심 결과, 실용적 의미를 짧게 묶어 연구의 기여와 다음 단계를 함께 정리한다."
+      ],
+      "not_to_transfer": [
+        "벨페퍼 묘목, 6단계 스트레스 분류, 물·영양 스트레스 처리군 명칭(W2N2 등)",
+        "Azure Kinect DK, Jetson AGX Xavier, 30 cm 거리, 35도 경사 촬영, 4,096×3,072 RGB 및 640×576 깊이 해상도",
+        "CRP 모듈, Tokenizer, Classifier, Attention Pooling, CA 모듈의 구체적 채널 수·차원·식",
+        "1537장 원본 이미지, 1232장 증강, 8:2 분할, 5-겹 교차검증, 배치 크기 32, 학습률 5×10⁻⁴, AdamW, 가중치 감쇠 6×10⁻², 라벨 스무딩 0.1, 200 에폭",
+        "정확도 95.8%, 5.2 FPS, 23.2M 파라미터, 10.3 GFLOPs 등 구체적 성능 수치",
+        "Grad-CAM, MobileNet v2, SENet-29, ResNeSt-101, TResNet-M, ShuffleNet v2, Swin-T, CvT-13, ResNet50-S, Swin-S 등 특정 모델명",
+        "Otoya and Gardini, Zhao et al. 등 특정 문헌의 데이터셋 크기·클래스 수·F1 수치",
+        "Table 1~8, Fig. 1~13의 번호와 세부 구성",
+        "저자동 기여 진술, 경쟁 이익 선언, 감사 문구, 데이터 가용성 문장, 참고문헌 목록"
+      ],
+      "criteria": [
+        {
+          "id": "ref1_introduction_required_1",
+          "description": "연구 분야의 실용적 중요성과 문제 발생 맥락"
+        },
+        {
+          "id": "ref1_introduction_required_3",
+          "description": "제안 방법이 해결하려는 구체적 과제"
+        }
+      ]
+    }
+  ],
+  "subsection_assignments": {
+    "p0": {
+      "heading": "### 1.1 연구 배경 및 문제 제기",
+      "required_item_ids": [
+        "RI_intro_1"
+      ],
+      "evidence_ids": [
+        "E00348",
+        "E00101",
+        "E00294",
+        "E00296",
+        "U209b56cf1c8267aea36d"
+      ],
+      "guideline_ids": [
+        "ref1_introduction_required_1"
+      ],
+      "shared_evidence_ids": [],
+      "table_expanded_evidence_ids": [],
+      "allocation": "explicit",
+      "writing_budget": {
+        "policy": "subsection-length-v1",
+        "scope": "whole_subsection",
+        "target_chars": 1429,
+        "whole_target_chars": 1429,
+        "paper_target_chars": 30000,
+        "counting": "narrative characters including spaces; excluding citation markers, headings and tables"
+      }
+    },
+    "p1": {
+      "heading": "### 1.2 기존 접근과 한계",
+      "required_item_ids": [
+        "RI_intro_2"
+      ],
+      "evidence_ids": [
+        "E00027",
+        "E00029",
+        "E00030",
+        "E00277",
+        "E00278",
+        "E00279",
+        "E00280",
+        "E00281",
+        "E00282",
+        "E00283",
+        "E00284",
+        "E00286",
+        "U9ff240a30b03c6835449"
+      ],
+      "guideline_ids": [
+        "ref1_introduction_required_3"
+      ],
+      "shared_evidence_ids": [],
+      "table_expanded_evidence_ids": [],
+      "allocation": "explicit",
+      "writing_budget": {
+        "policy": "subsection-length-v1",
+        "scope": "whole_subsection",
+        "target_chars": 1429,
+        "whole_target_chars": 1429,
+        "paper_target_chars": 30000,
+        "counting": "narrative characters including spaces; excluding citation markers, headings and tables"
+      }
+    },
+    "p2": {
+      "heading": "### 1.3 연구 목표와 기여",
+      "required_item_ids": [
+        "RI_intro_3"
+      ],
+      "evidence_ids": [
+        "E00267",
+        "E00268",
+        "E00269",
+        "E00027",
+        "E00029",
+        "E00030",
+        "U209b56cf1c8267aea36d"
+      ],
+      "guideline_ids": [
+        "ref1_introduction_required_1"
+      ],
+      "shared_evidence_ids": [],
+      "table_expanded_evidence_ids": [],
+      "allocation": "explicit",
+      "writing_budget": {
+        "policy": "subsection-length-v1",
+        "scope": "whole_subsection",
+        "target_chars": 1428,
+        "whole_target_chars": 1428,
+        "paper_target_chars": 30000,
+        "counting": "narrative characters including spaces; excluding citation markers, headings and tables"
+      }
+    }
+  },
+  "context": {}
+}

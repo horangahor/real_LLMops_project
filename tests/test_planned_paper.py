@@ -528,10 +528,11 @@ class PlannedPaperTests(unittest.TestCase):
                     patch("paper_quality.prepare_research_evidence", side_effect=AssertionError("CUDA evidence applied")), \
                     patch("planned_paper.PlannedPaper.extract_evidence", return_value={"research": research()}) as extract:
                 result = engine.run_pipeline(research_pdf_path=source, structure_json_path=style,
-                                             project_id="generic", plan_only=True)
+                                             project_id="generic", plan_only=True, writing_target_chars=20000)
             extract.assert_called_once_with(source)
             self.assertEqual(len(result["plan"]["sections"]), 3)
             self.assertEqual(len(fake.calls), 1)
+            self.assertEqual(result["writing_length"]["paper_target_chars"], 20000)
 
     def test_latest_plan_tampering_cannot_show_old_draft_as_a_matching_review(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -47,7 +47,8 @@ def part_context(packet, key):
             "facts": facts, "tables": tables,
             "reference_guides": _guides(packet["reference_guides"], linked),
             "context": copy.deepcopy(packet["context"]), "allocation": assignment["allocation"],
-            "human_guidance": copy.deepcopy(packet.get("human_guidance", []))}
+            "human_guidance": copy.deepcopy(packet.get("human_guidance", [])),
+            **({"writing_budget": copy.deepcopy(assignment["writing_budget"])} if "writing_budget" in assignment else {})}
 
 
 def build_contexts(plan, research, catalog):

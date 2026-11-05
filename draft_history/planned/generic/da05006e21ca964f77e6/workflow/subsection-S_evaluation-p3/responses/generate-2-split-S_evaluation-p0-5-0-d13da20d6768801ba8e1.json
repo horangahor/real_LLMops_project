@@ -1,0 +1,16 @@
+{
+  "request_fingerprint": "d13da20d6768801ba8e14f2c2cd5596ec2be487cf27f99f57d2de2a2b5e846ff",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "graph mode=1, 샘플 1개 전체 기준에서 추론 커널은 그대로 둔 채 커널 launch 횟수를 줄였으며, Forward는 33회에서 24회로 9회, Backward는 52회에서 37회로 15회, Backward-only는 51회에서 39회로 12회 감소했다. 이 감소는 Forward에서 lower/upper matmul, lower/upper bias matvec, matrix scaling + vector affine을 각각 2회에서 1회로 묶어 method 0 기준 레이어당 8회에서 5회로 줄인 것과, Backward에서 split_pos_neg + bias accumulation을 2회에서 1회로 통합하고 레이어당 backward 단계를 5단계에서 4단계로 줄인 것에 대응한다. Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소가 나타났다. 다만 커널 횟수 감소가 실행 시간 감소로 단순 비례하지는 않았으며, forward가 가장 많이 줄었음에도 시간 감소 폭이 가장 큰 것은 아니었다는 관측이 함께 기록되었다. 이에 대해 커널 횟수 감소와 시간 감소 간 관계, 그리고 forward가 가장 많이 줄어든 이유에 대한 의문이 남아 있어, 이 부분은 현재 기록 수준의 의문으로 남는다.",
+          "evidence_ids": [
+            "E00313",
+            "E00314"
+          ]
+        }
+      ]
+    }
+  }
+}

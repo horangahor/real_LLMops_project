@@ -125,7 +125,7 @@ def render_editorial_paragraphs(records, permitted, origins, ids, label):
     return text, trace
 
 
-def edit_editorial(engine, folder, name, level, previous, packets, report=None):
+def _edit_editorial_legacy(engine, folder, name, level, previous, packets, report=None):
     """Assemble/revise prose; citations come exclusively from private origins."""
     from planned_paper import validate_body
     all_parts, origins, paragraphs = editorial_sources(previous, packets)
@@ -230,6 +230,23 @@ def edit_editorial(engine, folder, name, level, previous, packets, report=None):
         "policy": POLICY, "segments": trace,
         "omitted_sources": [{"source_id": key, "origin": copy.deepcopy(origin)} for key, origin in origins.items() if key not in used]})
     return result
+
+
+def edit_editorial(engine, folder, name, level, previous, packets, report=None):
+    """Reuse completed legacy edits; new assemblies return fixed-slot changes."""
+    if report is not None:
+        return _edit_editorial_legacy(engine, folder, name, level, previous, packets, report)
+    class CachedEngine:
+        def call(self, *args, **kwargs):
+            kwargs["cache_only"] = True
+            return engine.call(*args, **kwargs)
+    try:
+        return _edit_editorial_legacy(CachedEngine(), folder, name, level, previous, packets)
+    except (FileNotFoundError, ValueError):
+        # Timed-out/invalid legacy responses are retained, never re-requested.
+        pass
+    from editorial_patch import assemble_editorial_patch
+    return assemble_editorial_patch(engine, folder, name, level, previous, packets)
 
 
 def revise_editorial(engine, folder, name, level, previous, packets, report):

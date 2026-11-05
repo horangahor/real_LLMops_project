@@ -4,6 +4,19 @@ import re
 
 from paper_plan import object_schema
 
+LEGACY_INLINE_INSTRUCTION = "모든 사실 주장에 [근거:ID]를 붙인다. 지정한 evidence_ids 밖의 근거는 쓰지 않는다. 이 표시는 최종 본문에서 코드가 분리한다."
+STRUCTURED_CITATION_INSTRUCTION = "모든 사실 주장은 문단의 evidence_ids로 연결한다. text에는 인용 표시를 넣지 않는다. 근거 ID는 입력의 실제 ID를 접두사까지 그대로 선택하며 배정 범위를 지킨다."
+
+
+class JoinedParagraphsError(ValueError):
+    """One structured record contains several paragraphs with aggregate IDs."""
+
+
+def structured_system(system):
+    # Keep the old planner/run identities and completed responses intact;
+    # remove the conflicting legacy rule only from newly sent prose requests.
+    return system.replace(LEGACY_INLINE_INSTRUCTION, STRUCTURED_CITATION_INSTRUCTION)
+
 PROTOCOL = """\n출력 형식 규칙: parts의 각 p번호 값은 문자열이 아니라 문단 객체의 배열이다.
 각 문단은 text(제목·표·인용 표시 없는 한 문단)와 evidence_ids(그 문단을 직접 뒷받침하는 근거 ID 목록)를 필수로 갖는다.
 앞선 [근거:ID] 인용 지시는 evidence_ids 필드로 이행한다. text에 [근거:...]를 직접 쓰지 않는다. 코드가 표시를 조립한다.
@@ -58,6 +71,10 @@ def render_part(value, ids, label):
             raise ValueError(f"{at}: evidence_ids가 비었거나 허용 범위 밖입니다. 허용={ids}")
         selected = list(dict.fromkeys(selected))
         segments = re.split(r"\n\s*\n", text.strip())
+        if len(segments) > 1 and "[근거:" not in text:
+            raise JoinedParagraphsError(f"{at}: text 하나에 {len(segments)}개 문단이 들어 있고 근거 목록이 합쳐져 있습니다. "
+                "본문 인용 누락이 아니라 문단별 근거 연결 형식 오류입니다. 기존 문장은 보존하고 "
+                "각 문단을 별도 객체로 나눠 그 문단을 뒷받침하는 evidence_ids만 선택하세요.")
         linked = []
         for segment in segments:
             inline = list(dict.fromkeys(identifier for group in re.findall(r"\[근거:\s*([^\]]+)\]", segment)
@@ -67,7 +84,12 @@ def render_part(value, ids, label):
             # Normalize only citations the model stated in BOTH representations.
             # Never spread a paragraph's aggregate IDs over uncited paragraphs.
             if any(not keys for keys in linked) or {key for keys in linked for key in keys} != set(selected):
-                raise ValueError(f"{at}: 문단별 본문 인용과 evidence_ids가 일치하지 않아 자동 정리할 수 없습니다.")
+                inline_ids = list(dict.fromkeys(key for keys in linked for key in keys))
+                unknown = [key for key in inline_ids if key not in ids]
+                raise ValueError(f"{at}: 문단별 본문 인용과 evidence_ids가 일치하지 않아 자동 정리할 수 없습니다. "
+                                 f"본문 인용={inline_ids}, evidence_ids={selected}, 미허용 본문 ID={unknown}. "
+                                 "text의 인용 표시를 제거하고 실제 내용을 뒷받침하는 배정 ID만 evidence_ids에 그대로 선택하세요. "
+                                 "ID 접두사를 추측해서 바꾸거나 후보 전체를 일괄 연결하지 마세요.")
             records = [(re.sub(r"\[근거:\s*[^\]]+\]", "", segment).strip(), keys)
                        for segment, keys in zip(segments, linked)]
         else:

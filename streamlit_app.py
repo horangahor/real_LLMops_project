@@ -227,6 +227,12 @@ with st.sidebar:
         st.caption("기본 학술지 가이드라인 적용")
 
     st.markdown("#### 3. 초안 검토")
+    writing_target_chars = None
+    if adaptive:
+        from writing_length import resolve_target
+        writing_target_chars = st.number_input("논문 본문 목표 글자 수", min_value=0,
+            value=resolve_target(), step=1000,
+            help="공백을 포함하고 인용 표시·제목·표를 제외합니다. 소절들이 나눠 쓰는 목표이며, 0이면 분량 목표를 적용하지 않습니다.")
     st.caption("소절은 본문과 사용 근거를 대조하고, 장별·전체 편집은 중복·연결·문체를 검토합니다." if adaptive else
                "장별 작성 후 근거 검토 → 종합 편집 → 재검토를 진행합니다. 주요 오류가 남으면 후보 초안으로 분리합니다.")
 
@@ -342,7 +348,11 @@ if generate_btn or plan_btn or extract_btn or requirements_btn or resume_request
                 research_pdf_path=temp_pdf_path, planning_mode="adaptive" if adaptive else "legacy_cuda",
                 project_id="cuda" if data_source_mode in ("CUDA 원본 PDF 자동 분석", "내장된 CUDA 연구 데이터 사용") else "generic",
                 plan_only=plan_btn, extract_only=extract_btn, evidence_mode=evidence_mode,
-                requirements_only=requirements_btn)
+                requirements_only=requirements_btn, writing_target_chars=writing_target_chars)
+            if resume_request:
+                # Old interrupted requests resume their original unbounded policy.
+                pipeline_request = {**pipeline_request,
+                    "writing_target_chars": pipeline_request.get("writing_target_chars", 0)}
             pipeline_result = orchestrator.run_pipeline(**pipeline_request, progress_callback=progress_cb)
             st.session_state.pop("pending_requirement", None)
             st.session_state.pop("pending_requirement_request", None)
@@ -438,6 +448,13 @@ else:
         if st.session_state.get("draft_mode") == "adaptive":
             st.caption("연구별 작성 계획을 적용한 초안입니다. 자동 검토는 독립적인 사실 검증이 아니므로 저자의 확인이 필요합니다.")
             editorial_warnings = (st.session_state.get("planned_review") or {}).get("editorial_warnings", [])
+            writing_length = (st.session_state.get("planned_review") or {}).get("writing_length")
+            if writing_length:
+                st.caption(f"본문 분량: {writing_length['actual_final_chars']:,}자 / 목표 {writing_length['paper_target_chars']:,}자 · 목표 초과 소절 {writing_length['over_target_count']}개")
+                with st.expander("소절별 분량 기록"):
+                    st.dataframe(writing_length["subsections"], use_container_width=True)
+                    st.download_button("분량 기록 JSON 저장", json.dumps(writing_length, ensure_ascii=False, indent=2),
+                                       file_name="writing-length-report.json", mime="application/json")
             content_warnings = (st.session_state.get("planned_review") or {}).get("content_warnings", [])
             if content_warnings:
                 st.warning(f"소절 내용 보완 후 확인할 지적 {len(content_warnings)}개를 경고로 남겼습니다. 미해결 지적은 검토 경고 모음에서 확인할 수 있습니다.")

@@ -49,7 +49,11 @@ class Client:
             if stage == self.corrupt_editor_once:
                 self.corrupt_editor_once = None
                 sid = "s1"
-                value["sections"][sid]["parts"]["p1"][0]["segments"][0]["source_id"] = packet["source_parts"][sid]["p0"][0]["id"]
+                if packet.get("output_mode") == "fixed_spans":
+                    value["sections"][sid]["parts"]["p1"][packet["source_parts"][sid]["p0"][0]["id"]] = {
+                        "action": "keep", "text": "", "join_previous": False}
+                else:
+                    value["sections"][sid]["parts"]["p1"][0]["segments"][0]["source_id"] = packet["source_parts"][sid]["p0"][0]["id"]
             return value
         if packet.get("operation") == "editorial_review":
             self.events.append((stage, "review", copy.deepcopy(packet)))
@@ -195,7 +199,7 @@ class HierarchicalDraftingTests(unittest.TestCase):
                 # The invalid edit is rejected before the reviewer can approve it.
                 self.assertEqual(sum(s == target and k == "review" for s, k, _ in client.events), 1)
                 repaired = next(p for s, k, p in client.events if s == target and "invalid_response" in p)
-                self.assertIn("구간을 벗어났습니다", repaired["invalid_response"]["reason"])
+                self.assertIn("범위", repaired["invalid_response"]["reason"])
                 self.assertTrue(result["review"]["approved"])
 
     def test_editor_review_failure_revises_only_that_editing_stage(self):

@@ -1,0 +1,33 @@
+{
+  "id": "b14eee91-f696-491a-bbb5-a285e0d8297d",
+  "object": "chat.completion",
+  "created": 1793882804,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": [{\"text\": \"핵심 최적화 구성은 CUDA 기반 CROWN 검증에서 호스트-장치 메모리 전송 방식을 No-Pin(일반 메모리)과 Pinned Memory(cudaHostRegister)로 나누어 비교한 것이다. 표에 따르면 No-Pin은 평균 처리 속도가 약 13초 빠르지만, 최대 지연(Max Spike)은 8.8ms~11.6ms로 치명적이고 지터는 118μs로 불안정하다. 반면 Pinned Memory는 최대 지연이 1.64ms로 극도로 안정적이고 지터는 47μs로 안정적이다. 이 차이는 No-Pin이 평소 CPU 캐시 복사로 빠르지만 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 끼어들면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없고, 이것이 1ms 무선 통신 데드라인을 파괴할 수 있기 때문이다. Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. 다만 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다는 점은, Pinned Memory가 항상 평균 시간에서 유리한 것은 아님을 보여준다. 또한 infer 단계에서 40,000번 반복하며 CPU 스레드가 cudaStreamSynchronize로 대기·깨어나는 과정의 미세 지연과 드라이버 동기화 비용이 맞물려 Pinned 쪽이 총 루프 시간에서 약 13초 느려지는 결과가 나온 것도, 평균 시간 지표만으로는 Pinned의 이점이 드러나지 않는 이유로 설명된다. 그럼에도 총 시간(평균 시간)만 보면 No-Pin이 더 빨라 보이지만, 지터와 최악 실행 시간(WCET)을 보면 Pinned가 유리하다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로, Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pageable 메모리의 치명적 지연 스파이크를 피하고 최악 지연시간을 엄격히 제한하기 위해 Pinned Memory 도입이 필수적이다.\", \"evidence_ids\": [\"E00293\", \"E00294\", \"E00295\", \"E00296\", \"E00298\", \"E00299\", \"E00301\"]}]}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 18219,
+    "completion_tokens": 556,
+    "total_tokens": 18775,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

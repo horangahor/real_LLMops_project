@@ -1,0 +1,20 @@
+{
+  "request_fingerprint": "48060d717088783389a27d920c08ab7a0b378cdd09faf4d675a88685416ea08b",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "비교 조건 통제의 한계는 크게 세 지점에서 나타난다. 첫째, cudaHostRegister·cudaHostAlloc·No Pinning을 backward_only·CUDA Graph Separate·총 920,000회 연산 조건으로 비교했으나, 데이터 크기에 따라 DMA 셋업 오버헤드와 CPU 캐시 복사 이득의 우위가 뒤바뀌고, OS 페이징·백그라운드 작업 개입으로 No-Pin에서 최대 11.6ms 수준의 지연 스파이크가 발생하며, cudaMemcpyAsync가 CUDA Graph 바깥에서 매 루프 개별 호출되어 DMA 셋업이 반복 누적되는 요소가 공정 비교를 저해한다. 둘째, cudaHostRegister와 No Pinning의 cudaMemcpyAsync 비교는 여러 번 측정 결과가 일관되지 않았고, pinned 적용 버전이 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확정하기 어렵다는 한계가 기록되었다. 셋째, v1-1에서 벡터연산 3가지를 CPU로 돌렸을 때 300ms가 나왔으나 메모리 풀과 cuBLAS 예열 없이 CPU로 함수를 돌리면 결국 v0 결과와 같아져 정확한 비교를 할 수 없다고 판단했으며, 가중치 GPU 사전 업로드도 my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 거의 없고 500회 누적에서 5~10ms 우세에 그쳐 큰 의미를 못 미친다고 보았다. 또한 cudaHostRegister/No Pinning 비교나 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않으며, 평균·총 시간만 보면 No-Pin이 더 빨라 보이지만 지터와 최대 지연시간에서는 Pinned가 더 안정적인 해석이 가능해 결과 해석 범위가 제한된다.",
+          "evidence_ids": [
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_43",
+            "Hefd7e87bb735_53",
+            "Hefd7e87bb735_56",
+            "Hefd7e87bb735_58",
+            "Hefd7e87bb735_65"
+          ]
+        }
+      ]
+    }
+  }
+}

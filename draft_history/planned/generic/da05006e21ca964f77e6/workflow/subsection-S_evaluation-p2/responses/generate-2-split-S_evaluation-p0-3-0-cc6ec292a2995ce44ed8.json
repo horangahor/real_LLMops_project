@@ -1,0 +1,54 @@
+{
+  "request_fingerprint": "cc6ec292a2995ce44ed8130419e2ad7f37c7448b403e231ef48874fd21435e4d",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "커널 축소와 최적화 효과는 GPU 커널을 CPU로 되돌린 구성 변경과 커널 퓨전·그래프 캡처·메모리 풀 적용 같은 실행 단위 축소 조치로 나누어 정리할 수 있다. only_GPU와 hybrid를 비교하면, hybrid는 matmul(cuBLAS)만 GPU에 남기고 make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max 같은 함수들을 CPU for문으로 되돌린 버전이며, matmul은 cuBLAS와 메모리 풀로 양쪽이 동일하게 유지된다. 이와 함께 GPU 풀 구조체도 only_GPU의 d_mat[4]+d_vec[2]에서 hybrid의 d_A, d_B, d_C 3개로 축소되었다. 이 변경은 새로 기능을 더한 것이 아니라 GPU 코드를 삭제해 CPU로 회귀시킨 사례로 기록되어 있다. 실행 시간 측면에서는 forward 함수의 DTOH memcpy를 극단적으로 줄인 뒤 CROWN Verification 실행 시간이 64.716000 ms로 기록되었고, 이후 lirpa_forward_bound 함수에 커널 퓨전을 적용했을 때 22.342900 ms가 관측되었으며 22ms 초반까지 나오는 경우도 있었다. backward_bound_gpu()에 커널 퓨전을 먼저 진행했을 때는 23ms 후반대가 관측되었고, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 23ms 정도가 보인다는 점이 함께 기록되어 있다. alpha/beta 메모리 풀과 warmup을 적용한 뒤에는 21.018800 ms가 기록되었고 21.0ms 정도라는 요약도 남아 있으며, 이후 커널 퓨전 완료 후에는 15.751000 ms가 관측되어 이전 15.828400 ms 대비 약 0.2ms 정도 하한선이 낮아진 듯하다는 정성적 관측이 제시되었다. 다만 이 수치들은 단일 실행 결과이거나 기록자의 정성적 관측 요약이며, 반복 측정 기반 통계나 조건별 분리 해석은 현재 페이지에 제시되지 않았다. 커널 횟수 관점에서는 3-layer 네트워크 기준으로 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch를 제외하고 CUDA kernel launch만 세었으며, graph mode=1에서 샘플 1개 전체 기준으로 Forward 33→24회, Backward 52→37회, Backward-only 51→39회로 줄었다. 감소 내역은 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1과 레이어당 backward 단계 5→4회, Backward-only에서 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 split/bias kernel 통합으로 총 12회 감소이다. 그러나 graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회로 유지되어 이번 작업이 그래프 런치 횟수 자체를 줄이지는 않았다. 한편 기록자는 커널 횟수가 더 많이 줄면 시간도 더 줄어야 하지 않는지, 왜 forward가 가장 많이 줄었는지에 대한 의문을 남겼고, 실제 감소 내역은 forward에서 무거운 커널 연산 호출이 9개 줄고 backward의 forward 부분에서 12개, 실제 backward 부분에서 3개 줄었으며 backward_only는 45→33회로 26.7% 감소에 그쳐 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄어든 것이어서 커널 비용도 다르다는 점이 기록되어 있다. 이 의문과 감소 내역은 기록자가 정리한 관찰 내용이며, 각 질문에 대한 답변이나 원인 분석 결과는 현재 페이지에 제시되지 않았다.",
+          "evidence_ids": [
+            "E00036",
+            "E00037",
+            "E00083",
+            "E00119",
+            "E00120",
+            "E00125",
+            "E00131",
+            "E00132",
+            "E00139",
+            "E00140",
+            "E00144",
+            "E00145",
+            "E00212",
+            "E00213",
+            "E00214",
+            "E00215",
+            "E00216",
+            "E00261",
+            "E00262",
+            "E00263",
+            "E00274",
+            "E00311",
+            "E00313",
+            "E00314",
+            "E00315",
+            "E00318",
+            "E00319",
+            "E00326",
+            "E00329",
+            "E00330",
+            "E00331",
+            "E00339",
+            "E00370",
+            "E00374",
+            "E00375",
+            "H85ca0e507c4e_22",
+            "H85ca0e507c4e_23",
+            "H85ca0e507c4e_24",
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_89"
+          ]
+        }
+      ]
+    }
+  }
+}

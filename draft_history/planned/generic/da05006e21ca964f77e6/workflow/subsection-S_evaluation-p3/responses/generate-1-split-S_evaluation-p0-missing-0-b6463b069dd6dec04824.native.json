@@ -1,0 +1,33 @@
+{
+  "id": "dd53a696-9770-46cf-b99c-21bcb8c7f41b",
+  "object": "chat.completion",
+  "created": 1793878450,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\":{\"p0\":[{\"text\":\"GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전으로, 새로 추가된 것은 없고 GPU 코드를 삭제해 빨라진 케이스이다. only_GPU와 hybrid의 변경점 비교에서는 make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max가 GPU에서 CPU로 변경되었고 matmul은 cuBLAS+메모리풀로 동일하며, GPU 풀 구조체도 only_GPU의 d_mat[4]+d_vec[2]에서 hybrid의 d_A, d_B, d_C 3개로 축소되었다. bias까지 GPU에 미리 업로드하는 시도는 bias가 Vector이고 약 4KB 정도라 CPU 연산에 무리가 없는 수준이라 성능 개선에 큰 의미를 미치지 못하는 것으로 판단되었다.\",\"evidence_ids\":[\"E00030\",\"E00036\",\"E00037\",\"E00045\"]},{\"text\":\"측정은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 하였고, elapsed 타임과 미세한 오차가 있으나 3개 누적 시간을 더한 값이 더 올바른 시간이라고 판단해 해당 값을 사용하기로 하였다. 각 forward, backward를 20번씩 측정을 완료하였으며, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었고, 측정 시작을 기준으로 추론 이후 타임스탬프 이후 추론 시간을 계산하였으며, bound도 계산하고 출력해주었다. 실행 결과를 보면 이게 forward 계산 시간이고, 이게 20번 92만 번 테스트(test_all_data)의 평균 bound이다.\",\"evidence_ids\":[\"E00187\",\"E00188\",\"E00189\",\"E00190\",\"E00191\",\"E00192\",\"E00193\",\"E00194\",\"E00195\",\"E00196\"]},{\"text\":\"초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다. gpu 벤치마크 모범 사례를 따라 적절한 기준을 다시 세우기로 했으며, 그 기준으로 Nvidia의 warm up 가이드라인을 세웠다. 추론, bound 계산, 검증 3가지 값을 나눠서 측정하기로 했다. warm up을 하니까 걸리는 시간과 각 평균 시간이 더 늘어났으며, forward가 warm up 이전 backward 급 속도가 나올 정도였다. 의문점으로는 warm up을 해도 스파이크 데이터가 뜨고, 가끔은 10번 측정했을 때 평균 시간이 느려지는 문제가 생겼다. warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다(변동 계수가 좀 더 낮은 느낌).\",\"evidence_ids\":[\"E00202\",\"E00203\",\"E00205\",\"E00206\",\"E00207\",\"E00208\"]},{\"text\":\"배칭 시스템을 구현했더니 3배 빨라졌으며, 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 점을 한계로 인식했고, 별도 branch(temp_batching)로 저장해두었다. 지금까지 수행한 최적화로 제로 memcpy, 커널 자체 실행 횟수 감소(커널 퓨전, 커널 graph)가 있으며, GPU 아키텍처의 SM 구조를 고려해 FP64→FP32, double→float 변경도 진행했다. cudaGraph를 이용한 커널 캡처는 92만 번의 입력값을 계산하면서 1번의 CROWN 계산 내에서도 수십번의 커널이 호출되는 상황에서, graph 캡처를 통해 이 수십번의 커널 호출을 하나의 호출로 압축하여 커널 호출 횟수로 인한 오버헤드를 줄일 수 있는 방법이며, 단 커널 자체 최적화까지 끝냈을 때 고려 가능한 기능이고 하나의 스냅샷을 만드는 기능이다. cudaGraph를 통해 추론과 bound를 따로 캡처한 경우와 추론+bound를 한번에 캡처한 경우를 구분하여 커널 런치 비용을 최소화하는 실험을 수행했고, cudaGraph로 추론과 bound를 따로 캡처했을 때 기준으로 약 400초 정도 시간이 줄어든 것으로 관측되었다. 배칭은 싱글 스트림이 아닌 멀티 스트림을 사용하여 데이터를 하나씩 주지 않고 여러개 묶어서 넣어 병렬처리를 가능하게 하는 방법으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 시간 빨라졌으며, 25분에서 8분으로 단축되었다.\",\"evidence_ids\":[\"E00211\",\"E00212\",\"E00213\",\"E00214\",\"E00215\",\"E00216\"]},{\"text\":\"커밋 이전 버전(graph만 적용한 버전)을 다시 실행해본 결과 해당 버전이 더 빠른 것으로 관측되었다. topk 속도는 빨라졌으며, 이 부분은 향후 제외 가능성이 있다고 기록되었다. cudaGraph만 적용된 버전과 비교 대상 버전을 평균으로 측정했으며, forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 난다. backward를 보면 total 시간이 비슷하며, 그 이유는 infer에서 깎아먹은 약 20초를 bound에서 graph보다 약 20초 빨리 수행하고 있기 때문이다. auto_lirpa 결과가 나왔으며, 포워드+백워드 결과로 [auto_LiRPA Verification Results] 표가 제시되었다. auto_LiRPA 포워드+백워드 실행 결과가 C:\\\\Users\\\\user\\\\Desktop\\\\antenna_auto_lirpa\\\\antenna_lirpa\\\\results\\\\autolirpa_results_forward.csv 파일에 저장되었다.\",\"evidence_ids\":[\"E00223\",\"E00224\",\"E00227\",\"E00228\",\"E00238\",\"E00243\"]},{\"text\":\"No-Pin은 평소에는 CPU 캐시로 빠르게 동작하지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락(Lock) 경합이 터지는 순간 지연시간이 11ms까지 튀며(5G/6G 기지국 기준 패킷 드랍/통신 두절 발생 가능), Pinned는 매번 1.5μs의 정직한 하드웨어 통행료를 내는 대신 OS 페이징 간섭을 100% 차단하여 아무리 튀어도 1.64ms 안쪽으로 엄격하게 보장된다. 사용자분의 직관대로 1KB밖에 안 되는 작은 데이터를 보내면서 매 루프마다 개별 하드웨어 DMA 셋업을 부르는 오버헤드 때문에 Pinned가 No-Pin보다 총 소요 시간이 더 길게 나왔던 것이다. 추론이 끝나기까지의 동기화(synchronize) 시간이 pinned memory 미적용 버전이 가장 빠르며, 이는 H2D 복사 시간의 영향일 수 있다고 분석했다. cudaMemcpyAsync 호출 시간에서 pinned memory 적용 버전이 미적용 버전보다 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다고 분석했다. 작은 데이터 크기(현재 입력 기준 1KB)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다고 해석했다. 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라서 2copy에서 1copy로 가면서 고정 setup 비용이 줄었다고 생각했으나, 마지막 측정 결과에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다고 기록했다. pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구도 아니고 너무 깊게 들어가면 다른 것도 못할 것 같다고 기록했다. 결론 섹션에서 backward_only가 왜 제일 빠른지에 대한 질문을 제기했다.\",\"evidence_ids\":[\"E00300\",\"E00301\",\"E00303\",\"E00304\",\"E00305\",\"E00306\",\"E00307\",\"E00308\"]}]}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 46883,
+    "completion_tokens": 1580,
+    "total_tokens": 48463,
+    "prompt_tokens_details": {
+      "cached_tokens": 1088,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

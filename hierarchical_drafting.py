@@ -50,10 +50,26 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
     from planned_paper import (GROUNDING, WRITER, REVIEWER, REVIEWER_CACHE_IDENTITY, fingerprint, parts_schema,
         clean_part, compose_parts, validate_body, index_paragraphs, review_schema)
     from paper_context import part_context
+    from writing_length import POLICY as LENGTH_POLICY, narrative_chars
 
     folder = Path(folder)
     stages = []
     warning_stages = []
+    length_rows = []
+
+    def length_report(final=False):
+        if not length_rows:
+            return None
+        report = {"policy": LENGTH_POLICY, "status": "completed" if final else "in_progress",
+                  "paper_target_chars": next(child["writing_budget"]["paper_target_chars"]
+                      for parts in contexts["subsections"].values() for child in parts.values()
+                      if child.get("writing_budget")),
+                  "subsections": copy.deepcopy(length_rows),
+                  "over_target_count": sum(row["over_target"] for row in length_rows)}
+        if final:
+            report["actual_final_chars"] = sum(row["final_chars"] for row in length_rows)
+        write_json(folder / "writing-length-report.json", report)
+        return report
 
     def warning_summary():
         return {"policy": CONTENT_POLICY, "status": "needs_attention" if warning_stages else "reviewed",
@@ -105,7 +121,32 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
         heading = inputs.get("target_heading") or inputs.get("section_plan", {}).get("title", "전체 논문")
         heading = heading.lstrip("# ")
         revalidation_path = root / "checkpoint-revalidation.json"
-        reviews, feedback, generation_warnings = [], None, []
+        reviews, feedback, generation_warnings, preservation_warnings = [], None, [], []
+
+        def attach_preservation_warnings(report, warnings):
+            if warnings:
+                report["editorial_preservation_warnings"] = copy.deepcopy(warnings)
+                existing = report.setdefault("editorial_warnings", [])
+                for row in warnings:
+                    if row not in existing:
+                        existing.append(copy.deepcopy(row))
+                if report["approved"]:
+                    report["editorial_status"] = "needs_attention"
+            return report
+
+        def collect_preservation_warnings(request_name, candidate):
+            for path in root.glob(f"{request_name}-*-provenance.json"):
+                provenance = json.loads(path.read_text(encoding="utf-8"))
+                if provenance.get("result_fingerprint") != fingerprint(candidate):
+                    continue
+                for row in provenance.get("preserved_subsections", []):
+                    warning = {"section_id": row["section_id"], "part": row["part"],
+                        "paragraph_id": "none", "category": "organization", "severity": "warning",
+                        "reason": f"{row['heading']}: 편집 보정 후에도 소절 전체 삭제가 제안되어 이 소절의 기존 본문을 보존했습니다.",
+                        "evidence_ids": [], "quote": "", "failure_owner": "editor", "review_stage": "editorial",
+                        "stage": name, "validation_code": "subsection_removal_prevented", "provenance_path": str(path)}
+                    if warning not in preservation_warnings:
+                        preservation_warnings.append(warning)
 
         def review_candidate(value, bodies, attempt, pending_issues=None):
             if level != "subsection":
@@ -184,6 +225,7 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                     elif payload["raw_review"].get("review_policy") == EDITORIAL_POLICY:
                         report = checked_editorial_review(payload["raw_review"], review_plan, bodies, children_reviews)
                         report = finish_editorial(report, name, payload.get("editorial_completion"))
+                        attach_preservation_warnings(report, payload.get("editorial_preservation_warnings", []))
                     else:
                         # An old mixed review must not be used as an editorial
                         # verdict, but the already-written body is reusable.
@@ -259,6 +301,8 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                                           request, schema, packets, single, on_warning=new_warnings.append)
                 generation_warnings.extend(new_warnings)
                 candidate = {sid: result} if single else (result.get("sections") if isinstance(result, dict) else None)
+            if level != "subsection":
+                collect_preservation_warnings(request_name, candidate)
             try:
                 value, bodies = normalize(candidate, packets)
             except (ValueError, KeyError, TypeError) as error:
@@ -313,6 +357,7 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                     completion = {"policy": REVISION_POLICY, "status": "needs_attention", "revisions": editorial_revisions,
                                   "reason": "unchanged" if changes and not changes["prose_changed"] else "revision_limit"}
                 report = finish_editorial(report, name, completion)
+                attach_preservation_warnings(report, preservation_warnings)
             reviews.append(report)
             save_review_diagnostics(root, f"review-{attempt}", name, review_plan, local_research, bodies, report)
             write_json(root / "reviews.json", reviews)
@@ -329,6 +374,8 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                     payload["content_completion" if level == "subsection" else "editorial_completion"] = completion
                 if generation_warnings:
                     payload["generation_warnings"] = generation_warnings
+                if preservation_warnings:
+                    payload["editorial_preservation_warnings"] = preservation_warnings
                 write_json(approved_path, {"sha256": fingerprint(payload), "value": payload})
                 if revalidation_path.is_file():
                     revalidation = json.loads(revalidation_path.read_text(encoding="utf-8"))
@@ -361,6 +408,13 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                 child_packet, single=True)
             children[key] = value[sid]["parts"]["p0"]
             child_reviews[key] = child_review
+            if child_packet.get("writing_budget"):
+                target = child_packet["writing_budget"]["target_chars"]
+                actual = narrative_chars(children[key])
+                length_rows.append({"section_id": sid, "part": key,
+                    "heading": child_packet["target_heading"], "target_chars": target,
+                    "draft_chars": actual, "over_target": actual > target})
+                length_report()
         drafts[sid] = compose_parts({"parts": children}, packet)
         value, _, section_review, _ = stage(f"section-{sid}", "section", {sid: packet}, scoped_plan(by_id[sid]),
             SECTION, {**packet, "child_parts": children}, single=True, children_reviews=child_reviews)
@@ -371,6 +425,10 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
     value, bodies, report, history = stage("paper", "paper", packets, plan, PAPER,
         {"research": scoped_research(packets), "plan": plan, "sections": assembled,
          "section_packets": packets, "reference_guides": catalog}, children_reviews=section_reviews)
+    for row in length_rows:
+        row["final_chars"] = narrative_chars(value[row["section_id"]]["parts"][row["part"]])
+        row["over_target"] = row["final_chars"] > row["target_chars"]
     return {"sections": bodies, "drafts": drafts, "review": report,
             "review_history": history, "review_warnings": warning_summary(),
+            "writing_length": length_report(final=True),
             "workflow": {"version": VERSION, "stages": stages}}

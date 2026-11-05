@@ -1,0 +1,81 @@
+{
+  "request_fingerprint": "c98ca4c3eb8a48efee836c449abfb381aa746910641a6c8995b03c90598d28ee",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "커널 축소와 최적화 효과는 backward_bound_gpu를 중심으로 한 커널 통합·퓨전과 forward-backward 간 데이터 전달 축소, 그리고 CUDA 그래프·메모리·복사 제어의 조합으로 나타났다. 먼저 backward_bound_gpu에서는 affine 중복 계산을 삭제해 커널 2개 함수를 줄이고, new_(upper, lower)_p를 복사 대신 std::swap으로 포인터 스와핑했으며, 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합쳤다. 이어서 build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu에 커널 퓨전을 적용했고, lirpa_forward_bound에서 사용하는 함수들도 커널 퓨전 대상으로 삼았다. 이러한 변경은 1개의 커널 호출로 줄일 수 있는 함수를 계속 퓨전하는 방향으로 진행되었으며, 5번까지 적용했을 때 최고 성능이 관측되었다는 기록이 남아 있다. 다만 각 단계의 정량 성능 수치나 정확도 변화는 개별 근거로 분리되어 있지 않다.",
+          "evidence_ids": [
+            "E00122",
+            "E00123",
+            "E00124",
+            "E00126",
+            "E00127",
+            "E00128",
+            "E00129",
+            "E00118"
+          ]
+        },
+        {
+          "text": "forward와 backward 사이의 전달 과정도 축소되었다. forward-backward 간 전달되는 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가한 뒤 forward에서 GPU에 레이어별로 저장하고 backward는 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 바꿨다. 이에 따라 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었으나, 이 변경이 성능 최고점을 올렸는지는 불확실하다고 기록되었다.",
+          "evidence_ids": [
+            "E00130",
+            "E00133"
+          ]
+        },
+        {
+          "text": "CUDA 그래프와 메모리·복사 제어 조합의 효과는 실행 결과에서 관측되었다. CUDA 그래프 적용 후 전체 소요 시간이 감소했고(예: 787s → 630s, 1029s → 668s), phase breakdown에서는 bound 단계가 전체 elapsed의 대부분을 차지하고 infer가 그 다음, certify가 가장 작은 비중을 차지했다. 결합 방식 비교에서는 backward_only가 forward+backward보다 빠르게 관측되었고 forward가 가장 느리게 관측되어, 일반적인 예상(forward < forward+backward < backward_only)과 다른 실행 결과로 기록되었다. CUDA 그래프만 적용한 버전과 pinned Memory 추가 + cudaEvent 제어 + 필요한 만큼 계산 후 D2H memcpy + certify topk 자료구조 스택화 버전을 비교했을 때, forward에서는 graph 단일 적용이 전체적으로 우수하고 infer_s 기준 약 20초 차이가 났으며, backward에서는 total 시간이 비슷했고 이는 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행했기 때문이라고 분석되었다. 다만 구성 요소들의 결합 구조나 연결 방식은 실제 구현·실행 원문에서 직접 기술되지 않았고, 위 분석은 실행 결과 해석·판단의 서술로 남아 있다.",
+          "evidence_ids": [
+            "H85ca0e507c4e_94",
+            "H85ca0e507c4e_93",
+            "H85ca0e507c4e_92",
+            "H85ca0e507c4e_95",
+            "H85ca0e507c4e_96",
+            "H85ca0e507c4e_97",
+            "H85ca0e507c4e_98",
+            "Hefd7e87bb735_30"
+          ]
+        },
+        {
+          "text": "복사 제어와 구조체·컴파일 관련 조정도 최적화 과정에 포함되었다. backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생해, 측정·비교 시 실제 연산 성능보다 복사 오버헤드가 결과에 섞일 수 있다는 문제가 지적되었고, 이후 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선해 복사를 최소화했다. forward 호출 시 중간 결과를 CPU에 복사하는지 여부를 플래그로 제어하지 않으면 memcpy가 현저히 늘어나 비교 조건이 달라질 수 있어 플래그가 도입되었고, false로 할 경우 memcpy가 현저히 줄었다. 이후 forward의 플래그를 중간 결과(layer_bound 복사용), final_affine 복사용, 최종 결과 복사용 3개로 늘리고, backward의 플래그도 layer_bound와 affine_bound 복사 제어용으로 각각 2개로 분리했다. 또한 switch 문 안에서 구조체를 선언과 동시에 생성하도록 변경해 보았으나, switch 안 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않았고, case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생해 main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. CROWN 결과를 담는 구조체를 반복문 바깥 main scope에서 선언해 두고 switch 내부에서 값을 담으면 값에 의한 복사가 발생해 92만 번 반복 시 복사 오버헤드가 커지는 문제도 기록되었다.",
+          "evidence_ids": [
+            "Hefd7e87bb735_10",
+            "Hefd7e87bb735_11",
+            "E00155",
+            "E00156",
+            "E00157",
+            "E00353",
+            "E00354",
+            "Hefd7e87bb735_18"
+          ]
+        },
+        {
+          "text": "복사 횟수와 실행 시간 해석에서는 단일 실행과 반복 조건 사이의 차이가 관측되었다. 단일 데이터 기준 memcpy 호출 횟수는 forward와 backward 각각 6번으로 확인되었고, cudaMemcpy 호출 횟수는 forward와 backward에서 동일했으나, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 더 많이 잡혀 전체 실행 시간 차이의 원인이 되었다. 단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 뛰어넘지 않았지만, 40000번 루프 반복 조건에서는 D2H 복사 오버헤드가 backward 대비 forward 계산의 이득을 초과해 forward가 더 느려지는 현상이 관측되었고, 그 원인은 중간 레이어 결과를 저장하느냐/마느냐의 플래그에 있었다. 한편 단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만, 92만 개의 데이터를 돌리면 비슷해진다(1분 정도 차이)는 현상이 아직 해결되지 못한 상태로 기록되었다. 또한 memcpy 호출 횟수 변화(예: 109→94, 66→56 등)는 측정 시점·구성에 따라 비교 지표로 쓰이지만, 복사 제거 여부나 플래그 설정에 따라 횟수가 달라지므로 공정 비교를 위해 해당 조건을 명시해야 한다는 한계가 함께 지적되었다. Nsight System에서 kernel 비중 증가나 메모리 비중 감소가 반드시 최적화 성공을 의미하지 않으며, CPU-GPU 메모리 병목은 그대로인데 커널 실행 시간이 잘못된 커널 작성으로 늘어나도 kernel 비중이 증가할 수 있어 단순 지표 비교만으로는 공정 평가가 어렵다는 해석상의 주의도 기록되었다.",
+          "evidence_ids": [
+            "E00160",
+            "E00165",
+            "Hefd7e87bb735_17",
+            "E00153",
+            "E00151",
+            "E00154",
+            "E00167",
+            "Hefd7e87bb735_15",
+            "Hefd7e87bb735_13"
+          ]
+        },
+        {
+          "text": "제거 실험을 통한 구성 요소 기여도 분석은 이 절에서 별도로 정리되지 않았다. 최적화 과정에서는 커널 퓨전·포인터 스와핑·행렬곱 커널 통합·메모리 풀 활용·복사 제어 플래그·그래프 적용 등이 순차적으로 적용·검토되었으나, 각 구성 요소를 체계적으로 분리해 기여도를 비교한 제거 실험 결과나 정리된 표는 확인되지 않는다. 따라서 구성 요소별 기여는 적용 순서와 관측된 경향의 맥락에서 서술되는 데 그치며, 개별 최적화의 독립적 효과는 이 절의 근거만으로는 분리되지 않는다.",
+          "evidence_ids": [
+            "E00141",
+            "E00142",
+            "E00143",
+            "E00231",
+            "E00232",
+            "E00270",
+            "E00272"
+          ]
+        }
+      ]
+    }
+  }
+}

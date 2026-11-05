@@ -1,0 +1,23 @@
+{
+  "request_fingerprint": "d08373d1d9cb05f5a43c35d42daa5d3cee28dcd11b73852d542f41ae1578233a",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "핵심 최적화 구성은 CUDA Graph를 통한 커널 런치 횟수 감소와 pinned memory 적용 방식(hostRegister, hostAlloc)과 noPinning 간 메모리 복사 시간 비교로 정리할 수 있다. 3-layer 네트워크 기준으로 CUDA kernel launch만 세고 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했으며, 이 범위에서 graph mode=1, 샘플 1개 전체 기준으로 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다. 평균값(n=920000) 측정 표에서는 cuda stream synchronize 시간이 hostRegister 323μs, hostAlloc 322μs, noPinning 314μs였고, cudaMemcpyAsync는 hostRegister 5.188μs, hostAlloc 5.351μs, noPinning 4.932μs, memcpy 복사 시간은 hostRegister 1.117μs, hostAlloc 1.142μs, noPinning 340ns로 나타났다. pinned memory 미적용 버전이 추론 종료까지 synchronize 시간이 가장 빨랐으며, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었다. cudaMemcpyAsync 호출 시간에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했고, 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 작은 데이터 크기(현재 입력 기준 1KB)를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다는 해석도 제시되었다. pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, backward_only가 왜 제일 빠른지에 대한 질문은 제기되었으나 이 페이지에서 답변이 완료되지는 않았다.",
+          "evidence_ids": [
+            "E00311",
+            "E00313",
+            "E00309",
+            "E00303",
+            "E00304",
+            "E00306",
+            "E00305",
+            "E00307",
+            "E00308"
+          ]
+        }
+      ]
+    }
+  }
+}

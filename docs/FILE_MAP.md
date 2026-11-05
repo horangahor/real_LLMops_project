@@ -14,14 +14,17 @@
 | `requirement_extraction.py`, `docs/A_MODE_STABILITY.md` | A 모드 질문 기반 근거 수집·페이지별 체크포인트·원문 검토·질문 충족 판단과 재개 |
 | `planned_paper.py`, `paper_plan.py` | 원문 입력, 작성 계획·근거 연결, 초안 실행과 저장 |
 | `hierarchical_drafting.py` | 소절 작성·검토, 장별 1차 편집·검토, 전체 2차 편집·검토와 단계별 재개 |
+| `writing_length.py` | 전체 본문 목표를 절 역할·소절 수에 배분하고 분할 작성 요청들이 같은 소절 예산을 나눠 쓰도록 구성 |
 | `draft_prose.py` | 문단별 본문·근거 ID 필수 출력 스키마, 소절 범위 검사와 인용 표시 조립 |
+| `prose_format_repair.py` | 한 객체에 합쳐진 여러 문단의 본문을 보존하고 기존 형식 보정 기회에서 문단별 근거 목록만 반환받아 연결 |
 | `draft_diagnostics.py` | 검토 실패를 필수 항목·실제 문단·근거 내용·임시 승인·원문 위치로 추적하고 전체 진단 보고서 저장 |
 | `table_placement.py` | 중복 배정 표의 배치 장 선택·검증·변경 사유 저장 |
 | `review_response.py` | 소절 검토 JSON·ID 검사, 동일 응답 중복 제거와 잘못된 응답 형식 보정 |
 | `content_review_completion.py` | 소절 내용 보완 2회 후 남은 지적을 경고로 보존하고 충족률·원래 검토 판정을 유지 |
 | `editorial_review.py` | 근거 입력 없이 절·전체 편집의 중복·연결·용어·문체를 검토하고 하위 내용 검토 기록을 승계 |
-| `editorial_revision.py` | 최초 1·2차 편집의 구간별 인용 승계, 보완 호출 연결, 본문 변경·삭제·출처 연결 기록 |
-| `editorial_patch.py` | 보완 시 전체 본문을 읽히고 코드가 고정한 구간 칸의 유지·수정·삭제만 반환받아 위치·인용 적용 |
+| `editorial_recheck.py` | 편집 재검토의 본문·지적 묶음 구성, 이전 초안 인용문 중복 제거·원래 기록 보존과 배정 검증 |
+| `editorial_revision.py` | 구간별 인용 연결, 기존 최초 편집 캐시 검증·재생, 신규 최초 편집·보완 호출 연결과 본문 변경 감지 |
+| `editorial_patch.py` | 최초 편집·보완 시 전체 본문을 읽히고 고정 구간 칸의 유지·수정·삭제만 반환받아 위치·인용 적용 |
 | `drafting_budget.py`, `bounded_drafting.py`, `bounded_review.py` | 작성 요청 원문 중복 제거·입력 예산 검사·분할 작성·승인 근거 사용과 필수 내용 검토 |
 | `paper_context.py`, `docs/WRITING_INPUT_CONTEXT.md` | 3번 작업: 명시적인 계획 배정으로 장·소절별 근거·지침 입력 생성과 배정 기록 |
 | `evaluation/writing/run_chapter_pilot.py`, `docs/CHAPTER_PILOT_REVIEW.md`, `evaluation/writing/pilots/20261031-results/` | CUDA 근거 4개로 결과 장 1개를 생성·진단 검토한 실패 사례와 추가 검사 우선순위. 서비스 초안과 분리 |
