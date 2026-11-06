@@ -97,13 +97,15 @@ class DraftRevisionTests(unittest.TestCase):
             self.assertEqual(comparison["tables"], original["tables"])
         self.assertEqual(packet, original)
 
-    def test_fitting_revision_keeps_existing_request_inputs_for_cache_reuse(self):
+    def test_fitting_revision_also_uses_the_scoped_replacement_contract(self):
         _, _, packet, _, _ = revision_fixture()
         with patch.dict("os.environ", {"PAPER_REQUEST_MAX_BYTES": "50000"}), patch(
                 "bounded_drafting.compact_fragment_revision", side_effect=AssertionError("Already-fitting requests must not change")):
             tasks = generation_fragments(GROUNDING + WRITER + REVISION, packet, {"s0": packet})
         self.assertTrue(tasks)
-        self.assertTrue(all("scope" not in request.get("revision", {}) for _, _, _, request, _ in tasks))
+        edits = [request for _, _, _, request, schema in tasks if schema is not None and request["fragment"]["operation"] == "revise_paragraph"]
+        self.assertTrue(edits)
+        self.assertTrue(all(r["revision"]["scope"]["policy"] == "paragraph-replacement-v1" for r in edits))
 
     def test_split_revision_uses_latest_body_and_preserves_unaffected_windows(self):
         _, _, packet, before, _ = revision_fixture()

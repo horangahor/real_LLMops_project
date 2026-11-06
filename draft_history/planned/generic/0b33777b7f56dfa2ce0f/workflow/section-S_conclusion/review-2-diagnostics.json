@@ -1,0 +1,31 @@
+{
+  "stage": "section-S_conclusion",
+  "approved": true,
+  "review_kind": "editorial",
+  "items": [],
+  "paragraphs": {
+    "S_conclusion_p2": {
+      "section_id": "S_conclusion",
+      "text": "이 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 포팅하고, 실시간 대규모 연산에 대응할 수 있도록 최적화하는 과정을 정리한다. 핵심 설계는 호스트-디바이스 간 데이터 복사, 커널 호출, 메모리 할당·해제, 초기화 반복에서 발생하는 병목을 줄이는 방향으로 구성되었다. 메모리 풀과 warm-up 조합을 통해 반복 할당·해제 및 라이브러리 초기화 비용을 완화하고, cuBLAS를 활용한 행렬 곱셈 가속, matmul은 GPU로 두고 나머지 연산은 CPU로 처리하는 하이브리드 구성, 커널 퓨전, forward 함수 내 DTOH memcpy의 극단적 제거, alpha/beta GPU 버퍼 활용, cudaGraph를 통한 실행 경로 고정, 그리고 상황에 따른 메모리 방식 선택이 포함된다. GPU 아키텍처의 SM 구조를 고려해 FP64에서 FP32로, double에서 float로 자료형을 변경하는 조정도 함께 진행되었다. 이러한 구성은 GPU OPTIMIZED 모드 이후에도 CPU보다 느리다는 평가에서 출발해, matmul만 GPU로 실행하는 하이브리드 방식으로 이어지는 최적화 흐름의 기반이 되었다. [근거:E00030,E00033,E00073,E00083,E00118,E00143,E00212,E00314,E00321]"
+    },
+    "S_conclusion_p3": {
+      "section_id": "S_conclusion",
+      "text": "주요 실행 시간은 버전별 단일 실행 중심으로 기록되었다. GPU 버전은 353.057200 ms, GPU OPTIMIZED 모드(cuBLAS + Pool)는 229.691800 ms로 약 100ms 줄었지만 여전히 CPU보다 느리다고 평가되었다. 이후 HYBRID 모드(matmul=GPU, rest=CPU)에서는 201.670100 ms, HYBRID V2에서는 85.785300 ms로 기록되어 CPU보다 빨라졌다는 평가가 함께 남았다. 메모리 풀과 warm-up 조합만으로도 거의 200ms가 단축되었다는 정성적 평가가 있으며, 가중치 사전 업로드(PRELOAD ON GPU) 적용 후에는 149~155ms 범위와 149.820400 ms가 기록되었다. memcpy를 극단적으로 제거한 시점에서는 64.716000 ms까지 줄어들었다. 다만 이 값들은 단일 실행 또는 요약값 중심이며, 반복 측정 기반 통계는 제한적이다. [근거:E00368,E00075,E00131,E00144,E00119,E00375,E00361,E00358,E00106,E00252,E00216]"
+    },
+    "S_conclusion_p5": {
+      "section_id": "S_conclusion",
+      "text": "향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이 내용은 연구 노트의 계획·검토 기록에 근거한 목표·방식 서술이며, 실제 구현·평가 결과로 서술하지 않는다. [근거:E00262]"
+    }
+  },
+  "issues": [],
+  "editorial_status": "reviewed",
+  "editorial_warnings": [],
+  "editorial_completion": null,
+  "inherited_content_coverage": {
+    "met": 3,
+    "total": 3,
+    "value": 1.0,
+    "scope": "inherited_subsection_reviews",
+    "rechecked": false
+  }
+}

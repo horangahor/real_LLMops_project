@@ -22,13 +22,70 @@ fragment.operation=missing_evidence이면 이전 본문 전체를 다시 쓰지 
 검토 통과를 위해 근거 ID만 붙이거나 추정·조언을 구현 결과·확정 원인으로 바꾸지 않는다."""
 
 
-def call_structured(engine, folder, name, system, packet, schema):
+def scope_fragment_revision(packet):
+    """Only the target paragraph and global findings may guide its rewrite."""
+    fragment = packet.get("fragment", {})
+    pid = fragment.get("paragraph_id")
+    if not pid and fragment.get("operation") != "missing_evidence" and not packet.get("fragment_validation_error"):
+        return packet
+    result = copy.deepcopy(packet)
+    feedback = result.get("revision")
+    if feedback is not None:
+        report = feedback.get("review", {})
+        issues = []
+        for issue in report.get("issues", []):
+            if issue.get("paragraph_id") not in (None, "none", pid):
+                continue
+            row = copy.deepcopy(issue)
+            if row.get("quote", "").strip() == result.get("source_body", "").strip():
+                row.pop("quote", None)
+            issues.append(row)
+        # Derived warning/history fields can contain the same sibling quotes.
+        # The original report stays on disk; only actionable scoped input goes out.
+        checks = [{k: copy.deepcopy(v) for k, v in check.items() if k != "paragraph_quotes"}
+                  for check in report.get("checks", [])]
+        feedback["review"] = {"checks": checks, "issues": issues}
+        feedback["scope"] = {"policy": "fragment-review-scope-v2", "paragraph_id": pid or "none",
+                             "operation": fragment.get("operation", "generate")}
+        feedback["fragment_instruction"] = (
+            "현재 source_body와 현재 facts 범위만 작성·수정한다. 다른 문단의 인용문을 답으로 재출력하지 않는다. "
+            "source_body에 다른 묶음의 내용이 함께 있어도 이번 출력은 현재 facts로 뒷받침되는 부분만 다룬다.")
+    error = result.get("fragment_validation_error")
+    if isinstance(error, dict):
+        # The complete failed response is already retained in *-invalid-N.json.
+        result["fragment_validation_error"] = {k: v for k, v in error.items() if k != "response"}
+    return result
+
+
+def call_structured(engine, folder, name, system, packet, schema, *, fragment=False):
     # Read completed old requests before sending a request with one citation rule.
-    for old_system, old_packet in ((system, packet), (system + SOURCE_PROTOCOL, compact_packet(packet))):
-        cached = cached_response(engine, folder, name, old_system, old_packet, schema)
-        if cached is not NO_CACHE:
+    for base_system in dict.fromkeys((system, structured_system(system))):
+        for old_system, old_packet in ((base_system, packet), (base_system + SOURCE_PROTOCOL, compact_packet(packet))):
+            cached = cached_response(engine, folder, name, old_system, old_packet, schema)
+            if cached is NO_CACHE:
+                continue
+            if fragment:
+                try:
+                    render_parts(cached, packet)
+                except JoinedParagraphsError:
+                    pass  # Keep the lossless paragraph-only format repair path.
+                except (ValueError, KeyError, TypeError):
+                    continue
             return cached
-    return call_bounded(engine, folder, name, structured_system(system), packet, schema)
+    request = scope_fragment_revision(packet) if fragment else packet
+    if request != packet:
+        from document_parse import write_json
+        previous = packet.get("revision", {}).get("review", {}).get("issues", [])
+        retained = request.get("revision", {}).get("review", {}).get("issues", [])
+        write_json(folder / f"{name}-revision-input-scope.json", {
+            "policy": "fragment-review-scope-v2", "fragment": request["fragment"],
+            "previous_finding_paragraphs": [i.get("paragraph_id") for i in previous],
+            "retained_finding_paragraphs": [i.get("paragraph_id") for i in retained],
+            "source_body_unchanged": request.get("source_body") == packet.get("source_body"),
+            "facts_unchanged": request.get("facts") == packet.get("facts"),
+            "tables_unchanged": request.get("tables") == packet.get("tables"),
+            "failed_body_resent": "response" in request.get("fragment_validation_error", {})})
+    return call_bounded(engine, folder, name, structured_system(system), request, schema)
 
 
 def cited_ids(text):
@@ -146,9 +203,10 @@ def _revision_windows(packet, sid, key, full):
     return locations[key]
 
 
-def _needs_revision(pid, text, section_id, report):
+def _needs_revision(pid, text, section_id, report, meta=None):
+    from paragraph_revision import local_issues
     cited = cited_ids(text)
-    for issue in report.get("issues", []):
+    for issue in local_issues(report, pid, text, meta or {}):
         if issue["section_id"] != section_id or issue["severity"] != "error":
             continue
         if issue.get("validation_code") == "required_content" or (
@@ -161,8 +219,7 @@ def _needs_revision(pid, text, section_id, report):
             return True
     for check in report.get("checks", []):
         if check["verdict"] in ("missing", "incorrect") and check.get("model_verdict") != "met":
-            if pid in check.get("paragraph_ids", []) or (
-                    not check.get("paragraph_ids") and cited.intersection(check["evidence_ids"])):
+            if pid in check.get("paragraph_ids", []) or (meta or {}).get("single_paragraph") and not check.get("paragraph_ids"):
                 return True
     return False
 
@@ -202,6 +259,8 @@ def generation_fragments(system, packet, packets):
                     for i in section["required_items"] if not i["evidence_ids"] or ids.intersection(i["evidence_ids"])]
                 tables = [t for t in scoped["tables"] if set(t["evidence_ids"]) <= ids]
                 section["table_ids"] = [t["id"] for t in tables]
+                if "table_placements" in section:
+                    section["table_placements"] = [p for p in section["table_placements"] if p["table_id"] in section["table_ids"]]
                 request = {**{k: copy.deepcopy(v) for k, v in scoped.items()
                               if k not in ("revision", "child_parts", "sections", "section_packets")},
                     "section_plan": section, "facts": selected,
@@ -212,11 +271,15 @@ def generation_fragments(system, packet, packets):
                     request["fragment"]["operation"] = operation
                 if paragraph_id is not None:
                     request["fragment"]["paragraph_id"] = paragraph_id
+                    request["fragment"]["whole_part_single_paragraph"] = len(revision_windows or []) == 1
                 if operation == "missing_evidence":
                     request["fragment"]["missing_evidence_ids"] = [f["id"] for f in selected if f["id"] in missing]
                 feedback = slim_feedback(local_revision, sid, selected) if revision else None
                 if feedback:
                     request["revision"] = feedback
+                if operation == "revise_paragraph":
+                    from paragraph_revision import scope_request
+                    request = scope_request(request)
                 # Keep fitting requests unchanged so completed responses remain
                 # reusable. Only oversized paragraph/gap revisions shed repeated
                 # prose and findings belonging to independently revised windows.
@@ -233,12 +296,14 @@ def generation_fragments(system, packet, packets):
                         continue
                     item = next(i for i in scoped["section_plan"]["required_items"] if i["id"] == check["item_id"])
                     target = next((pid for pid, _ in windows if pid in check.get("paragraph_ids", [])), None)
-                    if target is None:
-                        target = next((pid for pid, text in windows if set(item["evidence_ids"]) & cited_ids(text)), windows[0][0])
-                    content_targets.setdefault(target, set()).update(item["evidence_ids"])
+                    if target is None and len(windows) == 1:
+                        target = windows[0][0]
+                    if target is not None:
+                        explicit_missing = check.get("missing_section_evidence_ids", check.get("missing_body_evidence_ids", []))
+                        content_targets.setdefault(target, set()).update(explicit_missing)
             cited_before = set().union(*(cited_ids(text) for _, text in windows))
             for window_index, (pid, window) in enumerate(windows):
-                if revision_windows is not None and pid not in content_targets and not _needs_revision(pid, window, sid, report):
+                if revision_windows is not None and pid not in content_targets and not _needs_revision(pid, window, sid, report, {**scoped.get("composition_policy", {}), "single_paragraph": len(windows) == 1}):
                     tasks.append((sid, key, f"revision-{window_index}-text", {"passthrough": window}, None))
                     continue
                 selected = set(cited_ids(window)) if body else {f["id"] for f in facts}
@@ -276,6 +341,11 @@ def generation_fragments(system, packet, packets):
                 make_window = lambda batch: make(batch, window,
                     paragraph_id=pid if revision_windows is not None else None,
                     operation="revise_paragraph" if revision_windows is not None else None)
+                if revision_windows is not None:
+                    from paragraph_revision import schema_for
+                    request = make_window([f for f in facts if f["id"] in selected])
+                    tasks.append((sid, key, f"{window_index}-0", request, schema_for(request)))
+                    continue
                 batches = pack_groups(groups, make_window, system + FRAGMENT + PROTOCOL, schema)
                 if not batches:
                     raise DraftingBudgetError(f"{sid}/{key}에 작성할 근거가 없습니다.")
@@ -307,12 +377,13 @@ def generate_bounded(engine, folder, name, system, packet, schema, packets, sing
     from writing_length import INSTRUCTION as LENGTH_INSTRUCTION
     if packet.get("writing_budget"):
         system += LENGTH_INSTRUCTION
-    if packet.get("revision", {}).get("previous_sections"):
+    revising = bool(packet.get("revision", {}).get("previous_sections"))
+    if revising:
         # Changed repair semantics must not replay an old whole-body rewrite.
         system += REVISION
     # Check both old request representations without making a legacy-format
     # network call. Invalid cached prose must not replay the original failure.
-    for old_system, old_packet in ((system, packet), (system + SOURCE_PROTOCOL, compact_packet(packet))):
+    for old_system, old_packet in ([] if revising else ((system, packet), (system + SOURCE_PROTOCOL, compact_packet(packet)))):
         cached = cached_response(engine, folder, name, old_system, old_packet, schema)
         if cached is not NO_CACHE:
             try:
@@ -321,7 +392,7 @@ def generate_bounded(engine, folder, name, system, packet, schema, packets, sing
                 write_json(folder / f"{name}-legacy-rejected.json", {"validation_error": str(error)})
     structured_schema = (prose_schema(next(iter(packets.values()))) if single else
                          object_schema({"sections": object_schema({key: prose_schema(p) for key, p in packets.items()})}))
-    if fits_request(system + PROTOCOL, packet, structured_schema):
+    if not revising and fits_request(system + PROTOCOL, packet, structured_schema):
         response = call_structured(engine, folder, name, system + PROTOCOL, packet, structured_schema)
         try:
             render_generation(response, packets, single)
@@ -338,6 +409,18 @@ def generate_bounded(engine, folder, name, system, packet, schema, packets, sing
         if fragment_schema is None:
             result[sid]["parts"].setdefault(key, []).append(request["passthrough"])
             manifest.append({"section_id": sid, "part": key, "batch": index, "preserved_connecting_text": True})
+            continue
+        if request.get("fragment", {}).get("operation") == "revise_paragraph":
+            from paragraph_revision import replace_paragraph, POLICY as REPLACEMENT_POLICY
+            fragment_name = f"{name}-split-{sid}-{key}-{index}"
+            body, warning = replace_paragraph(engine, folder, fragment_name, system, request)
+            result[sid]["parts"].setdefault(key, []).append(body)
+            if warning:
+                warnings.append(warning)
+            manifest.append({"section_id": sid, "part": key, "batch": index,
+                "operation": "revise_paragraph", "paragraph_id": request["fragment"]["paragraph_id"],
+                "evidence_ids": [f["id"] for f in request["facts"]], "replacement_policy": REPLACEMENT_POLICY,
+                "paragraph_count": 1, "original_preserved": warning is not None})
             continue
         error, deferred_missing = None, []
         for repair in range(2):
@@ -362,7 +445,7 @@ def generate_bounded(engine, folder, name, system, packet, schema, packets, sing
                         pass
             if response is NO_CACHE:
                 response = call_structured(engine, folder, fragment_name, system + FRAGMENT + PROTOCOL,
-                                          bounded_packet, fragment_schema)
+                                          bounded_packet, fragment_schema, fragment=True)
             try:
                 body = render_parts(response, request)["parts"]["p0"]
                 missing = set(request["fragment"].get("missing_evidence_ids", [])) - cited_ids(body)

@@ -1,0 +1,19 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00174",
+          "E00130",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00133"
+        ],
+        "text": "실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 구조로 되어 있다. 다만 이 기록은 코드 구조와 분기 조건만 포함하며, 실제 호출 횟수나 성능 수치는 담지 않는다. 또한 원문 코드에는 Ht_count; 및 +f_count;로 표기되어 있어 증가 연산의 정확한 구문이 OCR·파싱 한계로 완전히 복원되지 않았을 수 있다.\n\nforward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를, affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. 다만 현재 기록은 각 변경의 내용과 단일 실행 결과만 담고 있으며, 여러 변경이 실제로 함께 적용되었는지 또는 개별·순차 적용되었는지에 대한 직접 근거는 포함하지 않는다."
+      }
+    }
+  },
+  "reason": "교체 문단의 text에 여러 문단이 합쳐져 있습니다."
+}

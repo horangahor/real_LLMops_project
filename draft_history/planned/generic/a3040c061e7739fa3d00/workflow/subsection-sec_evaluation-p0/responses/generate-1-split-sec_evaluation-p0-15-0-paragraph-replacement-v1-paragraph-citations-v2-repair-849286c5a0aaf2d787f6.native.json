@@ -1,0 +1,33 @@
+{
+  "id": "03bc8f62-83af-44f4-8f1a-fd0d1b0126f2",
+  "object": "chat.completion",
+  "created": 1793983572,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": {\"evidence_ids\": [\"E00130\", \"E00137\", \"E00138\", \"E00143\", \"E00146\", \"E00147\", \"E00148\", \"E00149\", \"E00165\", \"E00272\", \"E00274\", \"E00326\", \"E00329\", \"E00339\", \"E00370\"], \"text\": \"CUDA 포팅과 최적화 과정에서 여러 구성 요소가 순차적으로 적용되었다. forward와 backward 사이에 전달되던 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했으며, alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었으나, 성능의 최고점이 올랐는지는 불확실하다. backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생했는데, affine_min/max까지 backward_bound_gpu에서 실행되도록 개선해 GPU→CPU 메모리 복사를 최소화하는 방향으로 수정되었다. 미리 작성해둔 퓨전 함수를 사용해 affine_min과 affine_max를 하나의 커널로 병합하는 커널 퓨전이 완료되었다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용해 H2D 복사를 제거하고, default 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성해 PCIe 통신 오버헤드를 줄이는 방향이 적용되었다. 이 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time이 13.939000 ms로 기록되었고 출력 차원은 16이었으며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. 한편 backward_bound_gpu()에 커널 퓨전을 먼저 진행했을 때는 23ms 후반대까지의 실행 시간이 관측되었고, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 것은 23ms 정도가 보인다는 점이 기록되었다. memcpy 호출 횟수는 66개에서 56개로 줄어든 사례가 있었고, Forward와 Backward의 cudaMemcpy 호출 횟수는 동일하다는 관측도 있었다. 이후 memcpy 10번에서 6번으로 줄인 결과와 그래프 적용 결과까지 확보되었으며, 그래프를 적용했더니 787.8832s로 3가지 방법 중 가장 빠르다고 기록되었고 avg 기준 forward는 1029s, forward+backward는 1138s로 비교값이 함께 언급되었다. 반면 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했을 때는 CPU 계산 오버헤드가 더 커진 것 같고 시간이 늘었다는 관찰이 있었다.\"}}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 24009,
+    "completion_tokens": 626,
+    "total_tokens": 24635,
+    "prompt_tokens_details": {
+      "cached_tokens": 16320,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

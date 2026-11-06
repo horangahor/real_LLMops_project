@@ -1,0 +1,31 @@
+{
+  "request_fingerprint": "afbed635c22ae27f18887e2271780076622d796410110e2d653e38c12f025dd6",
+  "value": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00031",
+          "E00035",
+          "E00064",
+          "E00065",
+          "E00066",
+          "E00067",
+          "E00071",
+          "E00073",
+          "E00097",
+          "E00109",
+          "E00111",
+          "E00113",
+          "E00114",
+          "E00115",
+          "E00116",
+          "E00117",
+          "E00167",
+          "E00259",
+          "U5d2b168fab4a92747ee6"
+        ],
+        "text": "결과가 실제로 의미하는 범위는 제한적이다. CPU ONLY, GPU only, GPU OPTIMIZED, HYBRID, HYBRID V2, mempool + warmup, memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀, backward 메모리 복사 제거 및 초기화 최적화 등 버전·모드별로 단일 실행 결과 또는 요약값이 주로 기록되었고, 반복 측정 통계나 조건별 분리 측정이 충분히 제시되지 않았다. cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않으며, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계도 원문에 직접 제시되지 않아 공정 비교를 위한 통제 조건으로 확정하기 어렵다. 또한 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계로 지적되었다. HYBRID 모드에서는 Elapsed time이 201.670100 ms로, HYBRID V2 모드에서는 85.785300 ms로 기록되었고 기록자는 이를 CPU보다 빨라졌다고 평가했으나, 이는 단일 실행 결과이며 CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 페이지에 없다. HYBRID V2 모드의 다른 실행에서는 Total Elapsed time이 49416.462000 ms, Average time per iter가 98.832924 ms로 기록되었고, 기록자는 CPU 캐시 때문에 CPU보다 느리게 나온 것으로 추정하며 1번만 돌리는 실험이 필요하다고 판단했다. cuBLAS도 그렇게 영향을 미치지는 못하는 것 같다고 판단되었고, mempool에서 ensure_pool()을 활용해 메모리 할당을 하는 것은 큰 영향을 미치지만 cuBLAS를 쓰고 warm up 하는 것과 그렇게 차이나지 않는다고 기록되었다. 메모리 풀 + warm up 조합은 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었으나, 이 역시 정성적 평가이며 정확한 수치나 반복 측정 기반 통계는 제시되지 않았다. CPU ONLY iteration ver의 실행 시간은 193ms로 기존 backward보다 약 93ms 느리다고 기록되었고, cuBLAS와 cuSPARSE는 실험했으나 현재 모델 크기와 호출 패턴에서는 느려졌으므로 현 기준 코드에는 포함하지 않은 상태이며 후에 다시 도입해보는 시도가 필요하다고 정리되었다. spMM 도입 후 거의 40ms로 회귀했으며 이러면 안된다고 기록되었고, network_forward는 신경망의 일반 추론값을 출력하지만 아직 GPU 파이프라인이 아니라서 최적화가 안 되어 있기도 하다고 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞다고 판단되었으며, 공식 결과는 24 ms dense baseline으로 유지하고 cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다고 제안되었다. 단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만 92만개의 데이터를 돌리면 비슷해진다(1분 정도 차이)는 현상이 기록되었고, 이 문제는 아직 해결하지 못했다. 현재 구현과 antenna_lirpa의 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된다고 해석되었다."
+      }
+    }
+  }
+}

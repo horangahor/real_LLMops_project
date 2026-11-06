@@ -1,0 +1,23 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00303",
+          "E00304",
+          "E00305",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00309",
+          "E00333"
+        ],
+        "text": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평균 시간만 보면 No-Pin이 더 빠르지만, 지터와 최악 실행 시간에서는 Pinned가 유리하다. No-Pin의 최대 지연시간은 8.80~11.6ms, 지터는 118.94μs이고, Pinned는 최대 1.64ms, 지터 47.28μs로 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. 이는 No-Pin이 평소 CPU 캐시로 빠르게 동작하다가 OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 터지는 순간 지연이 11ms까지 튀는 반면, Pinned는 매번 1.5μs의 하드웨어 통행료를 내는 대신 OS 페이징 간섭을 차단해 1.64ms 안쪽으로 보장하기 때문으로 해석된다. 다만 1KB 수준의 작은 데이터에서 매 루프마다 개별 하드웨어 DMA 셋업을 부르는 오버헤드 때문에 Pinned가 총 소요 시간에서 더 길게 나온 점도 함께 확인된다. 평균값(n=920000) 기준 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 hostRegister·hostAlloc·noPinning 간 비교한 표에서도 pinned 적용 버전이 빠르거나 느리게 측정되어 2copy에서 1copy로 바꾼 효과가 크지 않았고, 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 작은 데이터를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다는 해석도 제시되었으나, pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리하기로 했다. backward_only가 왜 제일 빠른지에 대한 질문도 제기되었다. 6번째 세미나 이후 할 일로는 대학원 AI 프로그래밍 논문 영상 재확인, 6번 세미나 3번 슬라이드 RAM 추가(해결), 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 기록되었다."
+      }
+    }
+  },
+  "reason": "교체 문단이 허용 분량 328자를 넘었습니다."
+}

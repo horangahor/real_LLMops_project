@@ -6,10 +6,11 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from drafting_budget import DraftingBudgetError, compact_packet, request_bytes, request_limit
-from editorial_recheck import POLICY
+from editorial_recheck import LEGACY_POLICY, POLICY, _review_recheck
 from editorial_review import _review_editorial_legacy, review_editorial
 from planned_paper import PlannedPaper, index_paragraphs
 from test_planned_paper import plan
+from review_test_support import editorial_review_reply
 
 
 def finding(pid="s0_p1", reason="연결을 보완한다.", quote="이전 본문이다.", section="s0", category="flow", severity="error"):
@@ -18,6 +19,82 @@ def finding(pid="s0_p1", reason="연결을 보완한다.", quote="이전 본문�
 
 
 class EditorialRecheckTests(unittest.TestCase):
+    def test_fixed_status_output_preserves_original_reason_category_and_severity(self):
+        pending = [finding("s0_p999", reason="기존 중복 설명을 정리한다. " * 40, category="duplication")]
+        original, replies = copy.deepcopy(pending), []
+        bodies = {"s0": "첫 설명이다. [근거:F1]\n\n현재 지적 대상이다. [근거:F1]"}
+        def client(system, packet, schema, path):
+            self.assertEqual(packet["recheck_policy"], POLICY)
+            self.assertNotIn("issues에 반환", system)
+            self.assertEqual(set(schema["properties"]), {"findings"})
+            fields = schema["properties"]["findings"]["properties"]["finding-0"]["properties"]
+            self.assertEqual(set(fields), {"status", "paragraph_id"})
+            result = {"findings": {"finding-0": {"status": "unresolved", "paragraph_id": "s0_p2"}}}
+            replies.append(result)
+            return result
+        with TemporaryDirectory() as tmp:
+            _, report = review_editorial(PlannedPaper(tmp, client), Path(tmp), "review", "section", plan(2), bodies, {}, pending)
+            self.assertFalse(report["approved"])
+            self.assertEqual(report["issues"][0]["reason"], pending[0]["reason"])
+            self.assertEqual(report["issues"][0]["category"], "duplication")
+            self.assertEqual(report["issues"][0]["severity"], "error")
+            self.assertEqual(report["issues"][0]["paragraph_id"], "s0_p2")
+            self.assertEqual(report["issues"][0]["quote"], bodies["s0"].split("\n\n")[1])
+            self.assertLess(len(json.dumps(replies[0])), 130)
+            self.assertTrue((Path(tmp) / f"review-{POLICY}-results.json").is_file())
+        self.assertEqual(pending, original)
+
+    def test_not_assessable_does_not_claim_the_previous_error_was_resolved(self):
+        pending = [finding()]
+        def client(*args):
+            return {"findings": {"finding-0": {"status": "not_assessable", "paragraph_id": "none"}}}
+        with TemporaryDirectory() as tmp:
+            _, report = review_editorial(PlannedPaper(tmp, client), Path(tmp), "review", "section", plan(2),
+                {"s0": "현재 본문이다. [근거:F1]"}, {}, pending)
+        self.assertFalse(report["approved"])
+        self.assertEqual(report["issues"][0]["severity"], "error")
+        self.assertIn(pending[0]["reason"], report["issues"][0]["reason"])
+
+    def test_an_unresolved_window_keeps_one_original_finding_even_if_another_window_says_resolved(self):
+        bodies = {"s0": "\n\n".join(f"문단 {i}: " + "설명 " * 160 + "[근거:F1]" for i in range(8))}
+        calls = []
+        def client(system, packet, schema, path):
+            calls.append(packet)
+            return {"findings": {"finding-0": {"status": "resolved" if len(calls) == 1 else "unresolved",
+                "paragraph_id": "none" if len(calls) == 1 else next(iter(packet["draft_paragraphs"]))}}}
+        with TemporaryDirectory() as tmp, patch.dict("os.environ", {"PAPER_REQUEST_MAX_BYTES": "12000"}):
+            _, report = review_editorial(PlannedPaper(tmp, client), Path(tmp), "review", "section", plan(2), bodies, {}, [finding()])
+        self.assertGreater(len(calls), 1)
+        self.assertFalse(report["approved"])
+        self.assertEqual(len(report["issues"]), 1)
+
+    def test_unknown_finding_cross_section_paragraph_and_extra_reason_are_blocked(self):
+        pending = [finding()]
+        replies = [
+            {"findings": {"unknown": {"status": "resolved", "paragraph_id": "none"}}},
+            {"findings": {"finding-0": {"status": "unresolved", "paragraph_id": "s1_p1"}}},
+            {"findings": {"finding-0": {"status": "unresolved", "paragraph_id": "s0_p1", "reason": "새로 생성한 긴 설명"}}}]
+        for response in replies:
+            with self.subTest(response=response), TemporaryDirectory() as tmp:
+                with self.assertRaisesRegex(ValueError, "보정에 실패"):
+                    review_editorial(PlannedPaper(tmp, lambda *args: copy.deepcopy(response)), Path(tmp), "review", "paper", plan(2),
+                        {"s0": "현재 본문이다. [근거:F1]", "s1": "다른 장이다. [근거:F1]"}, {}, pending)
+
+    def test_completed_v2_recheck_response_is_reused_without_changing_original_files(self):
+        bodies, pending, calls = {"s0": "현재 본문이다. [근거:F1]"}, [finding()], []
+        def client(system, packet, schema, path):
+            calls.append(packet)
+            self.assertEqual(packet["recheck_policy"], LEGACY_POLICY)
+            return {"issues": []}
+        with TemporaryDirectory() as tmp:
+            engine = PlannedPaper(tmp, client)
+            _review_recheck(engine, Path(tmp), "review", "section", plan(2), bodies, {}, pending, LEGACY_POLICY)
+            original_files = {p: p.read_bytes() for p in Path(tmp).rglob("*.json")}
+            _, report = review_editorial(engine, Path(tmp), "review", "section", plan(2), bodies, {}, pending)
+            self.assertTrue(report["approved"])
+            self.assertEqual(len(calls), 1)
+            self.assertTrue(all(p.read_bytes() == data for p, data in original_files.items()))
+
     def test_empty_pending_list_does_not_request_a_new_editorial_review(self):
         def client(*args):
             raise AssertionError("There are no existing findings to recheck")
@@ -37,7 +114,7 @@ class EditorialRecheckTests(unittest.TestCase):
             self.assertEqual(len({i["quote_ref"] for i in packet["previous_findings"]}), 1)
             self.assertTrue(all("quote" not in i for i in packet["previous_findings"]))
             self.assertEqual(next(iter(packet["previous_paragraphs"].values()))["text"], pending[0]["quote"])
-            return {"issues": [{k: pending[0][k] for k in ("section_id", "paragraph_id", "category", "severity", "reason")}]}
+            return editorial_review_reply(packet, [{k: pending[0][k] for k in ("section_id", "paragraph_id", "category", "severity", "reason")}])
         with TemporaryDirectory() as tmp:
             _, report = review_editorial(PlannedPaper(tmp, client), Path(tmp), "review", "section", plan(2), bodies, {}, pending)
             audit = json.loads((Path(tmp) / f"review-{POLICY}-input.json").read_bytes())
@@ -57,7 +134,7 @@ class EditorialRecheckTests(unittest.TestCase):
             sids = {p["section_id"] for p in packet["draft_paragraphs"].values()}
             self.assertTrue(all(i["section_id"] in sids for i in packet["previous_findings"]))
             self.assertLessEqual(request_bytes(system, compact_packet(packet), schema), int(request_limit() * .75))
-            return {"issues": []}
+            return editorial_review_reply(packet, [])
         with TemporaryDirectory() as tmp, patch.dict("os.environ", {"PAPER_REQUEST_MAX_BYTES": "16000"}):
             _, report = review_editorial(PlannedPaper(tmp, client), Path(tmp), "review", "paper", plan(2), bodies, {}, pending)
         self.assertTrue(report["approved"])
@@ -74,7 +151,7 @@ class EditorialRecheckTests(unittest.TestCase):
             calls.append(packet)
             self.assertEqual(packet["previous_findings"][0]["paragraph_id"], "s0_p999")
             self.assertEqual(set(packet["draft_paragraphs"]), {"s0_p1"})
-            return {"issues": []}
+            return editorial_review_reply(packet, [])
         with TemporaryDirectory() as tmp:
             review_editorial(PlannedPaper(tmp, client), Path(tmp), "review", "section", plan(2),
                              {"s0": "통합 후 현재 문단이다. [근거:F1]"}, {}, pending)
@@ -93,7 +170,7 @@ class EditorialRecheckTests(unittest.TestCase):
             if len(calls) == 2 and not interrupted:
                 interrupted.append(True)
                 raise RuntimeError("test recheck group interruption")
-            return {"issues": []}
+            return editorial_review_reply(packet, [])
         with TemporaryDirectory() as tmp:
             engine = PlannedPaper(tmp, client)
             with self.assertRaisesRegex(RuntimeError, "group interruption"):
@@ -114,9 +191,9 @@ class EditorialRecheckTests(unittest.TestCase):
             calls.append(copy.deepcopy(packet))
             if len(calls) == 1:
                 self.assertEqual({i["category"] for i in packet["previous_findings"]}, {"flow"})
-                return {"issues": [{"section_id": "s0", "paragraph_id": "s0_p1", "category": "style",
-                                    "severity": "error", "reason": "다른 묶음의 문제 유형이다."}]}
-            return {"issues": []}
+                return editorial_review_reply(packet, [{"section_id": "s0", "paragraph_id": "s0_p1", "category": "style",
+                                    "severity": "error", "reason": "다른 묶음의 문제 유형이다."}])
+            return editorial_review_reply(packet, [])
         with TemporaryDirectory() as tmp:
             review_editorial(PlannedPaper(tmp, client), Path(tmp), "review", "section", plan(2),
                              {"s0": "현재 본문이다. [근거:F1]"}, {}, pending)

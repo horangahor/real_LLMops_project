@@ -1,0 +1,33 @@
+{
+  "id": "4e67747a-f232-42fd-a84d-b97423617801",
+  "object": "chat.completion",
+  "created": 1793984413,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": {\"evidence_ids\": [\"E00277\", \"E00278\", \"E00279\", \"E00280\", \"E00281\", \"E00282\", \"E00283\", \"E00284\", \"E00286\", \"E00290\", \"E00291\", \"E00292\", \"E00293\", \"E00294\", \"E00295\", \"E00296\", \"E00297\", \"E00298\", \"E00299\", \"E00300\", \"E00301\", \"E00303\", \"E00304\"], \"text\": \"cudaHostRegister와 No Pinning(Pageable) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였으며, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려졌다. 이는 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전된 결과로 해석된다. 기록자는 추론 단계에서 시간이 느려졌다고 관찰했으며, 그 이유로 1KB 수준의 작은 데이터를 매 루프마다 개별 하드웨어 DMA 셋업으로 전송하는 오버헤드가 지목되었다. Pinned는 DMA 디스크립터 생성·큐 제출로 호출 1회당 약 1.0~1.5μs, No-Pin은 CPU L1/L2 캐시 복사로 약 0.02~0.05μs(20~50ns) 수준이 소요되어, No-Pin이 DMA 셋업보다 30~50배 빠르다. 이에 따라 1회 전송 오버헤드는 No-Pin 약 0.03μs, Pinned 약 1.50μs, 920,000회 누적은 No-Pin 약 0.03초, Pinned 약 1.38초로 정리된다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐으나, 최대 지연시간은 No-Pin이 8.80~11.6ms, Pinned가 1.64ms로 Pinned가 약 7배 안정적이었고, 지터는 No-Pin 118.94μs, Pinned 47.28μs로 약 60% 감소하였다. 이러한 차이는 OS 페이징·백그라운드 작업·드라이버 버퍼 락 경합이 No-Pin에서 간헐적 지연을 유발할 수 있다는 해석과 함께 제시된다. 한편 infer 단계에서 40,000번 반복 중 CPU 스레드가 cudaStreamSynchronize로 대기·깨어나는 미세 지연과 드라이버 동기화 비용이 맞물려 Pinned 쪽이 총 루프 시간에서 약 13초 느려졌다는 관측도 함께 기록되었다. 다만 cudaMemcpyAsync 호출 시간에서는 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 변경한 효과가 크지 않았다는 분석도 제시된다. 측정 조건으로는 backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산이 사용되었고, 공정한 측정을 위해 Persistence mode 활성화(sudo nvidia-smi -pm 1)와 그래픽 클록 고정(sudo nvidia-smi -lgc 1410) 및 클록 확인(nvidia-smi -q -d CLOCK)이 적용되었으며, 클록 저하·스로틀링 원인으로 온도·전력·API 간헐적 지연이, 해결 방안으로 냉각 개선·전력 제한 확인·백그라운드 작업 확인이 정리되었다. 현재 기록은 figure 캡션과 연구일지 기반이며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다.\"}}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 56730,
+    "completion_tokens": 902,
+    "total_tokens": 57632,
+    "prompt_tokens_details": {
+      "cached_tokens": 39168,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

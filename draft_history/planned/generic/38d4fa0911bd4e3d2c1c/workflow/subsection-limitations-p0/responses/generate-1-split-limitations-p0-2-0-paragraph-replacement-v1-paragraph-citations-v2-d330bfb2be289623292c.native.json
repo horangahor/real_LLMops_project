@@ -1,0 +1,33 @@
+{
+  "id": "006fe787-bc93-4870-aa89-c7a150f10985",
+  "object": "chat.completion",
+  "created": 1793991795,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": {\"evidence_ids\": [\"E00257\", \"E00260\", \"E00261\", \"E00262\", \"E00263\", \"E00277\", \"E00278\", \"E00279\", \"E00280\", \"E00281\", \"E00282\", \"E00283\", \"E00284\", \"E00286\"], \"text\": \"현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 현재 작성자는 2차원 block 크기와 tid로 단일 샘플 행렬 연산을 수행 중이며, z축을 추가하면 3차원(multi sample) 처리용 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. antenna_lirpa는 싱글 스트림으로 동작하지만 cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림보다 약 4배 빠르다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. cudaHostRegister와 No Pinning 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이이다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. cudaHostRegister가 더 느리게 측정된 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었다. 추론(Infer) 단계에서 시간이 느려졌으며, 이에 대해 기록자가 '일단 추론에서 좀 시간이 느려지긴 했다..'라고 기록했다. GPU 클록을 고정하고 다시 실험해보기로 했으며, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했다. 클록을 2800Mhz로 고정하고 돌린 결과(기존 HostRegister)가 기록되었다. cuda 강의 19장의 GPU 클록 고정을 참고했다. 현재 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행한다. 측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용한다.\"}}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 32733,
+    "completion_tokens": 760,
+    "total_tokens": 33493,
+    "prompt_tokens_details": {
+      "cached_tokens": 1088,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

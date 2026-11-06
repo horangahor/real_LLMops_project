@@ -1,0 +1,530 @@
+{
+  "stage": "section-sec_evaluation",
+  "approved": true,
+  "review_kind": "editorial",
+  "items": [],
+  "paragraphs": {
+    "sec_evaluation_p1": {
+      "section_id": "sec_evaluation",
+      "text": "CUDA 포팅 이후 CROWN 검증 실행 시간은 GPU 버전 353.057200 ms에서 GPU OPTIMIZED(cuBLAS + Pool) 229.691800 ms, HYBRID(matmul=GPU, rest=CPU) 201.670100 ms, HYBRID V2 85.785300 ms로 점차 줄었고, 이후 메모리 풀·warmup·memcpy 제거·커널 퓨전·alpha/beta 메모리 풀을 거치며 149.820400 ms, 128.894800 ms, 64.716000 ms, 22.342900 ms, 21.018800 ms, 15.828400 ms 수준의 단일 실행 결과가 관측되었다. 다만 이 기록은 대부분 단일 실행 중심이며 반복 측정 통계가 부족해, 변형 방법 간 차이를 통계적으로 확정하기 어렵다. [근거:E00021,E00027,E00031,E00035,E00043,E00068,E00075,E00083,E00119,E00131,E00139]"
+    },
+    "sec_evaluation_p2": {
+      "section_id": "sec_evaluation",
+      "text": "GPU OPTIMIZED와 HYBRID는 CPU보다 느렸고, cuBLAS/cuSparse 도입 후 오히려 느려지는 관측도 나타났다. spMM 도입 뒤에는 약 40ms 수준으로 회귀했으며, backward_only는 graph 미적용 상태에서도 boun 평균이 약 2.5배였던 관측이 있었다. forward와 backward 간 기대 차이와 실제 관측 차이, pinned memory 실험 결과의 불일치도 함께 남아 있어, 이러한 실패·회귀 양상은 최적화 방향의 조건부 실패로 해석된다. [근거:E00029,E00030,E00045,E00111,E00120,E00125]"
+    },
+    "sec_evaluation_p3": {
+      "section_id": "sec_evaluation",
+      "text": "메모리 풀과 warm up 조합은 실행 시간을 줄이는 데 기여했고, make_zero_matrix·make_zero_vector의 CPU 회귀는 22~25ms 정도 줄였으며, lirpa_forward_bound 함수 커널 퓨전 적용 후 22.342900ms가 기록되었고 22ms 초반까지 나오는 경우도 있었다. 여러 변경이 동시에 적용되어 개별 효과를 완전히 분리해 확정하지는 못했다. [근거:E00070,E00075,E00076,E00119,E00120,E00125]"
+    },
+    "sec_evaluation_p4": {
+      "section_id": "sec_evaluation",
+      "text": "해석상의 한계로는 단일 실행 결과 중심, 반복 측정 통계 부족, 동시 변경으로 인한 개별 효과 분리 어려움, 작은 신경망 크기로 인한 cuBLAS/cuSparse 오버헤드, CUDA Context·런타임 오버헤드, memcpy 병목, warmup/preload 효과 혼입 가능성, pinned memory 실험 결과의 불일치 등이 있다. 또한 실시간 환경에서 데이터셋을 꽉 채워 넣기 어려운 제약도 배포 가능성 논의에서 함께 고려된다. [근거:E00027,E00029,E00030,E00031,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00072,E00075,E00081,E00083,E00096,E00097,E00105,E00106,E00109,E00111,E00114,E00117,E00119,E00120,E00131,E00132,E00139]"
+    },
+    "sec_evaluation_p5": {
+      "section_id": "sec_evaluation",
+      "text": "변형 방법별 실행 시간 변화를 비교하면, cudaGraph로 추론과 bound를 따로 캡처한 경우 약 400초 정도 시간이 줄어든 것으로 관측되었다. 배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 한편 커밋 이전 버전(graph만 적용한 버전)을 다시 실행해 본 결과 해당 버전이 더 빠른 것으로 관측되기도 했다. [근거:E00214,E00215,E00216,E00223]"
+    },
+    "sec_evaluation_p6": {
+      "section_id": "sec_evaluation",
+      "text": "구성 요소별 기여도에서는 메모리 풀과 warmup이 약 200ms 단축에 기여한 것으로 보였고, 커널 퓨전은 22~23ms대, alpha/beta GPU 버퍼는 21.0ms 수준으로 기록되었다. 커널 횟수 감소나 cudaGraph 적용 후 시간 감소도 관측되었으나, 여러 변경이 동시에 이루어져 개별 효과를 완전히 분리해 확정하지는 못했다. [근거:E00145,E00158,E00159,E00166,E00174,E00195,E00196,E00214,E00216]"
+    },
+    "sec_evaluation_p7": {
+      "section_id": "sec_evaluation",
+      "text": "계산 비용과 배포 가능성 측면에서는 메모리 풀, memcpy, 커널 퓨전, cudaGraph, 배칭, 멀티 스트림, pinned memory 등이 실시간성과 관련된 요소로 논의되었다. 그러나 실시간 환경에서는 데이터셋을 꽉 채워 넣기 어려운 제약이 있어, 배칭의 3배 향상과 같은 결과가 그대로 일반화된다고 보기는 어렵다. [근거:E00174]"
+    },
+    "sec_evaluation_p8": {
+      "section_id": "sec_evaluation",
+      "text": "CUDA 포팅 및 최적화 과정에서 관측된 실행 시간 변화와 변형 방법 간 비교를 정리한다. CPU 전용 처리(96ms)에서 시작해 모든 병렬처리 함수를 커널로 바꾼 v1(355ms), 벡터 연산을 다시 CPU로 돌리고 메모리 풀과 cuBLAS를 도입한 v2(229ms), CPU·GPU 하이브리드와 풀 구조체 축소를 적용한 v3(200ms)로 이어지는 요약 기록이 남아 있다. 이후 CUDA 그래프 적용 후 forward는 1029s에서 668s로, backward_only는 787s에서 630s로 감소했으며, 전체 실행 시간도 1138s에서 758s로 줄어든 것으로 기록되었다. 다만 이 결과들은 단일 실행 중심의 요약이며 반복 측정 통계가 부족하다는 한계가 함께 명시된다. [근거:E00368,E00361,E00358,E00320]"
+    },
+    "sec_evaluation_p9": {
+      "section_id": "sec_evaluation",
+      "text": "오류·실패 양상도 함께 나타난다. GPU OPTIMIZED나 HYBRID 구성이 CPU보다 느리게 관측된 사례가 있었고, cuBLAS/cuSparse 도입 후 오히려 결과가 나빠진 관측도 기록되었다. 특히 모델과 레이어 수가 작은 상황에서는 실제 희소 연산보다 설정·호출 비용이 더 크게 작용해, spMM 도입 후 38ms로 회귀하는 등 오버헤드가 계산 이득을 넘어서는 상황이 발생했다. backward_only는 CUDA 그래프를 적용하지 않은 상태에서도 boun 평균이 약 2.5배 수준으로 관측되어 느리게 나타났으며, 이는 한 번의 bound 계산에서 final_affine 복사 때문에 관련 작업이 여러 번 발생하기 때문으로 추정되었다. pinned memory 실험에서도 cudaMemcpyAsync가 더 빠르게 나온 측정과 마지막에 noPinning이 더 빠르게 나온 측정이 엇갈려, 고정 설정 비용 감소에 대한 확신을 유지하기 어려웠다. [근거:E00065,E00066,E00115,E00116,E00270,E00306,E00307]"
+    },
+    "sec_evaluation_p10": {
+      "section_id": "sec_evaluation",
+      "text": "구성 요소별 기여도 측면에서는 메모리 풀과 warm up 조합이 매우 효과적이어서 두 요소만으로 거의 200ms가 단축된 것으로 기록되었다. 결과 저장용 벡터에 대한 불필요한 memcpy를 제거하자 약 10ms가 추가로 줄었고, cudaDeviceSynchronize를 필요한 곳만 남기고 제거한 뒤에는 약 1ms 정도 감소하는 관측이 있었다. 커널 퓨전과 커널 통합도 진행되어 lirpa_forward_bound 관련 함수들의 커널 퓨전, affine 중복 계산 삭제, 포인터 스와핑, 행렬곱 커널 통합, build_coeff_pair_fused_gpu 및 backward_bias_pair_fused_gpu 퓨전 등이 적용되었다. 다만 여러 변경이 동시에 적용된 경우가 많아 개별 효과를 완전히 분리해 확정하지 못한 한계가 있다. [근거:E00071,E00078,E00102,E00118,E00122,E00123,E00124,E00126]"
+    },
+    "sec_evaluation_p11": {
+      "section_id": "sec_evaluation",
+      "text": "계산 비용과 배포 가능성 관점에서는 memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 반복해서 지적되었다. 실시간성을 확인하려면 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 요구가 있었고, 배칭 시스템 구현으로 약 3배 빨라지는 관측이 있었지만 실시간 환경에서는 데이터셋을 꽉 채워 넣기 어렵다는 제약이 함께 인식되었다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 방식으로, 일반 CUDA 코어만 사용하고 수만 번의 커널 호출이 필요해 약 8분이 소요되는 것으로 기록되었다. 반면 antenna_lirpa는 싱글 스트림이지만 cuBLAS Batched GEMM과 텐서 코어를 활용해 이보다 약 4배 빠르게 동작하는 것으로 비교되었다. VRAM 사용량이 CUDA Context와 런타임 오버헤드를 감안하더라도 300MB 이내라면 큰 값이 아니라고 판단해 이 내용을 발표에 가져가기로 한 기록도 남아 있다. [근거:E00073,E00101,E00211,E00257,E00261,E00090]"
+    },
+    "sec_evaluation_p12": {
+      "section_id": "sec_evaluation",
+      "text": "단일 테스트에서 forward와 backward 간 시간 차이는 3배 정도로 예상되었으나, 92만개 데이터 실행에서는 약 1분 차이로 비슷해지는 현상이 관측되었고 아직 해결되지 않았다. 원인 분석에서는 신경망 크기가 매우 작고 cuBLAS·cuSparse 동작 방식에서 오버헤드가 생겼으며 이 또한 신경망이 작기 때문으로 정리되었으나, 정량적 원인 분리 측정 결과는 제시되지 않았다. [근거:E00167,E00330]"
+    },
+    "sec_evaluation_p13": {
+      "section_id": "sec_evaluation",
+      "text": "CUDA 포팅과 최적화 과정에서 관측된 실행 시간 변화는 여러 구성 요소가 동시에 적용된 결과로 나타났다. 메모리 풀과 warmup을 함께 적용한 뒤에는 약 200ms 수준의 단축이 관측되었고, 이후 alpha/beta 값을 GPU 버퍼로 직접 전달하도록 변경하면서 forward와 backward 사이의 전달 과정과 D2D 복사 횟수가 줄어들었다. backward_bound_gpu에서 affine_min/max까지 GPU에서 처리되도록 수정한 것도 GPU에서 CPU로 되돌아가는 복사를 줄이는 방향이었다. 커널 퓨전은 backward_bound_gpu를 시작으로 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu, 그리고 affine_min과 affine_max를 하나의 커널로 병합하는 방식으로 적용되었고, 이 단계에서는 22~23ms대, 특히 23ms 후반대의 실행 시간이 관측되었다. memcpy 호출 횟수는 66개에서 56개로 줄어든 사례가 기록되었고, 이후 그래프 적용 결과까지 확보되었다. 그래프 적용 결과는 787.8832s로 세 가지 방법 중 가장 빠른 값으로 언급되었으며, 평균 기준 forward는 1029s, forward+backward는 1138s로 비교되었다. 한편 커널 memcpy에서 MAXDIM 512 float 고정 복사를 필요한 크기만 복사하도록 바꾸었을 때는 CPU 계산 오버헤드가 커져 시간이 늘어나는 현상도 관측되었다. [근거:E00127,E00130,E00133,E00137,E00138,E00143,E00146,E00147,E00148,E00149,E00165,E00272,E00274,E00326,E00329,E00339,E00370]"
+    },
+    "sec_evaluation_p14": {
+      "section_id": "sec_evaluation",
+      "text": "구성 요소별 기여도를 분리해 보면, 커널 퓨전과 그래프 적용은 커널 호출 횟수 자체를 줄이는 방향으로 작용했고, alpha/beta GPU 버퍼와 메모리 풀 기반 전달 방식 변경은 복사 경로를 줄이는 방향으로 작용했다. backward_bound_gpu의 커널 퓨전 이후에는 23ms 후반대까지의 실행 시간이 관측되었고, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있었지만 23ms 정도가 보인다는 점이 중요하게 기록되었다. memcpy 호출 횟수는 66개에서 56개로 감소한 사례가 확인되었으며, 그래프 적용 결과는 787.8832s로 세 가지 방법 중 가장 빠른 값으로 언급되었다. 다만 여러 변경이 함께 적용되었기 때문에 각 요소의 효과를 완전히 분리해 확정하기는 어려웠고, 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. [근거:E00130,E00133,E00138,E00143,E00148,E00149,E00165,E00272,E00274,E00311,E00313,E00314,E00315,E00319,E00339,E00370]"
+    },
+    "sec_evaluation_p15": {
+      "section_id": "sec_evaluation",
+      "text": "평가 결과의 신뢰도는 방법론적 조건에 의해 제한된다. 관측된 실행 시간은 대체로 단일 실행 결과 중심으로 기록되었고, 반복 측정에 기반한 통계는 충분히 제시되지 않았다. 여러 최적화가 동시에 적용되거나 적용 여부가 바뀌면서 개별 효과를 분리하기 어려운 경우도 있었다. 신경망 크기가 작아 cuBLAS와 cuSparse의 오버헤드가 두드러질 수 있고, CUDA Context와 런타임 오버헤드, memcpy 병목, warm up 및 preload 효과의 혼입 가능성도 결과 해석에 영향을 줄 수 있다. pinned memory와 관련된 실험에서는 평균 속도와 안정성 사이에 차이가 관찰되어 결과가 일관되게 정리되지 않았다. 이러한 조건은 관측된 시간 단축과 구성 요소 기여도의 해석 범위를 제한한다. [근거:E00064,E00130,E00148,E00149,E00151,E00153,E00154,E00155,E00156,E00157,E00160,E00311,E00313,E00314,E00315,E00319]"
+    },
+    "sec_evaluation_p16": {
+      "section_id": "sec_evaluation",
+      "text": "CUDA 포팅·최적화 과정에서 관측된 실행 시간 변화와 비교 결과를 정리한다. CPU 기반 CROWN 검증은 시간이 매우 느리고 오프라인 환경에서만 제한적으로 빠른 상황이어서, 실시간 환경의 대규모 연산을 CUDA로 구현·최적화해 네트워크 환경을 따라잡을 수 있는지가 본 평가의 중심 질문이다. 이 질문은 연구일지에 직접 기록된 비교 결과가 아니라 사용자가 설명한 연구 배경 범위에서 반영된다. 실제 측정에서는 cudaMemcpy가 전체 실행 시간의 큰 비중을 차지했고, 단일 실행 통계 기준으로 cudaMemcpy 총 시간 40.726초, 호출 240,000회, 평균 169.691μs, 중앙값 18.120μs, 최대 7.616ms, 표준편차 316.565μs가 관측되었다. 같은 실행 통계에서 cudaLaunchh는 18.527초, cudaMemset은 2.121초, cuKernelGetN은 392.770ms, cuLibraryGetK는 16.718μs로 기록되었다. 개별 cudaMemcpy 호출 상세에서는 시작 시간 0.398832초·지속 26.601μs, 0.398862초·1.084ms, 0.399947초·192.590μs의 세 호출이 확인되며, Begins 0.399947초, Ends 0.40014초 구간도 별도로 관측되었다. sparse.py 대비 CUDA 가속 비교에서는 forward의 bound 계산이 6.951ms에서 1.307ms로 5.32배, backward는 8.044ms에서 1.519ms로 5.30배 단축되었고, 추론+bound+검증 전체 기준으로는 forward 4.86배, backward 4.89배 단축이 나타났다. 다만 이 결과는 단일 실행 중심의 관측이며 반복 측정 통계가 충분하지 않고, warm up을 적용해도 스파이크가 발생하거나 10회 측정 시 평균 시간이 느려지는 경우가 있어 측정 안정성에 의문이 남는다. 또한 배칭으로 데이터셋을 통째로 넘기는 방식은 실시간 환경에 맞지 않는다고 판단해 pinned memory와 cudaMemcpyAsync를 대안으로 적용했으나, 이 방식의 정량 성능은 해당 기록만으로 제시되지 않는다. 외부 라이브러리인 cuBLAS·cuSparse 도입은 보류되었고, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이러한 관측은 구성 요소별 기여도를 체계적으로 분리한 제거 실험이 아니라 여러 최적화가 동시에 적용된 과정의 기록이라는 점에서 개별 효과의 분리가 어렵다. [근거:E00113,E00207,E00217,E00333,E00168,E00170,E00343,E00344,Hefd7e87bb735_58,Hefd7e87bb735_62]"
+    },
+    "sec_evaluation_p17": {
+      "section_id": "sec_evaluation",
+      "text": "warm up을 적용해도 측정값에 스파이크가 나타나고, 10번 측정 시 평균 시간이 느려지는 경우가 관측되었다. 6번째 세미나 이후 할 일로는 6번 세미나 3번 슬라이드 RAM 추가 해결, 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 기록되었다. cudaHostRegister/No Pinning 비교나 클록 고정, Persistence mode 등 측정 조건은 원문에 직접 명시되어 있지 않다. 따라서 아래 표들은 특정 실행 조건에서 관측된 호출·시간 분포를 보여주는 자료로 읽는다. [근거:E00207,E00333,Hefd7e87bb735_58,Hefd7e87bb735_62]"
+    }
+  },
+  "issues": [
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p1",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "sec_evaluation_p1, sec_evaluation_p8, sec_evaluation_p13, sec_evaluation_p16이 CUDA 포팅·최적화 과정의 실행 시간 변화 흐름을 거의 같은 서사(초기 CPU 대비 GPU 버전, 최적화 단계별 시간 감소, 단일 실행 중심·반복 측정 통계 부족)로 반복 서술한다. 특히 p1과 p8은 ‘단일 실행 중심이며 반복 측정 통계가 부족하다’는 한계 진술까지 동일한 구조로 겹쳐, 절 도입부에서 전체 흐름을 한 번 정리한 뒤 개별 분석은 중복 없이 배치하는 재구성이 필요하다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "CUDA 포팅 이후 CROWN 검증 실행 시간은 GPU 버전 353.057200 ms에서 GPU OPTIMIZED(cuBLAS + Pool) 229.691800 ms, HYBRID(matmul=GPU, rest=CPU) 201.670100 ms, HYBRID V2 85.785300 ms로 점차 줄었고, 이후 메모리 풀·warmup·memcpy 제거·커널 퓨전·alpha/beta 메모리 풀을 거치며 149.820400 ms, 128.894800 ms, 64.716000 ms, 22.342900 ms, 21.018800 ms, 15.828400 ms 수준의 단일 실행 결과가 관측되었다. 다만 이 기록은 대부분 단일 실행 중심이며 반복 측정 통계가 부족해, 변형 방법 간 차이를 통계적으로 확정하기 어렵다. [근거:E00021,E00027,E00031,E00035,E00043,E00068,E00075,E00083,E00119,E00131,E00139]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p2",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "GPU OPTIMIZED·HYBRID가 CPU보다 느렸던 관측, cuBLAS/cuSparse 도입 후 느려진 관측, spMM 도입 후 약 40ms 회귀, backward_only의 boun 약 2.5배 관측, forward/backward 기대 차이와 실제 차이, pinned memory 실험 불일치가 sec_evaluation_p2, p9, p12, p16에 분산·중복된다. 실패·회귀 양상은 한 곳에서 유형별로 묶어 정리하고, 다른 문단에서는 원인 해석이나 수치만 참조하도록 분리해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "GPU OPTIMIZED와 HYBRID는 CPU보다 느렸고, cuBLAS/cuSparse 도입 후 오히려 느려지는 관측도 나타났다. spMM 도입 뒤에는 약 40ms 수준으로 회귀했으며, backward_only는 graph 미적용 상태에서도 boun 평균이 약 2.5배였던 관측이 있었다. forward와 backward 간 기대 차이와 실제 관측 차이, pinned memory 실험 결과의 불일치도 함께 남아 있어, 이러한 실패·회귀 양상은 최적화 방향의 조건부 실패로 해석된다. [근거:E00029,E00030,E00045,E00111,E00120,E00125]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p3",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "메모리 풀·warmup의 기여, make_zero_matrix/make_zero_vector CPU 회귀 감소, lirpa_forward_bound 커널 퓨전 후 22.342900ms 기록, ‘여러 변경 동시 적용으로 개별 효과 분리 불가’라는 진술이 sec_evaluation_p3, p6, p10, p13, p14에 반복된다. 구성 요소 기여도 서술이 여러 문단에 흩어지면서 동일 결론 문장이 복제되고 있어, 기여도 정리 문단을 통합하거나 역할 분담을 명확히 해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "메모리 풀과 warm up 조합은 실행 시간을 줄이는 데 기여했고, make_zero_matrix·make_zero_vector의 CPU 회귀는 22~25ms 정도 줄였으며, lirpa_forward_bound 함수 커널 퓨전 적용 후 22.342900ms가 기록되었고 22ms 초반까지 나오는 경우도 있었다. 여러 변경이 동시에 적용되어 개별 효과를 완전히 분리해 확정하지는 못했다. [근거:E00070,E00075,E00076,E00119,E00120,E00125]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p4",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "해석상 한계(단일 실행 중심, 반복 측정 통계 부족, 동시 변경으로 인한 개별 효과 분리 어려움, 작은 신경망 크기로 인한 cuBLAS/cuSparse 오버헤드, CUDA Context·런타임 오버헤드, memcpy 병목, warmup/preload 효과 혼입, pinned memory 불일치, 실시간 환경에서 데이터셋을 꽉 채우기 어려운 제약)가 sec_evaluation_p4, p7, p11, p15, p16, p17에 걸쳐 반복 언급된다. 한계 항목은 한 곳에서 목록화하고, 다른 문단에서는 해당 한계를 필요한 맥락에서만 짧게 참조해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "해석상의 한계로는 단일 실행 결과 중심, 반복 측정 통계 부족, 동시 변경으로 인한 개별 효과 분리 어려움, 작은 신경망 크기로 인한 cuBLAS/cuSparse 오버헤드, CUDA Context·런타임 오버헤드, memcpy 병목, warmup/preload 효과 혼입 가능성, pinned memory 실험 결과의 불일치 등이 있다. 또한 실시간 환경에서 데이터셋을 꽉 채워 넣기 어려운 제약도 배포 가능성 논의에서 함께 고려된다. [근거:E00027,E00029,E00030,E00031,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00072,E00075,E00081,E00083,E00096,E00097,E00105,E00106,E00109,E00111,E00114,E00117,E00119,E00120,E00131,E00132,E00139]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p5",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation_p5는 cudaGraph로 추론과 bound를 따로 캡처해 약 400초 감소, 멀티 스트림 배칭으로 25분→8분 단축, 커밋 이전 버전(graph만 적용)이 더 빨랐던 재실행 관측을 제시하지만, 앞 문단들의 단계별 시간 서사 및 뒤 문단의 그래프 적용 결과(787.8832s 등)와 시간 단위(ms/s/분/초)와 비교 기준이 혼재되어 흐름이 끊긴다. 그래프·배칭 관련 관측은 단위와 비교 기준을 통일한 뒤 한 곳에 모아 배치해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "변형 방법별 실행 시간 변화를 비교하면, cudaGraph로 추론과 bound를 따로 캡처한 경우 약 400초 정도 시간이 줄어든 것으로 관측되었다. 배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 한편 커밋 이전 버전(graph만 적용한 버전)을 다시 실행해 본 결과 해당 버전이 더 빠른 것으로 관측되기도 했다. [근거:E00214,E00215,E00216,E00223]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p8",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation_p8은 CPU 96ms, v1 355ms, v2 229ms, v3 200ms라는 버전별 요약과 함께 forward 1029s→668s, backward_only 787s→630s, 전체 1138s→758s를 같은 문단에서 섞어 제시한다. 앞부분(p1 등)의 ms 단위 단일 실행 서사와 뒤부분(p13, p16)의 s 단위 그래프 적용 결과가 한 문단에 병존해 시간 척도와 비교 대상이 혼란스럽다. 버전별 요약은 별도 흐름으로 분리하거나, 단위·비교 기준을 명확히 구분해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "CUDA 포팅 및 최적화 과정에서 관측된 실행 시간 변화와 변형 방법 간 비교를 정리한다. CPU 전용 처리(96ms)에서 시작해 모든 병렬처리 함수를 커널로 바꾼 v1(355ms), 벡터 연산을 다시 CPU로 돌리고 메모리 풀과 cuBLAS를 도입한 v2(229ms), CPU·GPU 하이브리드와 풀 구조체 축소를 적용한 v3(200ms)로 이어지는 요약 기록이 남아 있다. 이후 CUDA 그래프 적용 후 forward는 1029s에서 668s로, backward_only는 787s에서 630s로 감소했으며, 전체 실행 시간도 1138s에서 758s로 줄어든 것으로 기록되었다. 다만 이 결과들은 단일 실행 중심의 요약이며 반복 측정 통계가 부족하다는 한계가 함께 명시된다. [근거:E00368,E00361,E00358,E00320]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p13",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation_p13은 메모리 풀·warmup 약 200ms 단축, alpha/beta GPU 버퍼 전달, backward_bound_gpu의 affine_min/max GPU 처리, 커널 퓨전 적용 순서, 22~23ms대 및 23ms 후반대 관측, memcpy 66→56회 감소, 그래프 적용 결과 787.8832s, MAXDIM 512 float 고정 복사 변경의 CPU 오버헤드 증가를 한 문단에 길게 나열한다. 최적화 적용 순서와 효과, 그래프 결과, 역효과 사례가 섞여 있어 인과 순서가 읽기 어렵다. 적용 순서·효과·역효과를 단계적으로 분리해 서술해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "CUDA 포팅과 최적화 과정에서 관측된 실행 시간 변화는 여러 구성 요소가 동시에 적용된 결과로 나타났다. 메모리 풀과 warmup을 함께 적용한 뒤에는 약 200ms 수준의 단축이 관측되었고, 이후 alpha/beta 값을 GPU 버퍼로 직접 전달하도록 변경하면서 forward와 backward 사이의 전달 과정과 D2D 복사 횟수가 줄어들었다. backward_bound_gpu에서 affine_min/max까지 GPU에서 처리되도록 수정한 것도 GPU에서 CPU로 되돌아가는 복사를 줄이는 방향이었다. 커널 퓨전은 backward_bound_gpu를 시작으로 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu, 그리고 affine_min과 affine_max를 하나의 커널로 병합하는 방식으로 적용되었고, 이 단계에서는 22~23ms대, 특히 23ms 후반대의 실행 시간이 관측되었다. memcpy 호출 횟수는 66개에서 56개로 줄어든 사례가 기록되었고, 이후 그래프 적용 결과까지 확보되었다. 그래프 적용 결과는 787.8832s로 세 가지 방법 중 가장 빠른 값으로 언급되었으며, 평균 기준 forward는 1029s, forward+backward는 1138s로 비교되었다. 한편 커널 memcpy에서 MAXDIM 512 float 고정 복사를 필요한 크기만 복사하도록 바꾸었을 때는 CPU 계산 오버헤드가 커져 시간이 늘어나는 현상도 관측되었다. [근거:E00127,E00130,E00133,E00137,E00138,E00143,E00146,E00147,E00148,E00149,E00165,E00272,E00274,E00326,E00329,E00339,E00370]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p16",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation_p16은 평가의 중심 질문(실시간 대규모 연산을 CUDA로 구현해 네트워크 환경을 따라잡을 수 있는지)을 먼저 제시한 뒤, cudaMemcpy 총 시간 40.726초·호출 240,000회·평균 169.691μs·중앙값 18.120μs·최대 7.616ms·표준편차 316.565μs, cudaLaunchh 18.527초, cudaMemset 2.121초, cuKernelGetN 392.770ms, cuLibraryGetK 16.718μs, 개별 호출 3건의 시작 시간·지속 시간, Begins/Ends 구간, sparse.py 대비 5.32배·5.30배·4.86배·4.89배 단축, warm up 스파이크·10회 측정 평균 느려짐, 배칭 부적합 판단과 pinned memory·cudaMemcpyAsync 대안, cuBLAS·cuSparse 보류, backward_only 대신 forward+backward 유지, 개별 효과 분리 어려움까지 한 문단에 밀집시킨다. 질문 제시, 프로파일링 수치, 비교 배율, 측정 안정성 문제, 대안 판단, 방법론적 한계가 한 문단에 과도하게 집중되어 가독성과 논리 흐름이 저하된다. 질문·측정 결과·비교·한계로 문단을 나누거나, 수치와 해석을 분리해 재배치해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "CUDA 포팅·최적화 과정에서 관측된 실행 시간 변화와 비교 결과를 정리한다. CPU 기반 CROWN 검증은 시간이 매우 느리고 오프라인 환경에서만 제한적으로 빠른 상황이어서, 실시간 환경의 대규모 연산을 CUDA로 구현·최적화해 네트워크 환경을 따라잡을 수 있는지가 본 평가의 중심 질문이다. 이 질문은 연구일지에 직접 기록된 비교 결과가 아니라 사용자가 설명한 연구 배경 범위에서 반영된다. 실제 측정에서는 cudaMemcpy가 전체 실행 시간의 큰 비중을 차지했고, 단일 실행 통계 기준으로 cudaMemcpy 총 시간 40.726초, 호출 240,000회, 평균 169.691μs, 중앙값 18.120μs, 최대 7.616ms, 표준편차 316.565μs가 관측되었다. 같은 실행 통계에서 cudaLaunchh는 18.527초, cudaMemset은 2.121초, cuKernelGetN은 392.770ms, cuLibraryGetK는 16.718μs로 기록되었다. 개별 cudaMemcpy 호출 상세에서는 시작 시간 0.398832초·지속 26.601μs, 0.398862초·1.084ms, 0.399947초·192.590μs의 세 호출이 확인되며, Begins 0.399947초, Ends 0.40014초 구간도 별도로 관측되었다. sparse.py 대비 CUDA 가속 비교에서는 forward의 bound 계산이 6.951ms에서 1.307ms로 5.32배, backward는 8.044ms에서 1.519ms로 5.30배 단축되었고, 추론+bound+검증 전체 기준으로는 forward 4.86배, backward 4.89배 단축이 나타났다. 다만 이 결과는 단일 실행 중심의 관측이며 반복 측정 통계가 충분하지 않고, warm up을 적용해도 스파이크가 발생하거나 10회 측정 시 평균 시간이 느려지는 경우가 있어 측정 안정성에 의문이 남는다. 또한 배칭으로 데이터셋을 통째로 넘기는 방식은 실시간 환경에 맞지 않는다고 판단해 pinned memory와 cudaMemcpyAsync를 대안으로 적용했으나, 이 방식의 정량 성능은 해당 기록만으로 제시되지 않는다. 외부 라이브러리인 cuBLAS·cuSparse 도입은 보류되었고, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이러한 관측은 구성 요소별 기여도를 체계적으로 분리한 제거 실험이 아니라 여러 최적화가 동시에 적용된 과정의 기록이라는 점에서 개별 효과의 분리가 어렵다. [근거:E00113,E00207,E00217,E00333,E00168,E00170,E00343,E00344,Hefd7e87bb735_58,Hefd7e87bb735_62]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p17",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation_p17은 warm up 적용 시에도 스파이크 발생·10번 측정 시 평균 시간 느려짐이라는 측정 안정성 문제를 다시 언급한 뒤, 갑자기 6번째 세미나 이후 할 일 목록(RAM 추가 해결, cuBLAS·cuSparse 도입 보류, forward+backward 유지, 코드 검토, 논문 작성 검토, Nsight Compute 분석)으로 전환한다. 측정 안정성 문제와 세미나 액션 아이템이 같은 문단에 섞여 절의 평가 흐름에서 이탈한다. 세미나 후속 작업 목록은 평가 문단과 분리하거나, 이 절에 반드시 필요한 경우에만 짧게 연결해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "warm up을 적용해도 측정값에 스파이크가 나타나고, 10번 측정 시 평균 시간이 느려지는 경우가 관측되었다. 6번째 세미나 이후 할 일로는 6번 세미나 3번 슬라이드 RAM 추가 해결, 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 기록되었다. cudaHostRegister/No Pinning 비교나 클록 고정, Persistence mode 등 측정 조건은 원문에 직접 명시되어 있지 않다. 따라서 아래 표들은 특정 실행 조건에서 관측된 호출·시간 분포를 보여주는 자료로 읽는다. [근거:E00207,E00333,Hefd7e87bb735_58,Hefd7e87bb735_62]",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p17",
+      "category": "terminology",
+      "severity": "warning",
+      "reason": "sec_evaluation_p17은 cudaHostRegister/No Pinning 비교, 클록 고정, Persistence mode 등 측정 조건이 ‘원문에 직접 명시되어 있지 않다’고 진술하면서, 동시에 아래 표들이 특정 실행 조건에서의 호출·시간 분포를 보여주는 자료라고 안내한다. 측정 조건이 명시되지 않았다는 진술과 표를 조건으로 읽으라는 안내가 서로 완전히 충돌하지는 않지만, 독자에게 조건의 불확실성을 과장하거나 반대로 단정적으로 읽히게 할 수 있다. 조건의 명시 여부와 표의 해석 범위를 더 분명하게 구분해 표현하는 것이 좋다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "warm up을 적용해도 측정값에 스파이크가 나타나고, 10번 측정 시 평균 시간이 느려지는 경우가 관측되었다. 6번째 세미나 이후 할 일로는 6번 세미나 3번 슬라이드 RAM 추가 해결, 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 기록되었다. cudaHostRegister/No Pinning 비교나 클록 고정, Persistence mode 등 측정 조건은 원문에 직접 명시되어 있지 않다. 따라서 아래 표들은 특정 실행 조건에서 관측된 호출·시간 분포를 보여주는 자료로 읽는다. [근거:E00207,E00333,Hefd7e87bb735_58,Hefd7e87bb735_62]"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "category": "terminology",
+      "severity": "warning",
+      "reason": "절 전체에서 시간 단위와 비교 기준이 ms, s, 분, 초로 혼재되어 있다(예: 353.057200 ms, 787.8832s, 25분에서 8분, 약 400초, cudaMemcpy 총 시간 40.726초 등). 또한 ‘GPU OPTIMIZED’, ‘HYBRID’, ‘HYBRID V2’, ‘v1/v2/v3’, ‘cudaGraph 적용 후’ 등 버전·구성 명칭이 문단마다 같은 대상을 가리키는지 불분명하게 사용된다. 실행 시간 서사와 비교 결과의 단위, 버전·구성 명칭을 절 전체에서 통일해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": ""
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation 절의 문단 배열이 ‘실행 시간 변화 요약(p1) → 실패·회귀(p2) → 구성 요소 기여(p3) → 한계(p4) → 비교(p5) → 기여(p6) → 배포 가능성(p7) → 버전별 요약(p8) → 실패·회귀(p9) → 기여(p10) → 배포 가능성(p11) → forward/backward 차이(p12) → 적용 순서·효과(p13) → 기여 분리(p14) → 신뢰도 한계(p15) → 중심 질문·프로파일링·비교(p16) → 측정 안정성·세미나 할 일(p17)’로, 동일 주제가 여러 번 재등장하면서 순서가 순환한다. 실행 시간 변화, 실패·회귀 양상, 구성 요소 기여도, 한계, 배포 가능성 중 하나를 중심 축으로 삼아 문단을 재배열하고, 중복 문단은 통합하거나 참조 방식으로 바꿔야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": ""
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "part": "p0",
+      "severity": "warning",
+      "category": "organization",
+      "evidence_ids": [],
+      "quote": "",
+      "validation_code": "composition_length",
+      "review_stage": "composition",
+      "failure_owner": "editor",
+      "reason": "결과 및 고찰: 본문 6972자 / 목표 1600자 / 허용 상한 2000자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "part": "p0",
+      "severity": "warning",
+      "category": "organization",
+      "evidence_ids": [],
+      "quote": "",
+      "validation_code": "composition_length",
+      "review_stage": "composition",
+      "failure_owner": "editor",
+      "reason": "sec_evaluation: 절 전체 본문 6972자가 공통 상한 6000자를 넘습니다. 절 전체에서 중복·실행 이력·표의 수치 재열거를 줄이고 소절·핵심 조건·반례는 보존하세요.",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "part": "p0",
+      "severity": "warning",
+      "evidence_ids": [],
+      "quote": "",
+      "review_stage": "composition",
+      "failure_owner": "editor",
+      "category": "flow",
+      "validation_code": "composition_layout",
+      "reason": "sec_evaluation/p0: 가장 긴 문단이 1228자로 공통 문단 목표 600자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+      "original_severity": "error",
+      "deferred": true
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "part": "p0",
+      "severity": "warning",
+      "evidence_ids": [],
+      "quote": "",
+      "review_stage": "composition",
+      "failure_owner": "editor",
+      "category": "style",
+      "validation_code": "composition_style",
+      "reason": "sec_evaluation/p0: 기록자·자료 중심 표현 ['연구일지에 직접 기록']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+      "original_severity": "error",
+      "deferred": true
+    }
+  ],
+  "editorial_status": "needs_attention",
+  "editorial_warnings": [
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p1",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "sec_evaluation_p1, sec_evaluation_p8, sec_evaluation_p13, sec_evaluation_p16이 CUDA 포팅·최적화 과정의 실행 시간 변화 흐름을 거의 같은 서사(초기 CPU 대비 GPU 버전, 최적화 단계별 시간 감소, 단일 실행 중심·반복 측정 통계 부족)로 반복 서술한다. 특히 p1과 p8은 ‘단일 실행 중심이며 반복 측정 통계가 부족하다’는 한계 진술까지 동일한 구조로 겹쳐, 절 도입부에서 전체 흐름을 한 번 정리한 뒤 개별 분석은 중복 없이 배치하는 재구성이 필요하다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "CUDA 포팅 이후 CROWN 검증 실행 시간은 GPU 버전 353.057200 ms에서 GPU OPTIMIZED(cuBLAS + Pool) 229.691800 ms, HYBRID(matmul=GPU, rest=CPU) 201.670100 ms, HYBRID V2 85.785300 ms로 점차 줄었고, 이후 메모리 풀·warmup·memcpy 제거·커널 퓨전·alpha/beta 메모리 풀을 거치며 149.820400 ms, 128.894800 ms, 64.716000 ms, 22.342900 ms, 21.018800 ms, 15.828400 ms 수준의 단일 실행 결과가 관측되었다. 다만 이 기록은 대부분 단일 실행 중심이며 반복 측정 통계가 부족해, 변형 방법 간 차이를 통계적으로 확정하기 어렵다. [근거:E00021,E00027,E00031,E00035,E00043,E00068,E00075,E00083,E00119,E00131,E00139]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p2",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "GPU OPTIMIZED·HYBRID가 CPU보다 느렸던 관측, cuBLAS/cuSparse 도입 후 느려진 관측, spMM 도입 후 약 40ms 회귀, backward_only의 boun 약 2.5배 관측, forward/backward 기대 차이와 실제 차이, pinned memory 실험 불일치가 sec_evaluation_p2, p9, p12, p16에 분산·중복된다. 실패·회귀 양상은 한 곳에서 유형별로 묶어 정리하고, 다른 문단에서는 원인 해석이나 수치만 참조하도록 분리해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "GPU OPTIMIZED와 HYBRID는 CPU보다 느렸고, cuBLAS/cuSparse 도입 후 오히려 느려지는 관측도 나타났다. spMM 도입 뒤에는 약 40ms 수준으로 회귀했으며, backward_only는 graph 미적용 상태에서도 boun 평균이 약 2.5배였던 관측이 있었다. forward와 backward 간 기대 차이와 실제 관측 차이, pinned memory 실험 결과의 불일치도 함께 남아 있어, 이러한 실패·회귀 양상은 최적화 방향의 조건부 실패로 해석된다. [근거:E00029,E00030,E00045,E00111,E00120,E00125]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p3",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "메모리 풀·warmup의 기여, make_zero_matrix/make_zero_vector CPU 회귀 감소, lirpa_forward_bound 커널 퓨전 후 22.342900ms 기록, ‘여러 변경 동시 적용으로 개별 효과 분리 불가’라는 진술이 sec_evaluation_p3, p6, p10, p13, p14에 반복된다. 구성 요소 기여도 서술이 여러 문단에 흩어지면서 동일 결론 문장이 복제되고 있어, 기여도 정리 문단을 통합하거나 역할 분담을 명확히 해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "메모리 풀과 warm up 조합은 실행 시간을 줄이는 데 기여했고, make_zero_matrix·make_zero_vector의 CPU 회귀는 22~25ms 정도 줄였으며, lirpa_forward_bound 함수 커널 퓨전 적용 후 22.342900ms가 기록되었고 22ms 초반까지 나오는 경우도 있었다. 여러 변경이 동시에 적용되어 개별 효과를 완전히 분리해 확정하지는 못했다. [근거:E00070,E00075,E00076,E00119,E00120,E00125]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p4",
+      "category": "duplication",
+      "severity": "warning",
+      "reason": "해석상 한계(단일 실행 중심, 반복 측정 통계 부족, 동시 변경으로 인한 개별 효과 분리 어려움, 작은 신경망 크기로 인한 cuBLAS/cuSparse 오버헤드, CUDA Context·런타임 오버헤드, memcpy 병목, warmup/preload 효과 혼입, pinned memory 불일치, 실시간 환경에서 데이터셋을 꽉 채우기 어려운 제약)가 sec_evaluation_p4, p7, p11, p15, p16, p17에 걸쳐 반복 언급된다. 한계 항목은 한 곳에서 목록화하고, 다른 문단에서는 해당 한계를 필요한 맥락에서만 짧게 참조해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "해석상의 한계로는 단일 실행 결과 중심, 반복 측정 통계 부족, 동시 변경으로 인한 개별 효과 분리 어려움, 작은 신경망 크기로 인한 cuBLAS/cuSparse 오버헤드, CUDA Context·런타임 오버헤드, memcpy 병목, warmup/preload 효과 혼입 가능성, pinned memory 실험 결과의 불일치 등이 있다. 또한 실시간 환경에서 데이터셋을 꽉 채워 넣기 어려운 제약도 배포 가능성 논의에서 함께 고려된다. [근거:E00027,E00029,E00030,E00031,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00072,E00075,E00081,E00083,E00096,E00097,E00105,E00106,E00109,E00111,E00114,E00117,E00119,E00120,E00131,E00132,E00139]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p5",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation_p5는 cudaGraph로 추론과 bound를 따로 캡처해 약 400초 감소, 멀티 스트림 배칭으로 25분→8분 단축, 커밋 이전 버전(graph만 적용)이 더 빨랐던 재실행 관측을 제시하지만, 앞 문단들의 단계별 시간 서사 및 뒤 문단의 그래프 적용 결과(787.8832s 등)와 시간 단위(ms/s/분/초)와 비교 기준이 혼재되어 흐름이 끊긴다. 그래프·배칭 관련 관측은 단위와 비교 기준을 통일한 뒤 한 곳에 모아 배치해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "변형 방법별 실행 시간 변화를 비교하면, cudaGraph로 추론과 bound를 따로 캡처한 경우 약 400초 정도 시간이 줄어든 것으로 관측되었다. 배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 한편 커밋 이전 버전(graph만 적용한 버전)을 다시 실행해 본 결과 해당 버전이 더 빠른 것으로 관측되기도 했다. [근거:E00214,E00215,E00216,E00223]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p8",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation_p8은 CPU 96ms, v1 355ms, v2 229ms, v3 200ms라는 버전별 요약과 함께 forward 1029s→668s, backward_only 787s→630s, 전체 1138s→758s를 같은 문단에서 섞어 제시한다. 앞부분(p1 등)의 ms 단위 단일 실행 서사와 뒤부분(p13, p16)의 s 단위 그래프 적용 결과가 한 문단에 병존해 시간 척도와 비교 대상이 혼란스럽다. 버전별 요약은 별도 흐름으로 분리하거나, 단위·비교 기준을 명확히 구분해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "CUDA 포팅 및 최적화 과정에서 관측된 실행 시간 변화와 변형 방법 간 비교를 정리한다. CPU 전용 처리(96ms)에서 시작해 모든 병렬처리 함수를 커널로 바꾼 v1(355ms), 벡터 연산을 다시 CPU로 돌리고 메모리 풀과 cuBLAS를 도입한 v2(229ms), CPU·GPU 하이브리드와 풀 구조체 축소를 적용한 v3(200ms)로 이어지는 요약 기록이 남아 있다. 이후 CUDA 그래프 적용 후 forward는 1029s에서 668s로, backward_only는 787s에서 630s로 감소했으며, 전체 실행 시간도 1138s에서 758s로 줄어든 것으로 기록되었다. 다만 이 결과들은 단일 실행 중심의 요약이며 반복 측정 통계가 부족하다는 한계가 함께 명시된다. [근거:E00368,E00361,E00358,E00320]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p13",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation_p13은 메모리 풀·warmup 약 200ms 단축, alpha/beta GPU 버퍼 전달, backward_bound_gpu의 affine_min/max GPU 처리, 커널 퓨전 적용 순서, 22~23ms대 및 23ms 후반대 관측, memcpy 66→56회 감소, 그래프 적용 결과 787.8832s, MAXDIM 512 float 고정 복사 변경의 CPU 오버헤드 증가를 한 문단에 길게 나열한다. 최적화 적용 순서와 효과, 그래프 결과, 역효과 사례가 섞여 있어 인과 순서가 읽기 어렵다. 적용 순서·효과·역효과를 단계적으로 분리해 서술해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "CUDA 포팅과 최적화 과정에서 관측된 실행 시간 변화는 여러 구성 요소가 동시에 적용된 결과로 나타났다. 메모리 풀과 warmup을 함께 적용한 뒤에는 약 200ms 수준의 단축이 관측되었고, 이후 alpha/beta 값을 GPU 버퍼로 직접 전달하도록 변경하면서 forward와 backward 사이의 전달 과정과 D2D 복사 횟수가 줄어들었다. backward_bound_gpu에서 affine_min/max까지 GPU에서 처리되도록 수정한 것도 GPU에서 CPU로 되돌아가는 복사를 줄이는 방향이었다. 커널 퓨전은 backward_bound_gpu를 시작으로 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu, 그리고 affine_min과 affine_max를 하나의 커널로 병합하는 방식으로 적용되었고, 이 단계에서는 22~23ms대, 특히 23ms 후반대의 실행 시간이 관측되었다. memcpy 호출 횟수는 66개에서 56개로 줄어든 사례가 기록되었고, 이후 그래프 적용 결과까지 확보되었다. 그래프 적용 결과는 787.8832s로 세 가지 방법 중 가장 빠른 값으로 언급되었으며, 평균 기준 forward는 1029s, forward+backward는 1138s로 비교되었다. 한편 커널 memcpy에서 MAXDIM 512 float 고정 복사를 필요한 크기만 복사하도록 바꾸었을 때는 CPU 계산 오버헤드가 커져 시간이 늘어나는 현상도 관측되었다. [근거:E00127,E00130,E00133,E00137,E00138,E00143,E00146,E00147,E00148,E00149,E00165,E00272,E00274,E00326,E00329,E00339,E00370]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p16",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation_p16은 평가의 중심 질문(실시간 대규모 연산을 CUDA로 구현해 네트워크 환경을 따라잡을 수 있는지)을 먼저 제시한 뒤, cudaMemcpy 총 시간 40.726초·호출 240,000회·평균 169.691μs·중앙값 18.120μs·최대 7.616ms·표준편차 316.565μs, cudaLaunchh 18.527초, cudaMemset 2.121초, cuKernelGetN 392.770ms, cuLibraryGetK 16.718μs, 개별 호출 3건의 시작 시간·지속 시간, Begins/Ends 구간, sparse.py 대비 5.32배·5.30배·4.86배·4.89배 단축, warm up 스파이크·10회 측정 평균 느려짐, 배칭 부적합 판단과 pinned memory·cudaMemcpyAsync 대안, cuBLAS·cuSparse 보류, backward_only 대신 forward+backward 유지, 개별 효과 분리 어려움까지 한 문단에 밀집시킨다. 질문 제시, 프로파일링 수치, 비교 배율, 측정 안정성 문제, 대안 판단, 방법론적 한계가 한 문단에 과도하게 집중되어 가독성과 논리 흐름이 저하된다. 질문·측정 결과·비교·한계로 문단을 나누거나, 수치와 해석을 분리해 재배치해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "CUDA 포팅·최적화 과정에서 관측된 실행 시간 변화와 비교 결과를 정리한다. CPU 기반 CROWN 검증은 시간이 매우 느리고 오프라인 환경에서만 제한적으로 빠른 상황이어서, 실시간 환경의 대규모 연산을 CUDA로 구현·최적화해 네트워크 환경을 따라잡을 수 있는지가 본 평가의 중심 질문이다. 이 질문은 연구일지에 직접 기록된 비교 결과가 아니라 사용자가 설명한 연구 배경 범위에서 반영된다. 실제 측정에서는 cudaMemcpy가 전체 실행 시간의 큰 비중을 차지했고, 단일 실행 통계 기준으로 cudaMemcpy 총 시간 40.726초, 호출 240,000회, 평균 169.691μs, 중앙값 18.120μs, 최대 7.616ms, 표준편차 316.565μs가 관측되었다. 같은 실행 통계에서 cudaLaunchh는 18.527초, cudaMemset은 2.121초, cuKernelGetN은 392.770ms, cuLibraryGetK는 16.718μs로 기록되었다. 개별 cudaMemcpy 호출 상세에서는 시작 시간 0.398832초·지속 26.601μs, 0.398862초·1.084ms, 0.399947초·192.590μs의 세 호출이 확인되며, Begins 0.399947초, Ends 0.40014초 구간도 별도로 관측되었다. sparse.py 대비 CUDA 가속 비교에서는 forward의 bound 계산이 6.951ms에서 1.307ms로 5.32배, backward는 8.044ms에서 1.519ms로 5.30배 단축되었고, 추론+bound+검증 전체 기준으로는 forward 4.86배, backward 4.89배 단축이 나타났다. 다만 이 결과는 단일 실행 중심의 관측이며 반복 측정 통계가 충분하지 않고, warm up을 적용해도 스파이크가 발생하거나 10회 측정 시 평균 시간이 느려지는 경우가 있어 측정 안정성에 의문이 남는다. 또한 배칭으로 데이터셋을 통째로 넘기는 방식은 실시간 환경에 맞지 않는다고 판단해 pinned memory와 cudaMemcpyAsync를 대안으로 적용했으나, 이 방식의 정량 성능은 해당 기록만으로 제시되지 않는다. 외부 라이브러리인 cuBLAS·cuSparse 도입은 보류되었고, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이러한 관측은 구성 요소별 기여도를 체계적으로 분리한 제거 실험이 아니라 여러 최적화가 동시에 적용된 과정의 기록이라는 점에서 개별 효과의 분리가 어렵다. [근거:E00113,E00207,E00217,E00333,E00168,E00170,E00343,E00344,Hefd7e87bb735_58,Hefd7e87bb735_62]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p17",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation_p17은 warm up 적용 시에도 스파이크 발생·10번 측정 시 평균 시간 느려짐이라는 측정 안정성 문제를 다시 언급한 뒤, 갑자기 6번째 세미나 이후 할 일 목록(RAM 추가 해결, cuBLAS·cuSparse 도입 보류, forward+backward 유지, 코드 검토, 논문 작성 검토, Nsight Compute 분석)으로 전환한다. 측정 안정성 문제와 세미나 액션 아이템이 같은 문단에 섞여 절의 평가 흐름에서 이탈한다. 세미나 후속 작업 목록은 평가 문단과 분리하거나, 이 절에 반드시 필요한 경우에만 짧게 연결해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "warm up을 적용해도 측정값에 스파이크가 나타나고, 10번 측정 시 평균 시간이 느려지는 경우가 관측되었다. 6번째 세미나 이후 할 일로는 6번 세미나 3번 슬라이드 RAM 추가 해결, 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 기록되었다. cudaHostRegister/No Pinning 비교나 클록 고정, Persistence mode 등 측정 조건은 원문에 직접 명시되어 있지 않다. 따라서 아래 표들은 특정 실행 조건에서 관측된 호출·시간 분포를 보여주는 자료로 읽는다. [근거:E00207,E00333,Hefd7e87bb735_58,Hefd7e87bb735_62]",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "sec_evaluation_p17",
+      "category": "terminology",
+      "severity": "warning",
+      "reason": "sec_evaluation_p17은 cudaHostRegister/No Pinning 비교, 클록 고정, Persistence mode 등 측정 조건이 ‘원문에 직접 명시되어 있지 않다’고 진술하면서, 동시에 아래 표들이 특정 실행 조건에서의 호출·시간 분포를 보여주는 자료라고 안내한다. 측정 조건이 명시되지 않았다는 진술과 표를 조건으로 읽으라는 안내가 서로 완전히 충돌하지는 않지만, 독자에게 조건의 불확실성을 과장하거나 반대로 단정적으로 읽히게 할 수 있다. 조건의 명시 여부와 표의 해석 범위를 더 분명하게 구분해 표현하는 것이 좋다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "warm up을 적용해도 측정값에 스파이크가 나타나고, 10번 측정 시 평균 시간이 느려지는 경우가 관측되었다. 6번째 세미나 이후 할 일로는 6번 세미나 3번 슬라이드 RAM 추가 해결, 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 기록되었다. cudaHostRegister/No Pinning 비교나 클록 고정, Persistence mode 등 측정 조건은 원문에 직접 명시되어 있지 않다. 따라서 아래 표들은 특정 실행 조건에서 관측된 호출·시간 분포를 보여주는 자료로 읽는다. [근거:E00207,E00333,Hefd7e87bb735_58,Hefd7e87bb735_62]",
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "category": "terminology",
+      "severity": "warning",
+      "reason": "절 전체에서 시간 단위와 비교 기준이 ms, s, 분, 초로 혼재되어 있다(예: 353.057200 ms, 787.8832s, 25분에서 8분, 약 400초, cudaMemcpy 총 시간 40.726초 등). 또한 ‘GPU OPTIMIZED’, ‘HYBRID’, ‘HYBRID V2’, ‘v1/v2/v3’, ‘cudaGraph 적용 후’ 등 버전·구성 명칭이 문단마다 같은 대상을 가리키는지 불분명하게 사용된다. 실행 시간 서사와 비교 결과의 단위, 버전·구성 명칭을 절 전체에서 통일해야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "",
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "sec_evaluation 절의 문단 배열이 ‘실행 시간 변화 요약(p1) → 실패·회귀(p2) → 구성 요소 기여(p3) → 한계(p4) → 비교(p5) → 기여(p6) → 배포 가능성(p7) → 버전별 요약(p8) → 실패·회귀(p9) → 기여(p10) → 배포 가능성(p11) → forward/backward 차이(p12) → 적용 순서·효과(p13) → 기여 분리(p14) → 신뢰도 한계(p15) → 중심 질문·프로파일링·비교(p16) → 측정 안정성·세미나 할 일(p17)’로, 동일 주제가 여러 번 재등장하면서 순서가 순환한다. 실행 시간 변화, 실패·회귀 양상, 구성 요소 기여도, 한계, 배포 가능성 중 하나를 중심 축으로 삼아 문단을 재배열하고, 중복 문단은 통합하거나 참조 방식으로 바꿔야 한다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "",
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "part": "p0",
+      "severity": "warning",
+      "category": "organization",
+      "evidence_ids": [],
+      "quote": "",
+      "validation_code": "composition_length",
+      "review_stage": "composition",
+      "failure_owner": "editor",
+      "reason": "결과 및 고찰: 본문 6972자 / 목표 1600자 / 허용 상한 2000자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "part": "p0",
+      "severity": "warning",
+      "category": "organization",
+      "evidence_ids": [],
+      "quote": "",
+      "validation_code": "composition_length",
+      "review_stage": "composition",
+      "failure_owner": "editor",
+      "reason": "sec_evaluation: 절 전체 본문 6972자가 공통 상한 6000자를 넘습니다. 절 전체에서 중복·실행 이력·표의 수치 재열거를 줄이고 소절·핵심 조건·반례는 보존하세요.",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "part": "p0",
+      "severity": "warning",
+      "evidence_ids": [],
+      "quote": "",
+      "review_stage": "composition",
+      "failure_owner": "editor",
+      "category": "flow",
+      "validation_code": "composition_layout",
+      "reason": "sec_evaluation/p0: 가장 긴 문단이 1228자로 공통 문단 목표 600자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    },
+    {
+      "section_id": "sec_evaluation",
+      "paragraph_id": "none",
+      "part": "p0",
+      "severity": "warning",
+      "evidence_ids": [],
+      "quote": "",
+      "review_stage": "composition",
+      "failure_owner": "editor",
+      "category": "style",
+      "validation_code": "composition_style",
+      "reason": "sec_evaluation/p0: 기록자·자료 중심 표현 ['연구일지에 직접 기록']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+      "original_severity": "error",
+      "deferred": true,
+      "stage": "section-sec_evaluation"
+    }
+  ],
+  "editorial_completion": {
+    "policy": "editorial-fixed-slots-v1",
+    "status": "needs_attention",
+    "revisions": 2,
+    "reason": "unchanged"
+  },
+  "inherited_content_coverage": {
+    "met": 6,
+    "total": 7,
+    "value": 0.8571428571428571,
+    "scope": "inherited_subsection_reviews",
+    "rechecked": false
+  }
+}

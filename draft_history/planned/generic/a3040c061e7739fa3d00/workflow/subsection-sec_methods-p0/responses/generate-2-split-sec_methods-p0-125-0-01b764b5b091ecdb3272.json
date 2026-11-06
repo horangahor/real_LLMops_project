@@ -1,0 +1,27 @@
+{
+  "request_fingerprint": "01b764b5b091ecdb3272f1da67a11d4ccab77530f51470c85cc10c07d072a1e3",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "구성 요소는 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 하이브리드 연산 배치, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cuda graph 등으로 나뉜다. 메모리 풀은 할당·해제 반복을 줄이기 위한 장치이고, cuBLAS는 matvec·matmul을 기존 자체 계산 대신 수행하도록 도입된다. 가중치는 pre_upload_weights_to_gpu로 각 레이어의 W를 cudaMalloc 후 cudaMemcpy2D로 GPU에 올려 d_W에 저장해 두고, 벡터 연산 등 일부는 CPU로 처리하는 하이브리드 구성을 시도한다. 커널 퓨전은 backward_bound_gpu()를 시작으로 affine 중복 계산 삭제, new_(upper, lower)_p의 std::swap 포인터 스와핑, backward_matmul_pair_gpu의 2개 행렬곱 커널 통합, build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등으로 진행되며, 1개 커널 호출로 줄일 수 있는 함수를 계속 퓨전하는 방향이 기록되었다. alpha/beta GPU 버퍼, pinned memory, cuda graph는 각각 버퍼 배치, 호스트 메모리 접근, 반복 실행 경로 고정과 관련된 요소로 언급된다. 방법 B와 방법 C는 1024 배칭에서 속도가 빨라진 사례를 확인한 뒤 그 구현을 어떻게 따라갈지 검토하는 과정에서 등장한 개념·구도로, 실제 구현 결과라기보다 확인·탐색 맥락에서 다루어진다. [근거:E00231,E00232,E00311,E00313,E00320,E00322,E00339,E00054,E00323,E00324,E00042,E00123,E00129]",
+          "evidence_ids": [
+            "E00231",
+            "E00232",
+            "E00311",
+            "E00313",
+            "E00320",
+            "E00322",
+            "E00339",
+            "E00054",
+            "E00323",
+            "E00324",
+            "E00042",
+            "E00123",
+            "E00129"
+          ]
+        }
+      ]
+    }
+  }
+}

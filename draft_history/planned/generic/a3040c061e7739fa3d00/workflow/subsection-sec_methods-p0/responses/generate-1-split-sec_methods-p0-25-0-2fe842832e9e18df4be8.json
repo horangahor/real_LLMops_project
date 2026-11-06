@@ -1,0 +1,46 @@
+{
+  "request_fingerprint": "2fe842832e9e18df4be8449dde06c0ed219571866520c1147e65686303a016a2",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "평가 대상은 CROWN 검증을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 크기는 1로 설정하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였고, 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지 방법을 대상으로 하였다. 정확도 지표는 기존 신경망 검증팀 프로그램과의 검증 결과 및 비율 차이로 확인하였으며, 두 구현 간 결과는 모두 동일하게 나타났다. [근거:E00033]",
+          "evidence_ids": [
+            "E00033"
+          ]
+        },
+        {
+          "text": "실행 환경은 GPU 가속을 위해 cuBLAS를 사용하고, 함수 호출마다의 메모리 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 메모리 풀을 함께 사용하였다. 초기에는 cuBLAS로 행렬곱을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU OPTIMIZED 모드로 결합하였고, 이후 행렬곱만 GPU로 남기고 나머지 GPU 커널을 CPU for문으로 되돌린 HYBRID 모드로 전환하였다. hybrid는 새로 추가된 요소 없이 GPU 코드를 삭제하여 빨라진 케이스로 정리되었다. 이후 v2/v4 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 memcpy 범위 축소가 추가로 결합되었다. 또한 forward-backward 간 전달되는 alpha/beta를 메모리 풀에 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 backward가 host에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경하였으며, affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화하였다. [근거:H85ca0e507c4e_88,H85ca0e507c4e_89,E00037,E00033,E00038,E00130,E00137,E00138]",
+          "evidence_ids": [
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_89",
+            "E00037",
+            "E00033",
+            "E00038",
+            "E00130",
+            "E00137",
+            "E00138"
+          ]
+        },
+        {
+          "text": "v1-1-3(crown_test_preload_fix)는 미리 로드한 W 가중치를 제대로 활용하도록 고친 버전으로, 신경망에 GPU 주소를 저장하던 double* 타입을 Matrix* 타입으로 바꾸고, pre_upload_weights_to_gpu도 memcpy2D 사용이 아니라 Matrix를 할당·복사하도록 변경하였다. 이 변경으로 positive_part, negative_part, matmul, matvec에서 W 관련 복사를 스킵하여 레이어별로 2MB 또는 4MB 수준의 절약 효과가 기록되었다. 다만 가중치를 미리 로드해 memcpy를 줄이려는 접근은 실제 의미가 크지 않은 것으로 함께 기록되어 있어, 역할 대비 성과가 제한적이었다. [근거:E00051]",
+          "evidence_ids": [
+            "E00051"
+          ]
+        },
+        {
+          "text": "시간 측정은 CROWN Verification 실행 시 eps=1e-06, 출력 차원 16 조건에서 수행하였고, CPU ONLY 버전과 GPU 버전을 각각 생성해 비교하였다. 추론·bound·검증 단계는 분리해 측정하였으며, warm up 코드를 삽입하였다. cudaEvent 측정 제어는 시스템 인자로 관리하였고, GPU 클록 고정 시도와 Persistence mode 설정도 적용하였다. 다만 재현에 필요한 세부 정보는 연구 일지 수준에서 충분히 제공되지 않았다. [근거:E00033]",
+          "evidence_ids": [
+            "E00033"
+          ]
+        },
+        {
+          "text": "비교 구성은 CPU ONLY, GPU OPTIMIZED(cuBLAS+Pool), HYBRID(matmul=GPU, rest=CPU), HYBRID V2, mempool+warmup, cuda graph 적용 버전 등으로 정리되며, 각 조건이 통제하는 범위는 구성 요소별 적용 여부와 memcpy·예열·사전 업로드 등의 결합 차이로 구분된다. 다만 여러 최적화가 동시에 적용되거나 적용·해제되며 변경되어 개별 효과의 분리 결과는 체계적으로 제시되지 않았고, 작은 신경망 크기로 인한 cuBLAS/cuSparse 오버헤드, CUDA Context·런타임 오버헤드, memcpy 병목, warm up/preload 효과 혼입 가능성 등이 방법론적 한계로 남는다. [근거:E00033]",
+          "evidence_ids": [
+            "E00033"
+          ]
+        }
+      ]
+    }
+  }
+}

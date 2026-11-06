@@ -1,0 +1,33 @@
+{
+  "id": "51848c70-a0f3-4599-b884-2b29b2725878",
+  "object": "chat.completion",
+  "created": 1793981933,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": {\"evidence_ids\": [\"E00105\", \"E00106\", \"E00174\", \"E00202\", \"E00257\", \"E00261\", \"E00262\", \"E00263\"], \"text\": \"평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기 256-491-491-16, 배치 사이즈 1, 실행 방식은 forward·forward+backward·backward_only로 설정하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 실행은 eps_list 이중 루프에서 network_forward로 정방향 통과 후 method 값에 따라 lirpa_forward_bound_impl 또는 lirpa_backward_bound를 호출하고, certify_topk 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 절차로 진행되었다. cuSparse 도입 시도에서는 W, W_pos, W_neg를 CSR 형식으로 변환하고 cuSPARSE handle·CSR descriptor를 유지한 뒤 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하였으나, 기존 matmul은 유지되었다. 이 spMV만 적용한 결과 CROWN Verification 실행 시간은 27.107400 ms로 기록되었고, 이전 27ms 수준보다 느려진 것으로 관찰되었다. 초기화 이후 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 났다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. antenna_lirpa는 싱글 스트림으로 동작하지만 cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림보다 약 4배 빠르다. 방법 A는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵이다. 다만 방법 B와 방법 C는 실제 구현 내용이라기보다 배칭 관련 속도 개선 확인 과정에서 나온 논의와 구현 방향에 가깝다.\"}}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 19668,
+    "completion_tokens": 531,
+    "total_tokens": 20199,
+    "prompt_tokens_details": {
+      "cached_tokens": 13056,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

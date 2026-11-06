@@ -1,0 +1,813 @@
+{
+  "sha256": "ed0a75ae0bd041d0ff0604089ed6b07b11893e46624daa9411eb40a33c88bf26",
+  "value": {
+    "input_fingerprint": "e25e51942e24d410c4998b9b56cb319501d1f60ecc3f03830f750e1e21ae923b",
+    "sections": {
+      "sec_results": {
+        "parts": {
+          "p0": "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]\n\n이 결과를 계기로 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 시도했다. 이후 HYBRID 모드(matmul=GPU, 나머지=CPU)로 CROWN Verification을 실행한 결과 Elapsed time은 201.670100ms로 기록되었다. 이 값 역시 단일 실행 결과이며, CPU 버전이나 GPU OPTIMIZED 모드와의 반복 측정 통계는 현재 페이지에 없다. [근거:E00030,E00031]\n\nHYBRID V2 모드에서는 Elapsed time이 85.785300ms로 기록되었고, 기록자는 이를 CPU보다 빨라진 시점으로 평가했다. 이 수치도 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00035]\n\n이후 only_GPU와 hybrid를 비교하면서, only_GPU에서 GPU로 돌리던 함수 중 hybrid에서 CPU로 되돌린 함수들을 표로 정리했다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스로 요약되었다. 현재 페이지는 이 정의와 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. [근거:E00036,E00037]\n\nGPU OPTIMIZED·HYBRID·HYBRID V2 단계에서는 GPU OPTIMIZED에서 HYBRID V2로 진행하며 전체 실행 시간이 85.785300ms로 줄어 CPU보다 빨라졌다는 평가가 나왔다. 이후 matmul만 GPU로 실행하는 하이브리드 시도가 이어졌고, only_GPU에서는 matmul(cuBLAS)만 GPU에 남기고 나머지를 CPU로 회귀시키는 방식으로 hybrid를 정의하였다. [근거:E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298,E00299,E00300,E00301,E00320,E00346,E00358,E00361]"
+        }
+      }
+    },
+    "raw_review": {
+      "checks": [
+        {
+          "item_id": "ri_res_2",
+          "verdict": "met",
+          "paragraph_ids": [
+            "sec_results_p1",
+            "sec_results_p2",
+            "sec_results_p3",
+            "sec_results_p4",
+            "sec_results_p5"
+          ],
+          "evidence_ids": [
+            "E00029",
+            "E00030",
+            "E00031",
+            "E00035",
+            "E00036",
+            "E00037"
+          ]
+        }
+      ],
+      "reference_checks": [
+        {
+          "section_id": "sec_results",
+          "reference_id": "ref1_evaluation",
+          "verdict": "applied",
+          "paragraph_ids": [
+            "sec_results_p1",
+            "sec_results_p2",
+            "sec_results_p3",
+            "sec_results_p4",
+            "sec_results_p5"
+          ],
+          "reason": "GPU OPTIMIZED·HYBRID·HYBRID V2 단계별 실행 시간 결과와 CPU 대비 비교, hybrid 정의 및 only_GPU 대비 변경점 정리가 포함되어 ref1_evaluation의 정량 성능 비교·기준 방법 비교 역할을 충족한다."
+        },
+        {
+          "section_id": "sec_results",
+          "reference_id": "ref2_evaluation",
+          "verdict": "partial",
+          "paragraph_ids": [
+            "sec_results_p1",
+            "sec_results_p2",
+            "sec_results_p3",
+            "sec_results_p4",
+            "sec_results_p5"
+          ],
+          "reason": "사용자 승인 범위에서 단계별 실행 시간 결과와 비교 관찰은 반영되었으나, 연구 질문별 결과 제시·런타임 호출 지연 시간 표 등 ref2_evaluation의 세부 역할은 원문 및 승인 범위에서 충분히 확인되지 않아 부분적으로만 반영되었다."
+        }
+      ],
+      "issues": [],
+      "review_policy": "approved-facts-v1",
+      "review_selection_bindings": []
+    },
+    "reviews": [
+      {
+        "checks": [
+          {
+            "item_id": "ri_res_2",
+            "verdict": "met",
+            "paragraph_ids": [
+              "sec_results_p1",
+              "sec_results_p2",
+              "sec_results_p3",
+              "sec_results_p4"
+            ],
+            "evidence_ids": [
+              "E00029",
+              "E00030",
+              "E00031",
+              "E00035",
+              "E00036",
+              "E00037"
+            ],
+            "quote": "GPU OPTIMIZED 모드에서는 실행 시간이 229.691ms로 약 100ms 줄었지만, 기록자는 여전히 CPU보다 느리다고 평가했다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+            "paragraph_quotes": [
+              "GPU OPTIMIZED 모드에서는 실행 시간이 229.691ms로 약 100ms 줄었지만, 기록자는 여전히 CPU보다 느리다고 평가했다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+              "이 결과를 계기로 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 시도했다. 이후 HYBRID 모드(matmul=GPU, 나머지=CPU)로 CROWN Verification을 실행한 결과 Elapsed time은 201.670100ms로 기록되었다. 이 값 역시 단일 실행 결과이며, CPU 버전이나 GPU OPTIMIZED 모드와의 반복 측정 통계는 현재 페이지에 없다. [근거:E00030,E00031]",
+              "HYBRID V2 모드에서는 Elapsed time이 85.785300ms로 기록되었고, 기록자는 이를 CPU보다 빨라진 시점으로 평가했다. 이 수치도 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00035]",
+              "이후 only_GPU와 hybrid를 비교하면서, only_GPU에서 GPU로 돌리던 함수 중 hybrid에서 CPU로 되돌린 함수들을 표로 정리했다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스로 요약되었다. 현재 페이지는 이 정의와 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. [근거:E00036,E00037]"
+            ],
+            "guideline_ids": [
+              "ref1_evaluation_required_1",
+              "ref1_evaluation_required_5"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [
+              "E00044",
+              "E00046",
+              "E00064",
+              "E00068",
+              "E00069",
+              "E00075",
+              "E00083",
+              "E00096",
+              "E00097",
+              "E00106",
+              "E00227",
+              "E00228",
+              "E00252",
+              "E00253",
+              "E00254",
+              "E00255",
+              "E00257",
+              "E00259",
+              "E00260",
+              "E00261",
+              "E00262",
+              "E00263",
+              "E00274",
+              "E00277"
+            ]
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "sec_results",
+            "reference_id": "ref1_evaluation",
+            "verdict": "applied",
+            "paragraph_ids": [
+              "sec_results_p1",
+              "sec_results_p2",
+              "sec_results_p3",
+              "sec_results_p4"
+            ],
+            "reason": "GPU OPTIMIZED·HYBRID·HYBRID V2 단계의 실행 시간 결과와 CPU 대비 비교 관찰, matmul만 GPU로 실행하는 하이브리드 시도 동기, only_GPU 대비 hybrid 정의 및 CPU 회귀 요약을 정리했다.",
+            "quote": "GPU OPTIMIZED 모드에서는 실행 시간이 229.691ms로 약 100ms 줄었지만, 기록자는 여전히 CPU보다 느리다고 평가했다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+            "paragraph_quotes": [
+              "GPU OPTIMIZED 모드에서는 실행 시간이 229.691ms로 약 100ms 줄었지만, 기록자는 여전히 CPU보다 느리다고 평가했다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+              "이 결과를 계기로 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 시도했다. 이후 HYBRID 모드(matmul=GPU, 나머지=CPU)로 CROWN Verification을 실행한 결과 Elapsed time은 201.670100ms로 기록되었다. 이 값 역시 단일 실행 결과이며, CPU 버전이나 GPU OPTIMIZED 모드와의 반복 측정 통계는 현재 페이지에 없다. [근거:E00030,E00031]",
+              "HYBRID V2 모드에서는 Elapsed time이 85.785300ms로 기록되었고, 기록자는 이를 CPU보다 빨라진 시점으로 평가했다. 이 수치도 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00035]",
+              "이후 only_GPU와 hybrid를 비교하면서, only_GPU에서 GPU로 돌리던 함수 중 hybrid에서 CPU로 되돌린 함수들을 표로 정리했다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스로 요약되었다. 현재 페이지는 이 정의와 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. [근거:E00036,E00037]"
+            ]
+          },
+          {
+            "section_id": "sec_results",
+            "reference_id": "ref2_evaluation",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_results_p1",
+              "sec_results_p2",
+              "sec_results_p3",
+              "sec_results_p4"
+            ],
+            "reason": "사용자 승인 범위에서 단계별 실행 시간 결과와 비교 관찰을 정리했으나, 연구 질문별 결과 제시나 런타임 호출 지연 시간 표 등 ref2_evaluation의 일부 역할은 이 절에서 충분히 반영되지 않았다.",
+            "quote": "GPU OPTIMIZED 모드에서는 실행 시간이 229.691ms로 약 100ms 줄었지만, 기록자는 여전히 CPU보다 느리다고 평가했다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+            "paragraph_quotes": [
+              "GPU OPTIMIZED 모드에서는 실행 시간이 229.691ms로 약 100ms 줄었지만, 기록자는 여전히 CPU보다 느리다고 평가했다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+              "이 결과를 계기로 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 시도했다. 이후 HYBRID 모드(matmul=GPU, 나머지=CPU)로 CROWN Verification을 실행한 결과 Elapsed time은 201.670100ms로 기록되었다. 이 값 역시 단일 실행 결과이며, CPU 버전이나 GPU OPTIMIZED 모드와의 반복 측정 통계는 현재 페이지에 없다. [근거:E00030,E00031]",
+              "HYBRID V2 모드에서는 Elapsed time이 85.785300ms로 기록되었고, 기록자는 이를 CPU보다 빨라진 시점으로 평가했다. 이 수치도 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00035]",
+              "이후 only_GPU와 hybrid를 비교하면서, only_GPU에서 GPU로 돌리던 함수 중 hybrid에서 CPU로 되돌린 함수들을 표로 정리했다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스로 요약되었다. 현재 페이지는 이 정의와 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. [근거:E00036,E00037]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "sec_results",
+            "severity": "warning",
+            "paragraph_id": "sec_results_p5",
+            "reason": "sec_results_p5는 ri_res_2의 필수 내용(GPU OPTIMIZED·HYBRID·HYBRID V2 단계 결과, HYBRID V2 85.785300ms에서 CPU보다 빨라졌다는 평가, matmul만 GPU로 실행하는 하이브리드 시도 동기, only_GPU에서 matmul(cuBLAS)만 남기고 나머지를 CPU로 회귀한 hybrid 정의와 한 줄 요약)을 직접 정리하지 않고, 다른 주제의 근거 ID를 다수 인용하고 있다.",
+            "evidence_ids": [
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00292",
+              "E00293",
+              "E00294",
+              "E00295",
+              "E00296",
+              "E00297",
+              "E00298",
+              "E00299",
+              "E00300",
+              "E00301",
+              "E00320",
+              "E00346",
+              "E00358",
+              "E00361"
+            ],
+            "failure_owner": "none",
+            "quote": "GPU OPTIMIZED·HYBRID·HYBRID V2 단계에서는 GPU OPTIMIZED에서 HYBRID V2로 진행하며 전체 실행 시간이 85.785300ms로 줄어 CPU보다 빨라졌다는 평가가 나왔다. 이후 matmul만 GPU로 실행하는 하이브리드 시도가 이어졌고, only_GPU에서는 matmul(cuBLAS)만 GPU에 남기고 나머지를 CPU로 회귀시키는 방식으로 hybrid를 정의하였다. [근거:E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298,E00299,E00300,E00301,E00320,E00346,E00358,E00361]"
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0026에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요."
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0027에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요."
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0028에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요."
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "style",
+            "validation_code": "composition_style",
+            "reason": "sec_results/p0: 기록자·자료 중심 표현 ['기록자는']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 1,
+          "partial": 1,
+          "not_visible": 0,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "ri_res_2",
+            "verdict": "met",
+            "paragraph_ids": [
+              "sec_results_p1",
+              "sec_results_p2",
+              "sec_results_p3",
+              "sec_results_p4"
+            ],
+            "evidence_ids": [
+              "E00029",
+              "E00030",
+              "E00031",
+              "E00035",
+              "E00036",
+              "E00037"
+            ],
+            "quote": "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+            "paragraph_quotes": [
+              "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+              "이 결과를 계기로 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 시도했다. 이후 HYBRID 모드(matmul=GPU, 나머지=CPU)로 CROWN Verification을 실행한 결과 Elapsed time은 201.670100ms로 기록되었다. 이 값 역시 단일 실행 결과이며, CPU 버전이나 GPU OPTIMIZED 모드와의 반복 측정 통계는 현재 페이지에 없다. [근거:E00030,E00031]",
+              "HYBRID V2 모드에서는 Elapsed time이 85.785300ms로 기록되었고, 기록자는 이를 CPU보다 빨라진 시점으로 평가했다. 이 수치도 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00035]",
+              "이후 only_GPU와 hybrid를 비교하면서, only_GPU에서 GPU로 돌리던 함수 중 hybrid에서 CPU로 되돌린 함수들을 표로 정리했다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스로 요약되었다. 현재 페이지는 이 정의와 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. [근거:E00036,E00037]"
+            ],
+            "guideline_ids": [
+              "ref1_evaluation_required_1",
+              "ref1_evaluation_required_5"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [
+              "E00044",
+              "E00046",
+              "E00064",
+              "E00068",
+              "E00069",
+              "E00075",
+              "E00083",
+              "E00096",
+              "E00097",
+              "E00106",
+              "E00227",
+              "E00228",
+              "E00252",
+              "E00253",
+              "E00254",
+              "E00255",
+              "E00257",
+              "E00259",
+              "E00260",
+              "E00261",
+              "E00262",
+              "E00263",
+              "E00274",
+              "E00277"
+            ]
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "sec_results",
+            "reference_id": "ref1_evaluation",
+            "verdict": "applied",
+            "paragraph_ids": [
+              "sec_results_p1",
+              "sec_results_p2",
+              "sec_results_p3",
+              "sec_results_p4"
+            ],
+            "reason": "GPU OPTIMIZED·HYBRID·HYBRID V2 단계별 실행 시간 결과와 CPU 대비 비교 관찰, 이후 matmul만 GPU로 실행하는 하이브리드 시도 동기, only_GPU에서 matmul(cuBLAS)만 남기고 나머지를 CPU로 회귀한 hybrid 정의와 한 줄 요약을 정리하였다.",
+            "quote": "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+            "paragraph_quotes": [
+              "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+              "이 결과를 계기로 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 시도했다. 이후 HYBRID 모드(matmul=GPU, 나머지=CPU)로 CROWN Verification을 실행한 결과 Elapsed time은 201.670100ms로 기록되었다. 이 값 역시 단일 실행 결과이며, CPU 버전이나 GPU OPTIMIZED 모드와의 반복 측정 통계는 현재 페이지에 없다. [근거:E00030,E00031]",
+              "HYBRID V2 모드에서는 Elapsed time이 85.785300ms로 기록되었고, 기록자는 이를 CPU보다 빨라진 시점으로 평가했다. 이 수치도 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00035]",
+              "이후 only_GPU와 hybrid를 비교하면서, only_GPU에서 GPU로 돌리던 함수 중 hybrid에서 CPU로 되돌린 함수들을 표로 정리했다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스로 요약되었다. 현재 페이지는 이 정의와 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. [근거:E00036,E00037]"
+            ]
+          },
+          {
+            "section_id": "sec_results",
+            "reference_id": "ref2_evaluation",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_results_p1",
+              "sec_results_p2",
+              "sec_results_p3",
+              "sec_results_p4"
+            ],
+            "reason": "사용자 승인 범위에서 단일 실행 결과·요약값의 한계를 함께 명시하며 단계별 결과를 정리했으나, 연구 질문별 결과 제시·런타임 호출 지연 시간 표 역할은 이 소절에서 직접 다루지 않았다.",
+            "quote": "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+            "paragraph_quotes": [
+              "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+              "이 결과를 계기로 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 시도했다. 이후 HYBRID 모드(matmul=GPU, 나머지=CPU)로 CROWN Verification을 실행한 결과 Elapsed time은 201.670100ms로 기록되었다. 이 값 역시 단일 실행 결과이며, CPU 버전이나 GPU OPTIMIZED 모드와의 반복 측정 통계는 현재 페이지에 없다. [근거:E00030,E00031]",
+              "HYBRID V2 모드에서는 Elapsed time이 85.785300ms로 기록되었고, 기록자는 이를 CPU보다 빨라진 시점으로 평가했다. 이 수치도 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00035]",
+              "이후 only_GPU와 hybrid를 비교하면서, only_GPU에서 GPU로 돌리던 함수 중 hybrid에서 CPU로 되돌린 함수들을 표로 정리했다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스로 요약되었다. 현재 페이지는 이 정의와 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. [근거:E00036,E00037]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "sec_results",
+            "severity": "warning",
+            "paragraph_id": "sec_results_p5",
+            "reason": "sec_results_p5는 ri_res_2의 필수 내용(GPU OPTIMIZED·HYBRID·HYBRID V2 단계 결과, HYBRID V2 85.785300ms에서 CPU보다 빨라졌다는 평가, matmul만 GPU로 실행하는 하이브리드 시도 동기, only_GPU에서 matmul(cuBLAS)만 남기고 나머지를 CPU로 회귀한 hybrid 정의와 한 줄 요약)을 직접 정리하지 않고, E00278 이후 메모리·클록·Pinned 관련 근거를 대거 인용하여 항목 범위를 벗어난다.",
+            "evidence_ids": [
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00292",
+              "E00293",
+              "E00294",
+              "E00295",
+              "E00296",
+              "E00297",
+              "E00298",
+              "E00299",
+              "E00300",
+              "E00301",
+              "E00320",
+              "E00346",
+              "E00358",
+              "E00361"
+            ],
+            "failure_owner": "none",
+            "quote": "GPU OPTIMIZED·HYBRID·HYBRID V2 단계에서는 GPU OPTIMIZED에서 HYBRID V2로 진행하며 전체 실행 시간이 85.785300ms로 줄어 CPU보다 빨라졌다는 평가가 나왔다. 이후 matmul만 GPU로 실행하는 하이브리드 시도가 이어졌고, only_GPU에서는 matmul(cuBLAS)만 GPU에 남기고 나머지를 CPU로 회귀시키는 방식으로 hybrid를 정의하였다. [근거:E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298,E00299,E00300,E00301,E00320,E00346,E00358,E00361]"
+          },
+          {
+            "section_id": "sec_results",
+            "part": "p0",
+            "paragraph_id": "sec_results_p3",
+            "evidence_ids": [
+              "E00035"
+            ],
+            "severity": "warning",
+            "original_severity": "error",
+            "deferred": true,
+            "validation_code": "paragraph_revision_deferred",
+            "review_stage": "generation_completion",
+            "failure_owner": "writer",
+            "repair_attempts": 1,
+            "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0026에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요."
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0027에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요."
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0028에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요."
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "style",
+            "validation_code": "composition_style",
+            "reason": "sec_results/p0: 기록자·자료 중심 표현 ['기록자는']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 1,
+          "partial": 1,
+          "not_visible": 0,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "ri_res_2",
+            "verdict": "met",
+            "paragraph_ids": [
+              "sec_results_p1",
+              "sec_results_p2",
+              "sec_results_p3",
+              "sec_results_p4",
+              "sec_results_p5"
+            ],
+            "evidence_ids": [
+              "E00029",
+              "E00030",
+              "E00031",
+              "E00035",
+              "E00036",
+              "E00037"
+            ],
+            "quote": "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+            "paragraph_quotes": [
+              "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+              "이 결과를 계기로 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 시도했다. 이후 HYBRID 모드(matmul=GPU, 나머지=CPU)로 CROWN Verification을 실행한 결과 Elapsed time은 201.670100ms로 기록되었다. 이 값 역시 단일 실행 결과이며, CPU 버전이나 GPU OPTIMIZED 모드와의 반복 측정 통계는 현재 페이지에 없다. [근거:E00030,E00031]",
+              "HYBRID V2 모드에서는 Elapsed time이 85.785300ms로 기록되었고, 기록자는 이를 CPU보다 빨라진 시점으로 평가했다. 이 수치도 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00035]",
+              "이후 only_GPU와 hybrid를 비교하면서, only_GPU에서 GPU로 돌리던 함수 중 hybrid에서 CPU로 되돌린 함수들을 표로 정리했다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스로 요약되었다. 현재 페이지는 이 정의와 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. [근거:E00036,E00037]",
+              "GPU OPTIMIZED·HYBRID·HYBRID V2 단계에서는 GPU OPTIMIZED에서 HYBRID V2로 진행하며 전체 실행 시간이 85.785300ms로 줄어 CPU보다 빨라졌다는 평가가 나왔다. 이후 matmul만 GPU로 실행하는 하이브리드 시도가 이어졌고, only_GPU에서는 matmul(cuBLAS)만 GPU에 남기고 나머지를 CPU로 회귀시키는 방식으로 hybrid를 정의하였다. [근거:E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298,E00299,E00300,E00301,E00320,E00346,E00358,E00361]"
+            ],
+            "guideline_ids": [
+              "ref1_evaluation_required_1",
+              "ref1_evaluation_required_5"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [
+              "E00044",
+              "E00046",
+              "E00064",
+              "E00068",
+              "E00069",
+              "E00075",
+              "E00083",
+              "E00096",
+              "E00097",
+              "E00106",
+              "E00227",
+              "E00228",
+              "E00252",
+              "E00253",
+              "E00254",
+              "E00255",
+              "E00257",
+              "E00259",
+              "E00260",
+              "E00261",
+              "E00262",
+              "E00263",
+              "E00274",
+              "E00277"
+            ]
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "sec_results",
+            "reference_id": "ref1_evaluation",
+            "verdict": "applied",
+            "paragraph_ids": [
+              "sec_results_p1",
+              "sec_results_p2",
+              "sec_results_p3",
+              "sec_results_p4",
+              "sec_results_p5"
+            ],
+            "reason": "GPU OPTIMIZED·HYBRID·HYBRID V2 단계별 실행 시간 결과와 CPU 대비 비교, hybrid 정의 및 only_GPU 대비 변경점 정리가 포함되어 ref1_evaluation의 정량 성능 비교·기준 방법 비교 역할을 충족한다.",
+            "quote": "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+            "paragraph_quotes": [
+              "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+              "이 결과를 계기로 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 시도했다. 이후 HYBRID 모드(matmul=GPU, 나머지=CPU)로 CROWN Verification을 실행한 결과 Elapsed time은 201.670100ms로 기록되었다. 이 값 역시 단일 실행 결과이며, CPU 버전이나 GPU OPTIMIZED 모드와의 반복 측정 통계는 현재 페이지에 없다. [근거:E00030,E00031]",
+              "HYBRID V2 모드에서는 Elapsed time이 85.785300ms로 기록되었고, 기록자는 이를 CPU보다 빨라진 시점으로 평가했다. 이 수치도 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00035]",
+              "이후 only_GPU와 hybrid를 비교하면서, only_GPU에서 GPU로 돌리던 함수 중 hybrid에서 CPU로 되돌린 함수들을 표로 정리했다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스로 요약되었다. 현재 페이지는 이 정의와 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. [근거:E00036,E00037]",
+              "GPU OPTIMIZED·HYBRID·HYBRID V2 단계에서는 GPU OPTIMIZED에서 HYBRID V2로 진행하며 전체 실행 시간이 85.785300ms로 줄어 CPU보다 빨라졌다는 평가가 나왔다. 이후 matmul만 GPU로 실행하는 하이브리드 시도가 이어졌고, only_GPU에서는 matmul(cuBLAS)만 GPU에 남기고 나머지를 CPU로 회귀시키는 방식으로 hybrid를 정의하였다. [근거:E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298,E00299,E00300,E00301,E00320,E00346,E00358,E00361]"
+            ]
+          },
+          {
+            "section_id": "sec_results",
+            "reference_id": "ref2_evaluation",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_results_p1",
+              "sec_results_p2",
+              "sec_results_p3",
+              "sec_results_p4",
+              "sec_results_p5"
+            ],
+            "reason": "사용자 승인 범위에서 단계별 실행 시간 결과와 비교 관찰은 반영되었으나, 연구 질문별 결과 제시·런타임 호출 지연 시간 표 등 ref2_evaluation의 세부 역할은 원문 및 승인 범위에서 충분히 확인되지 않아 부분적으로만 반영되었다.",
+            "quote": "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+            "paragraph_quotes": [
+              "GPU OPTIMIZED 모드에서 실행 시간은 229.691ms로 약 100ms 줄었으나, CPU보다 느리다는 평가가 남는다. 이 비교는 기록자의 정성적 판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00029]",
+              "이 결과를 계기로 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 시도했다. 이후 HYBRID 모드(matmul=GPU, 나머지=CPU)로 CROWN Verification을 실행한 결과 Elapsed time은 201.670100ms로 기록되었다. 이 값 역시 단일 실행 결과이며, CPU 버전이나 GPU OPTIMIZED 모드와의 반복 측정 통계는 현재 페이지에 없다. [근거:E00030,E00031]",
+              "HYBRID V2 모드에서는 Elapsed time이 85.785300ms로 기록되었고, 기록자는 이를 CPU보다 빨라진 시점으로 평가했다. 이 수치도 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 페이지에 없다. [근거:E00035]",
+              "이후 only_GPU와 hybrid를 비교하면서, only_GPU에서 GPU로 돌리던 함수 중 hybrid에서 CPU로 되돌린 함수들을 표로 정리했다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 것은 없고 GPU 코드를 삭제(CPU로 회귀)해서 빨라진 케이스로 요약되었다. 현재 페이지는 이 정의와 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. [근거:E00036,E00037]",
+              "GPU OPTIMIZED·HYBRID·HYBRID V2 단계에서는 GPU OPTIMIZED에서 HYBRID V2로 진행하며 전체 실행 시간이 85.785300ms로 줄어 CPU보다 빨라졌다는 평가가 나왔다. 이후 matmul만 GPU로 실행하는 하이브리드 시도가 이어졌고, only_GPU에서는 matmul(cuBLAS)만 GPU에 남기고 나머지를 CPU로 회귀시키는 방식으로 hybrid를 정의하였다. [근거:E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298,E00299,E00300,E00301,E00320,E00346,E00358,E00361]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "sec_results",
+            "part": "p0",
+            "paragraph_id": "sec_results_p3",
+            "evidence_ids": [
+              "E00035"
+            ],
+            "severity": "warning",
+            "original_severity": "error",
+            "deferred": true,
+            "validation_code": "paragraph_revision_deferred",
+            "review_stage": "generation_completion",
+            "failure_owner": "writer",
+            "repair_attempts": 1,
+            "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0026에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요.",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0027에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요.",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0028에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요.",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "style",
+            "validation_code": "composition_style",
+            "reason": "sec_results/p0: 기록자·자료 중심 표현 ['기록자는']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+            "original_severity": "error",
+            "deferred": true
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": true,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 1,
+          "partial": 1,
+          "not_visible": 0,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+        "content_completion": {
+          "policy": "content-warning-v1",
+          "status": "needs_attention",
+          "revisions": 2,
+          "reason": "revision_limit"
+        },
+        "content_warnings": [
+          {
+            "section_id": "sec_results",
+            "part": "p0",
+            "paragraph_id": "sec_results_p3",
+            "evidence_ids": [
+              "E00035"
+            ],
+            "severity": "warning",
+            "original_severity": "error",
+            "deferred": true,
+            "validation_code": "paragraph_revision_deferred",
+            "review_stage": "generation_completion",
+            "failure_owner": "writer",
+            "repair_attempts": 1,
+            "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+            "stage": "subsection-sec_results-p1"
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0026에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-sec_results-p1"
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0027에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-sec_results-p1"
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "organization",
+            "validation_code": "composition_layout",
+            "reason": "sec_results/p0: 표 source_table_0028에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-sec_results-p1"
+          },
+          {
+            "section_id": "sec_results",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "style",
+            "validation_code": "composition_style",
+            "reason": "sec_results/p0: 기록자·자료 중심 표현 ['기록자는']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-sec_results-p1"
+          }
+        ],
+        "content_status": "needs_attention",
+        "content_approved": false
+      }
+    ],
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    },
+    "generation_warnings": [
+      {
+        "section_id": "sec_results",
+        "part": "p0",
+        "paragraph_id": "sec_results_p3",
+        "evidence_ids": [
+          "E00035"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      }
+    ]
+  }
+}

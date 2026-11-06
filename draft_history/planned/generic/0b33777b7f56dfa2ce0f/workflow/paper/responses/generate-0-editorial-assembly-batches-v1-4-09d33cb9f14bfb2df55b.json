@@ -1,0 +1,51 @@
+{
+  "request_fingerprint": "09d33cb9f14bfb2df55b441120a999996fc34d61e62b6309734bda700df3cc7a",
+  "value": {
+    "sections": {
+      "S_limitations": {
+        "parts": {
+          "p2": {
+            "S_limitations_p21_s1": {
+              "action": "replace",
+              "text": "메모리·복사 관련 변경으로는 forward-backward 간 전달되는 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했으며, bias도 메모리 풀에서 관리하도록 변경하였다. 또한 backward_bound_gpu에서 affine 중복 계산을 삭제해 커널 2개 함수가 줄어들었고, backward에서 사용하는 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합했으며, affine_min/max까지 backward_bound_gpu에서 실행되도록 개선해 GPU→CPU 메모리 복사를 최소화하였다. Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용해 H2D 복사를 제거하고, default 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성해 PCIe 통신 오버헤드를 최소화했으며, fp32에 단정밀도 연산으로 바꿔보기도 하였으나 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. 이 변경들은 변경 내용과 단일 실행 결과 또는 관측된 경향만 기록하며, 반복 측정 통계나 다른 조건과의 정량 비교, 그리고 bias 변경의 성능 최고점 상승 여부는 현재 페이지에 제시되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p22_s1": {
+              "action": "replace",
+              "text": "실행 시간 해석에서는 40000번의 루프에서 backward보다 forward가 느린 것을 확인했고, 원인은 중간 레이어 결과를 저장하느냐/마느냐의 플래그에 있었으며, forward_bound_impl의 플래그를 true로 두면 중간 결과가 복사되고 이 플래그가 forward에서 중간 계산 결과, final_affine, 최종 결과 복사를 제어하는 역할을 한다고 기록되었다. 단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 뛰어넘지 않았으나, 40000번 루프 반복 시 D2H 복사 오버헤드가 backward 대비 forward 계산의 이득을 초과하여 forward가 더 느려지는 현상이 관측되었다. 단일 데이터에 대한 memcpy 호출 횟수는 forward와 backward 각각 6번으로 확인되었고, Forward와 Backward의 cudaMemcpy 호출 횟수는 동일함에도 Forward 전체 실행 시간은 약 64s, Backward 전체 실행 시간은 약 98s로, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 많이 잡히는 점이 눈에 띄었다. 또한 중간 작업으로 커맨드라인 실행 인자를 받아 forward 또는 backward를 실행하도록 코드를 변경한 뒤 실행 결과가 2164s로 기존 backward 실행 결과 1560s보다 느려졌고, 이게 backward 계산 시간이라고 확인되었다. 이 관측들은 단일 실행 관측 기록이거나 특정 반복 조건에서의 현상이며, 반복 측정 통계나 조건별 분리 측정, 그리고 코드 변경 후 느려진 원인에 대한 확정적 분석은 현재 페이지에 제시되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p23_s1": {
+              "action": "replace",
+              "text": "network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며 SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다고 기록되었다. 현재 구현과 antenna_lirpa의 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된다고 해석되었으나, 이 진술은 figure 캡션에 기록된 원인 해석이며 정량 분리 실험 결과는 포함하지 않는다. 또한 GPU 클록을 고정하고 다시 실험하기로 하여 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했고, 클록을 2800MHz로 고정하고 돌린 결과(기존 HostRegister)가 기록되었으며, cuda 강의 19장의 GPU 클록 고정을 참고했고, 현재 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하며, 측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용한다고 기록되었다. 이 내용들은 실험 재시도 방향·코드 구조·참고 출처·명령어 예시·측정 환경 설정 코드만 포함하며, 실제 클록 고정 후 측정 결과나 적용 결과는 이 요소들만으로는 제시되지 않는다.",
+              "join_previous": false
+            }
+          }
+        }
+      },
+      "S_conclusion": {
+        "parts": {
+          "p0": {
+            "S_conclusion_p2_s1": {
+              "action": "replace",
+              "text": "이 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 포팅하고, 실시간 대규모 연산에 대응할 수 있도록 최적화하는 과정을 정리한다. 핵심 설계는 호스트-디바이스 간 데이터 복사, 커널 호출, 메모리 할당·해제, 초기화 반복에서 발생하는 병목을 줄이는 방향으로 구성되었다. 메모리 풀과 warm-up 조합을 통해 반복 할당·해제 및 라이브러리 초기화 비용을 완화하고, cuBLAS를 활용한 행렬 곱셈 가속, matmul은 GPU로 두고 나머지 연산은 CPU로 처리하는 하이브리드 구성, 커널 퓨전, forward 함수 내 DTOH memcpy의 극단적 제거, alpha/beta GPU 버퍼 활용, cudaGraph를 통한 실행 경로 고정, 그리고 상황에 따른 메모리 방식 선택이 포함된다. GPU 아키텍처의 SM 구조를 고려해 FP64에서 FP32로, double에서 float로 자료형을 변경하는 조정도 함께 진행되었다. 이러한 구성은 GPU OPTIMIZED 모드 이후에도 CPU보다 느리다는 평가에서 출발해, matmul만 GPU로 실행하는 하이브리드 방식으로 이어지는 최적화 흐름의 기반이 되었다.",
+              "join_previous": false
+            },
+            "S_conclusion_p3_s1": {
+              "action": "replace",
+              "text": "주요 실행 시간은 버전별 단일 실행 중심으로 기록되었다. GPU 버전은 353.057200 ms, GPU OPTIMIZED 모드(cuBLAS + Pool)는 229.691800 ms로 약 100ms 줄었지만 여전히 CPU보다 느리다고 평가되었다. 이후 HYBRID 모드(matmul=GPU, rest=CPU)에서는 201.670100 ms, HYBRID V2에서는 85.785300 ms로 기록되어 CPU보다 빨라졌다는 평가가 함께 남았다. 메모리 풀과 warm-up 조합만으로도 거의 200ms가 단축되었다는 정성적 평가가 있으며, 가중치 사전 업로드(PRELOAD ON GPU) 적용 후에는 149~155ms 범위와 149.820400 ms가 기록되었다. memcpy를 극단적으로 제거한 시점에서는 64.716000 ms까지 줄어들었다. 다만 이 값들은 단일 실행 또는 요약값 중심이며, 반복 측정 기반 통계는 제한적이다.",
+              "join_previous": false
+            }
+          },
+          "p1": {
+            "S_conclusion_p5_s1": {
+              "action": "replace",
+              "text": "향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이 내용은 연구 노트의 계획·검토 기록에 근거한 목표·방식 서술이며, 실제 구현·평가 결과로 서술하지 않는다.",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

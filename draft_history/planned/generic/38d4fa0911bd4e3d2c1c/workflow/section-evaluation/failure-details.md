@@ -1,0 +1,64 @@
+# 작성 검토 실패: section-evaluation
+
+## 검토 지적
+
+- [editorial; 처리 책임: editor] evaluation_p15의 make_zero_matrix/vector CPU 회귀 및 memcpy 제거 후 수치 서술이 evaluation_p4와 거의 동일하게 반복된다.
+  - 문단: evaluation_p15; 근거: 미지정
+  - 실제 본문: 구성 요소 변경의 효과는 단일 실행 결과와 기록자의 정성적 관찰을 중심으로 정리된다. 메모리 풀과 warmup 조합은 각 버전에서 약 50ms 정도 단축되는 효과가 있었고, 이 조합 적용 후 CROWN Verification 실행 시간은 128.894800 ms로 기록되었다. 이후 make_zero_matrix와 make_zero_vector를 CPU로 회귀하자 22~25ms 정도 더 줄었고, mempool + warmup + 결과 벡터 memcpy 제거를 함께 적용한 뒤에는 forward 함수의 D2H memcpy를 극단적으로 없애면서 실행 시간이 64.716000 ms로 관측되었다. bias까지 GPU에 사전 업로드하는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 판단되었다. [근거:E00070,E00075,E00076,E00083,E00045]
+- [editorial; 처리 책임: editor] 커널 퓨전 후 15.751000ms와 이전 15.828400ms 대비 약 0.2ms 감소 서술이 evaluation_p6, evaluation_p21과 중복된다.
+  - 문단: evaluation_p16; 근거: 미지정
+  - 실제 본문: lirpa_forward_bound 커널 퓨전 적용 후 22.342900 ms가 기록되었고 22ms 초반까지 나오는 경우도 관측되었다. 이후 커널 퓨전이 더 진행된 뒤에는 15.828400 ms에서 15.751000 ms로, 기록상 약 0.2ms 정도 낮아진 듯하다고 관측되었다. backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 안 보이게 되어 체감상 효과가 있는 듯하다고 기록되었다. 다만 여러 변경이 동시에 적용된 구간이 있어 개별 구성 요소의 기여도를 분리해 해석하기는 제한적이다. [근거:E00119,E00120,E00125,E00145,E00081]
+- [editorial; 처리 책임: editor] 커널 퓨전 완료 후 15.751000ms와 이전 15.828400ms 대비 약 0.2ms 감소 서술이 evaluation_p6, evaluation_p16과 중복된다.
+  - 문단: evaluation_p21; 근거: 미지정
+  - 실제 본문: backward_bound_gpu에서는 affine 중복 계산을 삭제해 커널 2개 함수가 줄었고, new_(upper, lower)_p는 복사 대신 std::swap으로 포인터 스와핑하였다. backward에서 쓰이던 행렬곱 커널 2개는 backward_matmul_pair_gpu로 통합했으며, build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu에도 커널 퓨전이 적용되었다. forward와 backward 사이에서 전달되던 alpha, beta 값은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 추가해 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 바꾸었다. bias 역시 메모리 풀로 관리하도록 변경하였다. forward 최종 계산의 D2H 복사 과정에서도 비효율적인 부분을 최적화하였다. [근거:E00122,E00123,E00124,E00126,E00127,E00130,E00133,E00157]
+- [editorial; 처리 책임: editor] 메모리 풀과 warmup 조합의 약 200ms 단축 서술 및 memcpy 제거 후 약 10ms 감소 서술이 evaluation_p20과 중복된다.
+  - 문단: evaluation_p22; 근거: 미지정
+  - 실제 본문: 여러 요소가 동시에 적용되거나 짧은 간격으로 이어져 개별 구성 요소의 효과를 정량적으로 분리해 해석하기는 어렵다. mempool과 warmup 조합은 함께 적용했을 때 큰 폭의 단축이 기록되었으나, 각 요소의 독립적 기여는 반복 측정으로 확인되지 않았다. 영벡터 생성 위치를 GPU에서 CPU로 되돌린 변경도 기록되었으나, 그 변경 후 전체 성능 변화는 이 요소만으로는 제시되지 않았다. [근거:E00071,E00047,E00048,E00049,E00074]
+- [editorial; 처리 책임: editor] alpha/beta GPU 버퍼 추가, backward 메모리 복사 제거, bias 메모리 풀 관리 등 구성 요소 변경 서술이 evaluation_p4, evaluation_p16과 중복된다.
+  - 문단: evaluation_p23; 근거: 미지정
+  - 실제 본문: 구성 요소 변경은 커널 호출 횟수 감소와 메모리·복사 경로 조정으로 나타났다. graph mode=1, 샘플 1개 전체 기준에서 추론 커널은 그대로 둔 채 Forward 33회→24회, Backward 52회→37회, Backward-only 51회→39회로 줄었고, graph launch 횟수는 infer 1회 + bound 1회, 총 2회로 유지되었다. 감소 내역은 Forward에서 lower/upper matmul, lower/upper bias matvec, matrix scaling + vector affine이 각각 2→1로 줄어 method 0 기준 레이어당 8→5회가 되었고, Backward에서는 split_pos_neg + bias accumulation 2→1과 레이어당 backward 단계 5→4회가 적용되었다. method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 split/bias kernel 통합으로 총 12회 감소했다. 다만 forward에서 무거운 커널 연산 호출이 9회 줄어든 반면 실제 backward 부분은 3회만 줄었고, backward_only는 45→33회(26.7%)로 가장 적게 줄어 커널 비용 차이가 남아 있다. [근거:E00313,E00314,E00315,E00319]
+- [editorial; 처리 책임: editor] 여러 요소 동시 적용으로 개별 기여도 분리가 어렵다는 서술이 evaluation_p16, evaluation_p22와 중복된다.
+  - 문단: evaluation_p24; 근거: 미지정
+  - 실제 본문: backward_bound_gpu()에 커널 퓨전을 먼저 적용한 뒤, 전체 CROWN Verification 실행 시간이 23.925200ms로 관측되었고, 컴퓨터 사정에 따라 26ms까지 뛰는 경우도 있었지만 23ms 정도가 보인다는 점이 기록되었다. switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않는다는 관찰도 있었다. 커널 memcpy에서 MAXDIM 512 float 고정 복사를 필요한 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커진 것 같고 시간이 늘었다는 관찰이 있었다. [근거:E00326,E00329,E00353,E00370]
+- [editorial; 처리 책임: editor] switch 문 스코프 문제와 MAXDIM 512 float 복사 변경 후 CPU 오버헤드 증가 관찰이 evaluation_p26과 중복된다.
+  - 문단: evaluation_p25; 근거: 미지정
+  - 실제 본문: switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 커널 memcpy에서는 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다. [근거:E00354,E00370]
+- [editorial; 처리 책임: editor] GPU OPTIMIZED 약 229.691ms와 CPU보다 느리다는 정성적 평가, bias GPU 업로드 시도 판단이 evaluation_p4, evaluation_p30과 중복된다.
+  - 문단: evaluation_p27; 근거: 미지정
+  - 실제 본문: GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]
+- [editorial; 처리 책임: editor] cuBLAS 도입 후 느려짐과 메모리풀 warmup 약 50ms 단축 효과가 evaluation_p4, evaluation_p31과 중복된다.
+  - 문단: evaluation_p28; 근거: 미지정
+  - 실제 본문: cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]
+- [editorial; 처리 책임: editor] spMM 도입 후 약 40ms 수준 회귀와 setup/launch 비용 해석이 evaluation_p4, evaluation_p30과 중복된다.
+  - 문단: evaluation_p29; 근거: 미지정
+  - 실제 본문: spMM 도입 후 실행 시간이 약 40ms 수준으로 회귀한 것으로 기록되었다. 이 표현은 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었으나, 정량적 원인 분리 측정 결과는 제시되지 않았다. [근거:E00111,E00116,E00330]
+- [editorial; 처리 책임: editor] 커널 퓨전 후 22ms 초반, backward_matmul_pair_gpu 적용 후 22ms 비율 증가 및 최저점 28ms 미관측 관찰이 evaluation_p16, evaluation_p21과 중복된다.
+  - 문단: evaluation_p30; 근거: 미지정
+  - 실제 본문: 커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. [근거:E00120,E00125]
+- [editorial; 처리 책임: editor] cudaHostRegister와 No Pinning의 전체 시간 787.88초 대 776.70초, Bound/Infer 단계 역전 해석이 evaluation_p12와 중복된다.
+  - 문단: evaluation_p31; 근거: 미지정
+  - 실제 본문: 40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]
+- [editorial; 처리 책임: editor] cudaMemcpyAsync 측정 불일치, 추론 종료 동기화 시간 해석, backward_only 속도 관련 미해결 질문이 evaluation_p33, evaluation_p35와 중복된다.
+  - 문단: evaluation_p32; 근거: 미지정
+  - 실제 본문: cudaMemcpyAsync 호출 시간은 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 효과가 크지 않았다고 보았으나, 측정 결과가 일관되지 않아 확신할 수 없는 정성적 판단으로 남았다. 추론 종료까지의 동기화 시간은 pinned 미적용 버전이 가장 빨랐고, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었으나 확정적 인과 분리는 아니다. pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. backward_only가 왜 제일 빠른지에 대한 질문은 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]
+- [editorial; 처리 책임: editor] HYBRID V2 CPU보다 느린 이유의 CPU 캐시 추정, memcpy 병목 인식, 영벡터 GPU 재시도 시 3~5ms 증가가 evaluation_p20, evaluation_p29와 중복된다.
+  - 문단: evaluation_p33; 근거: 미지정
+  - 실제 본문: HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. 영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00065,E00073,E00077]
+- [editorial; 처리 책임: editor] No-Pin과 Pinned Memory의 평균 속도, 최대 지연, 지터 비교 서술이 evaluation_p17~evaluation_p19와 중복된다.
+  - 문단: evaluation_p34; 근거: 미지정
+  - 실제 본문: 메모리 전송 방식 비교에서 No-Pin(일반 메모리)은 평균 처리 속도가 Pinned Memory보다 약 13초 빨랐으나, 이는 CPU 캐시 복사 이득에 의한 것으로 해석된다. 반면 Pinned Memory는 DMA 셋업 오버헤드로 인해 평균 속도가 약간 느렸다. 최대 지연은 No-Pin이 8.8~11.6ms 범위로 치명적 수준을 보였고, Pinned Memory는 1.64ms로 극히 안정적이었다. 지터 역시 No-Pin이 118μs로 불안정했고 Pinned Memory는 47μs로 안정적이었다. [근거:E00293]
+- [editorial; 처리 책임: editor] No-Pin의 CPU 캐시 효과와 OS 개입 시 스파이크, Pinned Memory의 DMA 셋업 비용 및 결정론적 안정성 서술이 evaluation_p36과 중복된다.
+  - 문단: evaluation_p35; 근거: 미지정
+  - 실제 본문: 이러한 차이는 동작 특성에서도 설명된다. No-Pin은 평소 CPU 캐시 효과로 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없으며, 이는 1ms 무선 통신 데드라인을 파괴할 수 있다. Pinned Memory는 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00294]
+- [editorial; 처리 책임: editor] 초소형 실시간 데이터 환경에서 Pinned Memory 평균 속도 미세 저하와 WCET 1.64ms, 지터 안정화 서술이 evaluation_p36, evaluation_p37과 중복된다.
+  - 문단: evaluation_p36; 근거: 미지정
+  - 실제 본문: 다만 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다. 그럼에도 Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00295,E00296]
+- [editorial; 처리 책임: editor] GPU OPTIMIZED 이후 CPU보다 느림, cuBLAS 악화, cuSparse spMV/spMM 검토, cudaHostRegister 비교 등 요약이 evaluation_p29, evaluation_p30, evaluation_p31과 중복된다.
+  - 문단: evaluation_p37; 근거: 미지정
+  - 실제 본문: GPU OPTIMIZED 모드 이후에도 CPU보다 느려, matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했다. cuBLAS 도입 후 결과가 나빠졌고, cuSparse spMV 적용 결과도 느려져 spMM 도입까지 검토하기로 했다. spMM 적용 후 거의 40ms로 회귀했으며, 40000번 루프에서 forward가 backward보다 느려졌다. cudaHostRegister는 No Pinning보다 느리게 측정되었고, pinned 적용 버전의 cudaMemcpyAsync가 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다. 이 기록은 파이프라인 상태와 오버헤드 구조에 대한 설명이며, 정량 분리 측정 결과는 제시되지 않았다. [근거:E00115]
+- [composition; 처리 책임: editor] evaluation/p0: 기록자·자료 중심 표현 ['현재 페이지에 제시', '연구 일지에서 확인']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.
+  - 문단: none; 근거: 미지정
+- [composition; 처리 책임: editor] evaluation/p1: 기록자·자료 중심 표현 ['현재 페이지에 제시']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.
+  - 문단: none; 근거: 미지정
+- [composition; 처리 책임: editor] evaluation/p3: 기록자·자료 중심 표현 ['연구 일지에서 확인']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.
+  - 문단: none; 근거: 미지정

@@ -1,0 +1,51 @@
+{
+  "request_fingerprint": "7dd7166b4eb239110ee871afa53213c939accc6633e9629d4b9909502d6f941a",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 호출 횟수를 줄였고, backward_bound_gpu에서는 affine 중복 계산을 삭제해 커널 2개 함수를 줄였다. new_(upper, lower)_p는 복사 대신 std::swap으로 포인터 스와핑했으며, backward의 행렬곱 커널 2개는 backward_matmul_pair_gpu로 통합했다. build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu에도 커널 퓨전을 적용했다. 이후 1개 커널 호출로 줄일 수 있는 함수들을 계속 퓨전하는 방향으로 진행했다.",
+          "evidence_ids": [
+            "E00118",
+            "E00122",
+            "E00123",
+            "E00124",
+            "E00126",
+            "E00127",
+            "E00129"
+          ]
+        },
+        {
+          "text": "커널 퓨전 적용 후 CROWN Verification 실행에서 Elapsed time이 22.342900 ms로 기록되었고, 22ms 초반까지 나오는 경우도 관측되었다. backward_bound_gpu에 먼저 퓨전을 진행했을 때는 23.925200 ms가 관측되었으며, 컴퓨터 사정에 따라 26ms까지 뛰는 경우도 있었지만 23ms 정도가 보인다는 점이 중요하게 기록되었다. 5번까지 적용했을 때 최고 성능이 나왔다고 기록되었다.",
+          "evidence_ids": [
+            "E00119",
+            "E00120",
+            "E00326",
+            "E00329",
+            "E00128"
+          ]
+        },
+        {
+          "text": "커널 감소 내역을 보면 forward에서는 무거운 커널 연산 호출이 9개 줄었고, backward에서는 forward 부분 12개(9+3), 실제 backward 부분 3개가 줄었다. backward_only는 45회에서 33회로 감소해 26.7%로 가장 적게 줄었으며, 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄어 커널 비용도 다르다. memcpy 호출 횟수는 66개에서 56개로 감소했다.",
+          "evidence_ids": [
+            "E00319",
+            "E00339"
+          ]
+        },
+        {
+          "text": "switch 문 안에서 구조체를 선언과 동시에 만들도록 변경하려 했으나, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않았다. case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생해, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 해결했다.",
+          "evidence_ids": [
+            "E00353",
+            "E00354"
+          ]
+        },
+        {
+          "text": "커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다. 이 변경은 복사 크기 조정 시도였으나 시간 증가로 이어졌고, CPU 오버헤드 증가의 정량적 분리 측정 결과는 포함되지 않았다.",
+          "evidence_ids": [
+            "E00370"
+          ]
+        }
+      ]
+    }
+  }
+}

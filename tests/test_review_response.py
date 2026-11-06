@@ -11,6 +11,53 @@ from test_planned_paper import plan, research
 
 
 class ReviewResponseTests(unittest.TestCase):
+    def test_repeated_paragraph_links_keep_order_verdict_reasons_and_original_response(self):
+        value = plan(2)
+        value["sections"][0]["reference_ids"] = ["guide"]
+        bodies = {"s0": "First observation. [근거:F1]\n\nSecond observation. [근거:F1]", "s1": "Scope. [근거:F1]"}
+        raw = {"checks": [{"item_id": "item0", "verdict": "needs_check", "paragraph_ids": ["s0_p2", "s0_p1", "s0_p2"], "evidence_ids": ["F1"]},
+                          {"item_id": "item1", "verdict": "met", "paragraph_ids": ["s1_p1"], "evidence_ids": ["F1"]}],
+               "reference_checks": [{"section_id": "s0", "reference_id": "guide", "verdict": "partial", "paragraph_ids": ["s0_p1", "s0_p1"], "reason": "Only partially applied."}],
+               "issues": []}
+        original = copy.deepcopy(raw)
+        report = checked_review(raw, value, bodies)
+        self.assertEqual(report["checks"][0]["paragraph_ids"], ["s0_p2", "s0_p1"])
+        self.assertEqual(report["checks"][0]["verdict"], "needs_check")
+        self.assertEqual(report["reference_checks"][0]["verdict"], "partial")
+        self.assertEqual(report["reference_checks"][0]["reason"], "Only partially applied.")
+        self.assertEqual(len(report["response_normalizations"]), 2)
+        self.assertEqual(raw, original)
+
+    def test_duplicate_links_do_not_hide_unknown_or_other_section_paragraphs(self):
+        value = plan(2)
+        bodies = {"s0": "Observation. [근거:F1]", "s1": "Scope. [근거:F1]"}
+        for invalid in ("unknown", "s1_p1"):
+            raw = {"checks": [{"item_id": "item0", "verdict": "met", "paragraph_ids": [invalid, invalid], "evidence_ids": ["F1"]},
+                              {"item_id": "item1", "verdict": "met", "paragraph_ids": ["s1_p1"], "evidence_ids": ["F1"]}],
+                   "reference_checks": [], "issues": []}
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(ValueError, "해당 장에 없는") as caught:
+                checked_review(raw, value, bodies)
+            self.assertIn(invalid, str(caught.exception))
+
+    def test_cached_paragraph_duplicates_do_not_spend_an_extra_review_or_rewrite(self):
+        client = Client()
+        def duplicate(system, packet, schema, path):
+            raw = client(system, packet, schema, path)
+            for field in ("checks", "reference_checks"):
+                rows = raw.get(field, [])
+                if isinstance(rows, list):
+                    for row in rows:
+                        row["paragraph_ids"] *= 2
+            return raw
+        with TemporaryDirectory() as tmp:
+            engine = PlannedPaper(tmp, duplicate)
+            result = engine.run(research())
+            count = len(client.events)
+            self.assertEqual(count, 17)
+            self.assertTrue(result["review"]["approved"])
+            engine.run(research())
+            self.assertEqual(len(client.events), count)
+
     def test_only_exact_duplicate_rows_are_removed_in_first_seen_order(self):
         check = {"item_id": "item0", "verdict": "met", "paragraph_ids": ["s0_p1"], "evidence_ids": ["F1"]}
         second = {**check, "item_id": "item1"}

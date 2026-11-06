@@ -1,0 +1,52 @@
+{
+  "request_fingerprint": "0c41ed614387225c4899b06fd92b249e9065af3fec5c189225e67b815cd87ebc",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "CUDA 기반 CROWN 검증 가속은 C++로 작성된 CROWN 구현 프로그램을 대상으로 수행되었다. 평가 대상 프로그램은 기존 신경망 검증팀이 사용하던 256-491-491-16 크기의 신경망과 입력 데이터셋, 그리고 eps_list를 그대로 사용하였으며, CROWN의 세 가지 실행 방식(forward, forward+backward, backward_only)을 모두 다루었다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조하여 모델.bin의 구조를 파악했고, .pickle로 되어 있던 데이터셋은 CUDA에서 읽을 수 있도록 .bin 파일로 변환하였다. 변환은 테스트 단계이므로 입력 256개 1세트만 대상으로 하였다. 이후 GPU에 신경망을 로드(Memcpy)하고 CROWN을 호출하는 흐름으로 실행하였다. 교수로부터 받은 lirpa_backward_only_iteration_array.cpp를 이용해 이전 CROWN과 동일한 결과가 나오는지 테스트하는 과정도 포함되었다. 이러한 구성은 기존 CPU 기반 CROWN 검증과 CUDA 포팅 결과의 동일성을 확인하고, 실시간 환경에서의 대규모 연산 처리 가능성을 살펴보기 위한 것이다.",
+          "evidence_ids": [
+            "E00006",
+            "E00016",
+            "E00094",
+            "E00095"
+          ]
+        },
+        {
+          "text": "실행 환경은 CUDA Toolkit과 nvcc(NVIDIA C Compiler)를 기반으로 구성되었다. CUDA는 기본적으로 C++ 언어에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 커널로 바꾸어도 nvcc에서 컴파일이 가능하다. 실제 컴파일러 실행은 Visual Studio 18 Community 환경의 명령행에서 nvcc --version으로 확인하였고, CUDA 버전은 13.3(V13.3.73)으로 기록되었다. 컴파일 옵션에는 -lcublas가 포함되었는데, -l은 라이브러리를 링크하라는 옵션이고 cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리로, my_lirpa_op.cu에서 cublasDgemm() 같은 GPU 최적화 행렬곱 함수를 사용하기 위해 연결하였다. CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되어 별도 설치는 필요하지 않았다. 이러한 라이브러리 연결과 컴파일 설정은 GPU 선형대수 연산 가속을 활용하기 위한 플랫폼 구성의 일부이다.",
+          "evidence_ids": [
+            "E00001",
+            "E00024",
+            "E00026",
+            "E00034"
+          ]
+        },
+        {
+          "text": "측정과 프로파일링을 위해 Nsight System 계열 도구가 활용되었다. CPU에서 GPU로 신경망 메모리를 어떻게 나누어 복사하고 있는지에 대한 질문이 제기되었고, GPU 메모리 사용량을 확실히 알아내는 방법으로 Nsight System이 제시되었다. 실제 프로파일러에서는 GPU VRAM 사용량이 310.00 MiB로 표시되었으나, 메모리 풀에 올라간 행렬과 벡터를 기준으로 계산한 값은 약 114MB 정도여서 차이가 이상하다고 기록되었다. 이에 대해 CUDA가 실행되면 CUDA Context가 생성되고, 이 Context가 커널 실행용 기본 메모리, 페이지 테이블, 명령어 큐 등을 관리하며 VRAM을 사용하므로, 런타임 오버헤드를 감안하면 프로파일러에 보이는 VRAM 사용량이 코드로 계산한 값보다 작을 수 있다는 해석이 제시되었다. 다만 이 해석은 메커니즘에 대한 추론이며, 표시값과 계산값 간 차이의 정량적 원인 분리는 원문에 포함되어 있지 않다.",
+          "evidence_ids": [
+            "E00087",
+            "E00088",
+            "E00089"
+          ]
+        },
+        {
+          "text": "일관된 측정을 위해 GPU 클록 고정과 Persistence mode 설정이 시도되었다. GPU 클록을 고정하고 다시 실험하기로 하였으며, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. Persistence mode는 초기화 지연을 제거하기 위한 측정 환경 설정으로 사용되었다. 클록 고정 실험은 2800 MHz로 고정하고 기존 HostRegister 방식으로 돌리는 형태로 진행되었으며, CUDA 강의 19장의 GPU 클록 고정 방법을 참고하였다. 한편 측정 기준 재설정과 관련하여 gpu 벤치마크 모범 사례를 따라 적절한 기준을 다시 세우기로 하였고, Nvidia의 warm up 가이드라인을 채택하였다. warm up은 초기에 적용되었고, GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이다.",
+          "evidence_ids": [
+            "E00203",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286"
+          ]
+        },
+        {
+          "text": "호스트 측 컴파일 환경에서는 스택 메모리 조정이 필요했다. testing(present)/crown_test_cpu_iteration.cpp를 컴파일한 .exe 파일들을 사용하는 과정에서 스택 메모리가 기존 128MB로는 부족하여 2GB로 늘리니까 컴파일이 되었다. 이는 CPU 측 테스트 실행 파일을 빌드하기 위한 환경 조정이며, 실행 결과나 성능 수치는 이 기록만으로는 제시되지 않는다. 전체적으로 본 연구의 방법 구성은 CROWN C++ 프로그램의 CUDA 포팅과 컴파일, GPU 메모리·라이브러리 연결, 프로파일링 도구 활용, 측정 조건 통제 시도, 그리고 호스트 컴파일 환경 조정으로 요약된다.",
+          "evidence_ids": [
+            "E00095"
+          ]
+        }
+      ]
+    }
+  }
+}

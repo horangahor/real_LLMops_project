@@ -1,0 +1,135 @@
+{
+  "request_fingerprint": "20e8ea22441976cbef8f1422413f1634e577238fac36aa90fa135e58ace709ea",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "본 연구는 CROWN 신경망 검증을 구현한 C++ 프로그램을 대상으로, CPU 중심 실행의 한계를 GPU 가속으로 보완하는 과정을 다룬다. 평가는 256-491-491-16 크기의 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋 및 eps_list를 기준으로 진행했으며, 배치 크기는 1로 설정하였다. 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지를 모두 검토하였다.",
+          "evidence_ids": [
+            "E00001",
+            "E00026",
+            "E00034",
+            "E00087",
+            "E00088",
+            "E00089",
+            "E00051",
+            "E00033",
+            "E00037",
+            "E00038",
+            "E00114",
+            "E00115",
+            "E00117",
+            "E00122",
+            "E00124",
+            "E00130",
+            "E00133",
+            "E00135",
+            "E00136",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00148",
+            "E00149",
+            "E00150",
+            "E00165",
+            "E00180",
+            "E00183",
+            "E00184",
+            "E00213",
+            "E00214",
+            "E00216",
+            "E00227",
+            "E00228"
+          ]
+        },
+        {
+          "text": "실행 환경은 CUDA Toolkit과 nvcc(NVIDIA C Compiler)를 기반으로 하며, CUDA 동작이 필요한 코드만 커널로 바꾸어 컴파일하는 방식으로 포팅을 진행하였다. CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되어 별도 설치가 필요하지 않았고, 행렬곱 연산에는 cuBLAS를 사용하였다. GPU 메모리 사용량 확인에는 Nsight System이 제시되었으며, 프로파일러에는 VRAM 사용량이 310.00 MiB로 표시되었으나 메모리 풀의 행렬·벡터 기준으로 계산한 값은 약 114MB로 차이가 있었다. 이 차이는 CUDA Context 생성 및 런타임 오버헤드를 감안하면 프로파일러 표시값이 코드 계산값보다 작을 수 있다는 해석으로 정리되었다.",
+          "evidence_ids": [
+            "E00001",
+            "E00026",
+            "E00034",
+            "E00087",
+            "E00088",
+            "E00089"
+          ]
+        },
+        {
+          "text": "구성 요소는 cuBLAS를 통한 선형대수 가속, 함수 호출마다의 할당·해제를 없애기 위한 메모리 풀, 고정된 가중치(W)를 네트워크 로드 시점에 GPU에 미리 올려 matmul 호출마다의 memcpy를 줄이려는 가중치 GPU 사전 업로드, 그리고 matmul만 GPU로 실행하고 나머지 벡터 연산을 CPU로 돌리는 하이브리드 구성으로 결합되었다. v1-1-3(crown_test_preload_fix)에서는 신경망에 GPU 주소를 저장하던 double* 타입을 Matrix* 타입으로 바꾸고, pre_upload_weights_to_gpu를 memcpy2D 대신 Matrix 할당·복사로 변경하여 미리 로드한 가중치를 제대로 활용하도록 수정하였다. 이 변경으로 positive_part, negative_part, matmul, matvec에서 W 관련 복사를 스킵하여 레이어별로 수 MB 수준의 절약 효과가 기대되었으나, 실제 효과는 제한적이었다고 기록되었다.",
+          "evidence_ids": [
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_89",
+            "E00051"
+          ]
+        },
+        {
+          "text": "결합 방식은 초기에 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU OPTIMIZED 모드에서, 이후 matmul만 GPU로 남기고 나머지 GPU 커널을 CPU for문으로 되돌린 HYBRID 모드로 전환되었다. hybrid는 새로 추가된 요소 없이 GPU 코드를 삭제하여 빨라진 케이스로 정리되었다. 이후 v2/v4 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 memcpy 범위 축소가 추가로 결합되었다. 또한 forward-backward 간 전달되는 alpha/beta를 메모리 풀에 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 backward가 host에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경하였으며, affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화하였다.",
+          "evidence_ids": [
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_89",
+            "E00037",
+            "E00033",
+            "E00038",
+            "E00130",
+            "E00137",
+            "E00138"
+          ]
+        },
+        {
+          "text": "실행·측정 설정은 CROWN Verification 실행 시 eps=1e-06, 출력 차원 16을 기준으로 하였고, CPU ONLY 버전과 GPU 버전을 구분하여 생성하였다. 시간 측정은 추론·bound·검증 단계를 분리해 측정하는 방향으로 정리되었으며, warm up 코드 삽입, cudaEvent 측정 제어 시스템 인자, GPU 클록 고정 시도, Persistence mode 설정 등이 함께 검토되었다. 다만 재현에 필요한 세부 정보는 연구 일지 수준에서 충분히 제공되지 않았다. 비교 구성은 CPU ONLY, GPU OPTIMIZED(cuBLAS+Pool), HYBRID(matmul=GPU, rest=CPU), HYBRID V2, mempool+warmup, cuda graph 적용 버전 등으로 정리되었고, 각 조건이 통제하는 범위는 matmul의 GPU 유지 여부, 메모리 풀·예열·사전 업로드·memcpy 범위, 커널 캡처 방식 등으로 구분된다.",
+          "evidence_ids": [
+            "E00033",
+            "E00184",
+            "E00037",
+            "E00038",
+            "E00114",
+            "E00115",
+            "E00117",
+            "E00122",
+            "E00124",
+            "E00130",
+            "E00133",
+            "E00135",
+            "E00136",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00148",
+            "E00149",
+            "E00150",
+            "E00165",
+            "E00180",
+            "E00183",
+            "E00184",
+            "E00213",
+            "E00214",
+            "E00216",
+            "E00227",
+            "E00228"
+          ]
+        },
+        {
+          "text": "평가 대상 플랫폼과 소프트웨어 스택은 CUDA Toolkit, nvcc, cuBLAS, cuSparse, Nsight System/Compute 등을 중심으로 구성되었다. CUDA 커널 인자는 포인터와 스칼라로 구분되어, 포인터는 cudaMalloc·cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라는 CPU 메모리 값을 커널 실행 시 Parameter Bank/Constant Memory에 함께 실어 보낼 수 있다는 점이 방법적 정리로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 적용되었으며, 공식 결과는 24 ms dense baseline으로 유지하고 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방향이 정리되었다.",
+          "evidence_ids": [
+            "E00001",
+            "E00026",
+            "E00034",
+            "E00135",
+            "E00136",
+            "E00114",
+            "E00115",
+            "E00117"
+          ]
+        },
+        {
+          "text": "방법론적 한계로는 단일 실행 결과 중심의 기록, 반복 측정 통계 부족, 여러 최적화가 동시에 적용되어 개별 효과를 분리하기 어려운 점, 작은 신경망 크기로 인한 cuBLAS/cuSparse 오버헤드 가능성, CUDA Context·런타임 오버헤드, memcpy 병목, warm up/preload 효과 혼입 가능성 등이 지적되었다. 또한 각 최적화 기법을 체계적으로 분리하며 ablation study를 수행하지 못한 점이 한계로 정리되었다.",
+          "evidence_ids": [
+            "E00033",
+            "E00089"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -144,7 +144,7 @@ class CandidateEvidenceTests(unittest.TestCase):
         self.assertTrue(requests)
         self.assertFalse(any(r["fragment"].get("operation") == "missing_evidence" for r in requests))
         self.assertFalse(any(r["fragment"].get("missing_evidence_ids") for r in requests))
-        self.assertTrue(any("F11" in [f["id"] for f in r["facts"]] for r in requests))  # available context, not mandatory usage
+        self.assertFalse(any("F11" in [f["id"] for f in r["facts"]] for r in requests))  # unrelated candidates are not local rewrite obligations
 
     def test_unused_candidates_do_not_spend_a_writer_revision_or_citation_repair(self):
         client = Client()

@@ -49,11 +49,13 @@ def review_diagnostics(stage, plan, research, bodies, report):
             "unused_candidate_count": sum(f["unused_candidate"] for f in evidence),
             "unselected_cited_count": sum(f["missing_body"] and f["cited_anywhere_in_section"] for f in evidence),
             "failure_owner": check.get("failure_owner"),
+            "review_status": check.get("review_status"),
             "missing_review_count": len(missing_review), "paragraph_ids": check.get("paragraph_ids", []),
             "evidence": evidence})
     return {"stage": stage, "approved": report["approved"], "items": rows,
             "content_status": report.get("content_status"), "content_approved": report.get("content_approved"),
             "content_completion": copy.deepcopy(report.get("content_completion")),
+            "review_link_completion": copy.deepcopy(report.get("review_link_completion")),
             "paragraphs": paragraphs, "issues": copy.deepcopy(report.get("issues", []))}
 
 

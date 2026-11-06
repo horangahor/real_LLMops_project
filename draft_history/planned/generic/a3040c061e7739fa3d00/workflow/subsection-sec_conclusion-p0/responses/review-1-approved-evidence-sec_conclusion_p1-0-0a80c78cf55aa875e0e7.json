@@ -1,0 +1,63 @@
+{
+  "request_fingerprint": "0a80c78cf55aa875e0e7cbbb8d44f736126a3c450cf4c3d3ae2c4f0b3fb0dcbd",
+  "value": {
+    "issues": [
+      {
+        "section_id": "sec_conclusion",
+        "severity": "error",
+        "paragraph_id": "sec_conclusion_p1",
+        "reason": "초안은 E00021·E00027·E00029·E00031의 Elapsed time을 GPU/CPU 비교 맥락의 정량 결과로 사용했으나, 해당 근거들은 모두 단일 실행 결과이며 CPU 버전과의 비교 해석이나 반복 측정 통계가 없다고 명시되어 있다. 특히 E00029는 'GPU OPTIMIZED 모드 적용 후 실행 시간이 229.691ms로 약 100ms 줄었지만 여전히 CPU보다 느리다'는 기록자의 정성적 평가로, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다고 제한된다. 초안은 이를 CPU ONLY 101.237800 ms와 함께 나열해 비교 가능한 실측 결과처럼 서술했으므로, 근거의 측정 조건·한계와 충돌한다.",
+        "evidence_ids": [
+          "E00021",
+          "E00027",
+          "E00029",
+          "E00031"
+        ]
+      },
+      {
+        "section_id": "sec_conclusion",
+        "severity": "error",
+        "paragraph_id": "sec_conclusion_p1",
+        "reason": "초안은 'mempool+warmup 152.902900 ms, mempool+cuBLAS+warmup 174.978400 ms, mempool+warmup+결과 벡터 memcpy 제거 128.894800 ms, alpha/beta 메모리 풀 21.018800 ms, 커널 퓨전 후 22.342900 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms, 커널 퓨전 완료 후 15.751000 ms, mempool+warmup calc success 15.828400 ms' 등 다수의 수치를 제시했으나, 현재 제공된 근거에는 이 수치들을 뒷받침하는 측정값이 없다. E00071은 '메모리 풀 + warm up 조합은 매우 효과적이며, 두 요소만으로 거의 200ms 단축된다'는 정성적 평가만 있고, E00083은 forward 함수 DTOH memcpy 제거 후 64.716000 ms만 기록한다. 따라서 초안의 해당 수치들은 제공된 근거 범위를 벗어나며, 근거 없는 수치로 판정된다.",
+        "evidence_ids": [
+          "E00071",
+          "E00083"
+        ]
+      },
+      {
+        "section_id": "sec_conclusion",
+        "severity": "error",
+        "paragraph_id": "sec_conclusion_p1",
+        "reason": "초안은 'cuda graph 적용 후 backward_only 787.8832s→630s, forward 1029s→668s, 1138s→758s'를 제시했으나, 제공된 근거 중 cuda graph 관련 실행 결과로 직접 확인되는 수치는 E00277의 cudaHostRegister 787.88초 대 No Pinning 776.70초 비교뿐이다. E00277은 cudaHostRegister vs No Pinning 비교이며, cuda graph 적용 전후를 787.8832s→630s 등으로 제시한 초안의 수치와 조건·값이 일치하지 않는다. 따라서 초안의 해당 수치들은 제공된 근거 범위를 벗어나며, 근거 없는 수치로 판정된다.",
+        "evidence_ids": [
+          "E00277"
+        ]
+      },
+      {
+        "section_id": "sec_conclusion",
+        "severity": "error",
+        "paragraph_id": "sec_conclusion_p1",
+        "reason": "초안은 '정확도 지표는 기존 신경망 검증팀 프로그램과 모두 동일했다'고 서술했으나, 제공된 근거 중 이를 직접 뒷받침하는 측정 결과나 기록은 없다. E00030·E00033·E00118·E00143·E00212·E00314·E00321 등은 최적화 방법·구성 변경·커널 감소 내역만 기록하며 정확도 비교 결과를 포함하지 않는다. 사용자 제공 정보(accept_limited)로는 '모두 동일했다'는 진술이 있으나, 이는 제공된 연구일지 근거의 관측 결과로 연결되지 않으므로, 초안이 이를 연구일지 기반 정량 결과처럼 서술한 부분은 근거 범위를 벗어난다.",
+        "evidence_ids": [
+          "E00030",
+          "E00033",
+          "E00118",
+          "E00143",
+          "E00212",
+          "E00314",
+          "E00321"
+        ]
+      },
+      {
+        "section_id": "sec_conclusion",
+        "severity": "error",
+        "paragraph_id": "sec_conclusion_p1",
+        "reason": "초안은 '제안 접근의 핵심은 병렬 연산이 필요한 부분을 커널 함수로 옮기고, 메모리 풀·cuBLAS·가중치 GPU 사전 업로드·커널 퓨전·alpha/beta GPU 버퍼·pinned memory·cuda graph·배칭·멀티 스트림 등을 결합해 memcpy 병목과 커널 호출 오버헤드를 줄이는 데 있다'고 서술했으나, 제공된 근거에서 alpha/beta GPU 버퍼의 실제 구현·결합 방식·상호작용 효과를 직접 확인할 수 없다. E00033은 v2 적용 방안 목록(가중치 사전 업로드 등)만 기록하고, E00212는 최적화 목록 정리일 뿐 구성 요소별 역할·결합 방식·상호작용 효과를 직접 뒷받침하지 않는다. 따라서 alpha/beta GPU 버퍼를 실제 결합 요소로 단정해 서술한 부분은 제공된 근거 범위를 벗어난다.",
+        "evidence_ids": [
+          "E00033",
+          "E00212"
+        ]
+      }
+    ]
+  }
+}

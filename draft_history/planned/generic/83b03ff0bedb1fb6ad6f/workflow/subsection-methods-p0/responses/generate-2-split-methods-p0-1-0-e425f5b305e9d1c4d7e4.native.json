@@ -1,0 +1,33 @@
+{
+  "id": "ae435113-2d92-4412-a383-77eb20233cde",
+  "object": "chat.completion",
+  "created": 1793891365,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"parts\": {\n    \"p0\": [\n      {\n        \"text\": \"평가 대상은 CROWN 검증을 구현한 C++ 프로그램이다. 입력 신경망은 Fully Connected 구조로, 입력 뉴런 수 256, 은닉층 2개(각 491), 출력 뉴런 수 16의 크기(256-491-491-16)를 사용한다. 입력 벡터 길이는 256이며, 출력 차원은 16이다. CROWN 알고리즘의 입력으로는 테스트 데이터 1개와 eps=10^-6을 사용하고, 16개 출력을 추출하는 것을 1차 목표로 설정하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조하여 모델.bin 구조를 파악하였다. 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지 방법을 대상으로 하며, 배치 사이즈는 1이다. GPU 가속 효과를 확인하기 위해 CPU ONLY 계산 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과 및 CROWN 알고리즘(backward) 계산 시간을 측정하였다. GPU 버전에서는 컴파일 옵션에 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하였으며, 이는 my_lirpa_op.cu에서 cublasDgemm() 함수를 사용하기 때문이다. GPU OPTIMIZED 모드(cuBLAS + Pool), HYBRID 모드(matmul=GPU, rest=CPU), HYBRID V2 모드 등 다양한 구성으로 CROWN Verification을 실행하였고, 각 모드에서 Elapsed time을 기록하였다. GPU OPTIMIZED 모드에서는 229.691800 ms, HYBRID 모드에서는 201.670100 ms, HYBRID V2 모드에서는 85.785300 ms가 측정되었다. 기록자는 HYBRID V2 모드에서 CPU보다 빨라졌다고 평가하였다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, memcpy 제거, 동기화 코드 제거 등의 최적화를 순차적으로 적용하였으며, 각 단계에서 실행 시간을 측정하였다. 메모리 풀 + warm up 조합은 매우 효과적이어서 두 요소만으로 거의 200ms 단축되었다고 기록되었다. 현재 가장 중요한 병목은 memcpy로 판단되었으며, 이를 해결해야 CPU보다 빨라질 수 있다고 보았다. make_zero_matrix, make_zero_vector를 CPU로 회귀하여 22~25ms 정도 줄었고, 영벡터 만들기를 다시 GPU로 시도했을 때는 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋다고 판단하였다. forward 함수에서 DTOH하는 memcpy를 극단적으로 제거한 후에는 64.716000 ms로 크게 감소하였다. 동기화 코드(cudaDeviceSynchronize)를 필요한 부분을 제외하고 제거한 후에는 26.529100 ms에서 25.457200 ms로 약 1ms 정도 감소하였다. cuSparse를 도입하여 벡터 곱(spMV)만 적용해 보았으나 27.107400 ms로 이전 27ms 수준보다 느려졌으며, 이후 spMM(Sparse 행렬곱) 도입까지 검토하기로 하였다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 평가하였으며, 모두 동일하였다. 각 최적화 기법을 체계적으로 분리하여 ablation study를 수행하지 못한 것은 한계로 기록되었다.\",\n        \"evidence_ids\": [\"E00102\", \"E00105\", \"E00106\", \"E00107\"]\n      }\n    ]\n  }\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 14752,
+    "completion_tokens": 716,
+    "total_tokens": 15468,
+    "prompt_tokens_details": {
+      "cached_tokens": 7616,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

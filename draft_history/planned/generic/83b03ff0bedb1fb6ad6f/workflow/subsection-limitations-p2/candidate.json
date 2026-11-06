@@ -1,0 +1,215 @@
+{
+  "sections": {
+    "limitations": {
+      "parts": {
+        "p0": "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다. [근거:E00030,E00333,E00262]\n\n방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. [근거:E00030,E00033,E00331]\n\n향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다. [근거:E00262,E00333,E00331]\n\n결과 해석 범위는 최적화 시도 기록 중심이라는 성격에 따라 제한된다. 본 절에서 정리한 향후 과제와 적용 범위, 효율 검토 범위의 공백은 실제 구현 완료·측정 결과로 입증된 내용이 아니라 연구 노트에 남은 방향·계획·할 일 기록에 기반하므로, 각 항목의 실현 여부나 성능 영향은 아직 검증되지 않았다. 따라서 후속 연구에서 개별 기법의 분리 평가, 측정 조건 고정, 대규모 텐서 연산화 구현과 실측을 통해 현재 제시된 방향성과 목표치를 다시 확인할 필요가 있다. [근거:E00030,E00033,E00262,E00331,E00333]"
+      }
+    }
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "lim_3",
+        "verdict": "met",
+        "paragraph_ids": [
+          "limitations_p3"
+        ],
+        "evidence_ids": [
+          "E00262",
+          "E00333",
+          "E00331"
+        ],
+        "quote": "향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다. [근거:E00262,E00333,E00331]",
+        "paragraph_quotes": [
+          "향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다. [근거:E00262,E00333,E00331]"
+        ],
+        "guideline_ids": [
+          "ref1_limitations_required_3",
+          "ref2_limitations_required_1"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": []
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "limitations",
+        "reference_id": "ref1_limitations",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "limitations_p1",
+          "limitations_p2",
+          "limitations_p3",
+          "limitations_p4"
+        ],
+        "reason": "향후 연구 초점은 limitations_p3에서 정리되었으나, ref1_limitations의 paragraph_flow 중 '전체 성과의 유효 범위 인정 → 데이터 다양성·도메인 이동 문제 지적 → 경량화·하드웨어 활용 개선 가능성 제시 → 향후 과제를 데이터/효율/일반화/배포로 정리' 흐름은 본 연구의 최적화 시도 기록 중심 성격과 맞지 않아 그대로 적용되지 않았다. 본 절은 적용 범위·효율 검토 범위·공백·향후 과제·결과 해석 범위를 중심으로 정리되어 있어, ref1의 '데이터 다양성·도메인 이동' 계열 서술은 포함되지 않았다.",
+        "quote": "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다. [근거:E00030,E00333,E00262]",
+        "paragraph_quotes": [
+          "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다. [근거:E00030,E00333,E00262]",
+          "방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. [근거:E00030,E00033,E00331]",
+          "향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다. [근거:E00262,E00333,E00331]",
+          "결과 해석 범위는 최적화 시도 기록 중심이라는 성격에 따라 제한된다. 본 절에서 정리한 향후 과제와 적용 범위, 효율 검토 범위의 공백은 실제 구현 완료·측정 결과로 입증된 내용이 아니라 연구 노트에 남은 방향·계획·할 일 기록에 기반하므로, 각 항목의 실현 여부나 성능 영향은 아직 검증되지 않았다. 따라서 후속 연구에서 개별 기법의 분리 평가, 측정 조건 고정, 대규모 텐서 연산화 구현과 실측을 통해 현재 제시된 방향성과 목표치를 다시 확인할 필요가 있다. [근거:E00030,E00033,E00262,E00331,E00333]"
+        ]
+      },
+      {
+        "section_id": "limitations",
+        "reference_id": "ref2_limitations",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "limitations_p1",
+          "limitations_p2",
+          "limitations_p3",
+          "limitations_p4"
+        ],
+        "reason": "ref2_limitations의 '실험 범위·조건 먼저 제시 → 동시 변경 제약 명시 → 측정 환경 차이·결과 해석 범위 제한' 흐름은 limitations_p1~p4에 부분적으로 반영되었다. 다만 ref2가 요구하는 '대상 수·워크로드·소프트웨어 스택·실행 조건의 범위'를 완전히 특정하는 수준의 서술은 연구 노트 한계로 충분히 채워지지 않았고, 전력·에너지 효율 평가 제외 등 ref2의 일부 항목은 본 절에서 다루지 않았다. 또한 cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되지 않은 점은 공정 비교를 위한 통제 조건으로 확정하기 어렵다는 한계로 남는다.",
+        "quote": "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다. [근거:E00030,E00333,E00262]",
+        "paragraph_quotes": [
+          "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다. [근거:E00030,E00333,E00262]",
+          "방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. [근거:E00030,E00033,E00331]",
+          "향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다. [근거:E00262,E00333,E00331]",
+          "결과 해석 범위는 최적화 시도 기록 중심이라는 성격에 따라 제한된다. 본 절에서 정리한 향후 과제와 적용 범위, 효율 검토 범위의 공백은 실제 구현 완료·측정 결과로 입증된 내용이 아니라 연구 노트에 남은 방향·계획·할 일 기록에 기반하므로, 각 항목의 실현 여부나 성능 영향은 아직 검증되지 않았다. 따라서 후속 연구에서 개별 기법의 분리 평가, 측정 조건 고정, 대규모 텐서 연산화 구현과 실측을 통해 현재 제시된 방향성과 목표치를 다시 확인할 필요가 있다. [근거:E00030,E00033,E00262,E00331,E00333]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "limitations",
+        "severity": "warning",
+        "paragraph_id": "limitations_p3",
+        "reason": "E00262의 30초~1분대, 전체 40,000개, cublasSgemmBatched, 텐서 코어 100% 활용 목표는 계획·목표 서술이며 실제 구현·평가 결과가 아니라는 한계가 본문에 명시되어 있으나, 문장 구성상 목표치와 방식 서술이 함께 나열되어 독자가 실측 성과로 오해할 여지가 있다. '목표'라는 표현은 유지하되, 계획 단계임을 더 분명히 분리할 필요가 있다.",
+        "evidence_ids": [
+          "E00262"
+        ],
+        "failure_owner": "none",
+        "quote": "향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다. [근거:E00262,E00333,E00331]"
+      },
+      {
+        "section_id": "limitations",
+        "severity": "warning",
+        "paragraph_id": "limitations_p2",
+        "reason": "E00030의 'GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았다'는 서술은 후속 시도 동기와 방향 기록이며 실제 구현 완료·측정 결과가 현재 페이지에 없다는 한계가 있다. 본문에는 이 한계가 직접 명시되지 않아, '만들어보았다'를 완료된 구현·측정으로 읽지 않도록 증거 한계를 함께 언급해야 한다.",
+        "evidence_ids": [
+          "E00030"
+        ],
+        "failure_owner": "none",
+        "quote": "방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. [근거:E00030,E00033,E00331]"
+      },
+      {
+        "section_id": "limitations",
+        "severity": "warning",
+        "paragraph_id": "limitations_p2",
+        "reason": "E00033의 v2 적용 방안(cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사)은 방안 목록 기록이며 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 없다는 한계가 있다. 본문에는 이 한계가 직접 명시되지 않아, 방안 제시를 적용 결과처럼 읽지 않도록 증거 한계를 함께 언급해야 한다.",
+        "evidence_ids": [
+          "E00033"
+        ],
+        "failure_owner": "none",
+        "quote": "방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. [근거:E00030,E00033,E00331]"
+      },
+      {
+        "section_id": "limitations",
+        "severity": "warning",
+        "paragraph_id": "limitations_p1",
+        "reason": "methods_Q1의 사용자 임시 승인(U531b24e3633dee74c4f7)에 따라 평가 대상·입력 조건·통제 변수/방법의 부족 항목을 짧게 반영했으나, 연구 노트만으로 평가 대상 정의·입력 조건 구성·통제 방법이 완전히 특정되지 않는다는 점이 한계로 남아 있다. 본문에는 이 부족 항목이 명시적으로 한계로 서술되지 않았다.",
+        "evidence_ids": [
+          "E00333"
+        ],
+        "failure_owner": "none",
+        "quote": "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다. [근거:E00030,E00333,E00262]"
+      },
+      {
+        "section_id": "limitations",
+        "severity": "warning",
+        "paragraph_id": "limitations_p1",
+        "reason": "cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않고, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않아, 공정 비교를 위한 통제 조건으로 확정하기 어렵다는 한계가 introduction_Q5 재검토 지시와 unresolved 항목에 기록되어 있으나, limitations 절 본문에 이 통제 조건 관련 한계가 직접 서술되지 않았다.",
+        "evidence_ids": [
+          "E00333"
+        ],
+        "failure_owner": "none",
+        "quote": "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다. [근거:E00030,E00333,E00262]"
+      }
+    ],
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 1,
+      "total": 1,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 2,
+      "not_visible": 0,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+    "content_warnings": [
+      {
+        "section_id": "limitations",
+        "severity": "warning",
+        "paragraph_id": "limitations_p3",
+        "reason": "E00262의 30초~1분대, 전체 40,000개, cublasSgemmBatched, 텐서 코어 100% 활용 목표는 계획·목표 서술이며 실제 구현·평가 결과가 아니라는 한계가 본문에 명시되어 있으나, 문장 구성상 목표치와 방식 서술이 함께 나열되어 독자가 실측 성과로 오해할 여지가 있다. '목표'라는 표현은 유지하되, 계획 단계임을 더 분명히 분리할 필요가 있다.",
+        "evidence_ids": [
+          "E00262"
+        ],
+        "failure_owner": "none",
+        "quote": "향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다. [근거:E00262,E00333,E00331]",
+        "stage": "subsection-limitations-p2"
+      },
+      {
+        "section_id": "limitations",
+        "severity": "warning",
+        "paragraph_id": "limitations_p2",
+        "reason": "E00030의 'GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았다'는 서술은 후속 시도 동기와 방향 기록이며 실제 구현 완료·측정 결과가 현재 페이지에 없다는 한계가 있다. 본문에는 이 한계가 직접 명시되지 않아, '만들어보았다'를 완료된 구현·측정으로 읽지 않도록 증거 한계를 함께 언급해야 한다.",
+        "evidence_ids": [
+          "E00030"
+        ],
+        "failure_owner": "none",
+        "quote": "방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. [근거:E00030,E00033,E00331]",
+        "stage": "subsection-limitations-p2"
+      },
+      {
+        "section_id": "limitations",
+        "severity": "warning",
+        "paragraph_id": "limitations_p2",
+        "reason": "E00033의 v2 적용 방안(cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사)은 방안 목록 기록이며 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 없다는 한계가 있다. 본문에는 이 한계가 직접 명시되지 않아, 방안 제시를 적용 결과처럼 읽지 않도록 증거 한계를 함께 언급해야 한다.",
+        "evidence_ids": [
+          "E00033"
+        ],
+        "failure_owner": "none",
+        "quote": "방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. [근거:E00030,E00033,E00331]",
+        "stage": "subsection-limitations-p2"
+      },
+      {
+        "section_id": "limitations",
+        "severity": "warning",
+        "paragraph_id": "limitations_p1",
+        "reason": "methods_Q1의 사용자 임시 승인(U531b24e3633dee74c4f7)에 따라 평가 대상·입력 조건·통제 변수/방법의 부족 항목을 짧게 반영했으나, 연구 노트만으로 평가 대상 정의·입력 조건 구성·통제 방법이 완전히 특정되지 않는다는 점이 한계로 남아 있다. 본문에는 이 부족 항목이 명시적으로 한계로 서술되지 않았다.",
+        "evidence_ids": [
+          "E00333"
+        ],
+        "failure_owner": "none",
+        "quote": "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다. [근거:E00030,E00333,E00262]",
+        "stage": "subsection-limitations-p2"
+      },
+      {
+        "section_id": "limitations",
+        "severity": "warning",
+        "paragraph_id": "limitations_p1",
+        "reason": "cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않고, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않아, 공정 비교를 위한 통제 조건으로 확정하기 어렵다는 한계가 introduction_Q5 재검토 지시와 unresolved 항목에 기록되어 있으나, limitations 절 본문에 이 통제 조건 관련 한계가 직접 서술되지 않았다.",
+        "evidence_ids": [
+          "E00333"
+        ],
+        "failure_owner": "none",
+        "quote": "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다. [근거:E00030,E00333,E00262]",
+        "stage": "subsection-limitations-p2"
+      }
+    ],
+    "content_status": "needs_attention",
+    "content_approved": false
+  }
+}

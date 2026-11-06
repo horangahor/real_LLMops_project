@@ -1,0 +1,109 @@
+{
+  "request_fingerprint": "dd0ef755fd9ac95dc96daf96f59d0fa7b8c460b4bca7c255631ab2f5d9fb52bb",
+  "value": {
+    "checks": {
+      "ri_res_1": {
+        "verdict": "met",
+        "paragraph_ids": [
+          "sec_results_p1",
+          "sec_results_p2"
+        ],
+        "evidence_ids": [
+          "E00018",
+          "E00021",
+          "E00027",
+          "E00031",
+          "E00035",
+          "E00029"
+        ]
+      }
+    },
+    "reference_checks": {
+      "sec_results": {
+        "ref1_evaluation": {
+          "verdict": "partial",
+          "paragraph_ids": [
+            "sec_results_p1",
+            "sec_results_p2",
+            "sec_results_p4",
+            "sec_results_p5"
+          ],
+          "reason": "제안 설계와 변형 방법별 정량 성능 비교는 CPU ONLY/GPU/GPU OPTIMIZED/HYBRID/HYBRID V2의 단일 실행 결과 및 sparse.py 대비 가속 배율 표로 일부 충족되나, 비교 대상 기준 방법과의 비교는 초기 CUDA 포팅과 sparse.py 대비 관찰에 한정되어 기준 방법 정의·반복 측정·통제 조건이 충분히 제시되지 않았다."
+        },
+        "ref2_evaluation": {
+          "verdict": "partial",
+          "paragraph_ids": [
+            "sec_results_p4",
+            "sec_results_p5"
+          ],
+          "reason": "연구 질문별 결과 제시와 런타임 호출 지연 시간 표 역할은 sparse.py 대비 가속 배율 및 40000회 반복 단계별 시간 분해 표로 일부 반영되었으나, 사용자 승인 범위에서만 제한적으로 반영되었고 단일 실행 결과·요약값의 한계가 함께 명시되어 있어 질문별 체계적 결과 제시로는 충분하지 않다."
+        }
+      }
+    },
+    "issues": [
+      {
+        "section_id": "sec_results",
+        "severity": "error",
+        "paragraph_id": "sec_results_p2",
+        "reason": "sec_results_p2는 초기 포팅 단계의 CPU ONLY/GPU/GPU OPTIMIZED/HYBRID/HYBRID V2 비교와 단일 실행 한계를 서술해야 하나, 인용된 근거(E00277~E00361)는 cudaHostRegister/No Pinning 비교, 클록 고정, Persistence mode, 그래프 적용 전후 감소 등 후속 메모리 전송·그래프 최적화 맥락의 근거로, 초기 포팅 단계의 실행 시간 결과 및 비교 관찰과 직접 연결되지 않는다.",
+        "evidence_ids": [
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00298",
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00320",
+          "E00346",
+          "E00358",
+          "E00361"
+        ]
+      },
+      {
+        "section_id": "sec_results",
+        "severity": "error",
+        "paragraph_id": "sec_results_p3",
+        "reason": "sec_results_p3은 단일 샘플 기준 Inference time과 Bound time 분해를 통해 초기 비교 맥락을 설명해야 하나, 인용된 근거(Hefd7e87bb735_58, Hefd7e87bb735_62)는 측정 조건이 원문에 직접 명시되어 있지 않다는 관찰과 warmup·평균 측정·cudaGraph 적용 여부 등 측정 방식 기록만 포함하며, 실제 Inference time/Bound time 분해 수치나 초기 CPU/GPU 비교 맥락을 직접 뒷받침하지 않는다.",
+        "evidence_ids": [
+          "Hefd7e87bb735_58",
+          "Hefd7e87bb735_62"
+        ]
+      },
+      {
+        "section_id": "sec_results",
+        "severity": "error",
+        "paragraph_id": "sec_results_p4",
+        "reason": "sec_results_p4는 forward/backward의 sparse.py 대비 CUDA 가속 배율과 추론+bound+검증 단축률을 서술해야 하나, 인용된 근거(Hefd7e87bb735_58, Hefd7e87bb735_62, Hcdbfb7147ce4_7, Hcdbfb7147ce4_9) 중 Hefd7e87bb735_58/Hefd7e87bb735_62는 측정 조건 미명시 관찰이고 Hcdbfb7147ce4_7/Hcdbfb7147ce4_9는 구성 요소 단위 성능 순위·순위 간 차이 비교 미확인 관찰로, 표에 제시된 5.32x/4.86x/5.30x/4.89x 및 81.2%/79.4%/81.1%/79.6% 단축률 수치를 직접 뒷받침하지 않는다.",
+        "evidence_ids": [
+          "Hefd7e87bb735_58",
+          "Hefd7e87bb735_62",
+          "Hcdbfb7147ce4_7",
+          "Hcdbfb7147ce4_9"
+        ]
+      },
+      {
+        "section_id": "sec_results",
+        "severity": "error",
+        "paragraph_id": "sec_results_p5",
+        "reason": "sec_results_p5는 40000회 반복 기준 forward/backward의 total_s/infer_s/bound_s/certify_s 및 평균 지연시간 분해를 서술해야 하나, 인용된 근거(Hefd7e87bb735_58, Hefd7e87bb735_62)는 측정 조건 미명시 관찰과 warmup·평균 측정·cudaGraph 적용 여부 기록만 포함하며, 실제 481.7157/1.3569/479.6443/0.6957 및 438.3345/1.599/435.8792/0.6724, avg_infer_ms 0.0015/0.0017, avg_bound_ms 0.5214/0.4738 수치를 직접 뒷받침하지 않는다.",
+        "evidence_ids": [
+          "Hefd7e87bb735_58",
+          "Hefd7e87bb735_62"
+        ]
+      }
+    ]
+  }
+}

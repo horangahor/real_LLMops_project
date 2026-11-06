@@ -1,0 +1,33 @@
+{
+  "id": "fd956a2c-28cf-44a4-a28a-bb746dfba109",
+  "object": "chat.completion",
+  "created": 1793951482,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": [{\"text\": \"CUDA 포팅 이후 실행 시간은 버전별로 크게 달라졌다. 초기 CPU 기준 실행은 96ms였으나, CUDA로 옮긴 직후 버전(v1)은 355ms로 늘어났고, 이후 구성 조정을 거친 v2는 229ms, v3는 200ms로 감소하였다. 이후 메모리 풀과 워밍업(warm up)을 적용하는 과정에서 실행 시간 양상이 추가로 변했으며, cudaGraph를 추론과 bound에 따로 캡처한 경우를 기준으로 약 400초 정도의 시간 감소가 관측되었다. 배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 다만 이 절에서 제시하는 실행 시간 값은 대체로 단일 실행 또는 요약값 중심이며, 반복 측정에 기반한 통계는 제한적이다.\", \"evidence_ids\": [\"E00194\", \"E00195\", \"E00196\", \"E00198\", \"E00199\", \"E00203\", \"E00205\", \"E00214\", \"E00215\", \"E00216\", \"E00223\", \"E00227\", \"E00228\"]}, {\"text\": \"초기화 이후 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 나는 것으로 관측되었다. 한편 cudaGraph만 적용된 버전과 비교 대상을 평균으로 측정한 결과에서는 forward 전체(추론, bound, 검증)에서 graph 단일 적용이 우수했고, 특히 infer_s에서 약 20초 차이가 났다. backward에서는 total 시간이 비슷했는데, 이는 infer에서 줄어든 약 20초를 bound에서 graph보다 약 20초 빨리 수행하면서 상쇄된 것으로 해석되었다. 또한 커밋 이전 버전(graph만 적용한 버전)을 다시 실행해본 결과 해당 버전이 더 빠른 것으로 관측되기도 했다.\", \"evidence_ids\": [\"E00202\", \"E00227\", \"E00228\", \"E00223\"]}, {\"text\": \"메모리 방식 비교에서는 cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)였으며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 이 역전 현상에 대해 기록자는 추론 단계에서 시간이 느려졌다고 남겼고, cudaHostRegister가 더 느리게 측정된 이유로 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록하였다. 측정 일관성을 높이기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, 이를 위해 RAII 방식의 ScopedGpuClockLock 구조체를 작성하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 함께 기록되었다.\", \"evidence_ids\": [\"E00277\", \"E00278\", \"E00279\", \"E00280\", \"E00281\", \"E00282\", \"E00283\", \"E00284\", \"E00286\"]}]} }"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 54409,
+    "completion_tokens": 840,
+    "total_tokens": 55249,
+    "prompt_tokens_details": {
+      "cached_tokens": 1088,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

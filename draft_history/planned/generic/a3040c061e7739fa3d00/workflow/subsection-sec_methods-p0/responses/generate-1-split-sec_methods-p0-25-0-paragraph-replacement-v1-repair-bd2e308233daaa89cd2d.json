@@ -1,0 +1,21 @@
+{
+  "request_fingerprint": "bd2e308233daaa89cd2db44d1b1e7ad511f70c82141a4999c61ab5b73aa7230c",
+  "value": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "H85ca0e507c4e_88",
+          "H85ca0e507c4e_89",
+          "E00037",
+          "E00033",
+          "E00038",
+          "E00130",
+          "E00137",
+          "E00138",
+          "E00051"
+        ],
+        "text": "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 크기는 1로 설정하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였고, 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지를 대상으로 하였다. 정확도 지표는 기존 신경망 검증팀 프로그램과의 검증 결과·비율 차이로 확인하였으며, 결과는 모두 동일하였다. 초기 결합 방식은 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU OPTIMIZED 모드였고, 이후 matmul만 GPU로 남기고 나머지 GPU 커널을 CPU for문으로 되돌린 HYBRID 모드로 전환되었다. hybrid는 새로 추가된 요소 없이 GPU 코드를 삭제하여 빨라진 케이스로 정리되었다. 이후 v2/v4 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 memcpy 범위 축소가 추가로 결합되었다. 또한 forward-backward 간 전달되는 alpha/beta를 메모리 풀에 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 backward가 host에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경하였으며, affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화하였다. 다만 가중치 사전 업로드의 실제 효과는 제한적이라고 기록되어 있고, 각 최적화 기법의 개별 효과는 체계적으로 분리되지 않았다."
+      }
+    }
+  }
+}

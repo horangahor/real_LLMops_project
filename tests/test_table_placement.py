@@ -29,6 +29,50 @@ def selection():
 
 
 class TablePlacementTests(unittest.TestCase):
+    def test_stale_known_unselected_anchor_is_audited_without_changing_selection(self):
+        from test_composition_policy import table_fixture
+        data, value = table_fixture()
+        stale = {"table_id": "unused", "subsection_index": 0, "reason": "obsolete", "caption": "Old caption"}
+        value["sections"][1]["table_placements"].append(stale)
+        before = copy.deepcopy((value, data))
+        fixed = bind_plan_evidence(value, data)
+        validate_plan(fixed, data, {}, project_profile("generic"))
+        self.assertEqual(fixed["sections"][1]["table_ids"], value["sections"][1]["table_ids"])
+        self.assertNotIn(stale, fixed["sections"][1]["table_placements"])
+        self.assertEqual(fixed["table_placement_normalizations"][0]["removed_placement"], stale)
+        self.assertEqual((value, data), before)
+        self.assertEqual(bind_plan_evidence(fixed, data)["table_placement_normalizations"], fixed["table_placement_normalizations"])
+
+    def test_unknown_table_and_invalid_selected_anchor_remain_errors_with_exact_scope(self):
+        from test_composition_policy import table_fixture
+        for mutation, message in (({"table_id": "unknown"}, "표 목록에 없는"),
+                                  ({"subsection_index": 99}, "소절 위치"),
+                                  ({"subsection_index": True}, "소절 위치"), ({"reason": " "}, "선택 사유")):
+            with self.subTest(mutation=mutation):
+                data, value = table_fixture()
+                value["sections"][1]["table_placements"][0].update(mutation)
+                fixed = bind_plan_evidence(value, data)
+                with self.assertRaisesRegex(ValueError, message) as caught:
+                    validate_plan(fixed, data, {}, project_profile("generic"))
+                self.assertIn("s1", str(caught.exception))
+                self.assertIn(mutation.get("table_id", "T1"), str(caught.exception))
+
+    def test_cached_stale_anchor_needs_no_regeneration_or_raw_cache_mutation(self):
+        from test_composition_policy import table_fixture
+        data, value = table_fixture()
+        value["sections"][1]["table_placements"].append({"table_id": "unused", "subsection_index": 0, "reason": "obsolete"})
+        with TemporaryDirectory() as tmp:
+            client = FakeClient(value)
+            engine = PlannedPaper(tmp, client)
+            result = engine.run(data, plan_only=True)
+            raw_path = next((Path(result["run_dir"]) / "responses").glob("plan-*.json"))
+            raw = raw_path.read_bytes()
+            self.assertEqual(len(json.loads(raw)["value"]["sections"][1]["table_placements"]), 3)
+            self.assertEqual(len(result["plan"]["sections"][1]["table_placements"]), 2)
+            self.assertEqual(engine.run(data, plan_only=True)["plan"], result["plan"])
+            self.assertEqual(len(client.calls), 1)
+            self.assertEqual(raw_path.read_bytes(), raw)
+
     def test_conflicts_are_resolved_without_changing_evidence_or_unrelated_plan_fields(self):
         value, data = fixture()
         original, original_data = copy.deepcopy(value), copy.deepcopy(data)
@@ -51,7 +95,7 @@ class TablePlacementTests(unittest.TestCase):
         self.assertEqual(len(saved["adjustments"]), 2)
         self.assertEqual(saved["adjustments"][0]["original_section_ids"], ["s1", "s2"])
         validate_plan(fixed, data, {}, project_profile("generic"))
-        rendered = render_paper(fixed, {s["id"]: "본문 [근거:F1]" for s in fixed["sections"]}, data)
+        rendered = render_paper(fixed, {s["id"]: "본문 [근거:F1,F2]" for s in fixed["sections"]}, data)
         self.assertEqual(rendered.count("성능 비교"), 1)
         self.assertEqual(rendered.count("실험 설정"), 1)
 

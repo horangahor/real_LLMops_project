@@ -1,0 +1,33 @@
+{
+  "id": "43dfc433-6acb-4530-ae40-d667c7a6820e",
+  "object": "chat.completion",
+  "created": 1794000068,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\":{\"p0\":[{\"text\":\"본 연구의 CUDA 최적화 결과는 현재 신경망 크기와 호출 패턴에서 cuBLAS·cuSparse가 느려져 현 기준 코드에 포함하지 않은 상태라는 점, 실시간 환경에서 데이터셋을 꽉 채워 넣기 어렵다는 점, CPU보다 빨라지기 위해 memcpy 병목을 잡아야 한다는 판단에 기초한다. 배칭은 기존 데이터셋이 준비된 실험 환경에서 단일 스트림보다 3배 빨라졌고 25분에서 8분으로 단축되었으나, 실시간 환경에서는 이런 방식으로 데이터를 채우기 어렵다고 보았다. 이에 따라 데이터셋이 있는 부분을 pinned Memory로 지정하고 메모리 복사 속도를 최대로 늘리는 방향으로 전환했으며, cudaMemcpyAsync를 사용하기도 했다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 반면 antenna_lirpa는 싱글 스트림으로 동작하지만 cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림보다 약 4배 빠르다. 차기 로드맵은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 한다.\",\"evidence_ids\":[\"E00211\",\"E00216\",\"E00217\",\"E00257\",\"E00261\",\"E00262\",\"E00263\"]},{\"text\":\"측정 측면에서는 warm up을 적용했을 때 걸리는 시간과 각 평균 시간이 더 늘어났고, forward가 warm up 이전 backward 급 속도가 나올 정도였으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 발생했다. warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때의 시간은 오히려 더 안정적인 듯했다. cudaHostRegister와 No Pinning 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 평균 속도에서는 No-Pin이 13초 빨랐지만 실시간성에서는 치명적인 약점이 있었으며, 최대 지연은 No-Pin이 8.8ms~11.6ms, Pinned Memory가 1.64ms, 지터는 No-Pin이 118μs, Pinned Memory가 47μs로 나타났다.\",\"evidence_ids\":[\"E00206\",\"E00207\",\"E00208\",\"E00277\",\"E00278\",\"E00280\",\"E00292\",\"E00293\"]},{\"text\":\"최적화 효과 분리와 관련해서는 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계로 남는다. CPU를 통해 필요한 만큼만 계산하는 부분이 지연 증가의 주요 후보로 좁혀졌고, 스트림 수를 64개 정도로 줄이고 배치 사이즈를 1024로 하는 방안은 하나의 스트림이 하나의 입력을 처리하므로 동시에 돌릴 수 있는 데이터가 64개라는 뜻이고 16번씩 나눠서 처리하게 되어 의미가 없다고 판단했다. 초기 데이터 H2D 비용은 확실히 줄지만 연산 병목은 스트림이 64개라 한 번에 64개밖에 대응하지 못하는 제약이 있다. GPU 클록 고정은 연구 일지에서 봤듯이 나중에 고정된 사항이고, cuda 강의 19장의 GPU 클록 고정을 참고해 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1과 sudo nvidia-smi -lgc 1410으로 수행했다. 클록을 2800MHz로 고정하고 돌린 결과도 기록되었으나, 이러한 측정 조건과 반복 측정 통계의 한계는 결과 해석 범위를 제한한다.\",\"evidence_ids\":[\"E00226\",\"E00253\",\"E00254\",\"E00255\",\"E00281\",\"E00282\",\"E00283\",\"E00284\",\"E00286\"]}]}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 50161,
+    "completion_tokens": 1010,
+    "total_tokens": 51171,
+    "prompt_tokens_details": {
+      "cached_tokens": 2176,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

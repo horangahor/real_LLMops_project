@@ -1,0 +1,33 @@
+{
+  "id": "d162b083-42c9-47f6-af7c-ca95273d9439",
+  "object": "chat.completion",
+  "created": 1794000317,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": {\"evidence_ids\": [\"E00211\", \"E00216\", \"E00217\", \"E00257\", \"E00261\", \"E00262\", \"E00263\"], \"text\": \"본 연구의 CUDA 최적화 결과는 현재 신경망 크기와 호출 패턴에서 cuBLAS·cuSparse가 느려져 현 기준 코드에 포함하지 않은 상태라는 점, 실시간 환경에서 데이터셋을 꽉 채워 넣기 어렵다는 점, CPU보다 빨라지기 위해 memcpy 병목을 잡아야 한다는 판단에 기초한다. 배칭은 기존 데이터셋이 준비된 실험 환경에서 단일 스트림보다 3배 빨라졌고 25분에서 8분으로 단축되었으나, 실시간 환경에서는 이런 방식으로 데이터를 채우기 어렵다고 보았다. 이에 따라 데이터셋이 있는 부분을 pinned Memory로 지정하고 메모리 복사 속도를 최대로 늘리는 방향으로 전환했으며, cudaMemcpyAsync를 사용하기도 했다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 반면 antenna_lirpa는 싱글 스트림으로 동작하지만 cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림보다 약 4배 빠르다. 차기 로드맵은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 한다.\"}}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 15567,
+    "completion_tokens": 340,
+    "total_tokens": 15907,
+    "prompt_tokens_details": {
+      "cached_tokens": 13056,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

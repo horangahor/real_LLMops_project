@@ -1,0 +1,87 @@
+{
+  "request_fingerprint": "aeaab2212484d980b1d02b5a973a5870e32c67b77e40e59aa47a812091e350db",
+  "value": {
+    "sections": {
+      "evaluation": {
+        "parts": {
+          "p1": {
+            "evaluation_p27_s1": {
+              "action": "replace",
+              "text": "switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 커널 memcpy에서는 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다.",
+              "join_previous": false
+            }
+          },
+          "p2": {
+            "evaluation_p29_s1": {
+              "action": "replace",
+              "text": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다.",
+              "join_previous": false
+            },
+            "evaluation_p30_s1": {
+              "action": "replace",
+              "text": "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다.",
+              "join_previous": false
+            },
+            "evaluation_p31_s1": {
+              "action": "replace",
+              "text": "spMM 도입 후 실행 시간이 약 40ms 수준으로 회귀한 것으로 기록되었다. 이 표현은 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었으나, 정량적 원인 분리 측정 결과는 제시되지 않았다.",
+              "join_previous": false
+            },
+            "evaluation_p32_s1": {
+              "action": "replace",
+              "text": "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다.",
+              "join_previous": false
+            },
+            "evaluation_p33_s1": {
+              "action": "replace",
+              "text": "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다.",
+              "join_previous": false
+            },
+            "evaluation_p34_s1": {
+              "action": "replace",
+              "text": "cudaMemcpyAsync 호출 시간은 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 효과가 크지 않았다고 보았으나, 측정 결과가 일관되지 않아 확신할 수 없는 정성적 판단으로 남았다. 추론 종료까지의 동기화 시간은 pinned 미적용 버전이 가장 빨랐고, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었으나 확정적 인과 분리는 아니다. pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. backward_only가 왜 제일 빠른지에 대한 질문은 제기되었으나 이 페이지에서 답변은 완료되지 않았다.",
+              "join_previous": false
+            },
+            "evaluation_p35_s1": {
+              "action": "replace",
+              "text": "HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. 영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다.",
+              "join_previous": false
+            },
+            "evaluation_p36_s1": {
+              "action": "replace",
+              "text": "메모리 전송 방식 비교에서 No-Pin(일반 메모리)은 평균 처리 속도가 Pinned Memory보다 약 13초 빨랐으나, 이는 CPU 캐시 복사 이득에 의한 것으로 해석된다. 반면 Pinned Memory는 DMA 셋업 오버헤드로 인해 평균 속도가 약간 느렸다. 최대 지연은 No-Pin이 8.8~11.6ms 범위로 치명적 수준을 보였고, Pinned Memory는 1.64ms로 극히 안정적이었다. 지터 역시 No-Pin이 118μs로 불안정했고 Pinned Memory는 47μs로 안정적이었다.",
+              "join_previous": false
+            },
+            "evaluation_p37_s1": {
+              "action": "replace",
+              "text": "이러한 차이는 동작 특성에서도 설명된다. No-Pin은 평소 CPU 캐시 효과로 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없으며, 이는 1ms 무선 통신 데드라인을 파괴할 수 있다. Pinned Memory는 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다.",
+              "join_previous": false
+            },
+            "evaluation_p38_s1": {
+              "action": "replace",
+              "text": "다만 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다. 그럼에도 Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다.",
+              "join_previous": false
+            },
+            "evaluation_p39_s1": {
+              "action": "replace",
+              "text": "GPU OPTIMIZED 모드 이후에도 CPU보다 느려, matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했다. cuBLAS 도입 후 결과가 나빠졌고, cuSparse spMV 적용 결과도 느려져 spMM 도입까지 검토하기로 했다. spMM 적용 후 거의 40ms로 회귀했으며, 40000번 루프에서 forward가 backward보다 느려졌다. cudaHostRegister는 No Pinning보다 느리게 측정되었고, pinned 적용 버전의 cudaMemcpyAsync가 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다. 이 기록은 파이프라인 상태와 오버헤드 구조에 대한 설명이며, 정량 분리 측정 결과는 제시되지 않았다.",
+              "join_previous": false
+            }
+          },
+          "p3": {
+            "evaluation_p41_s1": {
+              "action": "replace",
+              "text": "관련 연구와의 교차 비교에서, CROWN 알고리즘 개발 팀도 GPU를 활용한 검증 가속을 시도한 사례가 있으나, 이는 실시간 목적보다는 모든 경우를 검토해야 하는 상황에서 병렬성을 활용해 처리 속도를 높이려는 관점에 가까웠다. 이번 연구는 CPU 환경에서 느리게 동작하던 CROWN 검증을 CUDA 기반으로 옮겨 실시간 환경의 대규모 연산을 따라잡을 수 있는지를 확인하는 데 초점을 둔다. 다만 이러한 비교는 연구 일지에서 확인된 범위로 제시되며, 상대 팀의 구체적 구현 조건이나 정량적 성능 비교까지 확장하지는 않는다.",
+              "join_previous": false
+            },
+            "evaluation_p42_s1": {
+              "action": "replace",
+              "text": "런타임 호출 지연 시간 관련 통계로, cudaMemcpy는 Total Time 40.726초, Num Calls 240000회, Avg 169.691μs, Med 18.120μs, Min 3.599μs, Max 7.616ms, StdDev 316.565μs로 기록되었다. 실행 통계에서는 cudaLaunchh가 18.527초/2160000회, cudaMemcpy가 11.332초/240000회, cudaMemset이 2.121초/160000회, cuKernelGetN이 392.770ms/2160000회, cuLibraryGetK가 16.718μs/18회로 나타났다. 이 수치는 특정 실행 조건에서 관측된 프로파일링 결과이며, 다른 구성과의 비교 해석이나 반복 측정 기반 통계는 이 기록만으로 제시되지 않는다.",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

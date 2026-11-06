@@ -1,0 +1,15 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00163",
+          "E00202",
+          "E00370"
+        ],
+        "text": "가중치 사전 업로드는 pre_upload_weights_to_gpu에서 cudaMalloc과 cudaMemcpy2D로 가중치를 GPU에 올리고 net->d_W[i]에 저장하며, d_W 타입을 double*에서 Matrix*로 바꾸고 positive_part, negative_part, matmul, matvec 복사를 건너뛰는 방식으로 전송량을 줄였다. bias 사전 업로드도 시도했으나 약 4KB로 의미가 미미하다고 판단했고, 필요한 부분만 복사하는 방안(예: 16×491)도 검토되었다. 한편 프로그램 전체 실행에서 memcpy는 총 18번 발생하고 내부 6번을 제외하면 외부에서 12번 발생하며, 가중치 행은 가중치, 가중치 양수부/음수부, bias의 3개로 구성되고 신경망 구조 256×491×491×16에 따라 개수만큼 복사된다. 초기화 이후 forward와 backward의 bound 계산 시간은 비슷하고 약 0.2ms 정도 차이가 난다는 관측도 있었다. 다만 커널 memcpy에서 MAXDIM 512 float 고정 복사를 필요한 크기만 복사하도록 바꾸었을 때는 CPU 계산 오버헤드가 커져 시간이 늘어나는 경우도 기록되어, 복사 크기 축소가 항상 유리한 것은 아니었다."
+      }
+    }
+  },
+  "reason": "교체 문단이 허용 분량 374자를 넘었습니다."
+}

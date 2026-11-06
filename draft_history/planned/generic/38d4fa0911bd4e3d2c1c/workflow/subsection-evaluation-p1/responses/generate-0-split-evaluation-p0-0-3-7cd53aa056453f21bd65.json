@@ -1,0 +1,36 @@
+{
+  "request_fingerprint": "7cd53aa056453f21bd65d0008897ffac12479d252dfa52f44257b730317bd28f",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "구성 요소 변경은 커널 호출 횟수 감소와 메모리·복사 경로 조정으로 나타났다. graph mode=1, 샘플 1개 전체 기준에서 추론 커널은 그대로 둔 채 Forward 33회→24회, Backward 52회→37회, Backward-only 51회→39회로 줄었고, graph launch 횟수는 infer 1회 + bound 1회, 총 2회로 유지되었다. 감소 내역은 Forward에서 lower/upper matmul, lower/upper bias matvec, matrix scaling + vector affine이 각각 2→1로 줄어 method 0 기준 레이어당 8→5회가 되었고, Backward에서는 split_pos_neg + bias accumulation 2→1과 레이어당 backward 단계 5→4회가 적용되었다. method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 split/bias kernel 통합으로 총 12회 감소했다. 다만 forward에서 무거운 커널 연산 호출이 9회 줄어든 반면 실제 backward 부분은 3회만 줄었고, backward_only는 45→33회(26.7%)로 가장 적게 줄어 커널 비용 차이가 남아 있다.",
+          "evidence_ids": [
+            "E00313",
+            "E00314",
+            "E00315",
+            "E00319"
+          ]
+        },
+        {
+          "text": "backward_bound_gpu()에 커널 퓨전을 먼저 적용한 뒤에는 23ms 후반대까지의 실행 시간이 관측되었고, 컴퓨터 사정에 따라 26ms까지 뛰는 경우도 있었지만 23ms 정도가 보인다는 점이 기록되었다. 이후 mempool + warmup 조합으로 거의 200ms가 단축되었고, memcpy 병목을 잡아야 CPU보다 빨라질 수 있다고 보았다. mempool + warmup + 결과 벡터 memcpy 제거 적용 후에는 실행 시간이 약 10ms 추가로 단축되었다. make_zero_matrix·make_zero_vector를 CPU로 회귀한 결과 22~25ms 정도 줄었고, 영벡터 만들기를 다시 GPU로 해보면 3~5ms 정도 늘어나 CPU로 두는 것이 좋다고 판단했다. 커널 퓨전 완료 후에는 실행 시간이 15.828400ms에서 15.751000ms로 약 0.2ms 정도 하한선이 낮아진 것으로 관측되었다.",
+          "evidence_ids": [
+            "E00326",
+            "E00329",
+            "E00353",
+            "E00370"
+          ]
+        },
+        {
+          "text": "backward_bound_gpu()에는 affine 중복 계산 삭제, 포인터 스와핑, 행렬곱 커널 통합, 커널 퓨전이 적용되었고, forward-backward 간 alpha/beta 값을 메모리 풀에 올려 전달 과정을 삭제했으며 bias도 메모리 풀에서 관리하도록 변경했다. forward 최종 계산의 D2H 복사 과정에서도 비효율적인 부분을 최적화했다. 한편 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경하려 했으나, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않았고, case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여 main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다. 커널 memcpy에서는 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다.",
+          "evidence_ids": [
+            "E00318",
+            "E00339",
+            "E00354",
+            "E00370"
+          ]
+        }
+      ]
+    }
+  }
+}

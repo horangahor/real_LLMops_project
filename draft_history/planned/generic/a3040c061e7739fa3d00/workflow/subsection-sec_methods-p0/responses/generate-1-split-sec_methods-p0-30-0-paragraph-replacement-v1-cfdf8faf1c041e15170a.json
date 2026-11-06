@@ -1,0 +1,26 @@
+{
+  "request_fingerprint": "cfdf8faf1c041e15170a18aca7705aefcdb08fdf9738b9ad360913ee7e0ea15a",
+  "value": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00054",
+          "E00323",
+          "E00324",
+          "E00042",
+          "E00123",
+          "E00129",
+          "E00311",
+          "H85ca0e507c4e_85",
+          "E00313",
+          "E00320",
+          "E00339",
+          "E00322",
+          "E00231",
+          "E00232"
+        ],
+        "text": "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 256-491-491-16 크기의 신경망과 기존 신경망 검증팀이 사용하던 입력·eps_list를 사용한다. 실행 방식은 CROWN의 세 방법인 forward, forward+backward, backward_only로 구분하고 배치 크기는 1로 둔다. 구성 요소는 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 하이브리드 연산 배치, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cuda graph로 나뉜다. 메모리 풀은 할당·해제 반복을 줄이기 위한 장치이고, cuBLAS는 matvec·matmul을 기존 자체 계산 대신 수행하도록 도입된다. 가중치는 pre_upload_weights_to_gpu로 각 레이어의 W를 cudaMalloc 후 cudaMemcpy2D로 GPU에 올려 d_W에 저장해 두고, 벡터 연산 등 일부는 CPU로 처리하는 하이브리드 구성을 시도한다. 커널 퓨전은 backward_bound_gpu()를 시작으로 affine 중복 계산 삭제, new_(upper, lower)_p의 std::swap 포인터 스와핑, backward_matmul_pair_gpu의 2개 행렬곱 커널 통합, build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등으로 진행되며, 1개 커널 호출로 줄일 수 있는 함수를 계속 퓨전하는 방향이 기록되었다. alpha/beta GPU 버퍼, pinned memory, cuda graph는 각각 버퍼 배치, 호스트 메모리 접근, 반복 실행 경로 고정과 관련된 요소로 언급된다. 방법 B와 방법 C는 1024 배칭에서 속도가 빨라진 사례를 확인한 뒤 그 구현을 어떻게 따라갈지 검토하는 과정에서 등장한 개념·구도로, 실제 구현 결과라기보다 확인·탐색 맥락에서 다루어진다. 측정은 3-layer 네트워크 기준으로 CUDA kernel launch만 세며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외한다. 커널 퓨전 및 backward_only의 메모리 복사 커널 제거 후 3-layer 기준 bound 내 커널 호출은 Forward method=0 27→18회(9회 감소), Backward method=1 전체 46→31회(15회 감소), Backward-only method=2 전체 45→33회(12회 감소)로 줄었다. 추론 커널은 그대로라서 graph mode=1, 샘플 1개 전체 기준으로는 Forward 33→24회(9회 감소), Backward 52→37회(15회 감소), Backward-only 51→39회(12회 감소)가 되었다. memcpy 호출 횟수는 66개에서 56개로 감소하였다. v1-1-2에서 가중치만 미리 업로드할 수 있게 한 변경은 149~155ms 범위로 기록되었다. 실행 시간은 1138s에서 758s로 감소했다고 기록되었다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계로 남는다. CPU는 CROWN 검증에 대해 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황이므로, 실시간 환경의 대규모 연산을 CUDA로 구현·최적화해 네트워크 환경을 따라잡을 수 있는지 보는 것이 본 연구의 관점이며, 이 비교 관점은 단일 스트림 입력 복사 최적화 논의와도 연결된다."
+      }
+    }
+  }
+}

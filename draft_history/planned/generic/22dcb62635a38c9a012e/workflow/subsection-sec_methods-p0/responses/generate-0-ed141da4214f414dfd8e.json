@@ -1,0 +1,44 @@
+{
+  "request_fingerprint": "ed141da4214f414dfd8e0cd66c53bce1062a9a935896f181112a7a3cfe742b4c",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "평가 대상은 CROWN 검증을 구현한 C++ 프로그램이며, 신경망 구조는 입력 256, 은닉 491, 491, 출력 16의 Fully Connected 구조이다. 입력 벡터 길이는 NR × Ng = 256으로 설정되며, 출력 차원은 16이다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용했고, 배치 사이즈는 1로 두었다. 실행 방식은 CROWN의 세 가지 bound 계산 방법인 forward, forward+backward, backward_only를 기준으로 구분하였다. 모델 로드 과정에서는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했고, 새로운 crown_test.cu를 작성해 실제 신경망을 로드한 뒤 16개 출력을 추출하는 것을 1차 목표로 삼았다. eps는 10^-6을 사용했다.",
+          "evidence_ids": [
+            "E00011",
+            "E00012",
+            "E00013",
+            "E00014",
+            "E00015",
+            "E00016",
+            "U531b24e3633dee74c4f7",
+            "U8602da87af586b3567f6"
+          ]
+        },
+        {
+          "text": "커널 호출 횟수 감소는 bound 계산 방식별로 차이를 보였다. Forward method=0 bound는 27회에서 18회로 9회 감소, Backward method=1 bound 전체는 46회에서 31회로 15회 감소, Backward-only method=2 bound 전체는 45회에서 33회로 12회 감소하였다. 이는 커널 퓨전과 backward_only에서 메모리 복사 커널을 제거한 결과로, 3-layer 네트워크 기준으로 측정된 값이다. 다만 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하고 CUDA kernel launch만 센 값이라는 점을 함께 고려해야 한다.",
+          "evidence_ids": [
+            "H85ca0e507c4e_85"
+          ]
+        },
+        {
+          "text": "graph mode=1을 적용하면 추론 커널은 유지한 상태에서 샘플 1개 전체 기준 커널 호출 횟수가 추가로 줄어든다. Forward는 33회에서 24회로 9회, Backward는 52회에서 37회로 15회, Backward-only는 51회에서 39회로 12회 감소하였다. 이 감소는 bound 내 감소분과 같은 횟수이며, graph mode=1에서도 cudaGraphLaunch는 infer 1회와 bound 1회로 총 2회 유지된다. 따라서 실행 방식 차이는 bound 계산 방법뿐 아니라 graph mode 적용 여부에 따라서도 달라진다.",
+          "evidence_ids": [
+            "E00313",
+            "H85ca0e507c4e_85"
+          ]
+        },
+        {
+          "text": "GPU OPTIMIZED 모드(cuBLAS + Pool)로 CROWN 검증을 실행했을 때 Elapsed time은 229.691800 ms로 기록되었다. 이는 이전 대비 약 100ms 줄어든 값이지만, 기록상 여전히 CPU보다 느리다고 평가되었다. 이에 따라 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도하는 방향이 이어졌다. 한편 현재 커널은 2차원 block 크기와 tid로 단일 샘플에 대한 행렬 연산을 수행하는 방식이며, z축을 추가하면 3차원(multi sample) 처리가 가능한 텐서 코어를 활용할 수 있다는 구상이 함께 정리되어 있다. 다만 이는 현재 구현의 동작 방식과 후속 방향 제안에 해당하며, 실제 3D 커널 구현이나 텐서 코어 활용 결과로 확인된 내용은 아니다.",
+          "evidence_ids": [
+            "E00027",
+            "E00029",
+            "E00030",
+            "E00260"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "b9b0a9bc-9f05-4088-9121-f7954665ceb8",
+  "object": "chat.completion",
+  "created": 1794000353,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": {\"evidence_ids\": [\"E00294\", \"E00295\", \"E00296\", \"E00297\", \"E00298\", \"E00299\", \"E00301\"], \"text\": \"본 연구의 CUDA 가속 결과는 256-491-491-16 크기의 신경망과 기존 신경망 검증팀이 사용하던 입력·eps_list, 배치 크기 1 조건에서 CROWN의 forward, forward+backward, backward_only 실행 방식을 대상으로 관측한 것이다. 이 조건에서는 신경망이 매우 작아 cuBLAS·cuSparse가 오히려 느려질 수 있어 현 기준 코드에 포함하지 않았으며, 실시간 환경에서 데이터셋을 꽉 채워 넣기 어렵다. CPU보다 빨라지려면 memcpy 병목을 잡아야 한다는 판단이 있었다. No-Pin은 평소 CPU 캐시 복사로 빠르지만 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있고, Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 치르지만 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보인다. 단일 채널 벡터(1KB)처럼 작은 데이터에서는 PCIe DMA 셋업 오버헤드로 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 낮게 측정될 수 있으나, Pageable 메모리의 최대 지연 스파이크(11.6ms)와 달리 Pinned Memory는 WCET를 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 1KB 데이터를 매 루프마다 전송할 때 Pinned는 DMA 디스크립터 생성·큐 제출로 호출 1회당 약 1.0~1.5μs가 소모되고, No-Pin은 CPU L1/L2 캐시에서 1,028바이트를 0.02~0.05μs에 복사해 DMA 셋업보다 30~50배 빠르다. infer 단계에서 40,000번 반복하며 cudaStreamSynchronize 대기·깨어남과 드라이버 동기화 비용이 맞물려 Pinned 쪽이 총 루프 시간에서 약 13초 느려졌다. 총 시간(평균 시간)만 보면 No-Pin이 더 빨라 보이지만, 지터와 WCET를 보면 Pinned가 유리하며, No-Pin의 최대 지연시간은 8.80~11.6ms, 지터는 118.94μs이고 Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. 사용자 직관대로 1KB의 작은 데이터를 보내면서 매 루프마다 개별 하드웨어 DMA 셋업을 부르는 오버헤드 때문에 Pinned가 No-Pin보다 총 소요 시간이 더 길게 나왔다.\"}}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 17236,
+    "completion_tokens": 620,
+    "total_tokens": 17856,
+    "prompt_tokens_details": {
+      "cached_tokens": 9792,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

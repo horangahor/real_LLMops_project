@@ -1,0 +1,33 @@
+{
+  "id": "8456dae1-6b7f-4269-b7c6-4c45e1544d85",
+  "object": "chat.completion",
+  "created": 1793984688,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"issues\": [{\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"sec_evaluation_p1\", \"category\": \"duplication\", \"severity\": \"error\", \"reason\": \"sec_evaluation_p1, sec_evaluation_p8, sec_evaluation_p13, sec_evaluation_p16이 CUDA 포팅·최적화 과정의 실행 시간 변화 흐름을 거의 같은 서사(초기 CPU 대비 GPU 버전, 최적화 단계별 시간 감소, 단일 실행 중심·반복 측정 통계 부족)로 반복 서술한다. 특히 p1과 p8은 ‘단일 실행 중심이며 반복 측정 통계가 부족하다’는 한계 진술까지 동일한 구조로 겹쳐, 절 도입부에서 전체 흐름을 한 번 정리한 뒤 개별 분석은 중복 없이 배치하는 재구성이 필요하다.\"}, {\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"sec_evaluation_p2\", \"category\": \"duplication\", \"severity\": \"error\", \"reason\": \"GPU OPTIMIZED·HYBRID가 CPU보다 느렸던 관측, cuBLAS/cuSparse 도입 후 느려진 관측, spMM 도입 후 약 40ms 회귀, backward_only의 boun 약 2.5배 관측, forward/backward 기대 차이와 실제 차이, pinned memory 실험 불일치가 sec_evaluation_p2, p9, p12, p16에 분산·중복된다. 실패·회귀 양상은 한 곳에서 유형별로 묶어 정리하고, 다른 문단에서는 원인 해석이나 수치만 참조하도록 분리해야 한다.\"}, {\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"sec_evaluation_p3\", \"category\": \"duplication\", \"severity\": \"error\", \"reason\": \"메모리 풀·warmup의 기여, make_zero_matrix/make_zero_vector CPU 회귀 감소, lirpa_forward_bound 커널 퓨전 후 22.342900ms 기록, ‘여러 변경 동시 적용으로 개별 효과 분리 불가’라는 진술이 sec_evaluation_p3, p6, p10, p13, p14에 반복된다. 구성 요소 기여도 서술이 여러 문단에 흩어지면서 동일 결론 문장이 복제되고 있어, 기여도 정리 문단을 통합하거나 역할 분담을 명확히 해야 한다.\"}, {\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"sec_evaluation_p4\", \"category\": \"duplication\", \"severity\": \"error\", \"reason\": \"해석상 한계(단일 실행 중심, 반복 측정 통계 부족, 동시 변경으로 인한 개별 효과 분리 어려움, 작은 신경망 크기로 인한 cuBLAS/cuSparse 오버헤드, CUDA Context·런타임 오버헤드, memcpy 병목, warmup/preload 효과 혼입, pinned memory 불일치, 실시간 환경에서 데이터셋을 꽉 채우기 어려운 제약)가 sec_evaluation_p4, p7, p11, p15, p16, p17에 걸쳐 반복 언급된다. 한계 항목은 한 곳에서 목록화하고, 다른 문단에서는 해당 한계를 필요한 맥락에서만 짧게 참조해야 한다.\"}, {\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"sec_evaluation_p5\", \"category\": \"flow\", \"severity\": \"error\", \"reason\": \"sec_evaluation_p5는 cudaGraph로 추론과 bound를 따로 캡처해 약 400초 감소, 멀티 스트림 배칭으로 25분→8분 단축, 커밋 이전 버전(graph만 적용)이 더 빨랐던 재실행 관측을 제시하지만, 앞 문단들의 단계별 시간 서사 및 뒤 문단의 그래프 적용 결과(787.8832s 등)와 시간 단위(ms/s/분/초)와 비교 기준이 혼재되어 흐름이 끊긴다. 그래프·배칭 관련 관측은 단위와 비교 기준을 통일한 뒤 한 곳에 모아 배치해야 한다.\"}, {\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"sec_evaluation_p8\", \"category\": \"flow\", \"severity\": \"error\", \"reason\": \"sec_evaluation_p8은 CPU 96ms, v1 355ms, v2 229ms, v3 200ms라는 버전별 요약과 함께 forward 1029s→668s, backward_only 787s→630s, 전체 1138s→758s를 같은 문단에서 섞어 제시한다. 앞부분(p1 등)의 ms 단위 단일 실행 서사와 뒤부분(p13, p16)의 s 단위 그래프 적용 결과가 한 문단에 병존해 시간 척도와 비교 대상이 혼란스럽다. 버전별 요약은 별도 흐름으로 분리하거나, 단위·비교 기준을 명확히 구분해야 한다.\"}, {\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"sec_evaluation_p13\", \"category\": \"flow\", \"severity\": \"error\", \"reason\": \"sec_evaluation_p13은 메모리 풀·warmup 약 200ms 단축, alpha/beta GPU 버퍼 전달, backward_bound_gpu의 affine_min/max GPU 처리, 커널 퓨전 적용 순서, 22~23ms대 및 23ms 후반대 관측, memcpy 66→56회 감소, 그래프 적용 결과 787.8832s, MAXDIM 512 float 고정 복사 변경의 CPU 오버헤드 증가를 한 문단에 길게 나열한다. 최적화 적용 순서와 효과, 그래프 결과, 역효과 사례가 섞여 있어 인과 순서가 읽기 어렵다. 적용 순서·효과·역효과를 단계적으로 분리해 서술해야 한다.\"}, {\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"sec_evaluation_p16\", \"category\": \"flow\", \"severity\": \"error\", \"reason\": \"sec_evaluation_p16은 평가의 중심 질문(실시간 대규모 연산을 CUDA로 구현해 네트워크 환경을 따라잡을 수 있는지)을 먼저 제시한 뒤, cudaMemcpy 총 시간 40.726초·호출 240,000회·평균 169.691μs·중앙값 18.120μs·최대 7.616ms·표준편차 316.565μs, cudaLaunchh 18.527초, cudaMemset 2.121초, cuKernelGetN 392.770ms, cuLibraryGetK 16.718μs, 개별 호출 3건의 시작 시간·지속 시간, Begins/Ends 구간, sparse.py 대비 5.32배·5.30배·4.86배·4.89배 단축, warm up 스파이크·10회 측정 평균 느려짐, 배칭 부적합 판단과 pinned memory·cudaMemcpyAsync 대안, cuBLAS·cuSparse 보류, backward_only 대신 forward+backward 유지, 개별 효과 분리 어려움까지 한 문단에 밀집시킨다. 질문 제시, 프로파일링 수치, 비교 배율, 측정 안정성 문제, 대안 판단, 방법론적 한계가 한 문단에 과도하게 집중되어 가독성과 논리 흐름이 저하된다. 질문·측정 결과·비교·한계로 문단을 나누거나, 수치와 해석을 분리해 재배치해야 한다.\"}, {\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"sec_evaluation_p17\", \"category\": \"flow\", \"severity\": \"error\", \"reason\": \"sec_evaluation_p17은 warm up 적용 시에도 스파이크 발생·10번 측정 시 평균 시간 느려짐이라는 측정 안정성 문제를 다시 언급한 뒤, 갑자기 6번째 세미나 이후 할 일 목록(RAM 추가 해결, cuBLAS·cuSparse 도입 보류, forward+backward 유지, 코드 검토, 논문 작성 검토, Nsight Compute 분석)으로 전환한다. 측정 안정성 문제와 세미나 액션 아이템이 같은 문단에 섞여 절의 평가 흐름에서 이탈한다. 세미나 후속 작업 목록은 평가 문단과 분리하거나, 이 절에 반드시 필요한 경우에만 짧게 연결해야 한다.\"}, {\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"sec_evaluation_p17\", \"category\": \"terminology\", \"severity\": \"warning\", \"reason\": \"sec_evaluation_p17은 cudaHostRegister/No Pinning 비교, 클록 고정, Persistence mode 등 측정 조건이 ‘원문에 직접 명시되어 있지 않다’고 진술하면서, 동시에 아래 표들이 특정 실행 조건에서의 호출·시간 분포를 보여주는 자료라고 안내한다. 측정 조건이 명시되지 않았다는 진술과 표를 조건으로 읽으라는 안내가 서로 완전히 충돌하지는 않지만, 독자에게 조건의 불확실성을 과장하거나 반대로 단정적으로 읽히게 할 수 있다. 조건의 명시 여부와 표의 해석 범위를 더 분명하게 구분해 표현하는 것이 좋다.\"}, {\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"none\", \"category\": \"terminology\", \"severity\": \"warning\", \"reason\": \"절 전체에서 시간 단위와 비교 기준이 ms, s, 분, 초로 혼재되어 있다(예: 353.057200 ms, 787.8832s, 25분에서 8분, 약 400초, cudaMemcpy 총 시간 40.726초 등). 또한 ‘GPU OPTIMIZED’, ‘HYBRID’, ‘HYBRID V2’, ‘v1/v2/v3’, ‘cudaGraph 적용 후’ 등 버전·구성 명칭이 문단마다 같은 대상을 가리키는지 불분명하게 사용된다. 실행 시간 서사와 비교 결과의 단위, 버전·구성 명칭을 절 전체에서 통일해야 한다.\"}, {\"section_id\": \"sec_evaluation\", \"paragraph_id\": \"none\", \"category\": \"flow\", \"severity\": \"warning\", \"reason\": \"sec_evaluation 절의 문단 배열이 ‘실행 시간 변화 요약(p1) → 실패·회귀(p2) → 구성 요소 기여(p3) → 한계(p4) → 비교(p5) → 기여(p6) → 배포 가능성(p7) → 버전별 요약(p8) → 실패·회귀(p9) → 기여(p10) → 배포 가능성(p11) → forward/backward 차이(p12) → 적용 순서·효과(p13) → 기여 분리(p14) → 신뢰도 한계(p15) → 중심 질문·프로파일링·비교(p16) → 측정 안정성·세미나 할 일(p17)’로, 동일 주제가 여러 번 재등장하면서 순서가 순환한다. 실행 시간 변화, 실패·회귀 양상, 구성 요소 기여도, 한계, 배포 가능성 중 하나를 중심 축으로 삼아 문단을 재배열하고, 중복 문단은 통합하거나 참조 방식으로 바꿔야 한다.\"}]}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 4290,
+    "completion_tokens": 2133,
+    "total_tokens": 6423,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

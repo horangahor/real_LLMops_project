@@ -1,0 +1,579 @@
+{
+  "sha256": "0e8276432d4f291dea7df4941944c86ee7ceb1d52344ac1150d70665a8ee281b",
+  "value": {
+    "input_fingerprint": "8aa69c8d4372211fcfd1dce3dbbcdf923d260bcefea424544d9685e1b42ac7a6",
+    "sections": {
+      "sec_components": {
+        "parts": {
+          "p0": "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]\n\n평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연(Max Spike)은 No-Pin이 8.8~11.6ms로 치명적이었고 Pinned Memory는 1.64ms로 극도로 안정적이었다. 지터도 No-Pin 118μs, Pinned 47μs로 Pinned가 더 안정적이었다. 이는 No-Pin이 평소 CPU L1/L2 캐시 복사로 빠르지만, OS 페이징 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 스파이크가 발생할 수 있고, Pinned는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장하기 때문이다. [근거:E00292,E00293,E00294,E00296]\n\n1KB급 작은 데이터에서는 이 차이가 더 뚜렷하다. Pinned는 매 루프마다 DMA 디스크립터 생성·큐 제출로 약 1.0~1.5μs의 오버헤드가 발생하고, 920,000회 누적 시 약 1.38초에 이른다. 반면 No-Pin은 드라이버가 하드웨어 DMA를 부르지 않고 CPU 캐시로 내부 즉시 복사해 1회 약 0.02~0.05μs(20~50ns)에 끝나며, 누적 오버헤드는 약 0.03초 수준이다. 즉 작은 데이터에서는 대역폭보다 셋업 지연이 지배해 Pinned의 평균 전송 속도가 Pageable 대비 약 1.4% 미세하게 낮게 측정될 수 있다. [근거:E00297,E00301,E00295]\n\n평균값(n=920000) 기준으로 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 비교하면 hostRegister(323μs, 5.188μs, 1.117μs)와 hostAlloc(322μs, 5.351μs, 1.142μs)는 유사한 수준이고, noPinning(314μs, 4.932μs, 340ns)은 memcpy 복사 시간에서 특히 빨랐다. 다만 총 시간만 보면 No-Pin이 빨라 보여도 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다. No-Pin의 최대 지연은 8.80~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned는 최대 지연 1.64ms, 지터 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00309,Hefd7e87bb735_67,E00299]\n\n실시간 무선 안테나 선택 시스템처럼 1ms 통신 데드라인이 중요한 환경에서는 Pageable 메모리의 최대 11.6ms 지연 스파이크가 치명적이므로, Pinned Memory 도입이 필수적이라고 판단되었다. 다만 cudaMemcpyAsync 호출 시간 측정에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 2copy에서 1copy로 변경해 고정 셋업 비용이 줄었을 것으로 기대했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없었다. 이 때문에 pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리되었다. [근거:E00304,E00306,E00307]\n\n메모리 전송 방식은 cudaHostRegister, cudaHostAlloc(Pinned), No Pinning으로 구분해 비교하였다. 관측 결과 No-Pin이 평균 속도에서는 빠르지만 최대 지연 스파이크와 지터가 크고, Pinned는 최악 지연(WCET)과 지터에서 더 안정적이었다. 1KB급 작은 데이터에서는 DMA 셋업 오버헤드가 누적되어 CPU 캐시 복사의 이득이 역전되는 양상이 나타났다. 이러한 관찰은 실시간성 관점에서 Pinned 도입의 필요성을 판단하는 근거로 사용된다. [근거:E00361,E00368,E00375]"
+        }
+      }
+    },
+    "raw_review": {
+      "checks": [
+        {
+          "item_id": "ri_comp_5",
+          "verdict": "met",
+          "paragraph_ids": [
+            "sec_components_p1",
+            "sec_components_p2",
+            "sec_components_p3",
+            "sec_components_p4",
+            "sec_components_p5",
+            "sec_components_p6"
+          ],
+          "evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00296",
+            "E00297",
+            "E00301",
+            "E00295",
+            "E00309",
+            "Hefd7e87bb735_67",
+            "E00299",
+            "E00304",
+            "E00306",
+            "E00307",
+            "E00361",
+            "E00368",
+            "E00375"
+          ]
+        }
+      ],
+      "reference_checks": [
+        {
+          "section_id": "sec_components",
+          "reference_id": "ref1_methods",
+          "verdict": "not_visible",
+          "paragraph_ids": [],
+          "reason": "참조 가이드 ref1_methods는 식물 스트레스·촬영·모델 구조·학습 설정 등 이 절과 무관한 도메인의 서술 역할을 정의하므로, sec_components의 CUDA 최적화 구성 요소 서술에 직접 적용되지 않는다."
+        },
+        {
+          "section_id": "sec_components",
+          "reference_id": "ref2_methods",
+          "verdict": "partial",
+          "paragraph_ids": [
+            "sec_components_p1",
+            "sec_components_p2",
+            "sec_components_p3",
+            "sec_components_p4",
+            "sec_components_p5",
+            "sec_components_p6"
+          ],
+          "reason": "비교 구성(cudaHostRegister/cudaHostAlloc/No Pinning)과 측정 구간(전체 실행 시간, Bound/Infer 단계, 동기화·복사 시간, 최대 지연·지터)은 실제 관측 근거로 서술되어 ref2_methods_required_1·2의 방향을 일부 충족한다. 다만 GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않아, 공정 비교를 위한 통제 조건으로 확정하기 어렵다는 한계가 있다. 계획·제안·AI 조언 성격의 내용은 수행된 결과로 바꾸지 않고 제한적으로만 반영했다."
+        }
+      ],
+      "issues": [],
+      "review_policy": "approved-facts-v1",
+      "review_selection_bindings": []
+    },
+    "reviews": [
+      {
+        "checks": [
+          {
+            "item_id": "ri_comp_5",
+            "verdict": "met",
+            "paragraph_ids": [
+              "sec_components_p1",
+              "sec_components_p2",
+              "sec_components_p3",
+              "sec_components_p4",
+              "sec_components_p5",
+              "sec_components_p6"
+            ],
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00292",
+              "E00293",
+              "E00294",
+              "E00296",
+              "E00297",
+              "E00301",
+              "E00295",
+              "E00309",
+              "Hefd7e87bb735_67",
+              "E00299",
+              "E00304",
+              "E00306",
+              "E00307",
+              "E00361",
+              "E00368",
+              "E00375"
+            ],
+            "quote": "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+            "paragraph_quotes": [
+              "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+              "평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연(Max Spike)은 No-Pin이 8.8~11.6ms로 치명적이었고 Pinned Memory는 1.64ms로 극도로 안정적이었다. 지터도 No-Pin 118μs, Pinned 47μs로 Pinned가 더 안정적이었다. 이는 No-Pin이 평소 CPU L1/L2 캐시 복사로 빠르지만, OS 페이징 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 스파이크가 발생할 수 있고, Pinned는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장하기 때문이다. [근거:E00292,E00293,E00294,E00296]",
+              "1KB급 작은 데이터에서는 이 차이가 더 뚜렷하다. Pinned는 매 루프마다 DMA 디스크립터 생성·큐 제출로 약 1.0~1.5μs의 오버헤드가 발생하고, 920,000회 누적 시 약 1.38초에 이른다. 반면 No-Pin은 드라이버가 하드웨어 DMA를 부르지 않고 CPU 캐시로 내부 즉시 복사해 1회 약 0.02~0.05μs(20~50ns)에 끝나며, 누적 오버헤드는 약 0.03초 수준이다. 즉 작은 데이터에서는 대역폭보다 셋업 지연이 지배해 Pinned의 평균 전송 속도가 Pageable 대비 약 1.4% 미세하게 낮게 측정될 수 있다. [근거:E00297,E00301,E00295]",
+              "평균값(n=920000) 기준으로 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 비교하면 hostRegister(323μs, 5.188μs, 1.117μs)와 hostAlloc(322μs, 5.351μs, 1.142μs)는 유사한 수준이고, noPinning(314μs, 4.932μs, 340ns)은 memcpy 복사 시간에서 특히 빨랐다. 다만 총 시간만 보면 No-Pin이 빨라 보여도 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다. No-Pin의 최대 지연은 8.80~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned는 최대 지연 1.64ms, 지터 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00309,Hefd7e87bb735_67,E00299]",
+              "실시간 무선 안테나 선택 시스템처럼 1ms 통신 데드라인이 중요한 환경에서는 Pageable 메모리의 최대 11.6ms 지연 스파이크가 치명적이므로, Pinned Memory 도입이 필수적이라고 판단되었다. 다만 cudaMemcpyAsync 호출 시간 측정에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 2copy에서 1copy로 변경해 고정 셋업 비용이 줄었을 것으로 기대했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없었다. 이 때문에 pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리되었다. [근거:E00304,E00306,E00307]",
+              "메모리 전송 방식은 cudaHostRegister, cudaHostAlloc(Pinned), No Pinning으로 구분해 비교하였다. 관측 결과 No-Pin이 평균 속도에서는 빠르지만 최대 지연 스파이크와 지터가 크고, Pinned는 최악 지연(WCET)과 지터에서 더 안정적이었다. 1KB급 작은 데이터에서는 DMA 셋업 오버헤드가 누적되어 CPU 캐시 복사의 이득이 역전되는 양상이 나타났다. 이러한 관찰은 실시간성 관점에서 Pinned 도입의 필요성을 판단하는 근거로 사용된다. [근거:E00361,E00368,E00375]"
+            ],
+            "guideline_ids": [
+              "ref2_methods_required_1",
+              "ref2_methods_required_2"
+            ],
+            "used_non_candidate_evidence_ids": [
+              "Hefd7e87bb735_67"
+            ],
+            "unused_candidate_evidence_ids": [
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00298",
+              "E00300",
+              "E00303",
+              "E00305",
+              "E00308",
+              "E00320",
+              "E00337",
+              "E00358",
+              "E00374"
+            ]
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "sec_components",
+            "reference_id": "ref1_methods",
+            "verdict": "not_visible",
+            "paragraph_ids": [
+              "sec_components_p1",
+              "sec_components_p2",
+              "sec_components_p3",
+              "sec_components_p4",
+              "sec_components_p5",
+              "sec_components_p6"
+            ],
+            "reason": "ref1_methods는 실험 환경·데이터 구성·모델 구조·학습 설정 등 재현 가능한 서술 역할을 가지나, sec_components는 메모리 전송 방식 비교와 안정성 관찰에 집중되어 있어 ref1_methods의 핵심 서술 역할이 이 절에서 직접 드러나지 않는다.",
+            "quote": "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+            "paragraph_quotes": [
+              "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+              "평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연(Max Spike)은 No-Pin이 8.8~11.6ms로 치명적이었고 Pinned Memory는 1.64ms로 극도로 안정적이었다. 지터도 No-Pin 118μs, Pinned 47μs로 Pinned가 더 안정적이었다. 이는 No-Pin이 평소 CPU L1/L2 캐시 복사로 빠르지만, OS 페이징 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 스파이크가 발생할 수 있고, Pinned는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장하기 때문이다. [근거:E00292,E00293,E00294,E00296]",
+              "1KB급 작은 데이터에서는 이 차이가 더 뚜렷하다. Pinned는 매 루프마다 DMA 디스크립터 생성·큐 제출로 약 1.0~1.5μs의 오버헤드가 발생하고, 920,000회 누적 시 약 1.38초에 이른다. 반면 No-Pin은 드라이버가 하드웨어 DMA를 부르지 않고 CPU 캐시로 내부 즉시 복사해 1회 약 0.02~0.05μs(20~50ns)에 끝나며, 누적 오버헤드는 약 0.03초 수준이다. 즉 작은 데이터에서는 대역폭보다 셋업 지연이 지배해 Pinned의 평균 전송 속도가 Pageable 대비 약 1.4% 미세하게 낮게 측정될 수 있다. [근거:E00297,E00301,E00295]",
+              "평균값(n=920000) 기준으로 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 비교하면 hostRegister(323μs, 5.188μs, 1.117μs)와 hostAlloc(322μs, 5.351μs, 1.142μs)는 유사한 수준이고, noPinning(314μs, 4.932μs, 340ns)은 memcpy 복사 시간에서 특히 빨랐다. 다만 총 시간만 보면 No-Pin이 빨라 보여도 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다. No-Pin의 최대 지연은 8.80~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned는 최대 지연 1.64ms, 지터 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00309,Hefd7e87bb735_67,E00299]",
+              "실시간 무선 안테나 선택 시스템처럼 1ms 통신 데드라인이 중요한 환경에서는 Pageable 메모리의 최대 11.6ms 지연 스파이크가 치명적이므로, Pinned Memory 도입이 필수적이라고 판단되었다. 다만 cudaMemcpyAsync 호출 시간 측정에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 2copy에서 1copy로 변경해 고정 셋업 비용이 줄었을 것으로 기대했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없었다. 이 때문에 pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리되었다. [근거:E00304,E00306,E00307]",
+              "메모리 전송 방식은 cudaHostRegister, cudaHostAlloc(Pinned), No Pinning으로 구분해 비교하였다. 관측 결과 No-Pin이 평균 속도에서는 빠르지만 최대 지연 스파이크와 지터가 크고, Pinned는 최악 지연(WCET)과 지터에서 더 안정적이었다. 1KB급 작은 데이터에서는 DMA 셋업 오버헤드가 누적되어 CPU 캐시 복사의 이득이 역전되는 양상이 나타났다. 이러한 관찰은 실시간성 관점에서 Pinned 도입의 필요성을 판단하는 근거로 사용된다. [근거:E00361,E00368,E00375]"
+            ]
+          },
+          {
+            "section_id": "sec_components",
+            "reference_id": "ref2_methods",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_components_p1",
+              "sec_components_p2",
+              "sec_components_p3",
+              "sec_components_p4",
+              "sec_components_p5",
+              "sec_components_p6"
+            ],
+            "reason": "비교 구성/조건 정의(ref2_methods_required_1)는 cudaHostRegister/cudaHostAlloc/No Pinning 구분과 각 방식의 관측 특성으로 일부 반영되었다. 그러나 실행 경로와 측정 구간(ref2_methods_required_2)은 이 절에서 cuda stream synchronize·cudaMemcpyAsync·memcpy 복사 시간의 평균값 비교 등으로 일부 언급되지만, 측정 구간·범위·통제 조건이 명시적으로 정리되어 있지 않아 두 필수 항목을 모두 충족한다고 보기 어렵다.",
+            "quote": "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+            "paragraph_quotes": [
+              "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+              "평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연(Max Spike)은 No-Pin이 8.8~11.6ms로 치명적이었고 Pinned Memory는 1.64ms로 극도로 안정적이었다. 지터도 No-Pin 118μs, Pinned 47μs로 Pinned가 더 안정적이었다. 이는 No-Pin이 평소 CPU L1/L2 캐시 복사로 빠르지만, OS 페이징 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 스파이크가 발생할 수 있고, Pinned는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장하기 때문이다. [근거:E00292,E00293,E00294,E00296]",
+              "1KB급 작은 데이터에서는 이 차이가 더 뚜렷하다. Pinned는 매 루프마다 DMA 디스크립터 생성·큐 제출로 약 1.0~1.5μs의 오버헤드가 발생하고, 920,000회 누적 시 약 1.38초에 이른다. 반면 No-Pin은 드라이버가 하드웨어 DMA를 부르지 않고 CPU 캐시로 내부 즉시 복사해 1회 약 0.02~0.05μs(20~50ns)에 끝나며, 누적 오버헤드는 약 0.03초 수준이다. 즉 작은 데이터에서는 대역폭보다 셋업 지연이 지배해 Pinned의 평균 전송 속도가 Pageable 대비 약 1.4% 미세하게 낮게 측정될 수 있다. [근거:E00297,E00301,E00295]",
+              "평균값(n=920000) 기준으로 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 비교하면 hostRegister(323μs, 5.188μs, 1.117μs)와 hostAlloc(322μs, 5.351μs, 1.142μs)는 유사한 수준이고, noPinning(314μs, 4.932μs, 340ns)은 memcpy 복사 시간에서 특히 빨랐다. 다만 총 시간만 보면 No-Pin이 빨라 보여도 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다. No-Pin의 최대 지연은 8.80~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned는 최대 지연 1.64ms, 지터 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00309,Hefd7e87bb735_67,E00299]",
+              "실시간 무선 안테나 선택 시스템처럼 1ms 통신 데드라인이 중요한 환경에서는 Pageable 메모리의 최대 11.6ms 지연 스파이크가 치명적이므로, Pinned Memory 도입이 필수적이라고 판단되었다. 다만 cudaMemcpyAsync 호출 시간 측정에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 2copy에서 1copy로 변경해 고정 셋업 비용이 줄었을 것으로 기대했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없었다. 이 때문에 pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리되었다. [근거:E00304,E00306,E00307]",
+              "메모리 전송 방식은 cudaHostRegister, cudaHostAlloc(Pinned), No Pinning으로 구분해 비교하였다. 관측 결과 No-Pin이 평균 속도에서는 빠르지만 최대 지연 스파이크와 지터가 크고, Pinned는 최악 지연(WCET)과 지터에서 더 안정적이었다. 1KB급 작은 데이터에서는 DMA 셋업 오버헤드가 누적되어 CPU 캐시 복사의 이득이 역전되는 양상이 나타났다. 이러한 관찰은 실시간성 관점에서 Pinned 도입의 필요성을 판단하는 근거로 사용된다. [근거:E00361,E00368,E00375]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "sec_components",
+            "severity": "warning",
+            "paragraph_id": "sec_components_p5",
+            "reason": "sec_components_p5는 pinned 적용 버전의 cudaMemcpyAsync 측정 결과가 일관되지 않았고 마지막 측정에서 nopinned가 더 빠르게 나왔다는 관측을 서술하고 있으나, 이 문장은 E00304·E00306의 관측·해석 범위를 벗어나지 않는 것으로 보인다. 다만 이 절의 다른 문단들이 주로 E00277·E00278·E00292~E00296·E00297·E00299·E00309 등 수치 중심 근거에 의존하는 반면, p5는 결과 일관성 부족과 분석 중단 판단을 함께 담고 있어, 사실 서술과 해석/문맥 진술의 성격이 섞여 있다. 승인 근거상 이 내용이 틀린 것은 아니지만, 문단 내 역할 구분을 더 명확히 할 여지가 있다.",
+            "evidence_ids": [
+              "E00304",
+              "E00306",
+              "E00307"
+            ],
+            "failure_owner": "none",
+            "quote": "실시간 무선 안테나 선택 시스템처럼 1ms 통신 데드라인이 중요한 환경에서는 Pageable 메모리의 최대 11.6ms 지연 스파이크가 치명적이므로, Pinned Memory 도입이 필수적이라고 판단되었다. 다만 cudaMemcpyAsync 호출 시간 측정에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 2copy에서 1copy로 변경해 고정 셋업 비용이 줄었을 것으로 기대했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없었다. 이 때문에 pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리되었다. [근거:E00304,E00306,E00307]"
+          },
+          {
+            "section_id": "sec_components",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 3.5 메모리 전송 방식 비교와 안정성 관찰: 본문 2069자 / 목표 800자 / 허용 상한 1000자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 1,
+          "not_visible": 1,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "ri_comp_5",
+            "verdict": "met",
+            "paragraph_ids": [
+              "sec_components_p1",
+              "sec_components_p2",
+              "sec_components_p3",
+              "sec_components_p4",
+              "sec_components_p5",
+              "sec_components_p6"
+            ],
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00292",
+              "E00293",
+              "E00294",
+              "E00296",
+              "E00297",
+              "E00301",
+              "E00295",
+              "E00309",
+              "Hefd7e87bb735_67",
+              "E00299",
+              "E00304",
+              "E00306",
+              "E00307",
+              "E00361",
+              "E00368",
+              "E00375"
+            ],
+            "quote": "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+            "paragraph_quotes": [
+              "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+              "평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연(Max Spike)은 No-Pin이 8.8~11.6ms로 치명적이었고 Pinned Memory는 1.64ms로 극도로 안정적이었다. 지터도 No-Pin 118μs, Pinned 47μs로 Pinned가 더 안정적이었다. 이는 No-Pin이 평소 CPU L1/L2 캐시 복사로 빠르지만, OS 페이징 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 스파이크가 발생할 수 있고, Pinned는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장하기 때문이다. [근거:E00292,E00293,E00294,E00296]",
+              "1KB급 작은 데이터에서는 이 차이가 더 뚜렷하다. Pinned는 매 루프마다 DMA 디스크립터 생성·큐 제출로 약 1.0~1.5μs의 오버헤드가 발생하고, 920,000회 누적 시 약 1.38초에 이른다. 반면 No-Pin은 드라이버가 하드웨어 DMA를 부르지 않고 CPU 캐시로 내부 즉시 복사해 1회 약 0.02~0.05μs(20~50ns)에 끝나며, 누적 오버헤드는 약 0.03초 수준이다. 즉 작은 데이터에서는 대역폭보다 셋업 지연이 지배해 Pinned의 평균 전송 속도가 Pageable 대비 약 1.4% 미세하게 낮게 측정될 수 있다. [근거:E00297,E00301,E00295]",
+              "평균값(n=920000) 기준으로 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 비교하면 hostRegister(323μs, 5.188μs, 1.117μs)와 hostAlloc(322μs, 5.351μs, 1.142μs)는 유사한 수준이고, noPinning(314μs, 4.932μs, 340ns)은 memcpy 복사 시간에서 특히 빨랐다. 다만 총 시간만 보면 No-Pin이 빨라 보여도 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다. No-Pin의 최대 지연은 8.80~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned는 최대 지연 1.64ms, 지터 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00309,Hefd7e87bb735_67,E00299]",
+              "실시간 무선 안테나 선택 시스템처럼 1ms 통신 데드라인이 중요한 환경에서는 Pageable 메모리의 최대 11.6ms 지연 스파이크가 치명적이므로, Pinned Memory 도입이 필수적이라고 판단되었다. 다만 cudaMemcpyAsync 호출 시간 측정에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 2copy에서 1copy로 변경해 고정 셋업 비용이 줄었을 것으로 기대했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없었다. 이 때문에 pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리되었다. [근거:E00304,E00306,E00307]",
+              "메모리 전송 방식은 cudaHostRegister, cudaHostAlloc(Pinned), No Pinning으로 구분해 비교하였다. 관측 결과 No-Pin이 평균 속도에서는 빠르지만 최대 지연 스파이크와 지터가 크고, Pinned는 최악 지연(WCET)과 지터에서 더 안정적이었다. 1KB급 작은 데이터에서는 DMA 셋업 오버헤드가 누적되어 CPU 캐시 복사의 이득이 역전되는 양상이 나타났다. 이러한 관찰은 실시간성 관점에서 Pinned 도입의 필요성을 판단하는 근거로 사용된다. [근거:E00361,E00368,E00375]"
+            ],
+            "guideline_ids": [
+              "ref2_methods_required_1",
+              "ref2_methods_required_2"
+            ],
+            "used_non_candidate_evidence_ids": [
+              "Hefd7e87bb735_67"
+            ],
+            "unused_candidate_evidence_ids": [
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00298",
+              "E00300",
+              "E00303",
+              "E00305",
+              "E00308",
+              "E00320",
+              "E00337",
+              "E00358",
+              "E00374"
+            ]
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "sec_components",
+            "reference_id": "ref1_methods",
+            "verdict": "not_visible",
+            "paragraph_ids": [
+              "sec_components_p1",
+              "sec_components_p2",
+              "sec_components_p3",
+              "sec_components_p4",
+              "sec_components_p5",
+              "sec_components_p6"
+            ],
+            "reason": "ref1_methods는 실험 환경·데이터 구성·모델 구조·학습 설정을 재현 가능하게 서술하는 역할이지만, sec_components는 CUDA 최적화 구성 요소의 역할·결합 방식·상호작용 관찰을 다루는 섹션이다. 현재 초안 단락은 메모리 전송 방식 비교와 안정성 관찰에 집중되어 있어 ref1_methods의 재현성 서술 역할을 충족하지 않는다.",
+            "quote": "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+            "paragraph_quotes": [
+              "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+              "평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연(Max Spike)은 No-Pin이 8.8~11.6ms로 치명적이었고 Pinned Memory는 1.64ms로 극도로 안정적이었다. 지터도 No-Pin 118μs, Pinned 47μs로 Pinned가 더 안정적이었다. 이는 No-Pin이 평소 CPU L1/L2 캐시 복사로 빠르지만, OS 페이징 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 스파이크가 발생할 수 있고, Pinned는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장하기 때문이다. [근거:E00292,E00293,E00294,E00296]",
+              "1KB급 작은 데이터에서는 이 차이가 더 뚜렷하다. Pinned는 매 루프마다 DMA 디스크립터 생성·큐 제출로 약 1.0~1.5μs의 오버헤드가 발생하고, 920,000회 누적 시 약 1.38초에 이른다. 반면 No-Pin은 드라이버가 하드웨어 DMA를 부르지 않고 CPU 캐시로 내부 즉시 복사해 1회 약 0.02~0.05μs(20~50ns)에 끝나며, 누적 오버헤드는 약 0.03초 수준이다. 즉 작은 데이터에서는 대역폭보다 셋업 지연이 지배해 Pinned의 평균 전송 속도가 Pageable 대비 약 1.4% 미세하게 낮게 측정될 수 있다. [근거:E00297,E00301,E00295]",
+              "평균값(n=920000) 기준으로 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 비교하면 hostRegister(323μs, 5.188μs, 1.117μs)와 hostAlloc(322μs, 5.351μs, 1.142μs)는 유사한 수준이고, noPinning(314μs, 4.932μs, 340ns)은 memcpy 복사 시간에서 특히 빨랐다. 다만 총 시간만 보면 No-Pin이 빨라 보여도 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다. No-Pin의 최대 지연은 8.80~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned는 최대 지연 1.64ms, 지터 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00309,Hefd7e87bb735_67,E00299]",
+              "실시간 무선 안테나 선택 시스템처럼 1ms 통신 데드라인이 중요한 환경에서는 Pageable 메모리의 최대 11.6ms 지연 스파이크가 치명적이므로, Pinned Memory 도입이 필수적이라고 판단되었다. 다만 cudaMemcpyAsync 호출 시간 측정에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 2copy에서 1copy로 변경해 고정 셋업 비용이 줄었을 것으로 기대했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없었다. 이 때문에 pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리되었다. [근거:E00304,E00306,E00307]",
+              "메모리 전송 방식은 cudaHostRegister, cudaHostAlloc(Pinned), No Pinning으로 구분해 비교하였다. 관측 결과 No-Pin이 평균 속도에서는 빠르지만 최대 지연 스파이크와 지터가 크고, Pinned는 최악 지연(WCET)과 지터에서 더 안정적이었다. 1KB급 작은 데이터에서는 DMA 셋업 오버헤드가 누적되어 CPU 캐시 복사의 이득이 역전되는 양상이 나타났다. 이러한 관찰은 실시간성 관점에서 Pinned 도입의 필요성을 판단하는 근거로 사용된다. [근거:E00361,E00368,E00375]"
+            ]
+          },
+          {
+            "section_id": "sec_components",
+            "reference_id": "ref2_methods",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_components_p1",
+              "sec_components_p2",
+              "sec_components_p3",
+              "sec_components_p4",
+              "sec_components_p5",
+              "sec_components_p6"
+            ],
+            "reason": "ref2_methods의 비교 구성·조건 정의 역할은 사용자 승인 범위에서만 반영되었고, 계획·제안·AI 조언 성격의 내용은 수행된 결과로 바꾸지 않았다. 메모리 전송 방식 비교의 구성 정의와 측정 구간 일부는 반영되었으나, 실행 경로·측정 구간의 전체 정의와 조건 통제 범위는 충분히 제시되지 않았다.",
+            "quote": "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+            "paragraph_quotes": [
+              "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+              "평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연(Max Spike)은 No-Pin이 8.8~11.6ms로 치명적이었고 Pinned Memory는 1.64ms로 극도로 안정적이었다. 지터도 No-Pin 118μs, Pinned 47μs로 Pinned가 더 안정적이었다. 이는 No-Pin이 평소 CPU L1/L2 캐시 복사로 빠르지만, OS 페이징 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 스파이크가 발생할 수 있고, Pinned는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장하기 때문이다. [근거:E00292,E00293,E00294,E00296]",
+              "1KB급 작은 데이터에서는 이 차이가 더 뚜렷하다. Pinned는 매 루프마다 DMA 디스크립터 생성·큐 제출로 약 1.0~1.5μs의 오버헤드가 발생하고, 920,000회 누적 시 약 1.38초에 이른다. 반면 No-Pin은 드라이버가 하드웨어 DMA를 부르지 않고 CPU 캐시로 내부 즉시 복사해 1회 약 0.02~0.05μs(20~50ns)에 끝나며, 누적 오버헤드는 약 0.03초 수준이다. 즉 작은 데이터에서는 대역폭보다 셋업 지연이 지배해 Pinned의 평균 전송 속도가 Pageable 대비 약 1.4% 미세하게 낮게 측정될 수 있다. [근거:E00297,E00301,E00295]",
+              "평균값(n=920000) 기준으로 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 비교하면 hostRegister(323μs, 5.188μs, 1.117μs)와 hostAlloc(322μs, 5.351μs, 1.142μs)는 유사한 수준이고, noPinning(314μs, 4.932μs, 340ns)은 memcpy 복사 시간에서 특히 빨랐다. 다만 총 시간만 보면 No-Pin이 빨라 보여도 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다. No-Pin의 최대 지연은 8.80~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned는 최대 지연 1.64ms, 지터 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00309,Hefd7e87bb735_67,E00299]",
+              "실시간 무선 안테나 선택 시스템처럼 1ms 통신 데드라인이 중요한 환경에서는 Pageable 메모리의 최대 11.6ms 지연 스파이크가 치명적이므로, Pinned Memory 도입이 필수적이라고 판단되었다. 다만 cudaMemcpyAsync 호출 시간 측정에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 2copy에서 1copy로 변경해 고정 셋업 비용이 줄었을 것으로 기대했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없었다. 이 때문에 pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리되었다. [근거:E00304,E00306,E00307]",
+              "메모리 전송 방식은 cudaHostRegister, cudaHostAlloc(Pinned), No Pinning으로 구분해 비교하였다. 관측 결과 No-Pin이 평균 속도에서는 빠르지만 최대 지연 스파이크와 지터가 크고, Pinned는 최악 지연(WCET)과 지터에서 더 안정적이었다. 1KB급 작은 데이터에서는 DMA 셋업 오버헤드가 누적되어 CPU 캐시 복사의 이득이 역전되는 양상이 나타났다. 이러한 관찰은 실시간성 관점에서 Pinned 도입의 필요성을 판단하는 근거로 사용된다. [근거:E00361,E00368,E00375]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "sec_components",
+            "severity": "warning",
+            "paragraph_id": "sec_components_p5",
+            "reason": "pinned memory가 더 느린 이유에 대한 분석 마무리와 2copy→1copy 변경 효과 불확실 서술은 관측·해석 기록이지만, 실시간성 관점의 Pinned 도입 필요성 판단과 함께 배치되어 해석 성격이 혼재된다. 문맥·해석 성격의 서술과 관측 결과를 구분해 표기하는 것이 바람직하다.",
+            "evidence_ids": [
+              "E00304",
+              "E00306",
+              "E00307"
+            ],
+            "failure_owner": "none",
+            "quote": "실시간 무선 안테나 선택 시스템처럼 1ms 통신 데드라인이 중요한 환경에서는 Pageable 메모리의 최대 11.6ms 지연 스파이크가 치명적이므로, Pinned Memory 도입이 필수적이라고 판단되었다. 다만 cudaMemcpyAsync 호출 시간 측정에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 2copy에서 1copy로 변경해 고정 셋업 비용이 줄었을 것으로 기대했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없었다. 이 때문에 pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리되었다. [근거:E00304,E00306,E00307]"
+          },
+          {
+            "section_id": "sec_components",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 3.5 메모리 전송 방식 비교와 안정성 관찰: 본문 2069자 / 목표 800자 / 허용 상한 1000자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 1,
+          "not_visible": 1,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "ri_comp_5",
+            "verdict": "met",
+            "paragraph_ids": [
+              "sec_components_p1",
+              "sec_components_p2",
+              "sec_components_p3",
+              "sec_components_p4",
+              "sec_components_p5",
+              "sec_components_p6"
+            ],
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00292",
+              "E00293",
+              "E00294",
+              "E00296",
+              "E00297",
+              "E00301",
+              "E00295",
+              "E00309",
+              "Hefd7e87bb735_67",
+              "E00299",
+              "E00304",
+              "E00306",
+              "E00307",
+              "E00361",
+              "E00368",
+              "E00375"
+            ],
+            "quote": "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+            "paragraph_quotes": [
+              "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+              "평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연(Max Spike)은 No-Pin이 8.8~11.6ms로 치명적이었고 Pinned Memory는 1.64ms로 극도로 안정적이었다. 지터도 No-Pin 118μs, Pinned 47μs로 Pinned가 더 안정적이었다. 이는 No-Pin이 평소 CPU L1/L2 캐시 복사로 빠르지만, OS 페이징 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 스파이크가 발생할 수 있고, Pinned는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장하기 때문이다. [근거:E00292,E00293,E00294,E00296]",
+              "1KB급 작은 데이터에서는 이 차이가 더 뚜렷하다. Pinned는 매 루프마다 DMA 디스크립터 생성·큐 제출로 약 1.0~1.5μs의 오버헤드가 발생하고, 920,000회 누적 시 약 1.38초에 이른다. 반면 No-Pin은 드라이버가 하드웨어 DMA를 부르지 않고 CPU 캐시로 내부 즉시 복사해 1회 약 0.02~0.05μs(20~50ns)에 끝나며, 누적 오버헤드는 약 0.03초 수준이다. 즉 작은 데이터에서는 대역폭보다 셋업 지연이 지배해 Pinned의 평균 전송 속도가 Pageable 대비 약 1.4% 미세하게 낮게 측정될 수 있다. [근거:E00297,E00301,E00295]",
+              "평균값(n=920000) 기준으로 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 비교하면 hostRegister(323μs, 5.188μs, 1.117μs)와 hostAlloc(322μs, 5.351μs, 1.142μs)는 유사한 수준이고, noPinning(314μs, 4.932μs, 340ns)은 memcpy 복사 시간에서 특히 빨랐다. 다만 총 시간만 보면 No-Pin이 빨라 보여도 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다. No-Pin의 최대 지연은 8.80~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned는 최대 지연 1.64ms, 지터 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00309,Hefd7e87bb735_67,E00299]",
+              "실시간 무선 안테나 선택 시스템처럼 1ms 통신 데드라인이 중요한 환경에서는 Pageable 메모리의 최대 11.6ms 지연 스파이크가 치명적이므로, Pinned Memory 도입이 필수적이라고 판단되었다. 다만 cudaMemcpyAsync 호출 시간 측정에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 2copy에서 1copy로 변경해 고정 셋업 비용이 줄었을 것으로 기대했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없었다. 이 때문에 pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리되었다. [근거:E00304,E00306,E00307]",
+              "메모리 전송 방식은 cudaHostRegister, cudaHostAlloc(Pinned), No Pinning으로 구분해 비교하였다. 관측 결과 No-Pin이 평균 속도에서는 빠르지만 최대 지연 스파이크와 지터가 크고, Pinned는 최악 지연(WCET)과 지터에서 더 안정적이었다. 1KB급 작은 데이터에서는 DMA 셋업 오버헤드가 누적되어 CPU 캐시 복사의 이득이 역전되는 양상이 나타났다. 이러한 관찰은 실시간성 관점에서 Pinned 도입의 필요성을 판단하는 근거로 사용된다. [근거:E00361,E00368,E00375]"
+            ],
+            "guideline_ids": [
+              "ref2_methods_required_1",
+              "ref2_methods_required_2"
+            ],
+            "used_non_candidate_evidence_ids": [
+              "Hefd7e87bb735_67"
+            ],
+            "unused_candidate_evidence_ids": [
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00298",
+              "E00300",
+              "E00303",
+              "E00305",
+              "E00308",
+              "E00320",
+              "E00337",
+              "E00358",
+              "E00374"
+            ]
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "sec_components",
+            "reference_id": "ref1_methods",
+            "verdict": "not_visible",
+            "paragraph_ids": [],
+            "reason": "참조 가이드 ref1_methods는 식물 스트레스·촬영·모델 구조·학습 설정 등 이 절과 무관한 도메인의 서술 역할을 정의하므로, sec_components의 CUDA 최적화 구성 요소 서술에 직접 적용되지 않는다.",
+            "quote": "",
+            "paragraph_quotes": []
+          },
+          {
+            "section_id": "sec_components",
+            "reference_id": "ref2_methods",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_components_p1",
+              "sec_components_p2",
+              "sec_components_p3",
+              "sec_components_p4",
+              "sec_components_p5",
+              "sec_components_p6"
+            ],
+            "reason": "비교 구성(cudaHostRegister/cudaHostAlloc/No Pinning)과 측정 구간(전체 실행 시간, Bound/Infer 단계, 동기화·복사 시간, 최대 지연·지터)은 실제 관측 근거로 서술되어 ref2_methods_required_1·2의 방향을 일부 충족한다. 다만 GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않아, 공정 비교를 위한 통제 조건으로 확정하기 어렵다는 한계가 있다. 계획·제안·AI 조언 성격의 내용은 수행된 결과로 바꾸지 않고 제한적으로만 반영했다.",
+            "quote": "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+            "paragraph_quotes": [
+              "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]",
+              "평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연(Max Spike)은 No-Pin이 8.8~11.6ms로 치명적이었고 Pinned Memory는 1.64ms로 극도로 안정적이었다. 지터도 No-Pin 118μs, Pinned 47μs로 Pinned가 더 안정적이었다. 이는 No-Pin이 평소 CPU L1/L2 캐시 복사로 빠르지만, OS 페이징 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 스파이크가 발생할 수 있고, Pinned는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장하기 때문이다. [근거:E00292,E00293,E00294,E00296]",
+              "1KB급 작은 데이터에서는 이 차이가 더 뚜렷하다. Pinned는 매 루프마다 DMA 디스크립터 생성·큐 제출로 약 1.0~1.5μs의 오버헤드가 발생하고, 920,000회 누적 시 약 1.38초에 이른다. 반면 No-Pin은 드라이버가 하드웨어 DMA를 부르지 않고 CPU 캐시로 내부 즉시 복사해 1회 약 0.02~0.05μs(20~50ns)에 끝나며, 누적 오버헤드는 약 0.03초 수준이다. 즉 작은 데이터에서는 대역폭보다 셋업 지연이 지배해 Pinned의 평균 전송 속도가 Pageable 대비 약 1.4% 미세하게 낮게 측정될 수 있다. [근거:E00297,E00301,E00295]",
+              "평균값(n=920000) 기준으로 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 비교하면 hostRegister(323μs, 5.188μs, 1.117μs)와 hostAlloc(322μs, 5.351μs, 1.142μs)는 유사한 수준이고, noPinning(314μs, 4.932μs, 340ns)은 memcpy 복사 시간에서 특히 빨랐다. 다만 총 시간만 보면 No-Pin이 빨라 보여도 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 유리하다. No-Pin의 최대 지연은 8.80~11.6ms, 지터(표준편차)는 118.94μs이고, Pinned는 최대 지연 1.64ms, 지터 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. [근거:E00309,Hefd7e87bb735_67,E00299]",
+              "실시간 무선 안테나 선택 시스템처럼 1ms 통신 데드라인이 중요한 환경에서는 Pageable 메모리의 최대 11.6ms 지연 스파이크가 치명적이므로, Pinned Memory 도입이 필수적이라고 판단되었다. 다만 cudaMemcpyAsync 호출 시간 측정에서는 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 2copy에서 1copy로 변경해 고정 셋업 비용이 줄었을 것으로 기대했으나 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없었다. 이 때문에 pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리되었다. [근거:E00304,E00306,E00307]",
+              "메모리 전송 방식은 cudaHostRegister, cudaHostAlloc(Pinned), No Pinning으로 구분해 비교하였다. 관측 결과 No-Pin이 평균 속도에서는 빠르지만 최대 지연 스파이크와 지터가 크고, Pinned는 최악 지연(WCET)과 지터에서 더 안정적이었다. 1KB급 작은 데이터에서는 DMA 셋업 오버헤드가 누적되어 CPU 캐시 복사의 이득이 역전되는 양상이 나타났다. 이러한 관찰은 실시간성 관점에서 Pinned 도입의 필요성을 판단하는 근거로 사용된다. [근거:E00361,E00368,E00375]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "sec_components",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 3.5 메모리 전송 방식 비교와 안정성 관찰: 본문 2069자 / 목표 800자 / 허용 상한 1000자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+            "original_severity": "error",
+            "deferred": true
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": true,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 1,
+          "not_visible": 1,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+        "content_completion": {
+          "policy": "content-warning-v1",
+          "status": "needs_attention",
+          "revisions": 2,
+          "reason": "revision_limit"
+        },
+        "content_warnings": [
+          {
+            "section_id": "sec_components",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 3.5 메모리 전송 방식 비교와 안정성 관찰: 본문 2069자 / 목표 800자 / 허용 상한 1000자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-sec_components-p4"
+          }
+        ],
+        "content_status": "needs_attention",
+        "content_approved": false
+      }
+    ],
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    }
+  }
+}

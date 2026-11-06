@@ -1,0 +1,1261 @@
+{
+  "sha256": "643fb6082542fac359b1a4a942d89431b9ae2401863bf999fb675ad11b73b886",
+  "value": {
+    "input_fingerprint": "cd440846589f2abe26e61639bc58dc4b2329f30112e3ec48e768ad1ee5978f1f",
+    "sections": {
+      "S_intro": {
+        "parts": {
+          "p0": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 검증 작업은 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]\n\n실시간성 관점은 검증 지연을 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 조건과 연결된다. 이 범위는 실시간성을 확인하는 기준으로 제시되지만, 실제 달성 여부나 측정 근거는 이 진술만으로 제시되지 않는다. 이러한 시간 제약 아래에서 메모리 전송 방식의 차이는 실시간 동작의 안정성에 영향을 주는 요소로 다뤄진다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 훼손할 가능성이 지적된다. 반면 Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 부담하는 대신 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00101,E00294]",
+          "p1": "CUDA 기반 구현의 동기는 두 가지로 정리된다. 첫째, CUDA 프로그래밍 역량을 활용할 수 있다는 점, 둘째, 안테나 신경망 검증 알고리즘을 하드웨어에 구현하여 실시간 검증에 관심을 두고 있으며, 하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다는 점이다. 이 관점은 본 연구가 단순한 알고리즘 이식이 아니라, 실시간 검증 가능성을 염두에 둔 구현·최적화 작업임을 보여준다. [근거:E00348]",
+          "p2": "이를 위해 본 연구는 CROWN을 구현한 C++ 프로그램을 대상으로 GPU 최적화 모드와 하이브리드 실행 방식을 적용하였다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서는 CROWN 검증 실행 시간이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100 ms 감소한 값이지만 여전히 CPU보다 느리다고 평가되었다. 이후 행렬곱 연산만 GPU로 옮기는 하이브리드 프로그램을 시도하는 등 최적화 방향을 추가로 탐색하였다. 이러한 결과는 단일 실행 결과이며, CPU 버전과의 정량 비교나 반복 측정 기반 통계는 현재 자료에 포함되지 않는다. [근거:E00027,E00029,E00030]\n\n본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 Pageable 메모리 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 Pageable 메모리의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 Pageable 메모리의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 Pageable 메모리의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]"
+        }
+      }
+    },
+    "raw_review": {
+      "review_policy": "editorial-v1",
+      "issues": [
+        {
+          "section_id": "S_intro",
+          "paragraph_id": "S_intro_p2",
+          "category": "duplication",
+          "severity": "error",
+          "reason": "S_intro_p2와 S_intro_p7은 연구 배경, 기존 CPU 중심 CROWN의 한계, 실시간성 관점의 문제의식을 거의 동일하게 반복한다. 두 문단 중 한쪽의 서술 범위를 명확히 구분하거나 통합해야 한다. (finding-0 미해결)"
+        },
+        {
+          "section_id": "S_intro",
+          "paragraph_id": "S_intro_p3",
+          "category": "flow",
+          "severity": "error",
+          "reason": "실시간성 기준(마이크로초~수 밀리초)을 먼저 제시한 뒤 메모리 전송 방식 차이로 넘어가는 연결이 여전히 abrupt하다. 기준 제시와 메모리 사례 사이의 논리적 다리를 보강해야 한다. (finding-1 미해결)"
+        },
+        {
+          "section_id": "S_intro",
+          "paragraph_id": "S_intro_p8",
+          "category": "duplication",
+          "severity": "error",
+          "reason": "S_intro_p8은 S_intro_p3과 동일한 No-Pin/Pageable 대 Pinned Memory의 지연 스파이크, WCET 1.64ms, 결정론적 안정성 비교를 다시 반복한다. 서론 내에서 동일 비교가 중복되어 흐름이 끊긴다. (finding-3 미해결)"
+        },
+        {
+          "section_id": "S_intro",
+          "paragraph_id": "S_intro_p7",
+          "category": "flow",
+          "severity": "warning",
+          "reason": "CUDA 구현 동기가 ‘하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다’처럼 자기참조적으로 읽힌다. 동기와 근거의 관계가 모호하므로 표현을 다듬는 것이 좋다. (finding-5 미해결)"
+        },
+        {
+          "section_id": "S_intro",
+          "paragraph_id": "S_intro_p8",
+          "category": "flow",
+          "severity": "warning",
+          "reason": "GPU OPTIMIZED 모드의 229.691800 ms와 ‘이전 대비 약 100 ms 감소’가 갑자기 제시되어 비교 기준이 불분명하다. 무엇을 기준으로 감소한 값인지 연결 문장을 보강하면 흐름이 나아진다. (finding-6 미해결)"
+        },
+        {
+          "section_id": "S_intro",
+          "paragraph_id": "none",
+          "category": "flow",
+          "severity": "warning",
+          "reason": "서론의 구성이 (1) 배경·한계·문제의식, (2) 실시간성 기준과 메모리 사례, (3) CUDA 구현 동기와 최적화 시도, (4) 기여 요약 순으로 엮이지만, p2·p7의 중복과 p3·p8의 메모리 비교 반복 때문에 동일 내용이 여러 차례 재진입한다. 중복을 정리한 뒤 문제 제기에서 기여 요약으로 이어지는 순서를 한 번 더 정돈하면 서론 흐름이 안정된다. (finding-8 미해결)"
+        }
+      ]
+    },
+    "reviews": [
+      {
+        "review_policy": "editorial-v1",
+        "review_kind": "editorial",
+        "issues": [
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p2",
+            "category": "duplication",
+            "severity": "error",
+            "reason": "S_intro_p6과 연구 배경·기존 CPU 중심 CROWN의 한계·실시간성 관점의 문제의식이 거의 동일하게 반복된다. 두 문단을 통합하거나 한쪽의 서술 범위를 명확히 구분해야 한다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 신경망 검증팀도 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p3",
+            "category": "flow",
+            "severity": "error",
+            "reason": "실시간성 기준(마이크로초~수 밀리초)을 먼저 제시한 뒤 메모리 전송 방식 차이로 넘어가는 연결이 abrupt하다. 기준 제시와 메모리 사례 사이의 논리적 다리를 보강해야 한다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "실시간성 관점은 검증 지연을 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 조건과 연결된다. 이 범위는 실시간성을 확인하는 기준으로 제시되지만, 실제 달성 여부나 측정 근거는 이 진술만으로 제시되지 않는다. 이와 별도로 메모리 전송 방식의 차이는 실시간 동작의 안정성에 영향을 주는 요소로 다뤄진다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 훼손할 가능성이 지적된다. 반면 Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 부담하는 대신 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00101,E00294]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p4",
+            "category": "duplication",
+            "severity": "error",
+            "reason": "S_intro_p3에서 이미 다룬 No-Pin/Pageable 대 Pinned Memory의 지연 스파이크, WCET 1.64ms, 지터 안정화 내용을 거의 재진술한다. p3와 p4 중 한 곳으로 통합해야 한다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "이러한 비교는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 정리로 이어진다. 이에 따라 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라는 결론이 제시된다. 다만 이 결론은 메모리 전송 방식의 지연 특성과 안정성 비교에 기반한 해석이며, CROWN 검증 전체의 실시간 가속 성과를 직접 입증하는 수치나 실험 결과로 대체되지는 않는다. [근거:E00296]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p8",
+            "category": "duplication",
+            "severity": "error",
+            "reason": "S_intro_p3·p4와 동일한 메모리 전송 방식 비교와 결론(Pinned Memory 도입 필수)을 다시 반복한다. 서론 내에서 동일 비교가 세 번 등장해 흐름이 중복된다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "실시간성 관점의 대조에서는 메모리 전송 방식의 차이가 중요한 사례로 제시된다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 파괴할 가능성이 있다. 반면 Pinned Memory 방식은 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. 이러한 특성은 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 비교와도 일치한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라고 판단된다. [근거:E00294,E00296]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p2",
+            "category": "terminology",
+            "severity": "warning",
+            "reason": "‘신경망 검증팀’이라는 표현이 갑자기 등장해 주어가 불분명하다. 누구를 가리키는지 문맥상 명확하지 않으므로 표현을 정리하거나 주어를 명시하는 것이 좋다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 신경망 검증팀도 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p7",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "CUDA 구현 동기가 ‘하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다’처럼 자기참조적으로 읽힌다. 동기와 근거의 관계가 모호하므로 표현을 다듬는 것이 좋다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "CUDA 기반 구현의 동기는 두 가지로 정리된다. 첫째, CUDA 프로그래밍 역량을 활용할 수 있다는 점, 둘째, 안테나 신경망 검증 알고리즘을 하드웨어에 구현하여 실시간 검증에 관심을 두고 있으며, 하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다는 점이다. 이 관점은 본 연구가 단순한 알고리즘 이식이 아니라, 실시간 검증 가능성을 염두에 둔 구현·최적화 작업임을 보여준다. [근거:E00348]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p11",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "GPU OPTIMIZED 모드의 229.691800 ms와 ‘이전 대비 약 100 ms 감소’가 갑자기 제시되어 비교 기준이 불분명하다. 무엇을 기준으로 감소한 값인지 연결 문장을 보강하면 흐름이 나아진다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "이를 위해 본 연구는 CROWN을 구현한 C++ 프로그램을 대상으로 GPU 최적화 모드와 하이브리드 실행 방식을 적용하였다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서는 CROWN 검증 실행 시간이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100 ms 감소한 값이지만 여전히 CPU보다 느리다고 평가되었다. 이후 행렬곱 연산만 GPU로 옮기는 하이브리드 프로그램을 시도하는 등 최적화 방향을 추가로 탐색하였다. 이러한 결과는 단일 실행 결과이며, CPU 버전과의 정량 비교나 반복 측정 기반 통계는 현재 자료에 포함되지 않는다. [근거:E00027,E00029,E00030]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p12",
+            "category": "terminology",
+            "severity": "warning",
+            "reason": "‘No Pinning’과 앞 문단의 ‘No-Pin/Pageable’ 표기가 혼용되어 같은 개념을 가리키는지 즉시 판단하기 어렵다. 용어 표기를 통일하는 것이 좋다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "none",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "서론의 구성이 (1) 배경·한계·문제의식, (2) 실시간성 기준과 메모리 사례, (3) CUDA 구현 동기와 최적화 시도, (4) 기여 요약 순으로 엮이지만, p2·p6의 중복과 p3·p4·p8의 메모리 비교 반복 때문에 동일 내용이 여러 차례 재진입한다. 중복을 정리한 뒤 문제 제기에서 기여 요약으로 이어지는 순서를 한 번 더 정돈하면 서론 흐름이 안정된다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": ""
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "none",
+            "part": "p2",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "editor",
+            "category": "style",
+            "validation_code": "composition_style",
+            "reason": "S_intro/p2: 기록자·자료 중심 표현 ['연구일지에 기록']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요."
+          }
+        ],
+        "content_warnings": [
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "E00296의 11.6ms·1.64ms·60% 지터 안정화·Pinned Memory 필수성 결론을 CROWN 검증 전체 실시간 가속 성과로 오인하지 않도록, 해당 결론이 메모리 전송 방식 비교에 기반한 해석임을 명시한 점은 적절하다.",
+            "evidence_ids": [
+              "E00296"
+            ],
+            "failure_owner": "none",
+            "quote": "이러한 비교는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 정리로 이어진다. 이에 따라 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라는 결론이 제시된다. 다만 이 결론은 메모리 전송 방식의 지연 특성과 안정성 비교에 기반한 해석이며, CROWN 검증 전체의 실시간 가속 성과를 직접 입증하는 수치나 실험 결과로 대체되지는 않는다. [근거:E00296]",
+            "stage": "subsection-S_intro-p0"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "S_intro_p3은 E00294와 E00296의 수치·조건을 인용하고 있으나, 해당 근거의 evidence_limitations에 측정 조건·재현 조건·데드라인 맥락 미기재가 명시되어 있다. 본문은 이를 연구 노트 기반 비교 설명으로 서술하고 있어, 실제 측정 결과로 단정하지 않는 한 오류라고 보기 어렵다. 다만 '1ms 무선 통신 데드라인 파괴' 등 시스템 맥락이 근거에서 충분히 특정되지 않으므로, 본문에서 이를 확정된 시스템 사양처럼 서술하지 않도록 주의가 필요하다.",
+            "evidence_ids": [
+              "E00294",
+              "E00296"
+            ],
+            "failure_owner": "none",
+            "quote": "실시간성 관점의 대조에서는 메모리 전송 방식의 차이가 중요한 사례로 제시된다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 파괴할 가능성이 있다. 반면 Pinned Memory 방식은 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. 이러한 특성은 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 비교와도 일치한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라고 판단된다. [근거:E00294,E00296]",
+            "stage": "subsection-S_intro-p1"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "연구 목표와 기여 요약이 사용자 승인 범위의 설명으로만 반영되었고, 원문에 직접 명시된 주요 목표·기여 수치가 확인되지 않는다. 이 점은 introduction_Q4의 승인 범위 및 unresolved 항목과 일치하므로, 본문에서 '원문에 직접 명시된 수치·실험 결과로 뒷받침되지 않는다'는 한계를 함께 서술한 것은 적절하다.",
+            "evidence_ids": [
+              "U209b56cf1c8267aea36d",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p2",
+            "reason": "GPU OPTIMIZED 모드의 실행 시간 229.691800 ms와 '이전 대비 약 100 ms 감소', '여전히 CPU보다 느리다'는 평가가 함께 서술되었다. 이 중 '약 100 ms 감소'와 CPU 대비 느리다는 판단은 기록자의 정성적 평가이며, CPU 버전의 정확한 수치나 반복 측정 통계는 현재 자료에 없다는 한계가 있다. 본문은 이 한계를 함께 명시했으므로 사실 연결 자체는 틀리지 않으나, 해석성 진술을 관측 결과와 같은 무게로 읽지 않도록 주의가 필요하다.",
+            "evidence_ids": [
+              "E00027",
+              "E00029",
+              "E00030"
+            ],
+            "failure_owner": "none",
+            "quote": "이를 위해 본 연구는 CROWN을 구현한 C++ 프로그램을 대상으로 GPU 최적화 모드와 하이브리드 실행 방식을 적용하였다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서는 CROWN 검증 실행 시간이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100 ms 감소한 값이지만 여전히 CPU보다 느리다고 평가되었다. 이후 행렬곱 연산만 GPU로 옮기는 하이브리드 프로그램을 시도하는 등 최적화 방향을 추가로 탐색하였다. 이러한 결과는 단일 실행 결과이며, CPU 버전과의 정량 비교나 반복 측정 기반 통계는 현재 자료에 포함되지 않는다. [근거:E00027,E00029,E00030]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "cudaHostRegister와 No Pinning의 전체 실행 시간 차이(787.88초 대 776.70초, 약 1.4%, 약 11초)와 1회당 약 12 μs 차이, Bound/Infer 단계별 역전 현상은 figure 캡션에 기록된 수치와 해석을 인용한 것으로 보인다. 다만 현재 페이지는 반복 측정 통계나 조건별 분리 측정을 포함하지 않으며, Bound+Infer 합산과 전체 시간 사이에 약 1.9초 차이가 있다는 한계가 있다. 본문은 ablation study 미수행을 한계로 언급했지만, 단계별 수치의 합산 불일치나 반복 측정 부재까지 명시적으로 한계화했는지는 문장만으로 완전히 드러나지 않는다.",
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "GPU 클록 고정 후 재실험 계획, ScopedGpuClockLock 작성, CUDA 강의 19장 참고, Persistence mode 및 클록 고정 명령어 등은 계획·제안·명령어 확인 성격의 기록으로, 수행된 비교 결과나 공정성 조건으로 바꾸지 않도록 주의가 필요하다. 본문은 이를 연구 흐름의 일부로 나열했으나, 클록 고정 후 실제 측정 결과가 이 문단만으로 제시되지는 않는다는 점을 더 분명히 구분할 필요가 있다.",
+            "evidence_ids": [
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "style",
+            "validation_code": "composition_style",
+            "reason": "S_intro/p0: 기록자·자료 중심 표현 ['연구일지에 기록']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-S_intro-p2"
+          }
+        ],
+        "content_status": "needs_attention",
+        "content_approved": false,
+        "approved": false,
+        "checks": [
+          {
+            "item_id": "RI_intro_1",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_intro_p1",
+              "S_intro_p2",
+              "S_intro_p3"
+            ],
+            "evidence_ids": [
+              "E00348",
+              "U209b56cf1c8267aea36d",
+              "E00101",
+              "E00294",
+              "E00296"
+            ],
+            "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 신경망 검증팀도 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]",
+            "paragraph_quotes": [
+              "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 신경망 검증팀도 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]",
+              "실시간성 관점은 검증 지연을 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 조건과 연결된다. 이 범위는 실시간성을 확인하는 기준으로 제시되지만, 실제 달성 여부나 측정 근거는 이 진술만으로 제시되지 않는다. 이와 별도로 메모리 전송 방식의 차이는 실시간 동작의 안정성에 영향을 주는 요소로 다뤄진다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 훼손할 가능성이 지적된다. 반면 Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 부담하는 대신 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00101,E00294]",
+              "이러한 비교는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 정리로 이어진다. 이에 따라 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라는 결론이 제시된다. 다만 이 결론은 메모리 전송 방식의 지연 특성과 안정성 비교에 기반한 해석이며, CROWN 검증 전체의 실시간 가속 성과를 직접 입증하는 수치나 실험 결과로 대체되지는 않는다. [근거:E00296]"
+            ],
+            "guideline_ids": [
+              "ref1_introduction_required_1"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [],
+            "inherited": true,
+            "verification_scope": "subsection"
+          },
+          {
+            "item_id": "RI_intro_2",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_intro_p1",
+              "S_intro_p2",
+              "S_intro_p3"
+            ],
+            "evidence_ids": [
+              "E00348",
+              "E00294",
+              "E00296",
+              "U9ff240a30b03c6835449"
+            ],
+            "quote": "신경망 검증은 배포 환경에서 모델의 안전 범위를 확인하는 실용적 절차이나, CROWN 기반 검증은 연산량이 커서 실시간 환경에서 대규모 연산을 충족하기 어렵다. 기존 연구는 CROWN을 CPU 환경에서만 실행해 왔으며, 그 결과 검증은 오프라인 환경에서 제한적으로만 빠르게 수행되는 상황에 머물렀다. 본 연구는 이러한 한계를 전제로, 실시간 환경에서 대규모 연산을 충족할 수 있는지를 확인하는 데 초점을 둔다. 이를 위해 CROWN 검증의 CUDA 기반 구현과 최적화 과정을 통해 네트워크 환경의 요구 속도에 대응할 수 있는지 검토한다. [근거:U9ff240a30b03c6835449,E00348]",
+            "paragraph_quotes": [
+              "신경망 검증은 배포 환경에서 모델의 안전 범위를 확인하는 실용적 절차이나, CROWN 기반 검증은 연산량이 커서 실시간 환경에서 대규모 연산을 충족하기 어렵다. 기존 연구는 CROWN을 CPU 환경에서만 실행해 왔으며, 그 결과 검증은 오프라인 환경에서 제한적으로만 빠르게 수행되는 상황에 머물렀다. 본 연구는 이러한 한계를 전제로, 실시간 환경에서 대규모 연산을 충족할 수 있는지를 확인하는 데 초점을 둔다. 이를 위해 CROWN 검증의 CUDA 기반 구현과 최적화 과정을 통해 네트워크 환경의 요구 속도에 대응할 수 있는지 검토한다. [근거:U9ff240a30b03c6835449,E00348]",
+              "CUDA 기반 구현의 동기는 두 가지로 정리된다. 첫째, CUDA 프로그래밍 역량을 활용할 수 있다는 점, 둘째, 안테나 신경망 검증 알고리즘을 하드웨어에 구현하여 실시간 검증에 관심을 두고 있으며, 하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다는 점이다. 이 관점은 본 연구가 단순한 알고리즘 이식이 아니라, 실시간 검증 가능성을 염두에 둔 구현·최적화 작업임을 보여준다. [근거:E00348]",
+              "실시간성 관점의 대조에서는 메모리 전송 방식의 차이가 중요한 사례로 제시된다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 파괴할 가능성이 있다. 반면 Pinned Memory 방식은 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. 이러한 특성은 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 비교와도 일치한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라고 판단된다. [근거:E00294,E00296]"
+            ],
+            "guideline_ids": [],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [],
+            "inherited": true,
+            "verification_scope": "subsection"
+          },
+          {
+            "item_id": "RI_intro_3",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_intro_p3"
+            ],
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "U209b56cf1c8267aea36d"
+            ],
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "paragraph_quotes": [
+              "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]"
+            ],
+            "guideline_ids": [
+              "ref1_introduction_required_3"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [],
+            "inherited": true,
+            "verification_scope": "subsection"
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "S_intro",
+            "reference_id": "ref1_introduction",
+            "verdict": "not_visible",
+            "paragraph_ids": [],
+            "reason": "ref1_introduction은 본 연구 초안에 직접 인용되지 않았으며, 해당 reference의 필수 항목 충족 여부를 판단할 수 없다.",
+            "quote": "",
+            "paragraph_quotes": [],
+            "inherited": true
+          },
+          {
+            "section_id": "S_intro",
+            "reference_id": "ref2_introduction",
+            "verdict": "not_visible",
+            "paragraph_ids": [],
+            "reason": "ref2_introduction은 본 연구 초안에 직접 인용되지 않았으며, 해당 reference의 필수 항목 충족 여부를 판단할 수 없다.",
+            "quote": "",
+            "paragraph_quotes": [],
+            "inherited": true
+          }
+        ],
+        "editorial_warnings": [
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p2",
+            "category": "terminology",
+            "severity": "warning",
+            "reason": "‘신경망 검증팀’이라는 표현이 갑자기 등장해 주어가 불분명하다. 누구를 가리키는지 문맥상 명확하지 않으므로 표현을 정리하거나 주어를 명시하는 것이 좋다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 신경망 검증팀도 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]",
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p7",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "CUDA 구현 동기가 ‘하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다’처럼 자기참조적으로 읽힌다. 동기와 근거의 관계가 모호하므로 표현을 다듬는 것이 좋다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "CUDA 기반 구현의 동기는 두 가지로 정리된다. 첫째, CUDA 프로그래밍 역량을 활용할 수 있다는 점, 둘째, 안테나 신경망 검증 알고리즘을 하드웨어에 구현하여 실시간 검증에 관심을 두고 있으며, 하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다는 점이다. 이 관점은 본 연구가 단순한 알고리즘 이식이 아니라, 실시간 검증 가능성을 염두에 둔 구현·최적화 작업임을 보여준다. [근거:E00348]",
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p11",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "GPU OPTIMIZED 모드의 229.691800 ms와 ‘이전 대비 약 100 ms 감소’가 갑자기 제시되어 비교 기준이 불분명하다. 무엇을 기준으로 감소한 값인지 연결 문장을 보강하면 흐름이 나아진다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "이를 위해 본 연구는 CROWN을 구현한 C++ 프로그램을 대상으로 GPU 최적화 모드와 하이브리드 실행 방식을 적용하였다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서는 CROWN 검증 실행 시간이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100 ms 감소한 값이지만 여전히 CPU보다 느리다고 평가되었다. 이후 행렬곱 연산만 GPU로 옮기는 하이브리드 프로그램을 시도하는 등 최적화 방향을 추가로 탐색하였다. 이러한 결과는 단일 실행 결과이며, CPU 버전과의 정량 비교나 반복 측정 기반 통계는 현재 자료에 포함되지 않는다. [근거:E00027,E00029,E00030]",
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p12",
+            "category": "terminology",
+            "severity": "warning",
+            "reason": "‘No Pinning’과 앞 문단의 ‘No-Pin/Pageable’ 표기가 혼용되어 같은 개념을 가리키는지 즉시 판단하기 어렵다. 용어 표기를 통일하는 것이 좋다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "none",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "서론의 구성이 (1) 배경·한계·문제의식, (2) 실시간성 기준과 메모리 사례, (3) CUDA 구현 동기와 최적화 시도, (4) 기여 요약 순으로 엮이지만, p2·p6의 중복과 p3·p4·p8의 메모리 비교 반복 때문에 동일 내용이 여러 차례 재진입한다. 중복을 정리한 뒤 문제 제기에서 기여 요약으로 이어지는 순서를 한 번 더 정돈하면 서론 흐름이 안정된다.",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "",
+            "stage": "section-S_intro"
+          }
+        ],
+        "editorial_status": "needs_revision",
+        "required_content_coverage": {
+          "met": 3,
+          "total": 3,
+          "value": 1.0,
+          "scope": "inherited_subsection_reviews",
+          "rechecked": false
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 0,
+          "not_visible": 2,
+          "total": 2,
+          "scope": "inherited_subsection_reviews",
+          "rechecked": false
+        },
+        "assessment": "Editorial quality only; content/reference judgments are inherited from child reviews."
+      },
+      {
+        "review_policy": "editorial-v1",
+        "review_kind": "editorial",
+        "issues": [
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p2",
+            "category": "duplication",
+            "severity": "error",
+            "reason": "S_intro_p2와 S_intro_p7은 연구 배경, 기존 CPU 중심 CROWN의 한계, 실시간성 관점의 문제의식을 거의 동일하게 반복한다. 두 문단 중 한쪽의 서술 범위를 명확히 구분하거나 통합해야 한다. (finding-0 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 검증 작업은 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p3",
+            "category": "flow",
+            "severity": "error",
+            "reason": "실시간성 기준(마이크로초~수 밀리초)을 먼저 제시한 뒤 메모리 전송 방식 차이로 넘어가는 연결이 여전히 abrupt하다. 기준 제시와 메모리 사례 사이의 논리적 다리를 보강해야 한다. (finding-1 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "실시간성 관점은 검증 지연을 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 조건과 연결된다. 이 범위는 실시간성을 확인하는 기준으로 제시되지만, 실제 달성 여부나 측정 근거는 이 진술만으로 제시되지 않는다. 이러한 시간 제약 아래에서 메모리 전송 방식의 차이는 실시간 동작의 안정성에 영향을 주는 요소로 다뤄진다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 훼손할 가능성이 지적된다. 반면 Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 부담하는 대신 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00101,E00294]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p8",
+            "category": "duplication",
+            "severity": "error",
+            "reason": "S_intro_p8은 S_intro_p3과 동일한 No-Pin/Pageable 대 Pinned Memory의 지연 스파이크, WCET 1.64ms, 결정론적 안정성 비교를 다시 반복한다. 서론 내에서 동일 비교가 중복되어 흐름이 끊긴다. (finding-3 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "이를 위해 본 연구는 CROWN을 구현한 C++ 프로그램을 대상으로 GPU 최적화 모드와 하이브리드 실행 방식을 적용하였다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서는 CROWN 검증 실행 시간이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100 ms 감소한 값이지만 여전히 CPU보다 느리다고 평가되었다. 이후 행렬곱 연산만 GPU로 옮기는 하이브리드 프로그램을 시도하는 등 최적화 방향을 추가로 탐색하였다. 이러한 결과는 단일 실행 결과이며, CPU 버전과의 정량 비교나 반복 측정 기반 통계는 현재 자료에 포함되지 않는다. [근거:E00027,E00029,E00030]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p7",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "CUDA 구현 동기가 ‘하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다’처럼 자기참조적으로 읽힌다. 동기와 근거의 관계가 모호하므로 표현을 다듬는 것이 좋다. (finding-5 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "본 연구는 신경망 검증 도구인 CROWN의 검증 연산을 CPU 중심에서 CUDA 기반 GPU 환경으로 옮겨, 실시간 환경에서 대규모 연산을 처리할 수 있는지 검토하는 것을 목표로 한다. 기존 CPU 환경에서는 CROWN 검증에 소요되는 시간이 매우 크며, 검증 작업은 오프라인 환경에서만 제한적으로 빠르게 수행되는 상황에 머물러 있다. 이에 따라 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 네트워크 환경의 요구 속도에 대응할 수 있는지 확인하는 데 연구의 초점을 둔다. 다만 이러한 문제 인식과 연구 방향은 최적화 과정의 맥락을 바탕으로 한 것으로, 원문에 직접 명시된 수치나 실험 결과로 뒷받침되지는 않는다. [근거:U209b56cf1c8267aea36d]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p8",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "GPU OPTIMIZED 모드의 229.691800 ms와 ‘이전 대비 약 100 ms 감소’가 갑자기 제시되어 비교 기준이 불분명하다. 무엇을 기준으로 감소한 값인지 연결 문장을 보강하면 흐름이 나아진다. (finding-6 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "이를 위해 본 연구는 CROWN을 구현한 C++ 프로그램을 대상으로 GPU 최적화 모드와 하이브리드 실행 방식을 적용하였다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서는 CROWN 검증 실행 시간이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100 ms 감소한 값이지만 여전히 CPU보다 느리다고 평가되었다. 이후 행렬곱 연산만 GPU로 옮기는 하이브리드 프로그램을 시도하는 등 최적화 방향을 추가로 탐색하였다. 이러한 결과는 단일 실행 결과이며, CPU 버전과의 정량 비교나 반복 측정 기반 통계는 현재 자료에 포함되지 않는다. [근거:E00027,E00029,E00030]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p9",
+            "category": "terminology",
+            "severity": "warning",
+            "reason": "‘No Pinning’과 앞 문단의 ‘No-Pin/Pageable’ 표기가 혼용되어 같은 개념을 가리키는지 즉시 판단하기 어렵다. 용어 표기를 통일하는 것이 좋다. (finding-7 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 Pageable 메모리 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 Pageable 메모리의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 Pageable 메모리의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 Pageable 메모리의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "none",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "서론의 구성이 (1) 배경·한계·문제의식, (2) 실시간성 기준과 메모리 사례, (3) CUDA 구현 동기와 최적화 시도, (4) 기여 요약 순으로 엮이지만, p2·p7의 중복과 p3·p8의 메모리 비교 반복 때문에 동일 내용이 여러 차례 재진입한다. 중복을 정리한 뒤 문제 제기에서 기여 요약으로 이어지는 순서를 한 번 더 정돈하면 서론 흐름이 안정된다. (finding-8 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": ""
+          }
+        ],
+        "content_warnings": [
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "E00296의 11.6ms·1.64ms·60% 지터 안정화·Pinned Memory 필수성 결론을 CROWN 검증 전체 실시간 가속 성과로 오인하지 않도록, 해당 결론이 메모리 전송 방식 비교에 기반한 해석임을 명시한 점은 적절하다.",
+            "evidence_ids": [
+              "E00296"
+            ],
+            "failure_owner": "none",
+            "quote": "이러한 비교는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 정리로 이어진다. 이에 따라 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라는 결론이 제시된다. 다만 이 결론은 메모리 전송 방식의 지연 특성과 안정성 비교에 기반한 해석이며, CROWN 검증 전체의 실시간 가속 성과를 직접 입증하는 수치나 실험 결과로 대체되지는 않는다. [근거:E00296]",
+            "stage": "subsection-S_intro-p0"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "S_intro_p3은 E00294와 E00296의 수치·조건을 인용하고 있으나, 해당 근거의 evidence_limitations에 측정 조건·재현 조건·데드라인 맥락 미기재가 명시되어 있다. 본문은 이를 연구 노트 기반 비교 설명으로 서술하고 있어, 실제 측정 결과로 단정하지 않는 한 오류라고 보기 어렵다. 다만 '1ms 무선 통신 데드라인 파괴' 등 시스템 맥락이 근거에서 충분히 특정되지 않으므로, 본문에서 이를 확정된 시스템 사양처럼 서술하지 않도록 주의가 필요하다.",
+            "evidence_ids": [
+              "E00294",
+              "E00296"
+            ],
+            "failure_owner": "none",
+            "quote": "실시간성 관점의 대조에서는 메모리 전송 방식의 차이가 중요한 사례로 제시된다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 파괴할 가능성이 있다. 반면 Pinned Memory 방식은 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. 이러한 특성은 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 비교와도 일치한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라고 판단된다. [근거:E00294,E00296]",
+            "stage": "subsection-S_intro-p1"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "연구 목표와 기여 요약이 사용자 승인 범위의 설명으로만 반영되었고, 원문에 직접 명시된 주요 목표·기여 수치가 확인되지 않는다. 이 점은 introduction_Q4의 승인 범위 및 unresolved 항목과 일치하므로, 본문에서 '원문에 직접 명시된 수치·실험 결과로 뒷받침되지 않는다'는 한계를 함께 서술한 것은 적절하다.",
+            "evidence_ids": [
+              "U209b56cf1c8267aea36d",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p2",
+            "reason": "GPU OPTIMIZED 모드의 실행 시간 229.691800 ms와 '이전 대비 약 100 ms 감소', '여전히 CPU보다 느리다'는 평가가 함께 서술되었다. 이 중 '약 100 ms 감소'와 CPU 대비 느리다는 판단은 기록자의 정성적 평가이며, CPU 버전의 정확한 수치나 반복 측정 통계는 현재 자료에 없다는 한계가 있다. 본문은 이 한계를 함께 명시했으므로 사실 연결 자체는 틀리지 않으나, 해석성 진술을 관측 결과와 같은 무게로 읽지 않도록 주의가 필요하다.",
+            "evidence_ids": [
+              "E00027",
+              "E00029",
+              "E00030"
+            ],
+            "failure_owner": "none",
+            "quote": "이를 위해 본 연구는 CROWN을 구현한 C++ 프로그램을 대상으로 GPU 최적화 모드와 하이브리드 실행 방식을 적용하였다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서는 CROWN 검증 실행 시간이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100 ms 감소한 값이지만 여전히 CPU보다 느리다고 평가되었다. 이후 행렬곱 연산만 GPU로 옮기는 하이브리드 프로그램을 시도하는 등 최적화 방향을 추가로 탐색하였다. 이러한 결과는 단일 실행 결과이며, CPU 버전과의 정량 비교나 반복 측정 기반 통계는 현재 자료에 포함되지 않는다. [근거:E00027,E00029,E00030]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "cudaHostRegister와 No Pinning의 전체 실행 시간 차이(787.88초 대 776.70초, 약 1.4%, 약 11초)와 1회당 약 12 μs 차이, Bound/Infer 단계별 역전 현상은 figure 캡션에 기록된 수치와 해석을 인용한 것으로 보인다. 다만 현재 페이지는 반복 측정 통계나 조건별 분리 측정을 포함하지 않으며, Bound+Infer 합산과 전체 시간 사이에 약 1.9초 차이가 있다는 한계가 있다. 본문은 ablation study 미수행을 한계로 언급했지만, 단계별 수치의 합산 불일치나 반복 측정 부재까지 명시적으로 한계화했는지는 문장만으로 완전히 드러나지 않는다.",
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "GPU 클록 고정 후 재실험 계획, ScopedGpuClockLock 작성, CUDA 강의 19장 참고, Persistence mode 및 클록 고정 명령어 등은 계획·제안·명령어 확인 성격의 기록으로, 수행된 비교 결과나 공정성 조건으로 바꾸지 않도록 주의가 필요하다. 본문은 이를 연구 흐름의 일부로 나열했으나, 클록 고정 후 실제 측정 결과가 이 문단만으로 제시되지는 않는다는 점을 더 분명히 구분할 필요가 있다.",
+            "evidence_ids": [
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "style",
+            "validation_code": "composition_style",
+            "reason": "S_intro/p0: 기록자·자료 중심 표현 ['연구일지에 기록']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-S_intro-p2"
+          }
+        ],
+        "content_status": "needs_attention",
+        "content_approved": false,
+        "approved": false,
+        "checks": [
+          {
+            "item_id": "RI_intro_1",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_intro_p1",
+              "S_intro_p2",
+              "S_intro_p3"
+            ],
+            "evidence_ids": [
+              "E00348",
+              "U209b56cf1c8267aea36d",
+              "E00101",
+              "E00294",
+              "E00296"
+            ],
+            "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 신경망 검증팀도 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]",
+            "paragraph_quotes": [
+              "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 신경망 검증팀도 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]",
+              "실시간성 관점은 검증 지연을 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 조건과 연결된다. 이 범위는 실시간성을 확인하는 기준으로 제시되지만, 실제 달성 여부나 측정 근거는 이 진술만으로 제시되지 않는다. 이와 별도로 메모리 전송 방식의 차이는 실시간 동작의 안정성에 영향을 주는 요소로 다뤄진다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 훼손할 가능성이 지적된다. 반면 Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 부담하는 대신 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00101,E00294]",
+              "이러한 비교는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 정리로 이어진다. 이에 따라 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라는 결론이 제시된다. 다만 이 결론은 메모리 전송 방식의 지연 특성과 안정성 비교에 기반한 해석이며, CROWN 검증 전체의 실시간 가속 성과를 직접 입증하는 수치나 실험 결과로 대체되지는 않는다. [근거:E00296]"
+            ],
+            "guideline_ids": [
+              "ref1_introduction_required_1"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [],
+            "inherited": true,
+            "verification_scope": "subsection"
+          },
+          {
+            "item_id": "RI_intro_2",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_intro_p1",
+              "S_intro_p2",
+              "S_intro_p3"
+            ],
+            "evidence_ids": [
+              "E00348",
+              "E00294",
+              "E00296",
+              "U9ff240a30b03c6835449"
+            ],
+            "quote": "신경망 검증은 배포 환경에서 모델의 안전 범위를 확인하는 실용적 절차이나, CROWN 기반 검증은 연산량이 커서 실시간 환경에서 대규모 연산을 충족하기 어렵다. 기존 연구는 CROWN을 CPU 환경에서만 실행해 왔으며, 그 결과 검증은 오프라인 환경에서 제한적으로만 빠르게 수행되는 상황에 머물렀다. 본 연구는 이러한 한계를 전제로, 실시간 환경에서 대규모 연산을 충족할 수 있는지를 확인하는 데 초점을 둔다. 이를 위해 CROWN 검증의 CUDA 기반 구현과 최적화 과정을 통해 네트워크 환경의 요구 속도에 대응할 수 있는지 검토한다. [근거:U9ff240a30b03c6835449,E00348]",
+            "paragraph_quotes": [
+              "신경망 검증은 배포 환경에서 모델의 안전 범위를 확인하는 실용적 절차이나, CROWN 기반 검증은 연산량이 커서 실시간 환경에서 대규모 연산을 충족하기 어렵다. 기존 연구는 CROWN을 CPU 환경에서만 실행해 왔으며, 그 결과 검증은 오프라인 환경에서 제한적으로만 빠르게 수행되는 상황에 머물렀다. 본 연구는 이러한 한계를 전제로, 실시간 환경에서 대규모 연산을 충족할 수 있는지를 확인하는 데 초점을 둔다. 이를 위해 CROWN 검증의 CUDA 기반 구현과 최적화 과정을 통해 네트워크 환경의 요구 속도에 대응할 수 있는지 검토한다. [근거:U9ff240a30b03c6835449,E00348]",
+              "CUDA 기반 구현의 동기는 두 가지로 정리된다. 첫째, CUDA 프로그래밍 역량을 활용할 수 있다는 점, 둘째, 안테나 신경망 검증 알고리즘을 하드웨어에 구현하여 실시간 검증에 관심을 두고 있으며, 하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다는 점이다. 이 관점은 본 연구가 단순한 알고리즘 이식이 아니라, 실시간 검증 가능성을 염두에 둔 구현·최적화 작업임을 보여준다. [근거:E00348]",
+              "실시간성 관점의 대조에서는 메모리 전송 방식의 차이가 중요한 사례로 제시된다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 파괴할 가능성이 있다. 반면 Pinned Memory 방식은 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. 이러한 특성은 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 비교와도 일치한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라고 판단된다. [근거:E00294,E00296]"
+            ],
+            "guideline_ids": [],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [],
+            "inherited": true,
+            "verification_scope": "subsection"
+          },
+          {
+            "item_id": "RI_intro_3",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_intro_p3"
+            ],
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "U209b56cf1c8267aea36d"
+            ],
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "paragraph_quotes": [
+              "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]"
+            ],
+            "guideline_ids": [
+              "ref1_introduction_required_3"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [],
+            "inherited": true,
+            "verification_scope": "subsection"
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "S_intro",
+            "reference_id": "ref1_introduction",
+            "verdict": "not_visible",
+            "paragraph_ids": [],
+            "reason": "ref1_introduction은 본 연구 초안에 직접 인용되지 않았으며, 해당 reference의 필수 항목 충족 여부를 판단할 수 없다.",
+            "quote": "",
+            "paragraph_quotes": [],
+            "inherited": true
+          },
+          {
+            "section_id": "S_intro",
+            "reference_id": "ref2_introduction",
+            "verdict": "not_visible",
+            "paragraph_ids": [],
+            "reason": "ref2_introduction은 본 연구 초안에 직접 인용되지 않았으며, 해당 reference의 필수 항목 충족 여부를 판단할 수 없다.",
+            "quote": "",
+            "paragraph_quotes": [],
+            "inherited": true
+          }
+        ],
+        "editorial_warnings": [
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p7",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "CUDA 구현 동기가 ‘하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다’처럼 자기참조적으로 읽힌다. 동기와 근거의 관계가 모호하므로 표현을 다듬는 것이 좋다. (finding-5 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "본 연구는 신경망 검증 도구인 CROWN의 검증 연산을 CPU 중심에서 CUDA 기반 GPU 환경으로 옮겨, 실시간 환경에서 대규모 연산을 처리할 수 있는지 검토하는 것을 목표로 한다. 기존 CPU 환경에서는 CROWN 검증에 소요되는 시간이 매우 크며, 검증 작업은 오프라인 환경에서만 제한적으로 빠르게 수행되는 상황에 머물러 있다. 이에 따라 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 네트워크 환경의 요구 속도에 대응할 수 있는지 확인하는 데 연구의 초점을 둔다. 다만 이러한 문제 인식과 연구 방향은 최적화 과정의 맥락을 바탕으로 한 것으로, 원문에 직접 명시된 수치나 실험 결과로 뒷받침되지는 않는다. [근거:U209b56cf1c8267aea36d]",
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p8",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "GPU OPTIMIZED 모드의 229.691800 ms와 ‘이전 대비 약 100 ms 감소’가 갑자기 제시되어 비교 기준이 불분명하다. 무엇을 기준으로 감소한 값인지 연결 문장을 보강하면 흐름이 나아진다. (finding-6 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "이를 위해 본 연구는 CROWN을 구현한 C++ 프로그램을 대상으로 GPU 최적화 모드와 하이브리드 실행 방식을 적용하였다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서는 CROWN 검증 실행 시간이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100 ms 감소한 값이지만 여전히 CPU보다 느리다고 평가되었다. 이후 행렬곱 연산만 GPU로 옮기는 하이브리드 프로그램을 시도하는 등 최적화 방향을 추가로 탐색하였다. 이러한 결과는 단일 실행 결과이며, CPU 버전과의 정량 비교나 반복 측정 기반 통계는 현재 자료에 포함되지 않는다. [근거:E00027,E00029,E00030]",
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p9",
+            "category": "terminology",
+            "severity": "warning",
+            "reason": "‘No Pinning’과 앞 문단의 ‘No-Pin/Pageable’ 표기가 혼용되어 같은 개념을 가리키는지 즉시 판단하기 어렵다. 용어 표기를 통일하는 것이 좋다. (finding-7 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 Pageable 메모리 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 Pageable 메모리의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 Pageable 메모리의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 Pageable 메모리의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "none",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "서론의 구성이 (1) 배경·한계·문제의식, (2) 실시간성 기준과 메모리 사례, (3) CUDA 구현 동기와 최적화 시도, (4) 기여 요약 순으로 엮이지만, p2·p7의 중복과 p3·p8의 메모리 비교 반복 때문에 동일 내용이 여러 차례 재진입한다. 중복을 정리한 뒤 문제 제기에서 기여 요약으로 이어지는 순서를 한 번 더 정돈하면 서론 흐름이 안정된다. (finding-8 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "",
+            "stage": "section-S_intro"
+          }
+        ],
+        "editorial_status": "needs_revision",
+        "required_content_coverage": {
+          "met": 3,
+          "total": 3,
+          "value": 1.0,
+          "scope": "inherited_subsection_reviews",
+          "rechecked": false
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 0,
+          "not_visible": 2,
+          "total": 2,
+          "scope": "inherited_subsection_reviews",
+          "rechecked": false
+        },
+        "assessment": "Editorial quality only; content/reference judgments are inherited from child reviews."
+      },
+      {
+        "review_policy": "editorial-v1",
+        "review_kind": "editorial",
+        "issues": [
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p2",
+            "category": "duplication",
+            "severity": "warning",
+            "reason": "S_intro_p2와 S_intro_p7은 연구 배경, 기존 CPU 중심 CROWN의 한계, 실시간성 관점의 문제의식을 거의 동일하게 반복한다. 두 문단 중 한쪽의 서술 범위를 명확히 구분하거나 통합해야 한다. (finding-0 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 검증 작업은 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p3",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "실시간성 기준(마이크로초~수 밀리초)을 먼저 제시한 뒤 메모리 전송 방식 차이로 넘어가는 연결이 여전히 abrupt하다. 기준 제시와 메모리 사례 사이의 논리적 다리를 보강해야 한다. (finding-1 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "실시간성 관점은 검증 지연을 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 조건과 연결된다. 이 범위는 실시간성을 확인하는 기준으로 제시되지만, 실제 달성 여부나 측정 근거는 이 진술만으로 제시되지 않는다. 이러한 시간 제약 아래에서 메모리 전송 방식의 차이는 실시간 동작의 안정성에 영향을 주는 요소로 다뤄진다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 훼손할 가능성이 지적된다. 반면 Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 부담하는 대신 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00101,E00294]",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p8",
+            "category": "duplication",
+            "severity": "warning",
+            "reason": "S_intro_p8은 S_intro_p3과 동일한 No-Pin/Pageable 대 Pinned Memory의 지연 스파이크, WCET 1.64ms, 결정론적 안정성 비교를 다시 반복한다. 서론 내에서 동일 비교가 중복되어 흐름이 끊긴다. (finding-3 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 Pageable 메모리 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 Pageable 메모리의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 Pageable 메모리의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 Pageable 메모리의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p7",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "CUDA 구현 동기가 ‘하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다’처럼 자기참조적으로 읽힌다. 동기와 근거의 관계가 모호하므로 표현을 다듬는 것이 좋다. (finding-5 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "이를 위해 본 연구는 CROWN을 구현한 C++ 프로그램을 대상으로 GPU 최적화 모드와 하이브리드 실행 방식을 적용하였다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서는 CROWN 검증 실행 시간이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100 ms 감소한 값이지만 여전히 CPU보다 느리다고 평가되었다. 이후 행렬곱 연산만 GPU로 옮기는 하이브리드 프로그램을 시도하는 등 최적화 방향을 추가로 탐색하였다. 이러한 결과는 단일 실행 결과이며, CPU 버전과의 정량 비교나 반복 측정 기반 통계는 현재 자료에 포함되지 않는다. [근거:E00027,E00029,E00030]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p8",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "GPU OPTIMIZED 모드의 229.691800 ms와 ‘이전 대비 약 100 ms 감소’가 갑자기 제시되어 비교 기준이 불분명하다. 무엇을 기준으로 감소한 값인지 연결 문장을 보강하면 흐름이 나아진다. (finding-6 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 Pageable 메모리 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 Pageable 메모리의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 Pageable 메모리의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 Pageable 메모리의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "none",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "서론의 구성이 (1) 배경·한계·문제의식, (2) 실시간성 기준과 메모리 사례, (3) CUDA 구현 동기와 최적화 시도, (4) 기여 요약 순으로 엮이지만, p2·p7의 중복과 p3·p8의 메모리 비교 반복 때문에 동일 내용이 여러 차례 재진입한다. 중복을 정리한 뒤 문제 제기에서 기여 요약으로 이어지는 순서를 한 번 더 정돈하면 서론 흐름이 안정된다. (finding-8 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": ""
+          }
+        ],
+        "content_warnings": [
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "E00296의 11.6ms·1.64ms·60% 지터 안정화·Pinned Memory 필수성 결론을 CROWN 검증 전체 실시간 가속 성과로 오인하지 않도록, 해당 결론이 메모리 전송 방식 비교에 기반한 해석임을 명시한 점은 적절하다.",
+            "evidence_ids": [
+              "E00296"
+            ],
+            "failure_owner": "none",
+            "quote": "이러한 비교는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 정리로 이어진다. 이에 따라 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라는 결론이 제시된다. 다만 이 결론은 메모리 전송 방식의 지연 특성과 안정성 비교에 기반한 해석이며, CROWN 검증 전체의 실시간 가속 성과를 직접 입증하는 수치나 실험 결과로 대체되지는 않는다. [근거:E00296]",
+            "stage": "subsection-S_intro-p0"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "S_intro_p3은 E00294와 E00296의 수치·조건을 인용하고 있으나, 해당 근거의 evidence_limitations에 측정 조건·재현 조건·데드라인 맥락 미기재가 명시되어 있다. 본문은 이를 연구 노트 기반 비교 설명으로 서술하고 있어, 실제 측정 결과로 단정하지 않는 한 오류라고 보기 어렵다. 다만 '1ms 무선 통신 데드라인 파괴' 등 시스템 맥락이 근거에서 충분히 특정되지 않으므로, 본문에서 이를 확정된 시스템 사양처럼 서술하지 않도록 주의가 필요하다.",
+            "evidence_ids": [
+              "E00294",
+              "E00296"
+            ],
+            "failure_owner": "none",
+            "quote": "실시간성 관점의 대조에서는 메모리 전송 방식의 차이가 중요한 사례로 제시된다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 파괴할 가능성이 있다. 반면 Pinned Memory 방식은 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. 이러한 특성은 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 비교와도 일치한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라고 판단된다. [근거:E00294,E00296]",
+            "stage": "subsection-S_intro-p1"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "연구 목표와 기여 요약이 사용자 승인 범위의 설명으로만 반영되었고, 원문에 직접 명시된 주요 목표·기여 수치가 확인되지 않는다. 이 점은 introduction_Q4의 승인 범위 및 unresolved 항목과 일치하므로, 본문에서 '원문에 직접 명시된 수치·실험 결과로 뒷받침되지 않는다'는 한계를 함께 서술한 것은 적절하다.",
+            "evidence_ids": [
+              "U209b56cf1c8267aea36d",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p2",
+            "reason": "GPU OPTIMIZED 모드의 실행 시간 229.691800 ms와 '이전 대비 약 100 ms 감소', '여전히 CPU보다 느리다'는 평가가 함께 서술되었다. 이 중 '약 100 ms 감소'와 CPU 대비 느리다는 판단은 기록자의 정성적 평가이며, CPU 버전의 정확한 수치나 반복 측정 통계는 현재 자료에 없다는 한계가 있다. 본문은 이 한계를 함께 명시했으므로 사실 연결 자체는 틀리지 않으나, 해석성 진술을 관측 결과와 같은 무게로 읽지 않도록 주의가 필요하다.",
+            "evidence_ids": [
+              "E00027",
+              "E00029",
+              "E00030"
+            ],
+            "failure_owner": "none",
+            "quote": "이를 위해 본 연구는 CROWN을 구현한 C++ 프로그램을 대상으로 GPU 최적화 모드와 하이브리드 실행 방식을 적용하였다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서는 CROWN 검증 실행 시간이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100 ms 감소한 값이지만 여전히 CPU보다 느리다고 평가되었다. 이후 행렬곱 연산만 GPU로 옮기는 하이브리드 프로그램을 시도하는 등 최적화 방향을 추가로 탐색하였다. 이러한 결과는 단일 실행 결과이며, CPU 버전과의 정량 비교나 반복 측정 기반 통계는 현재 자료에 포함되지 않는다. [근거:E00027,E00029,E00030]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "cudaHostRegister와 No Pinning의 전체 실행 시간 차이(787.88초 대 776.70초, 약 1.4%, 약 11초)와 1회당 약 12 μs 차이, Bound/Infer 단계별 역전 현상은 figure 캡션에 기록된 수치와 해석을 인용한 것으로 보인다. 다만 현재 페이지는 반복 측정 통계나 조건별 분리 측정을 포함하지 않으며, Bound+Infer 합산과 전체 시간 사이에 약 1.9초 차이가 있다는 한계가 있다. 본문은 ablation study 미수행을 한계로 언급했지만, 단계별 수치의 합산 불일치나 반복 측정 부재까지 명시적으로 한계화했는지는 문장만으로 완전히 드러나지 않는다.",
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "severity": "warning",
+            "paragraph_id": "S_intro_p3",
+            "reason": "GPU 클록 고정 후 재실험 계획, ScopedGpuClockLock 작성, CUDA 강의 19장 참고, Persistence mode 및 클록 고정 명령어 등은 계획·제안·명령어 확인 성격의 기록으로, 수행된 비교 결과나 공정성 조건으로 바꾸지 않도록 주의가 필요하다. 본문은 이를 연구 흐름의 일부로 나열했으나, 클록 고정 후 실제 측정 결과가 이 문단만으로 제시되지는 않는다는 점을 더 분명히 구분할 필요가 있다.",
+            "evidence_ids": [
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "subsection-S_intro-p2"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "style",
+            "validation_code": "composition_style",
+            "reason": "S_intro/p0: 기록자·자료 중심 표현 ['연구일지에 기록']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-S_intro-p2"
+          }
+        ],
+        "content_status": "needs_attention",
+        "content_approved": false,
+        "approved": true,
+        "checks": [
+          {
+            "item_id": "RI_intro_1",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_intro_p1",
+              "S_intro_p2",
+              "S_intro_p3"
+            ],
+            "evidence_ids": [
+              "E00348",
+              "U209b56cf1c8267aea36d",
+              "E00101",
+              "E00294",
+              "E00296"
+            ],
+            "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 신경망 검증팀도 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]",
+            "paragraph_quotes": [
+              "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 신경망 검증팀도 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]",
+              "실시간성 관점은 검증 지연을 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 조건과 연결된다. 이 범위는 실시간성을 확인하는 기준으로 제시되지만, 실제 달성 여부나 측정 근거는 이 진술만으로 제시되지 않는다. 이와 별도로 메모리 전송 방식의 차이는 실시간 동작의 안정성에 영향을 주는 요소로 다뤄진다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 훼손할 가능성이 지적된다. 반면 Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 부담하는 대신 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00101,E00294]",
+              "이러한 비교는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 정리로 이어진다. 이에 따라 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라는 결론이 제시된다. 다만 이 결론은 메모리 전송 방식의 지연 특성과 안정성 비교에 기반한 해석이며, CROWN 검증 전체의 실시간 가속 성과를 직접 입증하는 수치나 실험 결과로 대체되지는 않는다. [근거:E00296]"
+            ],
+            "guideline_ids": [
+              "ref1_introduction_required_1"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [],
+            "inherited": true,
+            "verification_scope": "subsection"
+          },
+          {
+            "item_id": "RI_intro_2",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_intro_p1",
+              "S_intro_p2",
+              "S_intro_p3"
+            ],
+            "evidence_ids": [
+              "E00348",
+              "E00294",
+              "E00296",
+              "U9ff240a30b03c6835449"
+            ],
+            "quote": "신경망 검증은 배포 환경에서 모델의 안전 범위를 확인하는 실용적 절차이나, CROWN 기반 검증은 연산량이 커서 실시간 환경에서 대규모 연산을 충족하기 어렵다. 기존 연구는 CROWN을 CPU 환경에서만 실행해 왔으며, 그 결과 검증은 오프라인 환경에서 제한적으로만 빠르게 수행되는 상황에 머물렀다. 본 연구는 이러한 한계를 전제로, 실시간 환경에서 대규모 연산을 충족할 수 있는지를 확인하는 데 초점을 둔다. 이를 위해 CROWN 검증의 CUDA 기반 구현과 최적화 과정을 통해 네트워크 환경의 요구 속도에 대응할 수 있는지 검토한다. [근거:U9ff240a30b03c6835449,E00348]",
+            "paragraph_quotes": [
+              "신경망 검증은 배포 환경에서 모델의 안전 범위를 확인하는 실용적 절차이나, CROWN 기반 검증은 연산량이 커서 실시간 환경에서 대규모 연산을 충족하기 어렵다. 기존 연구는 CROWN을 CPU 환경에서만 실행해 왔으며, 그 결과 검증은 오프라인 환경에서 제한적으로만 빠르게 수행되는 상황에 머물렀다. 본 연구는 이러한 한계를 전제로, 실시간 환경에서 대규모 연산을 충족할 수 있는지를 확인하는 데 초점을 둔다. 이를 위해 CROWN 검증의 CUDA 기반 구현과 최적화 과정을 통해 네트워크 환경의 요구 속도에 대응할 수 있는지 검토한다. [근거:U9ff240a30b03c6835449,E00348]",
+              "CUDA 기반 구현의 동기는 두 가지로 정리된다. 첫째, CUDA 프로그래밍 역량을 활용할 수 있다는 점, 둘째, 안테나 신경망 검증 알고리즘을 하드웨어에 구현하여 실시간 검증에 관심을 두고 있으며, 하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다는 점이다. 이 관점은 본 연구가 단순한 알고리즘 이식이 아니라, 실시간 검증 가능성을 염두에 둔 구현·최적화 작업임을 보여준다. [근거:E00348]",
+              "실시간성 관점의 대조에서는 메모리 전송 방식의 차이가 중요한 사례로 제시된다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 파괴할 가능성이 있다. 반면 Pinned Memory 방식은 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. 이러한 특성은 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다는 비교와도 일치한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라고 판단된다. [근거:E00294,E00296]"
+            ],
+            "guideline_ids": [],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [],
+            "inherited": true,
+            "verification_scope": "subsection"
+          },
+          {
+            "item_id": "RI_intro_3",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_intro_p3"
+            ],
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "U209b56cf1c8267aea36d"
+            ],
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "paragraph_quotes": [
+              "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 No Pinning 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]"
+            ],
+            "guideline_ids": [
+              "ref1_introduction_required_3"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [],
+            "inherited": true,
+            "verification_scope": "subsection"
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "S_intro",
+            "reference_id": "ref1_introduction",
+            "verdict": "not_visible",
+            "paragraph_ids": [],
+            "reason": "ref1_introduction은 본 연구 초안에 직접 인용되지 않았으며, 해당 reference의 필수 항목 충족 여부를 판단할 수 없다.",
+            "quote": "",
+            "paragraph_quotes": [],
+            "inherited": true
+          },
+          {
+            "section_id": "S_intro",
+            "reference_id": "ref2_introduction",
+            "verdict": "not_visible",
+            "paragraph_ids": [],
+            "reason": "ref2_introduction은 본 연구 초안에 직접 인용되지 않았으며, 해당 reference의 필수 항목 충족 여부를 판단할 수 없다.",
+            "quote": "",
+            "paragraph_quotes": [],
+            "inherited": true
+          }
+        ],
+        "editorial_warnings": [
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p2",
+            "category": "duplication",
+            "severity": "warning",
+            "reason": "S_intro_p2와 S_intro_p7은 연구 배경, 기존 CPU 중심 CROWN의 한계, 실시간성 관점의 문제의식을 거의 동일하게 반복한다. 두 문단 중 한쪽의 서술 범위를 명확히 구분하거나 통합해야 한다. (finding-0 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "신경망 검증은 안전이 중요한 시스템에서 모델의 동작을 보장하는 실용적 도구로 주목받지만, 검증 연산 자체가 대규모 선형·볼록 최적화를 수반하므로 실시간 환경에서 요구되는 짧은 지연을 충족하기 어렵다. 기존 CROWN 검증은 CPU 환경에서 실행된 사례가 중심이었고, 검증 작업은 오프라인 환경에서 제한적으로 빠른 수준을 보인 것으로 정리된다. 이러한 배경에서 실시간 환경의 대규모 연산을 CUDA로 구현하고 최적화하는 접근이 검토되었으며, 이는 네트워크 환경의 시간 제약을 따라잡을 수 있는지 확인하려는 문제의식으로 이어진다. 다만 이 문제의식은 원문에 직접 기록된 실측 결과나 성과로 뒷받침되지는 않으며, 연구 동기와 설정 범위를 설명하는 수준으로만 반영된다. [근거:E00348,U209b56cf1c8267aea36d,E00101]",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p3",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "실시간성 기준(마이크로초~수 밀리초)을 먼저 제시한 뒤 메모리 전송 방식 차이로 넘어가는 연결이 여전히 abrupt하다. 기준 제시와 메모리 사례 사이의 논리적 다리를 보강해야 한다. (finding-1 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "실시간성 관점은 검증 지연을 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 조건과 연결된다. 이 범위는 실시간성을 확인하는 기준으로 제시되지만, 실제 달성 여부나 측정 근거는 이 진술만으로 제시되지 않는다. 이러한 시간 제약 아래에서 메모리 전송 방식의 차이는 실시간 동작의 안정성에 영향을 주는 요소로 다뤄진다. 일반 메모리(No-Pin) 방식은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 훼손할 가능성이 지적된다. 반면 Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 부담하는 대신 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00101,E00294]",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p8",
+            "category": "duplication",
+            "severity": "warning",
+            "reason": "S_intro_p8은 S_intro_p3과 동일한 No-Pin/Pageable 대 Pinned Memory의 지연 스파이크, WCET 1.64ms, 결정론적 안정성 비교를 다시 반복한다. 서론 내에서 동일 비교가 중복되어 흐름이 끊긴다. (finding-3 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 Pageable 메모리 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 Pageable 메모리의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 Pageable 메모리의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 Pageable 메모리의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p7",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "CUDA 구현 동기가 ‘하드웨어 구현과 실시간 검증의 여지가 있다는 점을 논문의 뒷받침 근거로 활용할 수 있다’처럼 자기참조적으로 읽힌다. 동기와 근거의 관계가 모호하므로 표현을 다듬는 것이 좋다. (finding-5 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "이를 위해 본 연구는 CROWN을 구현한 C++ 프로그램을 대상으로 GPU 최적화 모드와 하이브리드 실행 방식을 적용하였다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서는 CROWN 검증 실행 시간이 229.691800 ms로 기록되었으며, 이는 이전 대비 약 100 ms 감소한 값이지만 여전히 CPU보다 느리다고 평가되었다. 이후 행렬곱 연산만 GPU로 옮기는 하이브리드 프로그램을 시도하는 등 최적화 방향을 추가로 탐색하였다. 이러한 결과는 단일 실행 결과이며, CPU 버전과의 정량 비교나 반복 측정 기반 통계는 현재 자료에 포함되지 않는다. [근거:E00027,E00029,E00030]",
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "S_intro_p8",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "GPU OPTIMIZED 모드의 229.691800 ms와 ‘이전 대비 약 100 ms 감소’가 갑자기 제시되어 비교 기준이 불분명하다. 무엇을 기준으로 감소한 값인지 연결 문장을 보강하면 흐름이 나아진다. (finding-6 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "본 연구의 기여는 CROWN 검증의 CUDA 포팅과 최적화 과정을 통해 실시간 환경에서의 대규모 연산 처리 가능성을 탐색한 데 있다. 구체적으로는 GPU 최적화 모드 적용, 행렬곱 중심 하이브리드 방식 검토, 그리고 cudaHostRegister와 Pageable 메모리 간 실행 시간 차이 및 단계별 역전 현상 같은 측정 결과를 정리하였다. cudaHostRegister와 Pageable 메모리의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12 μs 수준의 미세한 차이로 기록되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 Pageable 메모리의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 Pageable 메모리의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지는 못했으며, 이는 본 연구의 한계로 남는다. [근거:E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,U209b56cf1c8267aea36d]",
+            "stage": "section-S_intro"
+          },
+          {
+            "section_id": "S_intro",
+            "paragraph_id": "none",
+            "category": "flow",
+            "severity": "warning",
+            "reason": "서론의 구성이 (1) 배경·한계·문제의식, (2) 실시간성 기준과 메모리 사례, (3) CUDA 구현 동기와 최적화 시도, (4) 기여 요약 순으로 엮이지만, p2·p7의 중복과 p3·p8의 메모리 비교 반복 때문에 동일 내용이 여러 차례 재진입한다. 중복을 정리한 뒤 문제 제기에서 기여 요약으로 이어지는 순서를 한 번 더 정돈하면 서론 흐름이 안정된다. (finding-8 미해결)",
+            "evidence_ids": [],
+            "failure_owner": "editor",
+            "review_stage": "editorial",
+            "quote": "",
+            "stage": "section-S_intro"
+          }
+        ],
+        "editorial_status": "needs_attention",
+        "required_content_coverage": {
+          "met": 3,
+          "total": 3,
+          "value": 1.0,
+          "scope": "inherited_subsection_reviews",
+          "rechecked": false
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 0,
+          "not_visible": 2,
+          "total": 2,
+          "scope": "inherited_subsection_reviews",
+          "rechecked": false
+        },
+        "assessment": "Editorial quality only; content/reference judgments are inherited from child reviews.",
+        "editorial_completion": {
+          "policy": "editorial-fixed-slots-v1",
+          "status": "needs_attention",
+          "revisions": 2,
+          "reason": "revision_limit"
+        }
+      }
+    ],
+    "editorial_completion": {
+      "policy": "editorial-fixed-slots-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    }
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "request_fingerprint": "07b1bf9a1162f712c72a0120c930c6eb4f2eeaa3b259b8c9956240f8fa0db487",
+  "value": {
+    "sections": {
+      "sec_methods": {
+        "parts": {
+          "p0": {
+            "sec_methods_p18_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_methods_p19_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_methods_p20_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_methods_p21_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            }
+          }
+        }
+      },
+      "sec_evaluation": {
+        "parts": {
+          "p0": {
+            "sec_evaluation_p1_s1": {
+              "action": "replace",
+              "text": "CUDA 포팅 이후 CROWN 검증 실행 시간은 GPU 버전 353.057200 ms에서 GPU OPTIMIZED(cuBLAS + Pool) 229.691800 ms, HYBRID(matmul=GPU, rest=CPU) 201.670100 ms, HYBRID V2 85.785300 ms로 점차 줄었고, 이후 메모리 풀·warmup·memcpy 제거·커널 퓨전·alpha/beta 메모리 풀을 거치며 149.820400 ms, 128.894800 ms, 64.716000 ms, 22.342900 ms, 21.018800 ms, 15.828400 ms 수준의 단일 실행 결과가 관측되었다. 다만 이 기록은 대부분 단일 실행 중심이며 반복 측정 통계가 부족해, 변형 방법 간 차이를 통계적으로 확정하기 어렵다.",
+              "join_previous": false
+            },
+            "sec_evaluation_p2_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p3_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p4_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p5_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p6_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p7_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p8_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p9_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p10_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p11_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p12_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p13_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p14_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p15_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_evaluation_p16_s1": {
+              "action": "replace",
+              "text": "CUDA 포팅·최적화 과정에서 관측된 실행 시간 변화와 비교 결과를 정리한다. CPU 기반 CROWN 검증은 시간이 매우 느리고 오프라인 환경에서만 제한적으로 빠른 상황이어서, 실시간 환경의 대규모 연산을 CUDA로 구현·최적화해 네트워크 환경을 따라잡을 수 있는지가 본 평가의 중심 질문이다. 이 질문은 연구 배경에 반영된 범위로, 연구 기록에 직접 제시된 비교 결과로 해석되지는 않는다. 실제 측정에서는 cudaMemcpy가 전체 실행 시간의 큰 비중을 차지했고, 단일 실행 통계 기준으로 cudaMemcpy 총 시간 40.726초, 호출 240,000회, 평균 169.691μs, 중앙값 18.120μs, 최대 7.616ms, 표준편차 316.565μs가 관측되었다. 같은 실행 통계에서 cudaLaunchh는 18.527초, cudaMemset은 2.121초, cuKernelGetN은 392.770ms, cuLibraryGetK는 16.718μs로 기록되었다. 개별 cudaMemcpy 호출 상세에서는 시작 시간 0.398832초·지속 26.601μs, 0.398862초·1.084ms, 0.399947초·192.590μs의 세 호출이 확인되며, Begins 0.399947초, Ends 0.40014초 구간도 별도로 관측되었다. sparse.py 대비 CUDA 가속 비교에서는 forward의 bound 계산이 6.951ms에서 1.307ms로 5.32배, backward는 8.044ms에서 1.519ms로 5.30배 단축되었고, 추론+bound+검증 전체 기준으로는 forward 4.86배, backward 4.89배 단축이 나타났다. 다만 이 결과는 단일 실행 중심의 관측이며 반복 측정 통계가 충분하지 않고, warm up을 적용해도 스파이크가 발생하거나 10회 측정 시 평균 시간이 느려지는 경우가 있어 측정 안정성에 의문이 남는다. 또한 배칭으로 데이터셋을 통째로 넘기는 방식은 실시간 환경에 맞지 않는다고 판단해 pinned memory와 cudaMemcpyAsync를 대안으로 적용했으나, 이 방식의 정량 성능은 해당 기록만으로 제시되지 않는다. 외부 라이브러리인 cuBLAS·cuSparse 도입은 보류되었고, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이러한 관측은 구성 요소별 기여도를 체계적으로 분리한 제거 실험이 아니라 여러 최적화가 동시에 적용된 과정의 기록이라는 점에서 개별 효과의 분리가 어렵다.",
+              "join_previous": false
+            },
+            "sec_evaluation_p17_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            }
+          }
+        }
+      },
+      "sec_conclusion": {
+        "parts": {
+          "p0": {
+            "sec_conclusion_p1_s1": {
+              "action": "replace",
+              "text": "본 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 옮겨 실시간 대규모 연산에 대응할 수 있는지 확인하고, 그 과정에서 적용한 최적화들을 정리한다. 제안 방법의 핵심은 병렬 연산이 필요한 부분을 커널 함수로 옮기고, 메모리 풀·가중치 GPU 사전 업로드·커널 퓨전·alpha/beta GPU 버퍼·pinned memory·cuda graph·배칭·멀티 스트림 등을 결합해 memcpy 병목과 커널 호출 오버헤드를 줄이는 데 있다. 평가 대상은 256-491-491-16 크기의 신경망을 CROWN의 세 실행 방식(forward, forward+backward, backward_only)으로 처리하는 C++ 프로그램이며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 배치 사이즈는 1로 두었고, 최적화 과정에서 정확도 지표는 기존 신경망 검증팀 프로그램과 모두 동일하게 유지되었다.",
+              "join_previous": false
+            },
+            "sec_conclusion_p2_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_conclusion_p3_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

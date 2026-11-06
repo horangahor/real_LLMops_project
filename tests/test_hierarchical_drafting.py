@@ -63,8 +63,9 @@ class Client:
             fail = stage == self.reject or stage == self.reject_once
             if stage == self.reject_once:
                 self.reject_once = None
-            return {"issues": [{"section_id": packet["outline"][0]["id"], "paragraph_id": "none", "category": "flow",
-                                "severity": "error", "reason": "test correction required"}] if fail else []}
+            from review_test_support import editorial_review_reply
+            return editorial_review_reply(packet, [{"section_id": packet["outline"][0]["id"], "paragraph_id": "none", "category": "flow",
+                                "severity": "error", "reason": "test correction required"}] if fail else [])
         if "findings" in schema["properties"] or "links" in schema["properties"]:
             raise AssertionError("Retired review/link agents must not be called")
         kind = "review" if "checks" in schema["properties"] else "generate"
@@ -320,7 +321,7 @@ class HierarchicalDraftingTests(unittest.TestCase):
             self.assertEqual(json.loads((root / "checkpoint-history" / f"approved-{saved['sha256']}.json").read_text(encoding="utf-8")), saved)
             self.assertEqual((folder / "draft.md").read_text(encoding="utf-8"), result["draft_markdown"])
             self.assertFalse(result["review"]["content_approved"])
-            self.assertEqual(sum(s == "subsection-s0-p0" and k == "generate" for s, k, _ in client.events[before:]), 2)
+            self.assertEqual(sum(s == "subsection-s0-p0" and k == "generate" for s, k, _ in client.events[before:]), 1)  # reuse an identical replacement
             workflow = json.loads((folder / "workflow.json").read_text(encoding="utf-8"))
             self.assertEqual(workflow["stages"][-1]["id"], "paper")
 

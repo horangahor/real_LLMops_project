@@ -1,0 +1,24 @@
+{
+  "request_fingerprint": "efdb02e6b235673f528ea62ef539f4778d56970166454a9764e17c2be7cd2454",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "본 연구의 적용 범위는 256–491–491–16 크기의 신경망과 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list로 제한된다. 이 범위를 벗어나면 결과의 일반화가 제약될 수 있다. cuSparse 도입 시도는 W, W_pos, W_neg를 CSR 형식으로 변환하고 cuSPARSE handle·descriptor를 유지한 채 network_forward()의 dense matvec만 cuSPARSE SpMV로 교체한 수준에서 이루어졌으며, 기존 matmul은 유지되었다. spMV 적용 결과 실행 시간은 27.107400 ms로 기록되어 이전 27ms 수준보다 느려졌고, 이후 spMM 도입까지 검토하기로 했다. cuBLAS와 cuSPARSE는 실험했으나 현재 모델 크기와 호출 패턴에서는 느려져 현 기준 코드에는 포함하지 않았으며, spMM 도입 후에는 거의 40ms로 회귀해 부적절하다고 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 것이 맞다고 판단되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 제시되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성되지 않았고, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가되며, 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고 SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. network_forward는 신경망의 일반 추론값을 출력하지만 아직 GPU 파이프라인이 아니라 최적화가 적용되지 않은 상태이기도 하다. 각 최적화 기법을 체계적으로 분리해 ablation study를 하지 못한 점도 한계로 남는다.",
+          "evidence_ids": [
+            "E00105",
+            "E00106",
+            "E00107",
+            "E00109",
+            "E00111",
+            "E00113",
+            "E00114",
+            "E00115",
+            "E00116",
+            "E00117"
+          ]
+        }
+      ]
+    }
+  }
+}

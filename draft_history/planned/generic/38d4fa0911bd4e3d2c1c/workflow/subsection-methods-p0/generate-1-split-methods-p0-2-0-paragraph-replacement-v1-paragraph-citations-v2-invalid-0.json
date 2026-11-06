@@ -1,0 +1,25 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00031",
+          "E00035",
+          "E00043",
+          "E00044",
+          "E00045",
+          "E00046",
+          "E00068",
+          "E00069",
+          "E00083",
+          "E00096",
+          "E00131",
+          "E00132",
+          "E00139"
+        ],
+        "text": "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 입력은 256-491-491-16 크기의 신경망과 기존 신경망 검증팀이 사용하던 데이터셋·eps_list(eps=1e-06)를 사용했다. 실행 방식은 forward, forward+backward, backward_only를 포함했고, 배치 크기는 1로 두었다. 실행 환경은 CPU 전용 처리와 GPU 활용 처리를 함께 검토하는 방식으로 구성되었다. 초기 관측에서는 HYBRID 모드(matmul=GPU, rest=CPU)에서 201.670100 ms가 기록되었고, 이후 HYBRID V2 모드에서 85.785300 ms가 기록되어 CPU보다 빨라졌다는 평가가 함께 남았다. 이후 가중치 사전 업로드, 메모리 풀, cuBLAS 예열, 결과 벡터 memcpy 제거 등 개별 요소를 적용하며 실행 시간을 다시 확인하였다. 예를 들어 MEMPOOL + Weights PRELOAD ON GPU 모드에서는 149.820400 ms, mempool + warmup 조합에서는 152.902900 ms, mempool + cuBlas + warmup 조합에서는 174.978400 ms가 기록되었다. forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 64.716000 ms가 관측되었고, alpha/beta 메모리 풀 적용 후에는 21.018800 ms, mempool + warmup calc success 조건에서는 15.828400 ms가 기록되었다. 한편 CPU ONLY iteration ver에서는 193.665600 ms가 관측되었다. 이러한 수치는 모두 단일 실행 결과이며, 반복 측정 기반 통계나 조건 간 비교 해석은 제시되지 않았다."
+      }
+    }
+  },
+  "reason": "교체 문단이 허용 분량 600자를 넘었습니다."
+}

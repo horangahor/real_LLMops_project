@@ -1,0 +1,23 @@
+{
+  "request_fingerprint": "8943105b8ef8c650104dd3a2e74c45292a1d5add20756578b240a6e69052a26b",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "구성 요소 결합 방식은 only_GPU와 hybrid의 함수별 실행 위치 및 GPU 메모리 풀 구조 차이로 정리된다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset 기반 처리에서 CPU 생성자 초기화 및 for 문 처리로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 두 구성에서 동일하게 유지된다. GPU 풀 구조체는 only_GPU에서 d_mat[4]와 d_vec[2]를 미리 할당하는 방식에서 hybrid의 d_A, d_B, d_C 세 개로 축소되었다. 이러한 구성 차이는 함수별 실행 위치와 메모리 풀 구조에서 나타나며, 정량 성능 수치는 이 표에 포함되지 않는다. [근거:E00036,H40849fcc17fe_1]",
+          "evidence_ids": [
+            "E00036",
+            "H40849fcc17fe_1"
+          ]
+        },
+        {
+          "text": "실행 결과에서는 HYBRID 모드가 201.670100 ms, HYBRID V2 모드가 85.785300 ms로 측정되었고, HYBRID V2는 CPU보다 빨라진 것으로 평가되었다. 다만 이 수치들은 각 모드의 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 자료에 제시되지 않는다. [근거:E00031,E00035]",
+          "evidence_ids": [
+            "E00031",
+            "E00035"
+          ]
+        }
+      ]
+    }
+  }
+}

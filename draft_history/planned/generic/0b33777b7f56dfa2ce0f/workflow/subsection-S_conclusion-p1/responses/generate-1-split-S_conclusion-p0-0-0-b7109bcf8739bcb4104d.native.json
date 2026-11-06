@@ -1,0 +1,33 @@
+{
+  "id": "95529e99-3873-4c68-8cce-de530b066a7b",
+  "object": "chat.completion",
+  "created": 1793954818,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\":{\"p0\":[{\"text\":\"CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다.\",\"evidence_ids\":[\"E00030\",\"E00073\",\"E00071\",\"E00083\",\"E00044\",\"E00046\",\"E00131\",\"E00277\",\"E00278\",\"E00296\",\"E00211\",\"E00045\",\"E00262\"]}]}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 30686,
+    "completion_tokens": 652,
+    "total_tokens": 31338,
+    "prompt_tokens_details": {
+      "cached_tokens": 1088,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

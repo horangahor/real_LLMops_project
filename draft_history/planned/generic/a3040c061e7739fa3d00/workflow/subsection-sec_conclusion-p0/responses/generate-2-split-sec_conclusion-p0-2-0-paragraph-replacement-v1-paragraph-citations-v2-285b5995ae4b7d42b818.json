@@ -1,0 +1,31 @@
+{
+  "request_fingerprint": "285b5995ae4b7d42b818c1bd0763783785cf80f26d7746c784451e16dc83f3dd",
+  "value": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00035",
+          "E00044",
+          "E00046",
+          "E00064",
+          "E00075",
+          "E00106",
+          "E00119",
+          "E00131",
+          "E00139",
+          "E00144",
+          "E00166",
+          "E00216",
+          "E00252",
+          "E00257",
+          "E00274",
+          "E00358",
+          "E00361",
+          "E00368",
+          "E00375"
+        ],
+        "text": "본 연구는 CROWN 검증을 CPU 환경에서만 실행하던 기존 상황에서, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현·최적화할 수 있는지 확인하는 데 목적이 있다. 평가는 256-491-491-16 크기 신경망과 기존 신경망 검증팀이 사용하던 입력·eps_list를 사용했고, 실행 방식은 forward, forward+backward, backward_only의 세 가지로 진행되었다. 주요 정량 결과는 단일 실행 중심으로 정리되며, CPU ONLY 101.237800 ms, GPU OPTIMIZED 229.691800 ms, HYBRID 201.670100 ms, HYBRID V2 85.785300 ms가 관측되었고, HYBRID V2에서 기록자가 CPU보다 빨라졌다고 평가했다. 이후 메모리 풀·warmup 조합(152.902900 ms), mempool+cuBLAS+warmup(174.978400 ms), 결과 벡터 memcpy 제거(128.894800 ms), forward 함수 DTOH memcpy 제거(64.716000 ms), alpha/beta 메모리 풀(21.018800 ms), 커널 퓨전(22.342900 ms), backward 메모리 복사 제거·초기화 최적화(13.939000 ms), 커널 퓨전 완료 후(15.751000 ms), mempool+warmup calc success(15.828400 ms) 등이 관측되었다. 더 큰 규모 실행에서는 cuda graph 적용 후 backward_only가 787.8832s에서 630s로, forward가 1029s에서 668s로, forward+backward가 1138s에서 758s로 감소하는 경향이 기록되었다. 다만 이 수치들은 대부분 단일 실행 결과이며 반복 측정 기반 통계가 부족해, 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았다. 또한 메모리 풀·warmup·가중치 사전 업로드·커널 퓨전·cuda graph·pinned memory 등 여러 요소가 동시에 바뀌어 개별 효과와 전체 처리 과정의 효과를 구분하기 어렵고, preload가 의도치 않게 GPU warm up 역할을 한 사례처럼 효과 혼입이 발생할 수 있다. 정확도 지표는 기존 신경망 검증팀 프로그램과 모두 동일했으나, 실시간성 관점에서는 평균 속도뿐 아니라 최대 지연·지터·지연 스파이크 안정성도 함께 고려해야 한다. 향후 작업으로는 backward_only CUDA 구현, cudaGraph 원리 학습, 배칭·다중 스트림과 실제 환경의 괴리 검토, cuBLAS/cuSparse 재도입 시도, Nsight Compute 분석, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수·warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법 검토, Compute Throughput·Memory Throughput 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정, sparse.py와 forward/backward 기준 평균 시간 배율 차이 검사 등이 정리된다."
+      }
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00141",
+          "E00146",
+          "E00147",
+          "E00148",
+          "E00149",
+          "E00150",
+          "E00151",
+          "E00154",
+          "E00158",
+          "E00159",
+          "E00167",
+          "E00174",
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00298",
+          "E00301",
+          "E00304",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00309",
+          "E00311",
+          "E00313",
+          "E00315",
+          "E00318"
+        ],
+        "text": "본 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 옮겨 실시간 대규모 연산에 대응할 수 있는지 확인하고, 그 과정에서 적용한 최적화들을 정리한다. 메모리 풀과 warmup, 가중치 사전 업로드, cuda graph, pinned memory 등 여러 요소가 동시에 바뀌었기 때문에 개별 구성 요소의 변경 효과와 전체 처리 과정의 변경 효과를 구분하기 어렵다. preload가 의도치 않게 GPU warmup 역할을 한 사례처럼 효과가 서로 섞일 수 있어, 이를 분리하지 않으면 어떤 요소가 실제 성능 변화에 기여했는지 해석하기 어렵다. 이러한 혼입 가능성 때문에 각 최적화의 효과를 단정적으로 분리해 말하기는 제한된다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time이 13.939 ms로 기록되었으며, 출력 차원은 16이다. 40000번 루프 반복 시 D2H 복사 오버헤드가 backward 대비 forward 계산의 이득을 초과하여 forward가 더 느려지는 현상이 관측되었고, forward 최적화를 통해 backward보다 forward가 느린 문제는 해결되었다. 단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만, 92만개의 데이터를 돌리면 비슷해진다(1분 정도 차이). 이 문제는 아직 해결하지 못했다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 하였다. 각 forward, backward를 20번씩 측정을 완료하였으며, 튀는 값이 있으나 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해, 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었다. 추론(Infer) 단계에서 시간이 느려졌으며, 이에 대해 기록자가 '일단 추론에서 좀 시간이 느려지긴 했다..'라고 기록했다. GPU 클록을 고정하고 다시 실험해보기로 했으며, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했다. 클록을 2800Mhz로 고정하고 돌린 결과(기존 HostRegister)가 기록되었다. cuda 강의 19장의 GPU 클록 고정을 참고했다. 현재 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행한다. 측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용한다. infer 단계에서 40,000번 동안 CPU 스레드가 cudaStreamSynchronize로 대기하고 깨어나는 과정에서의 미세 지연과 드라이버 동기화 비용이 맞물려, Pinned 쪽이 총 루프 시간에서 약 13초 정도 느려지는 결과가 나왔다. 사용자분의 직관대로 1KB밖에 안 되는 작은 데이터를 보내면서 매 루프마다 개별 하드웨어 DMA 셋업을 부르는 오버헤드 때문에 Pinned가 No-Pin보다 총 소요 시간이 더 길게 나왔던 것이다. 여러 번 측정 결과, cudaMemcpyAsync 호출 시간에서 pinned memory 적용 버전이 미적용 버전보다 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다고 분석했다. 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라서 2copy에서 1copy로 가면서 고정 setup 비용이 줄었다고 생각했으나, 마지막 측정 결과에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다고 기록했다. pinned memory가 더 느린 이유에 대한 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구도 아니고 너무 깊게 들어가면 다른 것도 못할 것 같다고 기록했다. 결론 섹션에서 backward_only가 왜 제일 빠른지에 대한 질문을 제기했다. 평균값(n=920000) 측정 결과 표에서 cuda stream synchronize, cudaMemcpyAsync, memcpy 복사 시간을 hostRegister, hostAlloc, noPinning 간 비교했다. 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch 횟수만 세었으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했다. 추론 커널은 그대로라서 graph mode=1에서 샘플 1개 전체 기준으로는 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다. graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회이며, 이번 작업은 graph launch 횟수 자체를 줄이지는 않았다. 커널 횟수가 더 많이 줄면 더 시간도 줄어야 하지 않나? 왜 forward가 젤 많이 줄었나?라는 의문이 기록되었다."
+      }
+    }
+  },
+  "reason": "교체 문단이 허용 분량 370자를 넘었습니다."
+}

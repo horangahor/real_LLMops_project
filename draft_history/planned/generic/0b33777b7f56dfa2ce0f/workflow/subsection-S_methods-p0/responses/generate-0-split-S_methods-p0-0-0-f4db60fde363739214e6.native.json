@@ -1,0 +1,33 @@
+{
+  "id": "ed73ca08-1f81-413c-8ea6-526c705d109d",
+  "object": "chat.completion",
+  "created": 1793949417,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"parts\": {\n    \"p0\": [\n      {\n        \"text\": \"CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 교체하는 방향으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 NVIDIA C Compiler(nvcc)에서 컴파일이 가능하다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅 방향과 환경 정보를 정리한 기록이며, CUDA 컴파일러(nvcc) 사용과 C++ 기반 코드에 GPU 동작이 필요한 부분만 커널로 변경하는 조건을 전제로 한다. 초기 구상에서는 lirpa_forward_backward_fc_array.cpp의 기본 틀을 가져와 병렬 연산이 필요한 부분만 device, 즉 GPU에서 동작하는 kernel 함수로 바꾸는 방안을 검토했고, main 함수 분석에서는 epsilon 입력 시 시스템 호출 인자를 줄 수 있으며 eps 값을 변경할 수 있다고 보았다. main 함수에는 self_test_relaxations 호출과 run_xor_demo 호출이 포함되며, self_test_relaxations는 안정성 테스트용 코드로 흐름에 큰 영향을 주지 않는다고 해석했다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했고, 컴파일 옵션에는 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이며, CUDA Toolkit 설치 시 자동으로 포함되어 별도 설치는 필요하지 않다. my_lirpa_op.cu에서 cublasDgemm() 함수를 사용하기 때문에 이 라이브러리 연결이 필요하다.\",\n        \"evidence_ids\": [\n          \"E00001\",\n          \"E00002\",\n          \"E00003\",\n          \"E00004\",\n          \"E00010\",\n          \"E00016\",\n          \"E00024\",\n          \"E00025\",\n          \"E00026\",\n          \"E00034\"\n        ]\n      },\n      {\n        \"text\": \"CUDA 커널 인자 전달은 포인터(배열)와 스칼라(단일 숫자/열거형)로 구분된다. 포인터는 cudaMalloc과 cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라는 CPU 메모리 값을 커널 실행 시 Parameter Bank 또는 Constant Memory에 함께 실어 보낼 수 있다. 포인터 변수는 크기가 커서 CPU가 커널 매개변수 주머니에 값을 직접 넣어줄 수 없으므로 memcpy로 올려야 하며, 4~8바이트 수준의 값만 CPU가 직접 참조해 보낼 수 있다. 이후 구성에서는 pinned Memory 추가, cudaEvent 제어, 필요한 만큼 계산해서 D2H memcpy, certify topk 자료구조 스택화가 포함되었고, graph와 비교 시 단일 스트림 입력 복사 최적화를 논의하자는 관점이 제시되었다. 10주차 세미나 이후에는 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 미팅 일정, 배칭과 다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 과제로 기록되었다. auto lirpa repo는 https://github.com/horangahor/antenna_auto_lirpa에서 받아 실행해보기로 했다.\",\n        \"evidence_ids\": [\n          \"E00135\",\n          \"E00136\",\n          \"E00230\",\n          \"E00231\",\n          \"E00233\",\n          \"E00235\"\n        ]\n      },\n      {\n        \"text\": \"현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32 연산기)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 현재 작성자는 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산, 즉 평면적 계산을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 현재는 2차원 커널이라 fp32 코어로만 수행 중이다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다.\",\n        \"evidence_ids\": [\n          \"E00257\",\n          \"E00260\",\n          \"E00261\",\n          \"E00262\",\n          \"E00263\"\n        ]\n      }\n    ]\n  }\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 49270,
+    "completion_tokens": 1057,
+    "total_tokens": 50327,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

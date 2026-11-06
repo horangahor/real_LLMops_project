@@ -1,0 +1,29 @@
+{
+  "request_fingerprint": "10749bcac68b3b09e413d21e8164368eff2f1fbd6116677ae6cfb0d5ac86c431",
+  "value": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00155",
+          "E00156",
+          "E00157",
+          "E00158",
+          "E00159",
+          "E00160",
+          "E00161",
+          "E00162",
+          "E00165",
+          "E00166",
+          "E00167",
+          "E00172",
+          "E00201",
+          "E00259",
+          "E00318",
+          "E00319",
+          "E00330"
+        ],
+        "text": "방법·구현·설정의 효율 및 배포·운용 측면 검토 범위는 이 절에서 다루지 않는다. 대신 전체 처리 과정을 비교할 때 여러 요소가 동시에 바뀌어 개별 요소의 효과를 분리하기 어려웠던 점을 정리한다. 연구 일지에서 확인된 범위로 보면, GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했고, mempool + warmup + 결과 벡터 memcpy 제거 적용 후 실행 시간이 약 10ms 추가로 단축되었다. make_zero_matrix·make_zero_vector를 CPU로 회귀한 결과 22~25ms 정도 줄어들었으며, 영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 늘어나 CPU로 두는 것이 좋을 것이라고 판단했다. cudaHostRegister가 No Pinning보다 느리게 측정된 점, pinned 적용 버전의 cudaMemcpyAsync가 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 된 점, 40000번 루프에서 forward가 backward보다 느려진 점 등이 관측되었다. backward_bound_gpu에서는 affine 중복 계산 삭제·포인터 스와핑·행렬곱 커널 통합·커널 퓨전을 적용했고, forward-backward 간 alpha/beta 값을 메모리 풀에 올려 전달 과정을 삭제했으며, bias도 메모리 풀에서 관리하도록 변경했고, forward 최종 계산의 D2H 복사 과정에서 비효율적인 부분을 최적화했다."
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00311",
+          "E00313",
+          "H85ca0e507c4e_85",
+          "E00320",
+          "E00322",
+          "E00339",
+          "E00189",
+          "E00206",
+          "E00207",
+          "E00208",
+          "E00157",
+          "E00167",
+          "E00065",
+          "E00066",
+          "E00067",
+          "E00090",
+          "E00347",
+          "E00350",
+          "E00351",
+          "E00231",
+          "E00232"
+        ],
+        "text": "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 크기는 1로 설정하였다. 실행 방식은 CROWN의 세 가지 방법(forward, forward+backward, backward_only)을 사용했고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 측정 범위는 3-layer 네트워크 기준으로 CUDA kernel launch만 계수하며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하였다. 이 조건에서 커널 퓨전과 backward_only의 메모리 복사 커널 제거를 적용한 결과, bound 내 커널 호출 횟수는 Forward method=0 27→18회, Backward method=1 46→31회, Backward-only method=2 45→33회로 줄었고, graph mode=1에서 샘플 1개 전체 기준으로는 Forward 33→24회, Backward 52→37회, Backward-only 51→39회로 감소하였다. memcpy 호출 횟수는 66개에서 56개로 줄어든 사례가 기록되었고, 가중치만 미리 업로드한 v1-1-2에서는 149~155ms 범위가 관측되었다. 실행 시간 감소 요약으로는 1138s에서 758s로 줄어든 값이 언급된다. 다만 여러 최적화가 함께 적용·제거되는 과정이 많아 개별 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 단일 실행 결과 중심의 관측이 많다. 시간 측정은 각 forward, backward를 20번씩 측정 완료했으며, elapsed 타임과 미세한 오차가 있어 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하였다. warm up 적용 후 걸리는 시간과 평균 시간이 더 늘어났고, forward가 warm up 이전 backward 급 속도가 나올 정도였으며, warm up을 해도 스파이크 데이터가 뜨고 가끔 10번 측정 시 평균 시간이 느려지는 문제가 생겼다. 반면 warm up도 warm up 이전 버전과 측정 시간에서 큰 차이 나지 않았고, 스파이크가 안 뜰 때 시간이 더 안정적인 듯했다. forward 최종 계산의 D2H 복사 과정에서 비효율적인 부분이 있어 정확한 테스트를 위해 최적화를 진행했으며, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상은 아직 해결하지 못했다. 비교 구성은 CPU ONLY, GPU OPTIMIZED(cuBLAS+Pool), HYBRID(matmul=GPU, rest=CPU), HYBRID V2, mempool+warmup, cuda graph 적용 버전 등으로 정리되며, 각 구성은 통제하는 범위가 다르다. 다만 mempool의 ensure_pool()을 통한 사전 메모리 할당 효과, cuBLAS+warmup의 라이브러리 호출과 예열 효과, cuda graph의 반복 커널 실행 경로 고정 효과 등은 정성적 판단이나 단일 실행 관측 수준으로 기록되어 있고, HYBRID V2가 CPU보다 느리다는 점과 CPU 캐시 영향 추정, 1회 측정 계획은 해석·계획 메모이며, VRAM 사용량이 300MB 이내라는 판단과 발표 활용 계획도 구체적 근거 수치가 원문에 없다. 또한 FP32 변경 및 Nsight Compute 분석 관련 의견·질문·초기 생각은 계획·해석 기록으로 남아 있으며, graph와 비교 시 단일 스트림 입력 복사 최적화 관점 제안과 infer 크기 계산 주석 처리·certify heap 재변경 여부 검토 후보도 실제 적용 결과나 성능 변화는 포함하지 않는다."
+      }
+    }
+  },
+  "reason": "교체 문단이 허용 분량 565자를 넘었습니다."
+}

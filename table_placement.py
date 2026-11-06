@@ -77,6 +77,8 @@ def resolve_table_placements(engine, folder, plan, research):
         for section in conflicts[key]:
             if section["id"] != keep:
                 section["table_ids"] = [table_id for table_id in section["table_ids"] if table_id != key]
+                if "table_placements" in section:
+                    section["table_placements"] = [p for p in section["table_placements"] if p["table_id"] != key]
         adjustments.append({"table_id": key, "original_section_ids": candidate_ids[key],
                             "selected_section_id": keep, "reason": row["reason"]})
     result["table_placement_adjustments"] = result.get("table_placement_adjustments", []) + adjustments

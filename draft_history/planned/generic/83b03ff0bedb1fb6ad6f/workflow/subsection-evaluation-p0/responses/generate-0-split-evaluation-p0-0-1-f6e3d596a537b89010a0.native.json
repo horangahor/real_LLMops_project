@@ -1,0 +1,33 @@
+{
+  "id": "88803d36-7794-4481-a0fd-7ef248cbeb51",
+  "object": "chat.completion",
+  "created": 1793892329,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": [{\"text\": \"현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 반면 antenna_lirpa는 멀티스트림이 아니라 싱글 스트림으로 동작하지만 cuBLAS Batched GEMM과 텐서 코어를 활용하여 현재 C++ 멀티스트림보다 약 4배 빠르다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 그래프 적용 결과는 787.8832초로 3가지 방법 중 가장 빠르다고 기록되었으며, avg 기준 forward는 1029초, forward+backward는 1138초로 비교되었다. cudaHostRegister와 No Pinning 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이이다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. backward_only_cuda_graph의 실행 시간은 787초에서 630초로 약 157초 감소하였고, forward 방식은 1029초에서 668초로 감소하였다. 버전별 실행 시간 요약으로 v0 단독 CPU 처리 96ms, v1 모든 병렬처리 함수를 커널 함수로 바꿈 355ms(my_lirpa.cu), v2 벡터 연산은 다시 CPU로 처리·메모리풀·cuBlas 도입 229ms(crown_test_op_only_GPU.cu), v3 CPU·GPU 하이브리드·풀 구조체 축소 200ms(crown_test_op_hybrid.cu)가 기록되었다. 실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간은 1055.282초, infer는 131.7986초, bound는 920.8438초로 측정되었다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 비교는 CPU/GPU 실행 시간·지연·지터·WCET 중심의 해석이며, 정확도 지표보다 실행 시간·지연·지터·WCET 중심의 비교와 해석상 주의점을 강조한다. 현재 C++ 멀티스트림과 antenna_lirpa의 비교는 p68의 figure 캡션에 기록된 방식·소요 시간·병목 해석이며, 반복 측정 통계는 포함하지 않는다. cudaHostRegister와 No Pinning 간 전체 실행 시간 차이 및 단계별 차이는 p74의 figure 캡션에 기록된 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다. backward_only_cuda_graph와 forward 방식의 실행 시간 감소는 요약된 결과이며 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다. 버전별 실행 시간 요약은 v0~v3 버전별 요약 기록이며, 각 버전의 정확한 측정 조건·반복 측정 통계나 비교 해석은 현재 페이지에 없다. 실시간 멀티스트림 구성의 수치는 표의 단일 행에 제시된 값이며, 반복 측정 통계나 다른 조건과의 비교 해석은 포함하지 않는다. 차기 로드맵(방법 C)은 목표·방식 서술이며, 실제 구현·평가 결과는 포함하지 않는다. 30초~1분대 진입은 목표치이지 실측값이 아니며, 전체 40,000개 규모에서의 실현 여부는 아직 검증되지 않았다. 이 절은 사용자가 설명한 범위에서 짧게 반영하며, 부족한 세부 기준·수치·실험을 추가하지 않는다. CROWN을 CPU환경에서만 실행해봤고, 실시간 환경에서 이런 대규모 연산을 충족할 수 있는가에 대한 연구가 이번 연구라는 점은 사용자가 설명한 범위에서 짧게 반영한다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계라는 점도 사용자가 설명한 범위에서 짧게 반영한다. 평가 대상은 CROWN을 구현한 C++ 프로그램을 대상으로 진행했고, 신경망 크기, 배치 사이즈는 1, 실행 방식은 CROWN의 3가지 방법 forward, forward+backward, backward_only, 데이터셋은 기존 신경망 검증팀의 구현과 시간을 비교하기 위함이므로 신경망 검증팀이 사용하던 데이터셋과 eps_list를 사용했다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 얼마나 검증 결과, 비율이 차이나는지인데, 모두 동일했다. GPU 클록 고정은 연구 일지에서 봤듯이 나중에 고정된 사항이고, warm up은 초기에 되었다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계다. 따로 정리한 표도 없고, 없다. 이 절은 사용자가 설명한 범위에서 짧게 반영하며, 부족한 세부 기준·수치·실험을 추가하지 않는다.\", \"evidence_ids\": [\"E00257\", \"E00261\", \"E00262\", \"E00263\", \"E00274\", \"E00277\", \"E00278\", \"E00358\", \"E00361\", \"E00368\", \"E00375\"]}]}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 24647,
+    "completion_tokens": 1231,
+    "total_tokens": 25878,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

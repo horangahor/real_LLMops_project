@@ -2,7 +2,7 @@
 
 연구 자료와 참고 논문의 구조·문체 가이드로 논문별 작성 계획을 만들고,
 계획에 따라 소절 작성·검토, 장별 편집·검토, 전체 편집·검토를 수행하는 Streamlit 서비스다.
-기존 CUDA 고정 목차 작성기는 비교 모드로 보존한다.
+기존 CUDA 고정 목차 비교 경로는 제거했으며, 근거 수집의 요구사항 기반·전체 수집 모드는 모두 지원한다.
 
 다른 컴퓨터에서 설정하고 이어갈 작업은 [HANDOFF.md](HANDOFF.md)를 먼저 확인한다.
 검증한 의존성은 `requirements.txt`, 비밀 값이 없는 설정 예시는 `.env.example`에 있다.
@@ -44,7 +44,7 @@ v3는 질문·계획·해석·인용된 AI 조언도 귀속과 한계를 보존�
 `projects/generic.json`은 일반 작성 정책이고 `projects/cuda.json`은 CUDA 원본 PDF 경로와 빈 관련 연구 정책만 지정한다.
 CUDA 프로젝트도 원본 PDF에서 근거를 자동 추출한다. 기존 수작업 파일은 과거 비교 기록으로 보존하며 새 작성에는 읽지 않는다.
 
-앱에서 **연구 자료에 맞춰 계획**을 선택하고 연구 PDF를 업로드한다. 프로젝트의 `input/` 폴더에 PDF를 넣으면 **input 폴더의 연구 자료**에서 바로 선택할 수도 있다.
+앱에서 연구 PDF를 업로드하면 연구 자료에 맞춰 작성 계획을 만든다. 프로젝트의 `input/` 폴더에 PDF를 넣으면 **input 폴더의 연구 자료**에서 바로 선택할 수도 있다.
 **CUDA 원본 PDF 자동 분석**도 같은 자동 추출을 사용한다. **작성 계획만 만들기**로 먼저 계획을 볼 수 있다.
 **연구 근거만 추출하기**는 골든 가이드·계획·본문 생성 없이 근거 목록을 만들고 유형·주장 강도별로 원문을 확인한다. JSON·Markdown 다운로드를 지원한다. 이 작업은 이전 초안을 갱신하지 않는다.
 완료한 일반 초안은 `draft_history/planned/<project>/<입력 식별자>/`에 저장되고 앱 재시작 시 마지막 정상 초안을 불러온다.
@@ -63,29 +63,13 @@ python -X utf8 -B planned_paper.py --project cuda --plan-only
 추출 결과는 해당 원본의 `draft_history/parse-api-v1/<원본 식별자>/research-evidence-v3/<출처 식별자>/evidence.json`과 `evidence.md`에 저장한다. `source-archive.json`, 페이지별 보완 기록·최종 수집 대장도 같은 실행 폴더에 둔다. 원래 Parse·이미지 재분석·모델 응답과 v1/v2 결과는 보존한다.
 
 새 Python 호출은 `PaperDraftOrchestrator.run_pipeline(planning_mode="adaptive", project_id="generic", ...)`로 사용한다.
-API의 생략 기본값도 `adaptive`다. 고정 목차를 비교하려면 `planning_mode="legacy_cuda"`를 명시한다. 비교 경로도 추출물을 수작업 근거로 자동 교체하지 않는다.
+API의 생략 기본값도 `adaptive`다. 삭제한 고정 구성의 모드 값은 입력·API 처리 전에 거부한다. CUDA 원본 PDF도 현재 계획 기반 경로에서 분석한다.
 
 필수 내용 충족률과 참고 구성 적용 판정은 LLM 보조 검토다. 실제 본문 인용·ID를 코드로 확인하지만 독립적인 품질 정답은 아니다.
 연구별로 미리 정한 외부 평가 항목과 사람 검수 기준을 함께 사용해야 한다. 평가 항목의 정의는 `evaluation/planning/README.md`에 있다.
 연구 근거 추출의 내용 평가 기준·항목별 판정·재계산 코드는 `evaluation/extraction/benchmark/`에 있다. [1차 평가 보고서](evaluation/extraction/benchmark/report.md)는 CUDA 원문과의 충실도·출처 완전성·값/단위/조건·표본 필수 사실 누락·과도한 제외를 분리한다. 평가용 참조 사실은 작성 입력에 전달하지 않는다.
 
 [v2 비교 보고서](evaluation/extraction/v2/report.md): 같은42개 개발 참조 사실의 완전 보존이15/42(35.7%)→33/42(78.6%), 작성 입력까지 완전 보존은3/42→24/42다. 후보479개·작성용399개는 개수이며 전체 정확도 점수가 아니다. CUDA 한 자료에서의 Codex 단독 개발 평가로, 다른 연구 자료의 일반화 성능은 아직 확인하지 않았다. 테스트146개와 실제 캐시의 네트워크 금지 재생·앱 페이지/필터/이전 초안 보존을 확인했다. 기존7장 초안은 새 근거로 재생성하지 않았다.
-
-## 기존 CUDA 비교 모드의 논문 구성
-
-서론과 결론은 소절 없이 연결된 문단으로 작성한다. 본문은 장마다 세 소절만 사용한다.
-
-| 장 | 소절 구성 |
-| --- | --- |
-| 1장 서론 | 소절 없음: 배경 → 문제 → 목표·기여 |
-| 3장 배경·문제 정의 | 3.1 배경 개념 / 3.2 기존 계산 흐름 / 3.3 문제 정의 |
-| 4장 방법론 | 4.1 전체 구조 / 4.2 메모리·데이터 이동 / 4.3 커널·실행 최적화 |
-| 5장 실험·고찰 | 5.1 실험 설계 / 5.2 결과 및 분석 / 5.3 한계와 미해결 문제 |
-| 6장 결론 | 소절 없음: 핵심 발견 → 성과 → 한계·후속 과제 |
-
-프로파일링과 대규모 입력 실험은 5.2 안에서 문단·표로 구분하며,
-별도 5.6 결과 요약은 만들지 않는다. 조건이 다른 실험을 한 표에 합치지는 않는다.
-`SECTION_SUBSECTIONS`를 작성·검토·종합 편집이 공유하고 코드 검사로도 확인한다.
 
 ## 실행
 
@@ -101,61 +85,6 @@ python-dotenv가 필요하다. `.env`의 기존 Upstage 설정을 사용한다.
 
 브라우저에서 http://localhost:8501 에 접속한다.
 CLI는 `.\.venv\Scripts\python.exe paper_draft_agent.py`로 실행한다.
-아래 호출 횟수는 **기존 CUDA 고정 구성 모드** 기준이다. 연구별 계획 경로는 근거 추출·계획·장 수·수정 횟수에 따라 달라진다.
-완료한 호출은 캐시로 재사용한다. 기존 모드는 장별 5회 → 검토 → 종합 편집 → 재검토로 기본 8회의 Solar API 호출을 사용한다.
-주요 오류가 남으면 종합 편집과 검토를 한 번 더 수행한다(최대 10회).
-현재 CUDA 검토 프로파일에는 서론·결과·결론 전용 근거가 있으며, 종합 편집 후 세 장을 선택
-근거로 다시 작성한다. 이 경우 기본 11회, 추가 수정까지 최대 16회 호출한다.
-
-## 이전 수작업 근거·결과표 실험 기록 (현재 실행에서 제외)
-
-아래는 과거 CUDA 실험의 구현 설명이다. 수작업 프로파일을 로드하는 연결은 제거했고, 기존 파일·보조 함수만 비교 기록으로 보존한다.
-
-`paper_content.py`는 검토 프로파일의 `section_briefs.selected_facts`를 통해 장별 작성
-자료를 분리한다. 서론은 목표·문제·기여 중심, 결론은 선택한 대표 관측과 의미 중심으로
-작성하며, 다른 장의 전체 실험 이력 대신 목적·소절 구성을 문맥으로 받는다.
-결과 장의 해석 작성자에게도 표의 역할·조건과 정성적 관측을 주고 셀 값은 주지 않는다.
-종합 편집 뒤에도 결과·서론·결론을 이 자료로 독립 정리하여 수치 나열이 다시 유입되는 것을 줄인다.
-
-`research_evidence.json`의 `result_tables`는 기존 검토 근거에 연결한 표 데이터다.
-초기 실행, 후기 단일 실행, 평균 bound 계산, 추론·bound·검증, 배칭, 입력 복사 실험을
-별도 표로 렌더링한다. 모델은 해석 문장을 작성하고 표의 셀은 코드가 조립한다.
-새 실험이나 가속비를 계산해 추가하지 않는다. 종합 편집에서 표가 빠지거나 바뀌어도
-5.2에 검토된 표를 다시 배치한다. 다른 연구의 미검토 추출물에는 이 CUDA 표를 적용하지 않는다.
-초안과 검토 기록에는 작성 정책 버전과 글자 수·단위가 붙은 수치 개수·표 행 수를 기록한다.
-이 값은 전후 비교용이며 글이 짧다는 이유로 품질이 높다고 판정하지 않는다.
-
-## 기존 CUDA 고정 구성의 Orchestrator–worker 흐름
-
-```text
-연구 PDF → method_result.py (Studio Agent) → 연구 사실 JSON
-참고 논문 → Document Parse API → Python 목차 복원·검증 → Solar 작성 가이드
-                  (원본 요소·페이지·좌표 보존)              ↓
-                                                구조·문체 프로파일
-                                     ↓
-                        PaperDraftOrchestrator
-                                     ↓
-       SectionWriter: 3장 → 4장 → 5장 → 1장 → 6장
-              각 worker는 앞서 작성한 장을 문맥으로 받음
-                                     ↓
-       PaperReviewer: 원문 검토 근거와 장별 주장을 대조
-                                     ↓
-       PaperSynthesizer: 검토 지적을 반영하여 종합 편집
-                                     ↓
-       PaperReviewer + 알려진 오류 재발 검사: 수정 결과 재검토
-                                     ↓
-       1장 → 빈 2장 → 3장 → 4장 → 5장 → 6장으로 조립·저장
-```
-
-현재는 Python에서 명시적으로 순서를 제어한다. LangGraph, FastAPI, ChromaDB,
-SSE, Docker는 아직 이 구현에 포함하지 않는다.
-
-기존 CUDA 비교 모드의 기본 실행은 저장된 `Results & Discussion.json`과 `paper_structure_analysis.json`을
-읽는다. 참고 스타일을 새로 분석하려면 `paper_structure.py`를 별도로 실행한다.
-CUDA 연구 PDF를 업로드하면 기존 연구 JSON의 존재 여부와 관계없이 Studio Agent로
-다시 추출한다. 현재 추출기는 결과를 `Results & Discussion.json`에 저장한다.
-연구 데이터와 별개로 참고 논문은 문체와 구조만 제공한다.
-
 ## 골든 샘플 분석
 
 골든 참고 논문의 분석은 Studio 없이 `paper_structure.py`에서 실행한다.
@@ -176,7 +105,7 @@ paragraph로 오분류된 절, 제목으로 오분류된 반복 페이지 머리
 부모·시작 페이지도 일치했다. 두 샘플을 보며 규칙을 개선했으므로 독립 검증이나 다른 논문 전체의 정확도가 아니다.
 상세 비교는 `evaluation/golden/results/parse-api-v1-validation.md`에 있다.
 이전 Studio Config 2·3·4와 RGBD Config 4 결과는 비교 기준으로 `evaluation/golden/`에 그대로 보관한다.
-이번 전환은 참고 논문 분석 경로이며, CUDA 연구 자료를 추출하는 `method_result.py`의 Studio 경로는 별도다.
+연구 자료 추출과 골든 샘플 분석은 모두 현재의 Parse 기반 경로를 사용한다.
 새 프로파일은 `schema_version: 2`로 저장하며, 다음 항목을 구분한다.
 
 - `observed_outline`: 실제 관찰된 목차와 하위 절. 확인되지 않은 페이지는 `null`.
@@ -247,23 +176,16 @@ PDF나 추출 결과가 바뀌면 기존 검토 결과를 새 자료에 그대�
 - `draft_history/planned/`: 입력별 계획·초안·원본 응답·검토·진단 지표. 완료한 앱 초안의 마지막 위치도 기록한다.
 - `evaluation/planning/`: 일반 작성 경로의 평가 정의 및 실행 검증 결과.
 
-아래는 기존 CUDA 비교 모드의 코드와 산출물이다.
-
-- `paper_draft_agent.py`: 장별 worker, 종합 worker, orchestrator, CLI.
-- `paper_prompts.py`: 장별 역할과 근거 사용 지침.
-- `paper_quality.py`: 알려진 오류 검사와 과거 검토 근거 재현용 보조 함수. 수작업 프로파일 로더는 현재 실행에서 호출하지 않는다.
+- `paper_draft_agent.py`: 공통 가이드 로더, 두 근거 수집 모드와 계획 기반 작성을 연결하는 진입점, CLI.
 - `archive/manual-evidence/research_evidence.json`: 과거 수작업 검토 기록. 현재 초안의 연구 근거로 사용하지 않는다.
 - `streamlit_app.py`: 입력 선택, 진행 상황, 초안 보기, Markdown/TXT 다운로드.
-- `paper_draft_full.md`, `paper_draft_full.txt`: 새로 생성하는 전체 초안.
-- `paper_draft_sections.json`: 종합 전 장별 초안과 종합 후 장별 본문.
-- `paper_draft_review.json`: 검토 지적, 수정 후 검토 결과, 사용한 근거 출처.
-- `paper_draft_candidate.md`, `paper_draft_review_failed.json`: 검토 미통과 시 후보와 지적.
+- 루트의 `paper_draft_full.*`, `paper_draft_sections.json`, `paper_draft_review*.json`: 보존한 과거 고정 구성의 산출물. 현재 앱은 자동으로 불러오거나 갱신하지 않는다.
 - `archive/legacy-drafts/paper_draft_section4_5.md`: 기존 4·5장 초안. 새 생성에서 갱신하지 않는다.
 
-전체 초안을 아직 생성하지 않았다면 화면에는 기존 4·5장 초안을 표시한다.
-모든 장과 종합 응답의 형식 검증이 성공한 뒤 산출물을 갱신한다.
+현재 앱은 `draft_history/planned/latest.json`의 검증된 계획 기반 초안을 불러온다.
+현재 작성·검토 정책에 따른 완료 조건을 만족한 뒤 마지막 초안 위치를 갱신한다.
 연구 자료에 없는 정보는 `[확인 필요: ...]`로 표시하도록 지시한다.
-검토는 LLM 판단과 알려진 오류의 재발 검사를 조합한다. 모든 사실을 자동 증명하거나
+검토는 LLM 판단과 본문·근거 ID·구성 검사를 조합한다. 모든 사실을 자동 증명하거나
 독립 재실험하는 체계는 아니며, 저자가 측정 조건·수치 정확성·연구 주장을 최종 확인해야 한다.
 초록과 참고문헌은 현재 생성 범위에 포함하지 않는다.
 
@@ -273,5 +195,5 @@ PDF나 추출 결과가 바뀌면 기존 검토 결과를 새 자료에 그대�
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-외부 호출을 대체하여 장별 의존 관계, 종합 입력, 빈 관련 연구, PDF 재추출,
-실패 시 기존 초안 보존을 검증한다.
+외부 호출을 대체하여 두 근거 수집 모드, 자료별 계획·소절 작성·편집·검토,
+캐시 재개와 실패 시 기존 초안 보존을 검증한다.

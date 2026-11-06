@@ -1,0 +1,36 @@
+{
+  "request_fingerprint": "fcabebe92c345c3e31812f4c1f31ea9a0b781f24d1880f929dbd2597cdc38a20",
+  "value": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00118",
+          "E00119",
+          "E00120",
+          "E00122",
+          "E00123",
+          "E00124",
+          "E00125",
+          "E00126",
+          "E00127",
+          "E00128",
+          "E00129",
+          "E00130",
+          "E00131",
+          "E00132",
+          "E00133",
+          "E00135",
+          "E00136",
+          "E00137",
+          "E00138",
+          "E00141",
+          "E00142",
+          "E00143",
+          "E00326",
+          "E00329"
+        ],
+        "text": "lirpa_forward_bound의 함수들을 커널 퓨전해 CROWN Verification을 실행한 결과, 단일 실행 기준으로 22.342900ms가 기록되었고 22ms 초반까지 나오는 경우도 관측되었다. 이후 backward_bound_gpu에서 affine 중복 계산을 삭제해 커널 2개 함수가 줄고, new_(upper, lower)_p를 복사 대신 std::swap으로 포인터 스와핑했으며, backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합했다. 이 통합 후에는 22ms가 보이는 비율이 늘고 최저점(28ms)이 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu의 커널 퓨전도 함께 진행되었다. alpha/beta 값을 메모리 풀에 올려 forward-backward 간 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 backward가 host에서 H2D 복사하지 않고 GPU 버퍼를 직접 쓰도록 바꾸면서 D2D 복사 4회를 1회로 통합했다. 이 적용 후 단일 실행 기준으로 21.018800ms가 기록되었고 21.0ms 정도로 관측되었다. bias도 메모리 풀에서 관리하도록 변경했으며, 5번까지 적용했을 때 최고 성능이 나왔다고 기록되었다. 이후 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선해 GPU→CPU 메모리 복사를 최소화했고, 미리 작성해둔 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하는 커널 퓨전이 완료되었다. Backward의 메모리 복사 제거 및 초기화 최적화 후에는 13.939000ms가 기록되었다. 다만 제시된 수치는 모두 단일 실행 결과이며, 반복 측정 통계나 조건별 분리 측정은 현재 기록에 제시되지 않았다."
+      }
+    }
+  }
+}

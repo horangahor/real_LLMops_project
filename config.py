@@ -11,10 +11,6 @@ SOLAR_MODEL = os.getenv("SOLAR_MODEL", "solar-pro4")
 
 # Agent 설정 (필요시 사용)
 
-# 방법, 결과 추출 에이전트
-METHOD_RESULT_AGENT_ID = os.getenv("METHOD_RESULT_AGENT_ID")
-METHOD_RESULT_CONFIG_ID = os.getenv("METHOD_RESULT_CONFIG_ID")
-
 # 논문 구조 파싱 에이전트
 STRUCTURE_AGENT_ID = os.getenv("STRUCTURE_AGENT_ID")
 STRUCTURE_CONFIG_ID = os.getenv("STRUCTURE_CONFIG_ID")

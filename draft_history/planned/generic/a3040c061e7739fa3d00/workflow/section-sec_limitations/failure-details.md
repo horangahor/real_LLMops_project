@@ -1,0 +1,10 @@
+# 작성 검토 실패: section-sec_limitations
+
+## 검토 지적
+
+- [editorial; 처리 책임: editor] sec_limitations_p3과 sec_limitations_p5에서 'ablation study를 수행하지 못한 점'이 한계로 반복 서술되어, 동일 절 내에서 같은 제약 항목이 중복 제시된다.
+  - 문단: sec_limitations_p1; 근거: 미지정
+  - 실제 본문: 본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어 CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]
+- [editorial; 처리 책임: editor] sec_limitations_p5의 마지막 문장이 sec_limitations_p3의 마지막 문장과 거의 같은 내용으로 ablation study 미수행 한계를 다시 적어, 절 끝에서 같은 한계가 재등장한다.
+  - 문단: sec_limitations_p5; 근거: 미지정
+  - 실제 본문: 본 연구의 검증 범위는 256-491-491-16 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 데이터셋·eps_list로 한정되며, CROWN의 forward·forward+backward·backward_only 실행 방식 중 forward+backward를 유지했다. 향후 과제로 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 배칭·다중 스트림과 실제 환경의 괴리 검토, 컴파일러 팀 모델 공유가 정리되었다. cuBlas·cuSparse 도입은 보류했고, CROWN range 정렬 문제는 localrobustness_fwd_bwd.py 코드를 참고해 알고리즘 완성을 목표로 했다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못해 한계로 남는다. [근거:E00333,E00233,E00334,U5d2b168fab4a92747ee6]

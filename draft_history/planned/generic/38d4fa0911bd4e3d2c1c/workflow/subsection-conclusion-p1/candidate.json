@@ -1,0 +1,368 @@
+{
+  "sections": {
+    "conclusion": {
+      "parts": {
+        "p0": "본 연구는 CROWN 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현하고 최적화하는 과정을 다룬다. forward 함수의 DTOH memcpy를 극단적으로 제거한 결과 CROWN Verification 실행 시간은 64.716 ms로 기록되었고, 커널 퓨전 완료 후에는 15.751 ms로 관측되었다. 또한 Pinned Memory는 최악 지연시간(WCET)을 1.64 ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00083,E00144,E00296]\n\n주요 정량 결과는 버전·모드별 실행 시간 변화로 정리된다. GPU 버전은 353.057200 ms, GPU OPTIMIZED(cuBLAS + Pool)는 229.691800 ms, HYBRID(matmul=GPU, rest=CPU)는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었다. GPU OPTIMIZED는 약 100ms 줄었으나 여전히 CPU보다 느렸고, HYBRID V2에서 처음으로 CPU보다 빨라졌다. 이후 메모리 풀과 warm up, memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀, backward 메모리 복사 제거 및 초기화 최적화 등을 거치며 실행 시간이 추가로 감소하였다. 다만 각 수치는 단일 실행 결과이며, CPU 버전과의 반복 측정 기반 비교나 통계적 해석은 현재 자료에 제시되지 않았다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00106,E00119,E00131,E00139,E00144]\n\n주요 정량 결과는 메모리 관리 방식과 실행 모드에 따라 달라진다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으며, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐지만, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필요하다고 정리되었다. [근거:E00277,E00278,E00296]\n\n본 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 구현하고 실시간 대규모 연산에 적합하도록 최적화하는 과정을 정리한다. 기존 신경망 검증팀이 사용하던 256-491-491-16 크기의 신경망과 입력 데이터셋, eps_list를 그대로 사용했으며, CROWN의 세 실행 방식(forward, forward+backward, backward_only)을 대상으로 최적화를 진행했다. GPU 클록 고정은 후반부에 적용되었고, warm up은 초기에 도입되었다. [근거:E00257,E00274,E00358,E00361,E00368,E00375,E00374,E00319,E00072,E00076,E00077,E00132,E00326,E00329,E00202,E00174,E00045,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00260]\n\n본 연구는 CROWN 신경망 검증을 CPU 중심·오프라인 환경에서만 수행해 온 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현하고 최적화하는 과정을 다룬다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기·배치 크기·실행 방식(forward, forward+backward, backward_only)과 데이터셋·eps_list는 기존 신경망 검증팀이 사용하던 입력을 기준으로 삼았다. GPU 클록 고정과 warm up은 연구 과정에서 순차적으로 적용된 조건이다. 핵심 정량 결과로, 실행 시간이 1138s에서 758s로 감소한 사례가 기록되었다. 다만 이 수치는 감소 전후를 함께 요약한 기록이며, 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다. 또한 최적화 과정에서 여러 버전·모드가 적용·해제되며 실행 시간 변화가 관측되었으나, 각 최적화 기법을 체계적으로 분리한 ablation study는 수행되지 못했다는 한계가 있다. [근거:E00320]\n\n본 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현·최적화하는 과정을 다룬다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16)와 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only), 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. GPU 클록 고정은 이후 단계에서 적용된 사항이고, warm up은 초기에 적용되었다. 최적화 기법들은 대부분 적용했다가 해제하는 방식으로 검토되었으며, 각 기법을 체계적으로 분리한 ablation study는 수행하지 못했다. [근거:E00030,E00033,E00071,E00073,E00074,E00081,E00261,E00262,E00263]\n\n주요 정량 결과는 버전·모드별 실행 시간 변화로 정리된다. CPU ONLY 101.237800 ms, GPU only 353.057200 ms, GPU OPTIMIZED 229.691800 ms, HYBRID 201.670100 ms, HYBRID V2 85.785300 ms, mempool + warmup 152.902900 ms, mempool + cuBlas + warmup 174.978400 ms, mempool + warmup + memcpy 제거 115.469900 ms, alpha/beta 메모리 풀 21.018800 ms, 커널 퓨전 완료 후 15.751000 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms로 나타났다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. mempool + warmup 조합은 두 요소만으로 거의 200ms 단축되는 효과가 있었으며, 현재 가장 중요한 병목은 memcpy로 이를 해결해야 CPU보다 빨라질 수 있다고 기록되었다. my_lirpa_mempool_warmup.cu의 make_zero_matrix, make_zero_vector는 다시 CPU 실행으로 회귀시켰다. [근거:E00030,E00033,E00071,E00073,E00074,E00081]\n\nmempool + warmup + 결과 벡터 memcpy 제거 적용 후 CROWN Verification 출력 16개 차원에 대해 Lower Bound, Upper Bound, Normal Pred (y) 값이 출력되었으며, 예시 값으로 0번 출력의 Lower/Upper/Normal이 0.081772 / 0.082159 / 0.081966, 1번 출력이 0.273538 / 0.273823 / 0.273680, 2번 출력이 0.102147 / 0.102482 / 0.102314, 3번 출력이 0.114244 / 0.114541 / 0.114393, 4번 출력이 2.670552 / 2.670843 / 2.670697, 5번 출력이 1.846574 / 1.846872 / 1.846723, 6번 출력이 -1.714750 / -1.714490 / -1.714620, 7번 출력이 -1.880139 / -1.879695 / -1.879916, 8번 출력이 0.706986 / 0.707275 / 0.707131, 9번 출력이 -2.612086 / -2.611722 / -2.611904, 10번 출력이 0.003713 / 0.003976 / 0.003845, 11번 출력이 1.310476 / 1.310817 / 1.310646, 12번 출력이 2.049539 / 2.049839 / 2.049689, 13번 출력이 -1.025923 / -1.025597 / -1.025760, 14번 출력이 1.082576 / 1.082852 / 1.082714, 15번 출력이 -3.404772 / -3.404355 / -3.404563으로 표시되었다. 이 결과는 단일 실행 출력값 기록이며, 다른 조건과의 수치 동일성 여부나 정확도 해석은 이 요소만으로는 제시되지 않았다. [근거:E00081]\n\n수준별로 구분된 주요 발견은 backward_only가 graph 미적용 상태에서도 bound 평균이 forward 대비 약 2.5배 수준으로 관측된 점, 그래프 적용 후 backward_only가 787.8832s로 forward(1029s), forward+backward(1138s)보다 빨랐던 점 등으로 정리된다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 방법 C의 목표·방식은 로드맵상 서술이며 실제 구현·평가 결과는 포함하지 않는다. [근거:E00261,E00262,E00263]"
+      }
+    }
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "conc_item_2",
+        "verdict": "met",
+        "paragraph_ids": [
+          "conclusion_p2",
+          "conclusion_p7"
+        ],
+        "evidence_ids": [
+          "E00021",
+          "E00027",
+          "E00029",
+          "E00031",
+          "E00035",
+          "E00044",
+          "E00046",
+          "E00064",
+          "E00075",
+          "E00106",
+          "E00119",
+          "E00131",
+          "E00139",
+          "E00144"
+        ],
+        "quote": "주요 정량 결과는 버전·모드별 실행 시간 변화로 정리된다. GPU 버전은 353.057200 ms, GPU OPTIMIZED(cuBLAS + Pool)는 229.691800 ms, HYBRID(matmul=GPU, rest=CPU)는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었다. GPU OPTIMIZED는 약 100ms 줄었으나 여전히 CPU보다 느렸고, HYBRID V2에서 처음으로 CPU보다 빨라졌다. 이후 메모리 풀과 warm up, memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀, backward 메모리 복사 제거 및 초기화 최적화 등을 거치며 실행 시간이 추가로 감소하였다. 다만 각 수치는 단일 실행 결과이며, CPU 버전과의 반복 측정 기반 비교나 통계적 해석은 현재 자료에 제시되지 않았다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00106,E00119,E00131,E00139,E00144]",
+        "paragraph_quotes": [
+          "주요 정량 결과는 버전·모드별 실행 시간 변화로 정리된다. GPU 버전은 353.057200 ms, GPU OPTIMIZED(cuBLAS + Pool)는 229.691800 ms, HYBRID(matmul=GPU, rest=CPU)는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었다. GPU OPTIMIZED는 약 100ms 줄었으나 여전히 CPU보다 느렸고, HYBRID V2에서 처음으로 CPU보다 빨라졌다. 이후 메모리 풀과 warm up, memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀, backward 메모리 복사 제거 및 초기화 최적화 등을 거치며 실행 시간이 추가로 감소하였다. 다만 각 수치는 단일 실행 결과이며, CPU 버전과의 반복 측정 기반 비교나 통계적 해석은 현재 자료에 제시되지 않았다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00106,E00119,E00131,E00139,E00144]",
+          "주요 정량 결과는 버전·모드별 실행 시간 변화로 정리된다. CPU ONLY 101.237800 ms, GPU only 353.057200 ms, GPU OPTIMIZED 229.691800 ms, HYBRID 201.670100 ms, HYBRID V2 85.785300 ms, mempool + warmup 152.902900 ms, mempool + cuBlas + warmup 174.978400 ms, mempool + warmup + memcpy 제거 115.469900 ms, alpha/beta 메모리 풀 21.018800 ms, 커널 퓨전 완료 후 15.751000 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms로 나타났다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. mempool + warmup 조합은 두 요소만으로 거의 200ms 단축되는 효과가 있었으며, 현재 가장 중요한 병목은 memcpy로 이를 해결해야 CPU보다 빨라질 수 있다고 기록되었다. my_lirpa_mempool_warmup.cu의 make_zero_matrix, make_zero_vector는 다시 CPU 실행으로 회귀시켰다. [근거:E00030,E00033,E00071,E00073,E00074,E00081]"
+        ],
+        "guideline_ids": [
+          "ref1_conclusion_required_2",
+          "ref2_conclusion_required_1",
+          "ref2_conclusion_required_2"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [
+          "E00166",
+          "E00216",
+          "E00252"
+        ]
+      },
+      {
+        "item_id": "conc_item_5",
+        "verdict": "met",
+        "paragraph_ids": [
+          "conclusion_p7",
+          "conclusion_p9",
+          "conclusion_p1",
+          "conclusion_p2",
+          "conclusion_p3",
+          "conclusion_p4",
+          "conclusion_p5"
+        ],
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00033",
+          "E00044",
+          "E00045",
+          "E00046",
+          "E00064",
+          "E00071",
+          "E00072",
+          "E00073",
+          "E00074",
+          "E00075",
+          "E00076",
+          "E00077",
+          "E00081",
+          "E00083",
+          "E00131",
+          "E00132",
+          "E00174",
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00202",
+          "E00257",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00296",
+          "E00319",
+          "E00320",
+          "E00326",
+          "E00329",
+          "E00374",
+          "E00375"
+        ],
+        "quote": "주요 정량 결과는 버전·모드별 실행 시간 변화로 정리된다. CPU ONLY 101.237800 ms, GPU only 353.057200 ms, GPU OPTIMIZED 229.691800 ms, HYBRID 201.670100 ms, HYBRID V2 85.785300 ms, mempool + warmup 152.902900 ms, mempool + cuBlas + warmup 174.978400 ms, mempool + warmup + memcpy 제거 115.469900 ms, alpha/beta 메모리 풀 21.018800 ms, 커널 퓨전 완료 후 15.751000 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms로 나타났다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. mempool + warmup 조합은 두 요소만으로 거의 200ms 단축되는 효과가 있었으며, 현재 가장 중요한 병목은 memcpy로 이를 해결해야 CPU보다 빨라질 수 있다고 기록되었다. my_lirpa_mempool_warmup.cu의 make_zero_matrix, make_zero_vector는 다시 CPU 실행으로 회귀시켰다. [근거:E00030,E00033,E00071,E00073,E00074,E00081]",
+        "paragraph_quotes": [
+          "주요 정량 결과는 버전·모드별 실행 시간 변화로 정리된다. CPU ONLY 101.237800 ms, GPU only 353.057200 ms, GPU OPTIMIZED 229.691800 ms, HYBRID 201.670100 ms, HYBRID V2 85.785300 ms, mempool + warmup 152.902900 ms, mempool + cuBlas + warmup 174.978400 ms, mempool + warmup + memcpy 제거 115.469900 ms, alpha/beta 메모리 풀 21.018800 ms, 커널 퓨전 완료 후 15.751000 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms로 나타났다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. mempool + warmup 조합은 두 요소만으로 거의 200ms 단축되는 효과가 있었으며, 현재 가장 중요한 병목은 memcpy로 이를 해결해야 CPU보다 빨라질 수 있다고 기록되었다. my_lirpa_mempool_warmup.cu의 make_zero_matrix, make_zero_vector는 다시 CPU 실행으로 회귀시켰다. [근거:E00030,E00033,E00071,E00073,E00074,E00081]",
+          "수준별로 구분된 주요 발견은 backward_only가 graph 미적용 상태에서도 bound 평균이 forward 대비 약 2.5배 수준으로 관측된 점, 그래프 적용 후 backward_only가 787.8832s로 forward(1029s), forward+backward(1138s)보다 빨랐던 점 등으로 정리된다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 방법 C의 목표·방식은 로드맵상 서술이며 실제 구현·평가 결과는 포함하지 않는다. [근거:E00261,E00262,E00263]",
+          "본 연구는 CROWN 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현하고 최적화하는 과정을 다룬다. forward 함수의 DTOH memcpy를 극단적으로 제거한 결과 CROWN Verification 실행 시간은 64.716 ms로 기록되었고, 커널 퓨전 완료 후에는 15.751 ms로 관측되었다. 또한 Pinned Memory는 최악 지연시간(WCET)을 1.64 ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00083,E00144,E00296]",
+          "주요 정량 결과는 버전·모드별 실행 시간 변화로 정리된다. GPU 버전은 353.057200 ms, GPU OPTIMIZED(cuBLAS + Pool)는 229.691800 ms, HYBRID(matmul=GPU, rest=CPU)는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었다. GPU OPTIMIZED는 약 100ms 줄었으나 여전히 CPU보다 느렸고, HYBRID V2에서 처음으로 CPU보다 빨라졌다. 이후 메모리 풀과 warm up, memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀, backward 메모리 복사 제거 및 초기화 최적화 등을 거치며 실행 시간이 추가로 감소하였다. 다만 각 수치는 단일 실행 결과이며, CPU 버전과의 반복 측정 기반 비교나 통계적 해석은 현재 자료에 제시되지 않았다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00106,E00119,E00131,E00139,E00144]",
+          "주요 정량 결과는 메모리 관리 방식과 실행 모드에 따라 달라진다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으며, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐지만, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필요하다고 정리되었다. [근거:E00277,E00278,E00296]",
+          "본 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 구현하고 실시간 대규모 연산에 적합하도록 최적화하는 과정을 정리한다. 기존 신경망 검증팀이 사용하던 256-491-491-16 크기의 신경망과 입력 데이터셋, eps_list를 그대로 사용했으며, CROWN의 세 실행 방식(forward, forward+backward, backward_only)을 대상으로 최적화를 진행했다. GPU 클록 고정은 후반부에 적용되었고, warm up은 초기에 도입되었다. [근거:E00257,E00274,E00358,E00361,E00368,E00375,E00374,E00319,E00072,E00076,E00077,E00132,E00326,E00329,E00202,E00174,E00045,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00260]",
+          "본 연구는 CROWN 신경망 검증을 CPU 중심·오프라인 환경에서만 수행해 온 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현하고 최적화하는 과정을 다룬다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기·배치 크기·실행 방식(forward, forward+backward, backward_only)과 데이터셋·eps_list는 기존 신경망 검증팀이 사용하던 입력을 기준으로 삼았다. GPU 클록 고정과 warm up은 연구 과정에서 순차적으로 적용된 조건이다. 핵심 정량 결과로, 실행 시간이 1138s에서 758s로 감소한 사례가 기록되었다. 다만 이 수치는 감소 전후를 함께 요약한 기록이며, 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다. 또한 최적화 과정에서 여러 버전·모드가 적용·해제되며 실행 시간 변화가 관측되었으나, 각 최적화 기법을 체계적으로 분리한 ablation study는 수행되지 못했다는 한계가 있다. [근거:E00320]"
+        ],
+        "guideline_ids": [
+          "ref2_conclusion_required_2"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": []
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "conclusion",
+        "reference_id": "ref1_conclusion",
+        "verdict": "applied",
+        "paragraph_ids": [
+          "conclusion_p1",
+          "conclusion_p2",
+          "conclusion_p3"
+        ],
+        "reason": "핵심 정량 결과와 적용 조건을 버전·모드별 실행 시간 변화로 정리하고, Pinned Memory의 실시간성 의미를 함께 제시하여 결론의 실용적 종합 역할을 반영함.",
+        "quote": "본 연구는 CROWN 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현하고 최적화하는 과정을 다룬다. forward 함수의 DTOH memcpy를 극단적으로 제거한 결과 CROWN Verification 실행 시간은 64.716 ms로 기록되었고, 커널 퓨전 완료 후에는 15.751 ms로 관측되었다. 또한 Pinned Memory는 최악 지연시간(WCET)을 1.64 ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00083,E00144,E00296]",
+        "paragraph_quotes": [
+          "본 연구는 CROWN 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현하고 최적화하는 과정을 다룬다. forward 함수의 DTOH memcpy를 극단적으로 제거한 결과 CROWN Verification 실행 시간은 64.716 ms로 기록되었고, 커널 퓨전 완료 후에는 15.751 ms로 관측되었다. 또한 Pinned Memory는 최악 지연시간(WCET)을 1.64 ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00083,E00144,E00296]",
+          "주요 정량 결과는 버전·모드별 실행 시간 변화로 정리된다. GPU 버전은 353.057200 ms, GPU OPTIMIZED(cuBLAS + Pool)는 229.691800 ms, HYBRID(matmul=GPU, rest=CPU)는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었다. GPU OPTIMIZED는 약 100ms 줄었으나 여전히 CPU보다 느렸고, HYBRID V2에서 처음으로 CPU보다 빨라졌다. 이후 메모리 풀과 warm up, memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀, backward 메모리 복사 제거 및 초기화 최적화 등을 거치며 실행 시간이 추가로 감소하였다. 다만 각 수치는 단일 실행 결과이며, CPU 버전과의 반복 측정 기반 비교나 통계적 해석은 현재 자료에 제시되지 않았다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00106,E00119,E00131,E00139,E00144]",
+          "주요 정량 결과는 메모리 관리 방식과 실행 모드에 따라 달라진다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으며, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐지만, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필요하다고 정리되었다. [근거:E00277,E00278,E00296]"
+        ]
+      },
+      {
+        "section_id": "conclusion",
+        "reference_id": "ref2_conclusion",
+        "verdict": "applied",
+        "paragraph_ids": [
+          "conclusion_p7",
+          "conclusion_p9"
+        ],
+        "reason": "수준별 주요 발견을 버전·모드별 실행 시간 변화와 backward_only/graph 관련 관측으로 정리하고, 방법 A·antenna_lirpa·방법 C의 차이와 한계를 함께 서술하여 수준별 발견 요약 역할을 반영함.",
+        "quote": "주요 정량 결과는 버전·모드별 실행 시간 변화로 정리된다. CPU ONLY 101.237800 ms, GPU only 353.057200 ms, GPU OPTIMIZED 229.691800 ms, HYBRID 201.670100 ms, HYBRID V2 85.785300 ms, mempool + warmup 152.902900 ms, mempool + cuBlas + warmup 174.978400 ms, mempool + warmup + memcpy 제거 115.469900 ms, alpha/beta 메모리 풀 21.018800 ms, 커널 퓨전 완료 후 15.751000 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms로 나타났다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. mempool + warmup 조합은 두 요소만으로 거의 200ms 단축되는 효과가 있었으며, 현재 가장 중요한 병목은 memcpy로 이를 해결해야 CPU보다 빨라질 수 있다고 기록되었다. my_lirpa_mempool_warmup.cu의 make_zero_matrix, make_zero_vector는 다시 CPU 실행으로 회귀시켰다. [근거:E00030,E00033,E00071,E00073,E00074,E00081]",
+        "paragraph_quotes": [
+          "주요 정량 결과는 버전·모드별 실행 시간 변화로 정리된다. CPU ONLY 101.237800 ms, GPU only 353.057200 ms, GPU OPTIMIZED 229.691800 ms, HYBRID 201.670100 ms, HYBRID V2 85.785300 ms, mempool + warmup 152.902900 ms, mempool + cuBlas + warmup 174.978400 ms, mempool + warmup + memcpy 제거 115.469900 ms, alpha/beta 메모리 풀 21.018800 ms, 커널 퓨전 완료 후 15.751000 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms로 나타났다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. mempool + warmup 조합은 두 요소만으로 거의 200ms 단축되는 효과가 있었으며, 현재 가장 중요한 병목은 memcpy로 이를 해결해야 CPU보다 빨라질 수 있다고 기록되었다. my_lirpa_mempool_warmup.cu의 make_zero_matrix, make_zero_vector는 다시 CPU 실행으로 회귀시켰다. [근거:E00030,E00033,E00071,E00073,E00074,E00081]",
+          "수준별로 구분된 주요 발견은 backward_only가 graph 미적용 상태에서도 bound 평균이 forward 대비 약 2.5배 수준으로 관측된 점, 그래프 적용 후 backward_only가 787.8832s로 forward(1029s), forward+backward(1138s)보다 빨랐던 점 등으로 정리된다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 방법 C의 목표·방식은 로드맵상 서술이며 실제 구현·평가 결과는 포함하지 않는다. [근거:E00261,E00262,E00263]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "conclusion",
+        "part": "p0",
+        "paragraph_id": "conclusion_p2",
+        "evidence_ids": [
+          "E00021",
+          "E00027",
+          "E00029",
+          "E00031",
+          "E00035",
+          "E00044",
+          "E00046",
+          "E00064",
+          "E00075",
+          "E00106",
+          "E00119",
+          "E00131",
+          "E00139",
+          "E00144"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "conclusion",
+        "part": "p0",
+        "paragraph_id": "conclusion_p5",
+        "evidence_ids": [
+          "E00320"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 0,
+        "reason": "한 문단 교체의 원문·비교 근거 입력이 예산을 넘어 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 5.2 주요 정량 결과와 적용 조건: 본문 4596자 / 목표 1429자 / 허용 상한 1786자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "flow",
+        "validation_code": "composition_layout",
+        "reason": "conclusion/p0: 가장 긴 문단이 873자로 공통 문단 목표 600자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      }
+    ],
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [
+      {
+        "item_id": "conc_item_5",
+        "added_paragraph_ids": [
+          "conclusion_p1",
+          "conclusion_p2",
+          "conclusion_p3",
+          "conclusion_p4",
+          "conclusion_p5"
+        ]
+      }
+    ],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 2,
+      "total": 2,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 2,
+      "partial": 0,
+      "not_visible": 0,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    },
+    "content_warnings": [
+      {
+        "section_id": "conclusion",
+        "part": "p0",
+        "paragraph_id": "conclusion_p2",
+        "evidence_ids": [
+          "E00021",
+          "E00027",
+          "E00029",
+          "E00031",
+          "E00035",
+          "E00044",
+          "E00046",
+          "E00064",
+          "E00075",
+          "E00106",
+          "E00119",
+          "E00131",
+          "E00139",
+          "E00144"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-conclusion-p1"
+      },
+      {
+        "section_id": "conclusion",
+        "part": "p0",
+        "paragraph_id": "conclusion_p5",
+        "evidence_ids": [
+          "E00320"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 0,
+        "reason": "한 문단 교체의 원문·비교 근거 입력이 예산을 넘어 기존 문단을 보존했습니다.",
+        "stage": "subsection-conclusion-p1"
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 5.2 주요 정량 결과와 적용 조건: 본문 4596자 / 목표 1429자 / 허용 상한 1786자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-conclusion-p1"
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "flow",
+        "validation_code": "composition_layout",
+        "reason": "conclusion/p0: 가장 긴 문단이 873자로 공통 문단 목표 600자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-conclusion-p1"
+      }
+    ],
+    "content_status": "needs_attention",
+    "content_approved": false
+  }
+}

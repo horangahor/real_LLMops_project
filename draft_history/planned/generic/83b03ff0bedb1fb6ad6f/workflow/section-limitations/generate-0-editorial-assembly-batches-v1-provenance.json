@@ -1,0 +1,803 @@
+{
+  "policy": "editorial-assembly-batches-v1",
+  "base_fingerprint": "545e187ab4ac713a54db12f21aa119869c1bd0114a0107d131a4786b6cc8d97b",
+  "result_fingerprint": "d2703ba55aac52c3241d4ae64403a74ac26daae427f0117d98e01df1d8719337",
+  "batches": [
+    {
+      "index": 0,
+      "editable_spans": {
+        "limitations": {
+          "p0": [
+            "limitations_p2_s1",
+            "limitations_p3_s1",
+            "limitations_p4_s1",
+            "limitations_p5_s1",
+            "limitations_p6_s1",
+            "limitations_p7_s1",
+            "limitations_p8_s1",
+            "limitations_p9_s1",
+            "limitations_p10_s1",
+            "limitations_p11_s1",
+            "limitations_p12_s1"
+          ],
+          "p1": [
+            "limitations_p14_s1",
+            "limitations_p15_s1",
+            "limitations_p16_s1",
+            "limitations_p17_s1"
+          ]
+        }
+      }
+    },
+    {
+      "index": 1,
+      "editable_spans": {
+        "limitations": {
+          "p1": [
+            "limitations_p18_s1"
+          ],
+          "p2": [
+            "limitations_p20_s1",
+            "limitations_p21_s1",
+            "limitations_p22_s1",
+            "limitations_p23_s1"
+          ]
+        }
+      }
+    }
+  ],
+  "slots": {
+    "limitations": {
+      "parts": {
+        "p0": {
+          "limitations_p2_s1": {
+            "action": "replace",
+            "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 실행 방식은 forward, forward+backward, backward_only 세 가지를 포함한다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서 eps=1e-06, 출력 차원 16 조건으로 CROWN Verification을 실행한 결과 Elapsed time은 229.691800 ms로 기록되었으나, 이는 단일 실행 결과이며 CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 적용 후 실행 시간이 약 100ms 줄었다고 기록되었지만, 이 감소 폭과 CPU보다 느리다는 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램이 시도되었으나, 이는 후속 시도 동기와 방향 기록에 해당하며 실제 구현 완료·측정 결과는 현재 페이지에 없다. 따라서 본 연구의 결과는 최적화 시도 기록 중심으로 해석되어야 하며, GPU OPTIMIZED 모드의 단일 실행 결과나 CPU 대비 느리다는 평가, 하이브리드 프로그램 시도 동기 등은 실제 구현 완료·측정 결과나 정량 검증으로 승격되지 않는다.",
+            "join_previous": false
+          },
+          "limitations_p3_s1": {
+            "action": "replace",
+            "text": "이 연구의 적용 범위는 256-491-491-16 크기 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 한 CROWN 검증의 CUDA 구현에 한정되며, 배치 크기는 1, 실행 방식은 forward, forward+backward, backward_only로 설정되었다. 이러한 설정은 실시간 환경의 대규모 연산 대응 가능성을 검토하는 데 초점이 맞춰져 있으나, 다른 신경망 크기나 입력 조건, 출력 차원으로 확장할 때의 일반화 가능성은 이 기록만으로 확인되지 않는다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었으며, 최적화 과정에서는 여러 기법이 적용·제거를 반복해 각 기법의 개별 효과를 체계적으로 분리한 ablation study가 이루어지지 못했다. 그 결과 메모리 풀과 warm up 조합이 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 판단이 제시되었으나, 이 수치는 기록자가 요약한 범위이며 단일 실행의 정밀 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었고, 가중치 사전 업로드(PRELOAD ON GPU) 적용 후 실행 시간이 149~155ms 범위로 기록되었다. bias까지 GPU에 미리 업로드하는 시도는 bias가 Vector이며 약 4KB 정도라서 CPU 연산에도 무리가 없는 수준이라 성능 개선에 큰 의미를 미치지 못하는 것으로 판단되었다. make_zero_matrix, make_zero_vector를 CPU로 회귀한 결과 22~25ms 정도 줄었고, 영벡터 만들기를 다시 GPU로 시도했을 때는 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 결과 저장용 벡터에 대한 불필요한 memcpy를 제거하자 약 10ms 추가로 단축되었다. 이러한 최적화 시도 기록은 각 기법의 적용·제거가 반복된 과정의 관측을 반영하지만, 동시 변경이 많아 개별 요인의 기여도를 분리하기 어렵고, CPU 버전의 정확한 수치나 반복 측정 기반 비교도 현재 페이지에 제시되지 않아 결과 해석 범위가 제한된다.",
+            "join_previous": false
+          },
+          "limitations_p4_s1": {
+            "action": "replace",
+            "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list로 한정된다. 이 범위를 벗어나 더 큰 네트워크나 다른 입력 조건, 배치 크기, 출력 차원으로 확장할 때의 일반화 제약은 현재 기록만으로 단정하기 어렵다. v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16x491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 없다. mempool + warmup 조합의 CROWN Verification 실행 결과는 152.902900 ms, mempool + cuBlas + warmup 조합은 174.978400 ms로 기록되었으며, 이는 eps=1e-06, 출력 차원 16 조건의 단일 실행 결과이다. 기록자는 1번의 시도에서 cuBlas가 더 느린 모습이라고 관찰했고, 미리 메모리풀을 warmup 하는 것은 확실히 효과가 있어 각 버전에서 약 50ms 정도 단축된다고 기록했으나, 이는 정성적 관찰이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 현재 페이지에 없다. mempool(v1-1-1)에서 미리 ensure_pool()을 활용해 메모리 할당을 하는 것은 큰 영향을 미치지만, cuBlas를 쓰고 warm up 하는 것과 그렇게 차이나지 않는다고 기록되었으나, 이 역시 정량 분리 측정 결과가 없는 정성적 비교이다. HYBRID V2 모드에서 eps=1e-06, 500 iterations, 출력 차원 16 조건으로 실행한 결과 Total Elapsed time은 49416.462000 ms, Average time per iter는 98.832924 ms로 기록되었고, 기록자는 CPU의 캐시 때문에 HYBRID V2가 CPU보다 느리게 나온 것으로 추정하며 1번만 돌리는 실험이 필요하다고 판단했으나, 이는 기록자의 정성적 해석과 향후 실험 계획 메모이며 CPU 대비 느림에 대한 직접 비교 문장이나 캐시 영향의 정량 검증은 현재 페이지에 없다.",
+            "join_previous": false
+          },
+          "limitations_p5_s1": {
+            "action": "replace",
+            "text": "본 검증은 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로, CROWN의 forward, forward+backward, backward_only 실행 방식 중 하나를 C++ 프로그램에서 수행한 결과를 중심으로 한다. 배치 크기는 1이며, 출력 차원은 16, eps는 1e-06으로 설정된 조건에서 실행 시간이 기록되었다. 이러한 설정은 특정 신경망 크기와 단일 입력·단일 출력 차원에 맞춰져 있어, 더 큰 네트워크나 다른 입력 규모·출력 차원으로 그대로 확장된다고 보기 어렵다. 또한 GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로 보아, 측정 환경이 처음부터 완전히 통제된 상태였다고 단정하기도 어렵다. 따라서 여기서 관측된 실행 시간 감소는 해당 조건과 구현 시도 범위 안에서 해석되어야 하며, 다른 신경망 규모나 입력 구성, 출력 차원, 실시간 환경 목표로 일반화할 때는 별도의 확인이 필요하다.",
+            "join_previous": false
+          },
+          "limitations_p6_s1": {
+            "action": "replace",
+            "text": "본 연구의 적용 범위는 256–491–491–16 크기의 신경망과 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list로 제한된다. 이 범위를 벗어나면 결과의 일반화가 제약될 수 있다. cuSparse 도입 시도는 W, W_pos, W_neg를 CSR 형식으로 변환하고 cuSPARSE handle·descriptor를 유지한 채 network_forward()의 dense matvec만 cuSPARSE SpMV로 교체한 수준에서 이루어졌으며, 기존 matmul은 유지되었다. spMV 적용 결과 실행 시간은 27.107400 ms로 기록되어 이전 27ms 수준보다 느려졌고, 이후 spMM 도입까지 검토하기로 했다. cuBLAS와 cuSPARSE는 실험했으나 현재 모델 크기와 호출 패턴에서는 느려져 현 기준 코드에는 포함하지 않았으며, spMM 도입 후에는 거의 40ms로 회귀해 부적절하다고 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 것이 맞다고 판단되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 제시되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성되지 않았고, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가되며, 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고 SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. network_forward는 신경망의 일반 추론값을 출력하지만 아직 GPU 파이프라인이 아니라 최적화가 적용되지 않은 상태이기도 하다. 각 최적화 기법을 체계적으로 분리해 ablation study를 하지 못한 점도 한계로 남는다.",
+            "join_previous": false
+          },
+          "limitations_p7_s1": {
+            "action": "replace",
+            "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list로 제한되며, 배치 크기는 1이고 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지이다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정과 warm up은 연구 일지에서 확인된 뒤의 사항이다. 이 범위를 벗어나면 결과의 일반화를 단정하기 어렵다. GPU OPTIMIZED 모드 적용 후 실행 시간이 229.691ms로 약 100ms 줄었다고 기록되었으나, 이 감소 폭과 CPU보다 느리다는 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았다는 시도는 후속 동기와 방향 기록에 해당하며, 실제 구현 완료나 측정 결과는 현재 페이지에 없다. 단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만 92만 개의 데이터를 돌리면 1분 정도 차이로 비슷해진다는 현상이 기록되었고, 이 문제는 아직 해결하지 못했다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 점도 한계로 남는다. 따라서 본 연구의 결과는 최적화 시도 기록 중심으로 해석되어야 하며, GPU OPTIMIZED 모드의 단일 실행 결과나 CPU 대비 느리다는 평가, 하이브리드 프로그램 시도 동기 등은 실제 구현 완료·측정 결과나 정량 검증으로 승격되지 않는다.",
+            "join_previous": false
+          },
+          "limitations_p8_s1": {
+            "action": "replace",
+            "text": "본 검증 가속은 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로, CROWN을 구현한 C++ 프로그램에서 배치 크기 1로 forward, forward+backward, backward_only 세 실행 방식을 비교하는 범위에서 수행되었다. 이 범위는 단일 샘플·제한된 입력 조건에서의 처리 시간 기록에 초점을 둔 것이며, 더 큰 신경망이나 다른 입력 규모·출력 차원으로 바로 일반화된다고 단정하기 어렵다. 배칭으로 데이터셋을 통째로 넘기는 방식은 실시간 환경이 아니라고 판단해 채택하지 않았고, 대신 데이터셋 영역을 pinned Memory로 지정하고 메모리 복사 속도를 최대화하는 방향으로 접근하였다. warm up은 초기에 도입되었고, 측정 과정에서 warm up을 적용해도 스파이크가 남고 10번 측정 시 평균 시간이 느려지는 경우가 관측되어 측정 재현성 측면의 제약이 남는다.",
+            "join_previous": false
+          },
+          "limitations_p9_s1": {
+            "action": "replace",
+            "text": "최적화 과정은 각 기법을 체계적으로 분리한 ablation study가 아니라, 적용했다가 되돌리는 시도를 반복하며 얻은 기록 중심이므로 개별 최적화의 기여도를 독립적으로 분리해 해석하기 어렵다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 이 방식은 기존 단일 샘플 커널을 유지한 채 3.2배 가속(25분→8분)을 얻었지만, 스트림 수 한계와 SM 포화로 7~8분이 한계선으로 해석된다. 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된 것으로 보며, 차기 로드맵은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 활용해 30초~1분대 진입을 목표로 한다.",
+            "join_previous": false
+          },
+          "limitations_p10_s1": {
+            "action": "replace",
+            "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 실행 방식은 forward, forward+backward, backward_only 세 가지를 포함한다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서 eps=1e-06, 출력 차원 16 조건으로 CROWN Verification을 실행한 결과 Elapsed time은 229.691800 ms로 기록되었으나, 이는 단일 실행 결과이며 CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 적용 후 실행 시간이 약 100ms 줄었지만 여전히 CPU보다 느리다는 평가가 기록되었고, 이에 matmul만 GPU로 실행하는 하이브리드 프로그램이 시도되었다. 다만 이 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없고, 하이브리드 프로그램의 실제 구현 완료·측정 결과도 현재 페이지에 없어 시도 동기와 방향 기록에 해당한다. 이러한 적용 범위와 조건 밖에서는 결과의 일반화 제약이 발생할 수 있다.",
+            "join_previous": false
+          },
+          "limitations_p11_s1": {
+            "action": "replace",
+            "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 방법을 포함한다. 이러한 설정은 특정 신경망 구조와 단일 배치 조건에 맞춰져 있어, 더 큰 네트워크나 다른 입력 규모, 다른 eps 조건, 다중 출력 차원으로의 일반화는 제한적이다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, GPU 클록 고정과 warm up은 연구 과정에서 나중에 확정되거나 초기에 적용된 사항이므로, 측정 환경과 반복 조건에 따라 절대 성능 수치의 해석 범위가 달라진다. 평균 처리 속도에서는 No-Pin이 13초 빠르다는 비교가 보고되었으나, 이는 평균 속도 관점의 요약이며 실제 측정 조건과 정량 수치는 별도 요소에서 다룬다. 실시간성 관점에서는 No-Pin의 최대 지연이 8.8ms~11.6ms 범위로 튀고 지터가 118.94μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47.28μs로 더 안정적이어서 해석 기준이 달라진다. 다만 지터 수치는 표(p78:e616)에서는 118μs/47μs로 반올림되어 제시되었고, 더 정밀한 값(118.94μs/47.28μs)은 다른 표(p80:img0:e8)에서 확인되므로 정밀도 차이가 있다. Pinned Memory의 최악 지연시간(WCET) 1.64ms 제한과 지터 안정화, 그리고 실시간 무선 안테나 선택 시스템에서 Pinned Memory 도입이 필요하다는 결론은 원문에 제시되어 있으나, 11.6ms 스파이크, DMA 셋업 비용 1~2μs, 1ms 무선 통신 데드라인 관련 서술은 구체적 재현 조건·측정 방법·시스템 맥락이 명시되지 않은 한계가 있다. 또한 Pinned가 No-Pin보다 총 소요 시간이 더 길게 나왔다는 기록자의 결론 진술은 1KB 수준의 작은 데이터와 매 루프별 하드웨어 DMA 셋업 오버헤드와 연결되어 설명되지만, 이는 기록자의 해석이며 정량 수치나 반복 측정 통계는 별도 요소에서 다룬다. 이러한 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory가 매번 하드웨어 DMA 셋업 오버헤드를 치르는 반면, No-Pin은 CPU 캐시 복사로 더 빠르게 처리되기 때문으로 설명되나, 이 비교는 특정 측정 환경과 반복 조건에서 얻은 결과이므로 다른 플랫폼이나 더 큰 데이터 전송 조건으로의 일반화는 제한적이다.",
+            "join_previous": false
+          },
+          "limitations_p12_s1": {
+            "action": "replace",
+            "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list를 기준으로 한 CROWN 검증의 CUDA 구현에 한정된다. 이 범위를 벗어나 더 큰 신경망이나 다른 입력 규모, 다른 eps 조건, 다른 출력 차원으로 확장할 경우 동일한 효율 양상이 유지된다고 단정하기 어렵다. 현재 입력 기준 약 1KB 수준의 작은 데이터를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다는 해석이 있으나, 이는 정량적 고정 비용 측정이 아니라 해석 수준의 관찰이다. pinned memory 적용 여부에 따른 cudaMemcpyAsync 시간은 여러 번 측정에서 빠르거나 느리게 바뀌어, 2copy에서 1copy로 변경한 효과가 크지 않았다고 보았으나 마지막 측정에서는 nopinned가 더 빠르게 나타나 확신할 수 없게 되었다. 추론 종료까지의 동기화 시간은 pinned memory 미적용 버전이 가장 빨랐으며, 이는 H2D 복사 시간의 영향 가능성으로 해석되지만 인과가 확정적으로 분리된 것은 아니다. backward_only가 왜 가장 빠른지에 대한 질문도 제기되었으나 이 절에서 답변이 완료되지는 않았다. 아울러 각 최적화 기법을 체계적으로 분리해 ablation study로 검토하지 못한 점 역시 한계로 남는다.",
+            "join_previous": false
+          }
+        },
+        "p1": {
+          "limitations_p14_s1": {
+            "action": "replace",
+            "text": "방법·구현·설정 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀), 가중치 사전 업로드(PRELOAD ON GPU), forward 함수의 DTOH memcpy 제거, make_zero_matrix·make_zero_vector의 CPU 회귀, cuSPARSE SpMV/spMM 적용, cudaHostRegister(Pinned) 대 No Pinning 비교, GPU 클록 고정 재실험 시도까지 적용·시도된 요소를 중심으로 정리한다. 이 과정에서 cuBLAS Batched GEMM과 텐서 코어를 활용한 antenna_lirpa 대비 현재 C++ 멀티스트림 구현의 체급 차이, 그리고 차기 Batched GEMM·3D 텐서 연산화 로드맵도 함께 확인된다. 다만 커널 퓨전, cudaGraph, pinned memory의 체계적 비교, 전력·에너지 효율, 반복 측정 기반 통계, 각 최적화 기법의 개별 효과 분리는 이번 검토에서 충분히 다루지 못했거나 보류된 항목이며, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않은 점도 공정 비교의 한계로 남는다.",
+            "join_previous": false
+          },
+          "limitations_p15_s1": {
+            "action": "delete",
+            "text": "",
+            "join_previous": false
+          },
+          "limitations_p16_s1": {
+            "action": "replace",
+            "text": "이 절은 방법·구현·설정 효율 검토 범위와 해석상 한계를 정리한다. 본 연구는 CROWN 검증의 실시간 가속 가능성을 CUDA 구현과 최적화 시도 기록으로 검토했으며, CPU 대비 속도 개선 여부와 최적화 과정의 요인을 함께 확인하는 데 초점을 두었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 않아 개별 변경의 효과를 정량적으로 분리하기 어렵다. GPU 클록 고정은 CUDA 강의 19장을 참고해 nvidia-smi -q -d CLOCK로 확인하고, sudo nvidia-smi -pm 1로 Persistence mode를 활성화한 뒤 sudo nvidia-smi -lgc 1410으로 그래픽 클록을 잠그는 방식으로 설정했다. 이는 초기화 지연 제거와 일관된 측정을 위한 환경 설정이지만, 실제 적용 결과나 고정 후 측정 수치는 이 요소만으로 제시되지 않는다. 구현 측면에서는 메모리 풀, cuBLAS 기반 행렬곱, 커널 퓨전, cudaGraph, pinned memory 등 여러 GPU 최적화 요소가 시도되거나 검토되었으나, 전체 처리 과정을 비교할 때 여러 요소가 동시에 바뀌어 개별 효과 분리가 제한된다. 예를 들어 hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 CPU for문으로 되돌린 버전으로, 새로 추가된 요소 없이 GPU 코드를 삭제해 빨라진 사례에 가깝다. 또한 forward와 backward의 cudaMemcpy 호출 횟수는 동일하지만 전체 실행 시간과 cudaMemcpy 시간 분포는 다르게 관측되어, 호출 횟수만으로 성능 차이를 설명하기 어렵다. fp32 단정밀도 연산 변경 시도처럼 일부 항목은 별도 고찰로만 언급되었고, switch 문 안 구조체 선언·초기화 문제처럼 컴파일 제약에 따른 구현 조정도 기록되었다. 따라서 본 결과의 해석 범위는 최적화 시도 기록과 단일 실행 관측에 머물며, 반복 측정 통계나 조건별 분리 측정이 충분히 제시되지 않은 점은 한계로 남는다.",
+            "join_previous": false
+          },
+          "limitations_p17_s1": {
+            "action": "replace",
+            "text": "본 연구의 최적화 시도는 개별 기법의 효과를 체계적으로 분리하기보다, 여러 변경을 함께 적용한 뒤 전체 실행 시간의 변화를 관찰하는 방식으로 진행되었다. 예를 들어 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다. 또한 forward_cuda_graph의 전체 시간이 약 983초이고, CPU에서 필요한 만큼만 계산한 뒤 복사한 버전(1055)이 72초 더 느렸으며, 이는 더 늦어진 결과다. 이러한 관측은 변경 사실과 시간 비교만을 포함하며, 각 최적화 기법의 기여나 시간 차이의 원인을 정량적으로 분리한 측정 결과는 포함하지 않는다. 따라서 본 절에서 다루는 효율 검토 범위는 메모리 풀, cuBLAS, 커널 퓨전, cudaGraph, pinned memory 등 적용·시도된 구현 요소의 관측된 변화에 한정되며, 개별 기법의 독립적 효과나 미검토·보류 항목의 평가는 이 기록만으로 확정하기 어렵다.",
+            "join_previous": false
+          },
+          "limitations_p18_s1": {
+            "action": "replace",
+            "text": "방법·구현·설정 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀), 가중치 사전 업로드(PRELOAD ON GPU), forward 함수의 DTOH memcpy 제거, make_zero 계열 함수의 CPU 회귀, cuSparse spMV/spMM 적용, cudaHostRegister(Pinned)와 No Pinning 비교, GPU 클록 고정, C++ 멀티스트림(Task Parallelism) 구성, antenna_lirpa 대비 싱글 스트림·cuBLAS Batched GEMM·텐서 코어 활용 차이 등을 대상으로 했다. 이 검토는 각 기법의 적용·제거 시도와 관측된 경향을 정리하지만, 개별 기법을 체계적으로 분리한 ablation study는 수행하지 않았고, 단일 실행 결과나 기록자 요약 중심의 수치가 많아 반복 측정 기반 통계가 부족하다. only_GPU와 hybrid 비교처럼 여러 요소가 동시에 바뀌어 개별 효과 분리가 어려운 경우도 있으며, backward_bound_gpu의 affine 중복 계산 삭제(커널 2개 함수 감소)와 backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합한 변경은 함수 감소나 관측된 경향만 기록하고 정량 성능 수치나 정확도 결과는 포함하지 않는다. HYBRID 모드에서는 CROWN Verification 실행 시간이 201.670100ms로, HYBRID V2에서는 85.785300ms로 기록되어 기록자가 CPU보다 빨라졌다고 평가했다. 따라서 효율 검토 결과는 적용 범위와 해석 범위가 제한적이며, 향후 연구에서는 최적화 기법의 체계적 분리, 반복 측정 기반 통계 확보, 복합 변경 해석의 한계 보완이 필요하다.",
+            "join_previous": false
+          }
+        },
+        "p2": {
+          "limitations_p20_s1": {
+            "action": "replace",
+            "text": "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다.",
+            "join_previous": false
+          },
+          "limitations_p21_s1": {
+            "action": "replace",
+            "text": "방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다.",
+            "join_previous": false
+          },
+          "limitations_p22_s1": {
+            "action": "replace",
+            "text": "향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다.",
+            "join_previous": false
+          },
+          "limitations_p23_s1": {
+            "action": "replace",
+            "text": "결과 해석 범위는 최적화 시도 기록 중심이라는 성격에 따라 제한된다. 본 절에서 정리한 향후 과제와 적용 범위, 효율 검토 범위의 공백은 실제 구현 완료·측정 결과로 입증된 내용이 아니라 연구 노트에 남은 방향·계획·할 일 기록에 기반하므로, 각 항목의 실현 여부나 성능 영향은 아직 검증되지 않았다. 따라서 후속 연구에서 개별 기법의 분리 평가, 측정 조건 고정, 대규모 텐서 연산화 구현과 실측을 통해 현재 제시된 방향성과 목표치를 다시 확인할 필요가 있다.",
+            "join_previous": false
+          }
+        }
+      }
+    }
+  },
+  "segments": [
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "output_paragraph": 0,
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 실행 방식은 forward, forward+backward, backward_only 세 가지를 포함한다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서 eps=1e-06, 출력 차원 16 조건으로 CROWN Verification을 실행한 결과 Elapsed time은 229.691800 ms로 기록되었으나, 이는 단일 실행 결과이며 CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 적용 후 실행 시간이 약 100ms 줄었다고 기록되었지만, 이 감소 폭과 CPU보다 느리다는 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램이 시도되었으나, 이는 후속 시도 동기와 방향 기록에 해당하며 실제 구현 완료·측정 결과는 현재 페이지에 없다. 따라서 본 연구의 결과는 최적화 시도 기록 중심으로 해석되어야 하며, GPU OPTIMIZED 모드의 단일 실행 결과나 CPU 대비 느리다는 평가, 하이브리드 프로그램 시도 동기 등은 실제 구현 완료·측정 결과나 정량 검증으로 승격되지 않는다.",
+      "source_id": "limitations_p2_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p0",
+        "paragraph_id": "limitations_p2",
+        "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 실행 방식은 forward, forward+backward, backward_only 세 가지를 포함한다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서 eps=1e-06, 출력 차원 16 조건으로 CROWN Verification을 실행한 결과 Elapsed time은 229.691800 ms로 기록되었으나, 이는 단일 실행 결과이며 CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 적용 후 실행 시간이 약 100ms 줄었다고 기록되었지만, 이 감소 폭과 CPU보다 느리다는 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램이 시도되었으나, 이는 후속 시도 동기와 방향 기록에 해당하며 실제 구현 완료·측정 결과는 현재 페이지에 없다. 따라서 본 연구의 결과는 최적화 시도 기록 중심으로 해석되어야 하며, GPU OPTIMIZED 모드의 단일 실행 결과나 CPU 대비 느리다는 평가, 하이브리드 프로그램 시도 동기 등은 실제 구현 완료·측정 결과나 정량 검증으로 승격되지 않는다.",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "output_paragraph": 0,
+      "text": "이 연구의 적용 범위는 256-491-491-16 크기 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 한 CROWN 검증의 CUDA 구현에 한정되며, 배치 크기는 1, 실행 방식은 forward, forward+backward, backward_only로 설정되었다. 이러한 설정은 실시간 환경의 대규모 연산 대응 가능성을 검토하는 데 초점이 맞춰져 있으나, 다른 신경망 크기나 입력 조건, 출력 차원으로 확장할 때의 일반화 가능성은 이 기록만으로 확인되지 않는다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었으며, 최적화 과정에서는 여러 기법이 적용·제거를 반복해 각 기법의 개별 효과를 체계적으로 분리한 ablation study가 이루어지지 못했다. 그 결과 메모리 풀과 warm up 조합이 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 판단이 제시되었으나, 이 수치는 기록자가 요약한 범위이며 단일 실행의 정밀 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었고, 가중치 사전 업로드(PRELOAD ON GPU) 적용 후 실행 시간이 149~155ms 범위로 기록되었다. bias까지 GPU에 미리 업로드하는 시도는 bias가 Vector이며 약 4KB 정도라서 CPU 연산에도 무리가 없는 수준이라 성능 개선에 큰 의미를 미치지 못하는 것으로 판단되었다. make_zero_matrix, make_zero_vector를 CPU로 회귀한 결과 22~25ms 정도 줄었고, 영벡터 만들기를 다시 GPU로 시도했을 때는 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 결과 저장용 벡터에 대한 불필요한 memcpy를 제거하자 약 10ms 추가로 단축되었다. 이러한 최적화 시도 기록은 각 기법의 적용·제거가 반복된 과정의 관측을 반영하지만, 동시 변경이 많아 개별 요인의 기여도를 분리하기 어렵고, CPU 버전의 정확한 수치나 반복 측정 기반 비교도 현재 페이지에 제시되지 않아 결과 해석 범위가 제한된다.",
+      "source_id": "limitations_p3_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p0",
+        "paragraph_id": "limitations_p3",
+        "text": "이 연구의 적용 범위는 256-491-491-16 크기 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 한 CROWN 검증의 CUDA 구현에 한정되며, 배치 크기는 1, 실행 방식은 forward, forward+backward, backward_only로 설정되었다. 이러한 설정은 실시간 환경의 대규모 연산 대응 가능성을 검토하는 데 초점이 맞춰져 있으나, 다른 신경망 크기나 입력 조건, 출력 차원으로 확장할 때의 일반화 가능성은 이 기록만으로 확인되지 않는다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었으며, 최적화 과정에서는 여러 기법이 적용·제거를 반복해 각 기법의 개별 효과를 체계적으로 분리한 ablation study가 이루어지지 못했다. 그 결과 메모리 풀과 warm up 조합이 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 판단이 제시되었으나, 이 수치는 기록자가 요약한 범위이며 단일 실행의 정밀 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었고, 가중치 사전 업로드(PRELOAD ON GPU) 적용 후 실행 시간이 149~155ms 범위로 기록되었다. bias까지 GPU에 미리 업로드하는 시도는 bias가 Vector이며 약 4KB 정도라서 CPU 연산에도 무리가 없는 수준이라 성능 개선에 큰 의미를 미치지 못하는 것으로 판단되었다. make_zero_matrix, make_zero_vector를 CPU로 회귀한 결과 22~25ms 정도 줄었고, 영벡터 만들기를 다시 GPU로 시도했을 때는 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 결과 저장용 벡터에 대한 불필요한 memcpy를 제거하자 약 10ms 추가로 단축되었다. 이러한 최적화 시도 기록은 각 기법의 적용·제거가 반복된 과정의 관측을 반영하지만, 동시 변경이 많아 개별 요인의 기여도를 분리하기 어렵고, CPU 버전의 정확한 수치나 반복 측정 기반 비교도 현재 페이지에 제시되지 않아 결과 해석 범위가 제한된다.",
+        "evidence_ids": [
+          "E00044",
+          "E00045",
+          "E00071",
+          "E00072",
+          "E00073",
+          "E00074",
+          "E00076",
+          "E00077",
+          "E00078"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "output_paragraph": 0,
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list로 한정된다. 이 범위를 벗어나 더 큰 네트워크나 다른 입력 조건, 배치 크기, 출력 차원으로 확장할 때의 일반화 제약은 현재 기록만으로 단정하기 어렵다. v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16x491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 없다. mempool + warmup 조합의 CROWN Verification 실행 결과는 152.902900 ms, mempool + cuBlas + warmup 조합은 174.978400 ms로 기록되었으며, 이는 eps=1e-06, 출력 차원 16 조건의 단일 실행 결과이다. 기록자는 1번의 시도에서 cuBlas가 더 느린 모습이라고 관찰했고, 미리 메모리풀을 warmup 하는 것은 확실히 효과가 있어 각 버전에서 약 50ms 정도 단축된다고 기록했으나, 이는 정성적 관찰이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 현재 페이지에 없다. mempool(v1-1-1)에서 미리 ensure_pool()을 활용해 메모리 할당을 하는 것은 큰 영향을 미치지만, cuBlas를 쓰고 warm up 하는 것과 그렇게 차이나지 않는다고 기록되었으나, 이 역시 정량 분리 측정 결과가 없는 정성적 비교이다. HYBRID V2 모드에서 eps=1e-06, 500 iterations, 출력 차원 16 조건으로 실행한 결과 Total Elapsed time은 49416.462000 ms, Average time per iter는 98.832924 ms로 기록되었고, 기록자는 CPU의 캐시 때문에 HYBRID V2가 CPU보다 느리게 나온 것으로 추정하며 1번만 돌리는 실험이 필요하다고 판단했으나, 이는 기록자의 정성적 해석과 향후 실험 계획 메모이며 CPU 대비 느림에 대한 직접 비교 문장이나 캐시 영향의 정량 검증은 현재 페이지에 없다.",
+      "source_id": "limitations_p4_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p0",
+        "paragraph_id": "limitations_p4",
+        "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list로 한정된다. 이 범위를 벗어나 더 큰 네트워크나 다른 입력 조건, 배치 크기, 출력 차원으로 확장할 때의 일반화 제약은 현재 기록만으로 단정하기 어렵다. v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16x491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 없다. mempool + warmup 조합의 CROWN Verification 실행 결과는 152.902900 ms, mempool + cuBlas + warmup 조합은 174.978400 ms로 기록되었으며, 이는 eps=1e-06, 출력 차원 16 조건의 단일 실행 결과이다. 기록자는 1번의 시도에서 cuBlas가 더 느린 모습이라고 관찰했고, 미리 메모리풀을 warmup 하는 것은 확실히 효과가 있어 각 버전에서 약 50ms 정도 단축된다고 기록했으나, 이는 정성적 관찰이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 현재 페이지에 없다. mempool(v1-1-1)에서 미리 ensure_pool()을 활용해 메모리 할당을 하는 것은 큰 영향을 미치지만, cuBlas를 쓰고 warm up 하는 것과 그렇게 차이나지 않는다고 기록되었으나, 이 역시 정량 분리 측정 결과가 없는 정성적 비교이다. HYBRID V2 모드에서 eps=1e-06, 500 iterations, 출력 차원 16 조건으로 실행한 결과 Total Elapsed time은 49416.462000 ms, Average time per iter는 98.832924 ms로 기록되었고, 기록자는 CPU의 캐시 때문에 HYBRID V2가 CPU보다 느리게 나온 것으로 추정하며 1번만 돌리는 실험이 필요하다고 판단했으나, 이는 기록자의 정성적 해석과 향후 실험 계획 메모이며 CPU 대비 느림에 대한 직접 비교 문장이나 캐시 영향의 정량 검증은 현재 페이지에 없다.",
+        "evidence_ids": [
+          "E00033",
+          "E00064",
+          "E00065",
+          "E00066",
+          "E00067",
+          "E00068",
+          "E00069",
+          "E00070"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "output_paragraph": 0,
+      "text": "본 검증은 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로, CROWN의 forward, forward+backward, backward_only 실행 방식 중 하나를 C++ 프로그램에서 수행한 결과를 중심으로 한다. 배치 크기는 1이며, 출력 차원은 16, eps는 1e-06으로 설정된 조건에서 실행 시간이 기록되었다. 이러한 설정은 특정 신경망 크기와 단일 입력·단일 출력 차원에 맞춰져 있어, 더 큰 네트워크나 다른 입력 규모·출력 차원으로 그대로 확장된다고 보기 어렵다. 또한 GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로 보아, 측정 환경이 처음부터 완전히 통제된 상태였다고 단정하기도 어렵다. 따라서 여기서 관측된 실행 시간 감소는 해당 조건과 구현 시도 범위 안에서 해석되어야 하며, 다른 신경망 규모나 입력 구성, 출력 차원, 실시간 환경 목표로 일반화할 때는 별도의 확인이 필요하다.",
+      "source_id": "limitations_p5_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p0",
+        "paragraph_id": "limitations_p5",
+        "text": "본 검증은 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로, CROWN의 forward, forward+backward, backward_only 실행 방식 중 하나를 C++ 프로그램에서 수행한 결과를 중심으로 한다. 배치 크기는 1이며, 출력 차원은 16, eps는 1e-06으로 설정된 조건에서 실행 시간이 기록되었다. 이러한 설정은 특정 신경망 크기와 단일 입력·단일 출력 차원에 맞춰져 있어, 더 큰 네트워크나 다른 입력 규모·출력 차원으로 그대로 확장된다고 보기 어렵다. 또한 GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로 보아, 측정 환경이 처음부터 완전히 통제된 상태였다고 단정하기도 어렵다. 따라서 여기서 관측된 실행 시간 감소는 해당 조건과 구현 시도 범위 안에서 해석되어야 하며, 다른 신경망 규모나 입력 구성, 출력 차원, 실시간 환경 목표로 일반화할 때는 별도의 확인이 필요하다.",
+        "evidence_ids": [
+          "E00083",
+          "E00096",
+          "E00097",
+          "E00101",
+          "E00119",
+          "E00120",
+          "E00131",
+          "E00132",
+          "E00139",
+          "E00140"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "output_paragraph": 0,
+      "text": "본 연구의 적용 범위는 256–491–491–16 크기의 신경망과 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list로 제한된다. 이 범위를 벗어나면 결과의 일반화가 제약될 수 있다. cuSparse 도입 시도는 W, W_pos, W_neg를 CSR 형식으로 변환하고 cuSPARSE handle·descriptor를 유지한 채 network_forward()의 dense matvec만 cuSPARSE SpMV로 교체한 수준에서 이루어졌으며, 기존 matmul은 유지되었다. spMV 적용 결과 실행 시간은 27.107400 ms로 기록되어 이전 27ms 수준보다 느려졌고, 이후 spMM 도입까지 검토하기로 했다. cuBLAS와 cuSPARSE는 실험했으나 현재 모델 크기와 호출 패턴에서는 느려져 현 기준 코드에는 포함하지 않았으며, spMM 도입 후에는 거의 40ms로 회귀해 부적절하다고 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 것이 맞다고 판단되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 제시되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성되지 않았고, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가되며, 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고 SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. network_forward는 신경망의 일반 추론값을 출력하지만 아직 GPU 파이프라인이 아니라 최적화가 적용되지 않은 상태이기도 하다. 각 최적화 기법을 체계적으로 분리해 ablation study를 하지 못한 점도 한계로 남는다.",
+      "source_id": "limitations_p6_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p0",
+        "paragraph_id": "limitations_p6",
+        "text": "본 연구의 적용 범위는 256–491–491–16 크기의 신경망과 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list로 제한된다. 이 범위를 벗어나면 결과의 일반화가 제약될 수 있다. cuSparse 도입 시도는 W, W_pos, W_neg를 CSR 형식으로 변환하고 cuSPARSE handle·descriptor를 유지한 채 network_forward()의 dense matvec만 cuSPARSE SpMV로 교체한 수준에서 이루어졌으며, 기존 matmul은 유지되었다. spMV 적용 결과 실행 시간은 27.107400 ms로 기록되어 이전 27ms 수준보다 느려졌고, 이후 spMM 도입까지 검토하기로 했다. cuBLAS와 cuSPARSE는 실험했으나 현재 모델 크기와 호출 패턴에서는 느려져 현 기준 코드에는 포함하지 않았으며, spMM 도입 후에는 거의 40ms로 회귀해 부적절하다고 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 것이 맞다고 판단되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 제시되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성되지 않았고, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가되며, 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고 SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. network_forward는 신경망의 일반 추론값을 출력하지만 아직 GPU 파이프라인이 아니라 최적화가 적용되지 않은 상태이기도 하다. 각 최적화 기법을 체계적으로 분리해 ablation study를 하지 못한 점도 한계로 남는다.",
+        "evidence_ids": [
+          "E00105",
+          "E00106",
+          "E00109",
+          "E00111",
+          "E00114",
+          "E00115",
+          "E00117"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "output_paragraph": 0,
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list로 제한되며, 배치 크기는 1이고 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지이다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정과 warm up은 연구 일지에서 확인된 뒤의 사항이다. 이 범위를 벗어나면 결과의 일반화를 단정하기 어렵다. GPU OPTIMIZED 모드 적용 후 실행 시간이 229.691ms로 약 100ms 줄었다고 기록되었으나, 이 감소 폭과 CPU보다 느리다는 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았다는 시도는 후속 동기와 방향 기록에 해당하며, 실제 구현 완료나 측정 결과는 현재 페이지에 없다. 단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만 92만 개의 데이터를 돌리면 1분 정도 차이로 비슷해진다는 현상이 기록되었고, 이 문제는 아직 해결하지 못했다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 점도 한계로 남는다. 따라서 본 연구의 결과는 최적화 시도 기록 중심으로 해석되어야 하며, GPU OPTIMIZED 모드의 단일 실행 결과나 CPU 대비 느리다는 평가, 하이브리드 프로그램 시도 동기 등은 실제 구현 완료·측정 결과나 정량 검증으로 승격되지 않는다.",
+      "source_id": "limitations_p7_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p0",
+        "paragraph_id": "limitations_p7",
+        "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list로 제한되며, 배치 크기는 1이고 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지이다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정과 warm up은 연구 일지에서 확인된 뒤의 사항이다. 이 범위를 벗어나면 결과의 일반화를 단정하기 어렵다. GPU OPTIMIZED 모드 적용 후 실행 시간이 229.691ms로 약 100ms 줄었다고 기록되었으나, 이 감소 폭과 CPU보다 느리다는 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았다는 시도는 후속 동기와 방향 기록에 해당하며, 실제 구현 완료나 측정 결과는 현재 페이지에 없다. 단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만 92만 개의 데이터를 돌리면 1분 정도 차이로 비슷해진다는 현상이 기록되었고, 이 문제는 아직 해결하지 못했다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 점도 한계로 남는다. 따라서 본 연구의 결과는 최적화 시도 기록 중심으로 해석되어야 하며, GPU OPTIMIZED 모드의 단일 실행 결과나 CPU 대비 느리다는 평가, 하이브리드 프로그램 시도 동기 등은 실제 구현 완료·측정 결과나 정량 검증으로 승격되지 않는다.",
+        "evidence_ids": [
+          "E00029",
+          "E00030",
+          "E00065",
+          "E00167",
+          "E00174"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "output_paragraph": 0,
+      "text": "본 검증 가속은 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로, CROWN을 구현한 C++ 프로그램에서 배치 크기 1로 forward, forward+backward, backward_only 세 실행 방식을 비교하는 범위에서 수행되었다. 이 범위는 단일 샘플·제한된 입력 조건에서의 처리 시간 기록에 초점을 둔 것이며, 더 큰 신경망이나 다른 입력 규모·출력 차원으로 바로 일반화된다고 단정하기 어렵다. 배칭으로 데이터셋을 통째로 넘기는 방식은 실시간 환경이 아니라고 판단해 채택하지 않았고, 대신 데이터셋 영역을 pinned Memory로 지정하고 메모리 복사 속도를 최대화하는 방향으로 접근하였다. warm up은 초기에 도입되었고, 측정 과정에서 warm up을 적용해도 스파이크가 남고 10번 측정 시 평균 시간이 느려지는 경우가 관측되어 측정 재현성 측면의 제약이 남는다.",
+      "source_id": "limitations_p8_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p0",
+        "paragraph_id": "limitations_p8",
+        "text": "본 검증 가속은 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로, CROWN을 구현한 C++ 프로그램에서 배치 크기 1로 forward, forward+backward, backward_only 세 실행 방식을 비교하는 범위에서 수행되었다. 이 범위는 단일 샘플·제한된 입력 조건에서의 처리 시간 기록에 초점을 둔 것이며, 더 큰 신경망이나 다른 입력 규모·출력 차원으로 바로 일반화된다고 단정하기 어렵다. 배칭으로 데이터셋을 통째로 넘기는 방식은 실시간 환경이 아니라고 판단해 채택하지 않았고, 대신 데이터셋 영역을 pinned Memory로 지정하고 메모리 복사 속도를 최대화하는 방향으로 접근하였다. warm up은 초기에 도입되었고, 측정 과정에서 warm up을 적용해도 스파이크가 남고 10번 측정 시 평균 시간이 느려지는 경우가 관측되어 측정 재현성 측면의 제약이 남는다.",
+        "evidence_ids": [
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00207",
+          "E00217"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "output_paragraph": 0,
+      "text": "최적화 과정은 각 기법을 체계적으로 분리한 ablation study가 아니라, 적용했다가 되돌리는 시도를 반복하며 얻은 기록 중심이므로 개별 최적화의 기여도를 독립적으로 분리해 해석하기 어렵다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 이 방식은 기존 단일 샘플 커널을 유지한 채 3.2배 가속(25분→8분)을 얻었지만, 스트림 수 한계와 SM 포화로 7~8분이 한계선으로 해석된다. 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된 것으로 보며, 차기 로드맵은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 활용해 30초~1분대 진입을 목표로 한다.",
+      "source_id": "limitations_p9_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p0",
+        "paragraph_id": "limitations_p9",
+        "text": "최적화 과정은 각 기법을 체계적으로 분리한 ablation study가 아니라, 적용했다가 되돌리는 시도를 반복하며 얻은 기록 중심이므로 개별 최적화의 기여도를 독립적으로 분리해 해석하기 어렵다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 이 방식은 기존 단일 샘플 커널을 유지한 채 3.2배 가속(25분→8분)을 얻었지만, 스트림 수 한계와 SM 포화로 7~8분이 한계선으로 해석된다. 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된 것으로 보며, 차기 로드맵은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 활용해 30초~1분대 진입을 목표로 한다.",
+        "evidence_ids": [
+          "E00257",
+          "E00260",
+          "E00263"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "output_paragraph": 0,
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 실행 방식은 forward, forward+backward, backward_only 세 가지를 포함한다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서 eps=1e-06, 출력 차원 16 조건으로 CROWN Verification을 실행한 결과 Elapsed time은 229.691800 ms로 기록되었으나, 이는 단일 실행 결과이며 CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 적용 후 실행 시간이 약 100ms 줄었지만 여전히 CPU보다 느리다는 평가가 기록되었고, 이에 matmul만 GPU로 실행하는 하이브리드 프로그램이 시도되었다. 다만 이 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없고, 하이브리드 프로그램의 실제 구현 완료·측정 결과도 현재 페이지에 없어 시도 동기와 방향 기록에 해당한다. 이러한 적용 범위와 조건 밖에서는 결과의 일반화 제약이 발생할 수 있다.",
+      "source_id": "limitations_p10_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p0",
+        "paragraph_id": "limitations_p10",
+        "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 실행 방식은 forward, forward+backward, backward_only 세 가지를 포함한다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서 eps=1e-06, 출력 차원 16 조건으로 CROWN Verification을 실행한 결과 Elapsed time은 229.691800 ms로 기록되었으나, 이는 단일 실행 결과이며 CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 적용 후 실행 시간이 약 100ms 줄었지만 여전히 CPU보다 느리다는 평가가 기록되었고, 이에 matmul만 GPU로 실행하는 하이브리드 프로그램이 시도되었다. 다만 이 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없고, 하이브리드 프로그램의 실제 구현 완료·측정 결과도 현재 페이지에 없어 시도 동기와 방향 기록에 해당한다. 이러한 적용 범위와 조건 밖에서는 결과의 일반화 제약이 발생할 수 있다.",
+        "evidence_ids": [
+          "E00259",
+          "E00261",
+          "E00262"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "output_paragraph": 0,
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 방법을 포함한다. 이러한 설정은 특정 신경망 구조와 단일 배치 조건에 맞춰져 있어, 더 큰 네트워크나 다른 입력 규모, 다른 eps 조건, 다중 출력 차원으로의 일반화는 제한적이다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, GPU 클록 고정과 warm up은 연구 과정에서 나중에 확정되거나 초기에 적용된 사항이므로, 측정 환경과 반복 조건에 따라 절대 성능 수치의 해석 범위가 달라진다. 평균 처리 속도에서는 No-Pin이 13초 빠르다는 비교가 보고되었으나, 이는 평균 속도 관점의 요약이며 실제 측정 조건과 정량 수치는 별도 요소에서 다룬다. 실시간성 관점에서는 No-Pin의 최대 지연이 8.8ms~11.6ms 범위로 튀고 지터가 118.94μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47.28μs로 더 안정적이어서 해석 기준이 달라진다. 다만 지터 수치는 표(p78:e616)에서는 118μs/47μs로 반올림되어 제시되었고, 더 정밀한 값(118.94μs/47.28μs)은 다른 표(p80:img0:e8)에서 확인되므로 정밀도 차이가 있다. Pinned Memory의 최악 지연시간(WCET) 1.64ms 제한과 지터 안정화, 그리고 실시간 무선 안테나 선택 시스템에서 Pinned Memory 도입이 필요하다는 결론은 원문에 제시되어 있으나, 11.6ms 스파이크, DMA 셋업 비용 1~2μs, 1ms 무선 통신 데드라인 관련 서술은 구체적 재현 조건·측정 방법·시스템 맥락이 명시되지 않은 한계가 있다. 또한 Pinned가 No-Pin보다 총 소요 시간이 더 길게 나왔다는 기록자의 결론 진술은 1KB 수준의 작은 데이터와 매 루프별 하드웨어 DMA 셋업 오버헤드와 연결되어 설명되지만, 이는 기록자의 해석이며 정량 수치나 반복 측정 통계는 별도 요소에서 다룬다. 이러한 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory가 매번 하드웨어 DMA 셋업 오버헤드를 치르는 반면, No-Pin은 CPU 캐시 복사로 더 빠르게 처리되기 때문으로 설명되나, 이 비교는 특정 측정 환경과 반복 조건에서 얻은 결과이므로 다른 플랫폼이나 더 큰 데이터 전송 조건으로의 일반화는 제한적이다.",
+      "source_id": "limitations_p11_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p0",
+        "paragraph_id": "limitations_p11",
+        "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 방법을 포함한다. 이러한 설정은 특정 신경망 구조와 단일 배치 조건에 맞춰져 있어, 더 큰 네트워크나 다른 입력 규모, 다른 eps 조건, 다중 출력 차원으로의 일반화는 제한적이다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, GPU 클록 고정과 warm up은 연구 과정에서 나중에 확정되거나 초기에 적용된 사항이므로, 측정 환경과 반복 조건에 따라 절대 성능 수치의 해석 범위가 달라진다. 평균 처리 속도에서는 No-Pin이 13초 빠르다는 비교가 보고되었으나, 이는 평균 속도 관점의 요약이며 실제 측정 조건과 정량 수치는 별도 요소에서 다룬다. 실시간성 관점에서는 No-Pin의 최대 지연이 8.8ms~11.6ms 범위로 튀고 지터가 118.94μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47.28μs로 더 안정적이어서 해석 기준이 달라진다. 다만 지터 수치는 표(p78:e616)에서는 118μs/47μs로 반올림되어 제시되었고, 더 정밀한 값(118.94μs/47.28μs)은 다른 표(p80:img0:e8)에서 확인되므로 정밀도 차이가 있다. Pinned Memory의 최악 지연시간(WCET) 1.64ms 제한과 지터 안정화, 그리고 실시간 무선 안테나 선택 시스템에서 Pinned Memory 도입이 필요하다는 결론은 원문에 제시되어 있으나, 11.6ms 스파이크, DMA 셋업 비용 1~2μs, 1ms 무선 통신 데드라인 관련 서술은 구체적 재현 조건·측정 방법·시스템 맥락이 명시되지 않은 한계가 있다. 또한 Pinned가 No-Pin보다 총 소요 시간이 더 길게 나왔다는 기록자의 결론 진술은 1KB 수준의 작은 데이터와 매 루프별 하드웨어 DMA 셋업 오버헤드와 연결되어 설명되지만, 이는 기록자의 해석이며 정량 수치나 반복 측정 통계는 별도 요소에서 다룬다. 이러한 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory가 매번 하드웨어 DMA 셋업 오버헤드를 치르는 반면, No-Pin은 CPU 캐시 복사로 더 빠르게 처리되기 때문으로 설명되나, 이 비교는 특정 측정 환경과 반복 조건에서 얻은 결과이므로 다른 플랫폼이나 더 큰 데이터 전송 조건으로의 일반화는 제한적이다.",
+        "evidence_ids": [
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00296",
+          "E00299",
+          "E00301"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "output_paragraph": 0,
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list를 기준으로 한 CROWN 검증의 CUDA 구현에 한정된다. 이 범위를 벗어나 더 큰 신경망이나 다른 입력 규모, 다른 eps 조건, 다른 출력 차원으로 확장할 경우 동일한 효율 양상이 유지된다고 단정하기 어렵다. 현재 입력 기준 약 1KB 수준의 작은 데이터를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다는 해석이 있으나, 이는 정량적 고정 비용 측정이 아니라 해석 수준의 관찰이다. pinned memory 적용 여부에 따른 cudaMemcpyAsync 시간은 여러 번 측정에서 빠르거나 느리게 바뀌어, 2copy에서 1copy로 변경한 효과가 크지 않았다고 보았으나 마지막 측정에서는 nopinned가 더 빠르게 나타나 확신할 수 없게 되었다. 추론 종료까지의 동기화 시간은 pinned memory 미적용 버전이 가장 빨랐으며, 이는 H2D 복사 시간의 영향 가능성으로 해석되지만 인과가 확정적으로 분리된 것은 아니다. backward_only가 왜 가장 빠른지에 대한 질문도 제기되었으나 이 절에서 답변이 완료되지는 않았다. 아울러 각 최적화 기법을 체계적으로 분리해 ablation study로 검토하지 못한 점 역시 한계로 남는다.",
+      "source_id": "limitations_p12_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p0",
+        "paragraph_id": "limitations_p12",
+        "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list를 기준으로 한 CROWN 검증의 CUDA 구현에 한정된다. 이 범위를 벗어나 더 큰 신경망이나 다른 입력 규모, 다른 eps 조건, 다른 출력 차원으로 확장할 경우 동일한 효율 양상이 유지된다고 단정하기 어렵다. 현재 입력 기준 약 1KB 수준의 작은 데이터를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다는 해석이 있으나, 이는 정량적 고정 비용 측정이 아니라 해석 수준의 관찰이다. pinned memory 적용 여부에 따른 cudaMemcpyAsync 시간은 여러 번 측정에서 빠르거나 느리게 바뀌어, 2copy에서 1copy로 변경한 효과가 크지 않았다고 보았으나 마지막 측정에서는 nopinned가 더 빠르게 나타나 확신할 수 없게 되었다. 추론 종료까지의 동기화 시간은 pinned memory 미적용 버전이 가장 빨랐으며, 이는 H2D 복사 시간의 영향 가능성으로 해석되지만 인과가 확정적으로 분리된 것은 아니다. backward_only가 왜 가장 빠른지에 대한 질문도 제기되었으나 이 절에서 답변이 완료되지는 않았다. 아울러 각 최적화 기법을 체계적으로 분리해 ablation study로 검토하지 못한 점 역시 한계로 남는다.",
+        "evidence_ids": [
+          "E00303",
+          "E00304",
+          "E00305",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00309",
+          "E00333"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p1",
+      "output_paragraph": 0,
+      "text": "방법·구현·설정 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀), 가중치 사전 업로드(PRELOAD ON GPU), forward 함수의 DTOH memcpy 제거, make_zero_matrix·make_zero_vector의 CPU 회귀, cuSPARSE SpMV/spMM 적용, cudaHostRegister(Pinned) 대 No Pinning 비교, GPU 클록 고정 재실험 시도까지 적용·시도된 요소를 중심으로 정리한다. 이 과정에서 cuBLAS Batched GEMM과 텐서 코어를 활용한 antenna_lirpa 대비 현재 C++ 멀티스트림 구현의 체급 차이, 그리고 차기 Batched GEMM·3D 텐서 연산화 로드맵도 함께 확인된다. 다만 커널 퓨전, cudaGraph, pinned memory의 체계적 비교, 전력·에너지 효율, 반복 측정 기반 통계, 각 최적화 기법의 개별 효과 분리는 이번 검토에서 충분히 다루지 못했거나 보류된 항목이며, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않은 점도 공정 비교의 한계로 남는다.",
+      "source_id": "limitations_p14_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p1",
+        "paragraph_id": "limitations_p14",
+        "text": "방법·구현·설정 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀), 가중치 사전 업로드(PRELOAD ON GPU), forward 함수의 DTOH memcpy 제거, make_zero_matrix·make_zero_vector의 CPU 회귀, cuSPARSE SpMV/spMM 적용, cudaHostRegister(Pinned) 대 No Pinning 비교, GPU 클록 고정 재실험 시도까지 적용·시도된 요소를 중심으로 정리한다. 이 과정에서 cuBLAS Batched GEMM과 텐서 코어를 활용한 antenna_lirpa 대비 현재 C++ 멀티스트림 구현의 체급 차이, 그리고 차기 Batched GEMM·3D 텐서 연산화 로드맵도 함께 확인된다. 다만 커널 퓨전, cudaGraph, pinned memory의 체계적 비교, 전력·에너지 효율, 반복 측정 기반 통계, 각 최적화 기법의 개별 효과 분리는 이번 검토에서 충분히 다루지 못했거나 보류된 항목이며, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않은 점도 공정 비교의 한계로 남는다.",
+        "evidence_ids": [
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00073",
+          "E00074",
+          "E00076",
+          "E00077",
+          "E00083",
+          "E00105",
+          "E00106",
+          "E00115",
+          "E00116",
+          "E00167",
+          "E00174",
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00257",
+          "E00259",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p1",
+      "output_paragraph": 0,
+      "text": "이 절은 방법·구현·설정 효율 검토 범위와 해석상 한계를 정리한다. 본 연구는 CROWN 검증의 실시간 가속 가능성을 CUDA 구현과 최적화 시도 기록으로 검토했으며, CPU 대비 속도 개선 여부와 최적화 과정의 요인을 함께 확인하는 데 초점을 두었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 않아 개별 변경의 효과를 정량적으로 분리하기 어렵다. GPU 클록 고정은 CUDA 강의 19장을 참고해 nvidia-smi -q -d CLOCK로 확인하고, sudo nvidia-smi -pm 1로 Persistence mode를 활성화한 뒤 sudo nvidia-smi -lgc 1410으로 그래픽 클록을 잠그는 방식으로 설정했다. 이는 초기화 지연 제거와 일관된 측정을 위한 환경 설정이지만, 실제 적용 결과나 고정 후 측정 수치는 이 요소만으로 제시되지 않는다. 구현 측면에서는 메모리 풀, cuBLAS 기반 행렬곱, 커널 퓨전, cudaGraph, pinned memory 등 여러 GPU 최적화 요소가 시도되거나 검토되었으나, 전체 처리 과정을 비교할 때 여러 요소가 동시에 바뀌어 개별 효과 분리가 제한된다. 예를 들어 hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 CPU for문으로 되돌린 버전으로, 새로 추가된 요소 없이 GPU 코드를 삭제해 빨라진 사례에 가깝다. 또한 forward와 backward의 cudaMemcpy 호출 횟수는 동일하지만 전체 실행 시간과 cudaMemcpy 시간 분포는 다르게 관측되어, 호출 횟수만으로 성능 차이를 설명하기 어렵다. fp32 단정밀도 연산 변경 시도처럼 일부 항목은 별도 고찰로만 언급되었고, switch 문 안 구조체 선언·초기화 문제처럼 컴파일 제약에 따른 구현 조정도 기록되었다. 따라서 본 결과의 해석 범위는 최적화 시도 기록과 단일 실행 관측에 머물며, 반복 측정 통계나 조건별 분리 측정이 충분히 제시되지 않은 점은 한계로 남는다.",
+      "source_id": "limitations_p16_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p1",
+        "paragraph_id": "limitations_p16",
+        "text": "이 절은 방법·구현·설정 효율 검토 범위와 해석상 한계를 정리한다. 본 연구는 CROWN 검증의 실시간 가속 가능성을 CUDA 구현과 최적화 시도 기록으로 검토했으며, CPU 대비 속도 개선 여부와 최적화 과정의 요인을 함께 확인하는 데 초점을 두었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 않아 개별 변경의 효과를 정량적으로 분리하기 어렵다. GPU 클록 고정은 CUDA 강의 19장을 참고해 nvidia-smi -q -d CLOCK로 확인하고, sudo nvidia-smi -pm 1로 Persistence mode를 활성화한 뒤 sudo nvidia-smi -lgc 1410으로 그래픽 클록을 잠그는 방식으로 설정했다. 이는 초기화 지연 제거와 일관된 측정을 위한 환경 설정이지만, 실제 적용 결과나 고정 후 측정 수치는 이 요소만으로 제시되지 않는다. 구현 측면에서는 메모리 풀, cuBLAS 기반 행렬곱, 커널 퓨전, cudaGraph, pinned memory 등 여러 GPU 최적화 요소가 시도되거나 검토되었으나, 전체 처리 과정을 비교할 때 여러 요소가 동시에 바뀌어 개별 효과 분리가 제한된다. 예를 들어 hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 CPU for문으로 되돌린 버전으로, 새로 추가된 요소 없이 GPU 코드를 삭제해 빨라진 사례에 가깝다. 또한 forward와 backward의 cudaMemcpy 호출 횟수는 동일하지만 전체 실행 시간과 cudaMemcpy 시간 분포는 다르게 관측되어, 호출 횟수만으로 성능 차이를 설명하기 어렵다. fp32 단정밀도 연산 변경 시도처럼 일부 항목은 별도 고찰로만 언급되었고, switch 문 안 구조체 선언·초기화 문제처럼 컴파일 제약에 따른 구현 조정도 기록되었다. 따라서 본 결과의 해석 범위는 최적화 시도 기록과 단일 실행 관측에 머물며, 반복 측정 통계나 조건별 분리 측정이 충분히 제시되지 않은 점은 한계로 남는다.",
+        "evidence_ids": [
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00037",
+          "E00165",
+          "E00166",
+          "E00150",
+          "E00353",
+          "E00354",
+          "E00050",
+          "E00047",
+          "E00048",
+          "E00049",
+          "E00130",
+          "E00133",
+          "E00135",
+          "E00136",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00148",
+          "E00149",
+          "E00151",
+          "E00152",
+          "E00153",
+          "E00154",
+          "E00155",
+          "E00156",
+          "E00157",
+          "E00158",
+          "E00159",
+          "E00160",
+          "E00161",
+          "E00162",
+          "E00172",
+          "E00201",
+          "E00318",
+          "E00319",
+          "E00330"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p1",
+      "output_paragraph": 0,
+      "text": "본 연구의 최적화 시도는 개별 기법의 효과를 체계적으로 분리하기보다, 여러 변경을 함께 적용한 뒤 전체 실행 시간의 변화를 관찰하는 방식으로 진행되었다. 예를 들어 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다. 또한 forward_cuda_graph의 전체 시간이 약 983초이고, CPU에서 필요한 만큼만 계산한 뒤 복사한 버전(1055)이 72초 더 느렸으며, 이는 더 늦어진 결과다. 이러한 관측은 변경 사실과 시간 비교만을 포함하며, 각 최적화 기법의 기여나 시간 차이의 원인을 정량적으로 분리한 측정 결과는 포함하지 않는다. 따라서 본 절에서 다루는 효율 검토 범위는 메모리 풀, cuBLAS, 커널 퓨전, cudaGraph, pinned memory 등 적용·시도된 구현 요소의 관측된 변화에 한정되며, 개별 기법의 독립적 효과나 미검토·보류 항목의 평가는 이 기록만으로 확정하기 어렵다.",
+      "source_id": "limitations_p17_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p1",
+        "paragraph_id": "limitations_p17",
+        "text": "본 연구의 최적화 시도는 개별 기법의 효과를 체계적으로 분리하기보다, 여러 변경을 함께 적용한 뒤 전체 실행 시간의 변화를 관찰하는 방식으로 진행되었다. 예를 들어 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다. 또한 forward_cuda_graph의 전체 시간이 약 983초이고, CPU에서 필요한 만큼만 계산한 뒤 복사한 버전(1055)이 72초 더 느렸으며, 이는 더 늦어진 결과다. 이러한 관측은 변경 사실과 시간 비교만을 포함하며, 각 최적화 기법의 기여나 시간 차이의 원인을 정량적으로 분리한 측정 결과는 포함하지 않는다. 따라서 본 절에서 다루는 효율 검토 범위는 메모리 풀, cuBLAS, 커널 퓨전, cudaGraph, pinned memory 등 적용·시도된 구현 요소의 관측된 변화에 한정되며, 개별 기법의 독립적 효과나 미검토·보류 항목의 평가는 이 기록만으로 확정하기 어렵다.",
+        "evidence_ids": [
+          "E00370",
+          "E00374"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p1",
+      "output_paragraph": 0,
+      "text": "방법·구현·설정 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀), 가중치 사전 업로드(PRELOAD ON GPU), forward 함수의 DTOH memcpy 제거, make_zero 계열 함수의 CPU 회귀, cuSparse spMV/spMM 적용, cudaHostRegister(Pinned)와 No Pinning 비교, GPU 클록 고정, C++ 멀티스트림(Task Parallelism) 구성, antenna_lirpa 대비 싱글 스트림·cuBLAS Batched GEMM·텐서 코어 활용 차이 등을 대상으로 했다. 이 검토는 각 기법의 적용·제거 시도와 관측된 경향을 정리하지만, 개별 기법을 체계적으로 분리한 ablation study는 수행하지 않았고, 단일 실행 결과나 기록자 요약 중심의 수치가 많아 반복 측정 기반 통계가 부족하다. only_GPU와 hybrid 비교처럼 여러 요소가 동시에 바뀌어 개별 효과 분리가 어려운 경우도 있으며, backward_bound_gpu의 affine 중복 계산 삭제(커널 2개 함수 감소)와 backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합한 변경은 함수 감소나 관측된 경향만 기록하고 정량 성능 수치나 정확도 결과는 포함하지 않는다. HYBRID 모드에서는 CROWN Verification 실행 시간이 201.670100ms로, HYBRID V2에서는 85.785300ms로 기록되어 기록자가 CPU보다 빨라졌다고 평가했다. 따라서 효율 검토 결과는 적용 범위와 해석 범위가 제한적이며, 향후 연구에서는 최적화 기법의 체계적 분리, 반복 측정 기반 통계 확보, 복합 변경 해석의 한계 보완이 필요하다.",
+      "source_id": "limitations_p18_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p1",
+        "paragraph_id": "limitations_p18",
+        "text": "방법·구현·설정 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀), 가중치 사전 업로드(PRELOAD ON GPU), forward 함수의 DTOH memcpy 제거, make_zero 계열 함수의 CPU 회귀, cuSparse spMV/spMM 적용, cudaHostRegister(Pinned)와 No Pinning 비교, GPU 클록 고정, C++ 멀티스트림(Task Parallelism) 구성, antenna_lirpa 대비 싱글 스트림·cuBLAS Batched GEMM·텐서 코어 활용 차이 등을 대상으로 했다. 이 검토는 메모리 풀, cuBLAS, 커널 퓨전, cudaGraph, pinned memory 등 개별 기법의 적용·제거 시도와 관측된 경향을 정리하지만, 각 기법을 체계적으로 분리한 ablation study는 수행하지 않았고, 단일 실행 결과나 기록자 요약 중심의 수치가 많아 반복 측정 기반 통계가 부족하다. 또한 only_GPU와 hybrid 비교처럼 여러 요소가 동시에 바뀌어 개별 효과 분리가 어려운 경우가 있으며, backward_bound_gpu의 affine 중복 계산 삭제(커널 2개 함수 감소)와 backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합한 변경은 함수 감소나 관측된 경향만 기록하고 정량 성능 수치나 정확도 결과는 포함하지 않는다. HYBRID 모드(matmul=GPU, rest=CPU)에서는 CROWN Verification 실행 시간이 201.670100ms로 기록되었고, HYBRID V2에서는 85.785300ms로 기록되어 기록자가 CPU보다 빨라졌다고 평가했다. 따라서 효율 검토 결과는 적용 범위와 해석 범위가 제한적이며, 향후 연구에서는 최적화 기법의 체계적 분리, 반복 측정 기반 통계 확보, 복합 변경 해석의 한계 보완이 필요하다.",
+        "evidence_ids": [
+          "E00031",
+          "E00035",
+          "E00036",
+          "E00122",
+          "E00124"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p2",
+      "output_paragraph": 0,
+      "text": "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다.",
+      "source_id": "limitations_p20_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p2",
+        "paragraph_id": "limitations_p20",
+        "text": "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다.",
+        "evidence_ids": [
+          "E00030",
+          "E00333",
+          "E00262"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p2",
+      "output_paragraph": 0,
+      "text": "방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다.",
+      "source_id": "limitations_p21_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p2",
+        "paragraph_id": "limitations_p21",
+        "text": "방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다.",
+        "evidence_ids": [
+          "E00030",
+          "E00033",
+          "E00331"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p2",
+      "output_paragraph": 0,
+      "text": "향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다.",
+      "source_id": "limitations_p22_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p2",
+        "paragraph_id": "limitations_p22",
+        "text": "향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다.",
+        "evidence_ids": [
+          "E00262",
+          "E00333",
+          "E00331"
+        ]
+      }
+    },
+    {
+      "section_id": "limitations",
+      "part": "p2",
+      "output_paragraph": 0,
+      "text": "결과 해석 범위는 최적화 시도 기록 중심이라는 성격에 따라 제한된다. 본 절에서 정리한 향후 과제와 적용 범위, 효율 검토 범위의 공백은 실제 구현 완료·측정 결과로 입증된 내용이 아니라 연구 노트에 남은 방향·계획·할 일 기록에 기반하므로, 각 항목의 실현 여부나 성능 영향은 아직 검증되지 않았다. 따라서 후속 연구에서 개별 기법의 분리 평가, 측정 조건 고정, 대규모 텐서 연산화 구현과 실측을 통해 현재 제시된 방향성과 목표치를 다시 확인할 필요가 있다.",
+      "source_id": "limitations_p23_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p2",
+        "paragraph_id": "limitations_p23",
+        "text": "결과 해석 범위는 최적화 시도 기록 중심이라는 성격에 따라 제한된다. 본 절에서 정리한 향후 과제와 적용 범위, 효율 검토 범위의 공백은 실제 구현 완료·측정 결과로 입증된 내용이 아니라 연구 노트에 남은 방향·계획·할 일 기록에 기반하므로, 각 항목의 실현 여부나 성능 영향은 아직 검증되지 않았다. 따라서 후속 연구에서 개별 기법의 분리 평가, 측정 조건 고정, 대규모 텐서 연산화 구현과 실측을 통해 현재 제시된 방향성과 목표치를 다시 확인할 필요가 있다.",
+        "evidence_ids": [
+          "E00030",
+          "E00033",
+          "E00262",
+          "E00331",
+          "E00333"
+        ]
+      }
+    }
+  ],
+  "omitted_sources": [
+    {
+      "source_id": "limitations_p15_s1",
+      "origin": {
+        "section_id": "limitations",
+        "part": "p1",
+        "paragraph_id": "limitations_p15",
+        "text": "방법·구현·설정 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀), 가중치 사전 업로드(PRELOAD ON GPU), forward 함수의 DTOH memcpy 제거, make_zero_matrix·make_zero_vector의 CPU 회귀, cuSPARSE SpMV/spMM 적용, cudaHostRegister(Pinned) 대 No Pinning 비교, GPU 클록 고정 재실험 시도까지 적용·시도된 요소를 중심으로 정리한다. 이 과정에서 cuBLAS Batched GEMM과 텐서 코어를 활용한 antenna_lirpa 대비 현재 C++ 멀티스트림 구현의 체급 차이, 그리고 차기 Batched GEMM·3D 텐서 연산화 로드맵도 함께 확인된다. 다만 커널 퓨전, cudaGraph, pinned memory의 체계적 비교, 전력·에너지 효율, 반복 측정 기반 통계, 각 최적화 기법의 개별 효과 분리는 이번 검토에서 충분히 다루지 못했거나 보류된 항목이며, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않은 점도 공정 비교의 한계로 남는다.",
+        "evidence_ids": [
+          "E00281",
+          "E00282"
+        ]
+      }
+    }
+  ],
+  "changes": [
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "paragraph_id": "limitations_p2",
+      "source_id": "limitations_p2_s1",
+      "action": "replace",
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 실행 방식은 forward, forward+backward, backward_only 세 가지를 포함한다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서 eps=1e-06, 출력 차원 16 조건으로 CROWN Verification을 실행한 결과 Elapsed time은 229.691800 ms로 기록되었으나, 이는 단일 실행 결과이며 CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 적용 후 실행 시간이 약 100ms 줄었다고 기록되었지만, 이 감소 폭과 CPU보다 느리다는 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램이 시도되었으나, 이는 후속 시도 동기와 방향 기록에 해당하며 실제 구현 완료·측정 결과는 현재 페이지에 없다. 따라서 본 연구의 결과는 최적화 시도 기록 중심으로 해석되어야 하며, GPU OPTIMIZED 모드의 단일 실행 결과나 CPU 대비 느리다는 평가, 하이브리드 프로그램 시도 동기 등은 실제 구현 완료·측정 결과나 정량 검증으로 승격되지 않는다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "paragraph_id": "limitations_p3",
+      "source_id": "limitations_p3_s1",
+      "action": "replace",
+      "text": "이 연구의 적용 범위는 256-491-491-16 크기 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 한 CROWN 검증의 CUDA 구현에 한정되며, 배치 크기는 1, 실행 방식은 forward, forward+backward, backward_only로 설정되었다. 이러한 설정은 실시간 환경의 대규모 연산 대응 가능성을 검토하는 데 초점이 맞춰져 있으나, 다른 신경망 크기나 입력 조건, 출력 차원으로 확장할 때의 일반화 가능성은 이 기록만으로 확인되지 않는다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용되었으며, 최적화 과정에서는 여러 기법이 적용·제거를 반복해 각 기법의 개별 효과를 체계적으로 분리한 ablation study가 이루어지지 못했다. 그 결과 메모리 풀과 warm up 조합이 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 판단이 제시되었으나, 이 수치는 기록자가 요약한 범위이며 단일 실행의 정밀 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었고, 가중치 사전 업로드(PRELOAD ON GPU) 적용 후 실행 시간이 149~155ms 범위로 기록되었다. bias까지 GPU에 미리 업로드하는 시도는 bias가 Vector이며 약 4KB 정도라서 CPU 연산에도 무리가 없는 수준이라 성능 개선에 큰 의미를 미치지 못하는 것으로 판단되었다. make_zero_matrix, make_zero_vector를 CPU로 회귀한 결과 22~25ms 정도 줄었고, 영벡터 만들기를 다시 GPU로 시도했을 때는 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 결과 저장용 벡터에 대한 불필요한 memcpy를 제거하자 약 10ms 추가로 단축되었다. 이러한 최적화 시도 기록은 각 기법의 적용·제거가 반복된 과정의 관측을 반영하지만, 동시 변경이 많아 개별 요인의 기여도를 분리하기 어렵고, CPU 버전의 정확한 수치나 반복 측정 기반 비교도 현재 페이지에 제시되지 않아 결과 해석 범위가 제한된다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "paragraph_id": "limitations_p4",
+      "source_id": "limitations_p4_s1",
+      "action": "replace",
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list로 한정된다. 이 범위를 벗어나 더 큰 네트워크나 다른 입력 조건, 배치 크기, 출력 차원으로 확장할 때의 일반화 제약은 현재 기록만으로 단정하기 어렵다. v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16x491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 없다. mempool + warmup 조합의 CROWN Verification 실행 결과는 152.902900 ms, mempool + cuBlas + warmup 조합은 174.978400 ms로 기록되었으며, 이는 eps=1e-06, 출력 차원 16 조건의 단일 실행 결과이다. 기록자는 1번의 시도에서 cuBlas가 더 느린 모습이라고 관찰했고, 미리 메모리풀을 warmup 하는 것은 확실히 효과가 있어 각 버전에서 약 50ms 정도 단축된다고 기록했으나, 이는 정성적 관찰이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 현재 페이지에 없다. mempool(v1-1-1)에서 미리 ensure_pool()을 활용해 메모리 할당을 하는 것은 큰 영향을 미치지만, cuBlas를 쓰고 warm up 하는 것과 그렇게 차이나지 않는다고 기록되었으나, 이 역시 정량 분리 측정 결과가 없는 정성적 비교이다. HYBRID V2 모드에서 eps=1e-06, 500 iterations, 출력 차원 16 조건으로 실행한 결과 Total Elapsed time은 49416.462000 ms, Average time per iter는 98.832924 ms로 기록되었고, 기록자는 CPU의 캐시 때문에 HYBRID V2가 CPU보다 느리게 나온 것으로 추정하며 1번만 돌리는 실험이 필요하다고 판단했으나, 이는 기록자의 정성적 해석과 향후 실험 계획 메모이며 CPU 대비 느림에 대한 직접 비교 문장이나 캐시 영향의 정량 검증은 현재 페이지에 없다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "paragraph_id": "limitations_p5",
+      "source_id": "limitations_p5_s1",
+      "action": "replace",
+      "text": "본 검증은 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로, CROWN의 forward, forward+backward, backward_only 실행 방식 중 하나를 C++ 프로그램에서 수행한 결과를 중심으로 한다. 배치 크기는 1이며, 출력 차원은 16, eps는 1e-06으로 설정된 조건에서 실행 시간이 기록되었다. 이러한 설정은 특정 신경망 크기와 단일 입력·단일 출력 차원에 맞춰져 있어, 더 큰 네트워크나 다른 입력 규모·출력 차원으로 그대로 확장된다고 보기 어렵다. 또한 GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로 보아, 측정 환경이 처음부터 완전히 통제된 상태였다고 단정하기도 어렵다. 따라서 여기서 관측된 실행 시간 감소는 해당 조건과 구현 시도 범위 안에서 해석되어야 하며, 다른 신경망 규모나 입력 구성, 출력 차원, 실시간 환경 목표로 일반화할 때는 별도의 확인이 필요하다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "paragraph_id": "limitations_p6",
+      "source_id": "limitations_p6_s1",
+      "action": "replace",
+      "text": "본 연구의 적용 범위는 256–491–491–16 크기의 신경망과 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list로 제한된다. 이 범위를 벗어나면 결과의 일반화가 제약될 수 있다. cuSparse 도입 시도는 W, W_pos, W_neg를 CSR 형식으로 변환하고 cuSPARSE handle·descriptor를 유지한 채 network_forward()의 dense matvec만 cuSPARSE SpMV로 교체한 수준에서 이루어졌으며, 기존 matmul은 유지되었다. spMV 적용 결과 실행 시간은 27.107400 ms로 기록되어 이전 27ms 수준보다 느려졌고, 이후 spMM 도입까지 검토하기로 했다. cuBLAS와 cuSPARSE는 실험했으나 현재 모델 크기와 호출 패턴에서는 느려져 현 기준 코드에는 포함하지 않았으며, spMM 도입 후에는 거의 40ms로 회귀해 부적절하다고 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 것이 맞다고 판단되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 제시되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성되지 않았고, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가되며, 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고 SpMM 적용 후 38 ms가 된 것은 이 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. network_forward는 신경망의 일반 추론값을 출력하지만 아직 GPU 파이프라인이 아니라 최적화가 적용되지 않은 상태이기도 하다. 각 최적화 기법을 체계적으로 분리해 ablation study를 하지 못한 점도 한계로 남는다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "paragraph_id": "limitations_p7",
+      "source_id": "limitations_p7_s1",
+      "action": "replace",
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list로 제한되며, 배치 크기는 1이고 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지이다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정과 warm up은 연구 일지에서 확인된 뒤의 사항이다. 이 범위를 벗어나면 결과의 일반화를 단정하기 어렵다. GPU OPTIMIZED 모드 적용 후 실행 시간이 229.691ms로 약 100ms 줄었다고 기록되었으나, 이 감소 폭과 CPU보다 느리다는 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 만들어보았다는 시도는 후속 동기와 방향 기록에 해당하며, 실제 구현 완료나 측정 결과는 현재 페이지에 없다. 단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만 92만 개의 데이터를 돌리면 1분 정도 차이로 비슷해진다는 현상이 기록되었고, 이 문제는 아직 해결하지 못했다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 점도 한계로 남는다. 따라서 본 연구의 결과는 최적화 시도 기록 중심으로 해석되어야 하며, GPU OPTIMIZED 모드의 단일 실행 결과나 CPU 대비 느리다는 평가, 하이브리드 프로그램 시도 동기 등은 실제 구현 완료·측정 결과나 정량 검증으로 승격되지 않는다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "paragraph_id": "limitations_p8",
+      "source_id": "limitations_p8_s1",
+      "action": "replace",
+      "text": "본 검증 가속은 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로, CROWN을 구현한 C++ 프로그램에서 배치 크기 1로 forward, forward+backward, backward_only 세 실행 방식을 비교하는 범위에서 수행되었다. 이 범위는 단일 샘플·제한된 입력 조건에서의 처리 시간 기록에 초점을 둔 것이며, 더 큰 신경망이나 다른 입력 규모·출력 차원으로 바로 일반화된다고 단정하기 어렵다. 배칭으로 데이터셋을 통째로 넘기는 방식은 실시간 환경이 아니라고 판단해 채택하지 않았고, 대신 데이터셋 영역을 pinned Memory로 지정하고 메모리 복사 속도를 최대화하는 방향으로 접근하였다. warm up은 초기에 도입되었고, 측정 과정에서 warm up을 적용해도 스파이크가 남고 10번 측정 시 평균 시간이 느려지는 경우가 관측되어 측정 재현성 측면의 제약이 남는다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "paragraph_id": "limitations_p9",
+      "source_id": "limitations_p9_s1",
+      "action": "replace",
+      "text": "최적화 과정은 각 기법을 체계적으로 분리한 ablation study가 아니라, 적용했다가 되돌리는 시도를 반복하며 얻은 기록 중심이므로 개별 최적화의 기여도를 독립적으로 분리해 해석하기 어렵다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 이 방식은 기존 단일 샘플 커널을 유지한 채 3.2배 가속(25분→8분)을 얻었지만, 스트림 수 한계와 SM 포화로 7~8분이 한계선으로 해석된다. 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된 것으로 보며, 차기 로드맵은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 활용해 30초~1분대 진입을 목표로 한다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "paragraph_id": "limitations_p10",
+      "source_id": "limitations_p10_s1",
+      "action": "replace",
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 실행 방식은 forward, forward+backward, backward_only 세 가지를 포함한다. GPU OPTIMIZED(cuBLAS + Pool) 모드에서 eps=1e-06, 출력 차원 16 조건으로 CROWN Verification을 실행한 결과 Elapsed time은 229.691800 ms로 기록되었으나, 이는 단일 실행 결과이며 CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다. GPU OPTIMIZED 모드 적용 후 실행 시간이 약 100ms 줄었지만 여전히 CPU보다 느리다는 평가가 기록되었고, 이에 matmul만 GPU로 실행하는 하이브리드 프로그램이 시도되었다. 다만 이 평가는 기록자의 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없고, 하이브리드 프로그램의 실제 구현 완료·측정 결과도 현재 페이지에 없어 시도 동기와 방향 기록에 해당한다. 이러한 적용 범위와 조건 밖에서는 결과의 일반화 제약이 발생할 수 있다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "paragraph_id": "limitations_p11",
+      "source_id": "limitations_p11_s1",
+      "action": "replace",
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 하며, 배치 크기는 1로 설정되었다. 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 방법을 포함한다. 이러한 설정은 특정 신경망 구조와 단일 배치 조건에 맞춰져 있어, 더 큰 네트워크나 다른 입력 규모, 다른 eps 조건, 다중 출력 차원으로의 일반화는 제한적이다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, GPU 클록 고정과 warm up은 연구 과정에서 나중에 확정되거나 초기에 적용된 사항이므로, 측정 환경과 반복 조건에 따라 절대 성능 수치의 해석 범위가 달라진다. 평균 처리 속도에서는 No-Pin이 13초 빠르다는 비교가 보고되었으나, 이는 평균 속도 관점의 요약이며 실제 측정 조건과 정량 수치는 별도 요소에서 다룬다. 실시간성 관점에서는 No-Pin의 최대 지연이 8.8ms~11.6ms 범위로 튀고 지터가 118.94μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47.28μs로 더 안정적이어서 해석 기준이 달라진다. 다만 지터 수치는 표(p78:e616)에서는 118μs/47μs로 반올림되어 제시되었고, 더 정밀한 값(118.94μs/47.28μs)은 다른 표(p80:img0:e8)에서 확인되므로 정밀도 차이가 있다. Pinned Memory의 최악 지연시간(WCET) 1.64ms 제한과 지터 안정화, 그리고 실시간 무선 안테나 선택 시스템에서 Pinned Memory 도입이 필요하다는 결론은 원문에 제시되어 있으나, 11.6ms 스파이크, DMA 셋업 비용 1~2μs, 1ms 무선 통신 데드라인 관련 서술은 구체적 재현 조건·측정 방법·시스템 맥락이 명시되지 않은 한계가 있다. 또한 Pinned가 No-Pin보다 총 소요 시간이 더 길게 나왔다는 기록자의 결론 진술은 1KB 수준의 작은 데이터와 매 루프별 하드웨어 DMA 셋업 오버헤드와 연결되어 설명되지만, 이는 기록자의 해석이며 정량 수치나 반복 측정 통계는 별도 요소에서 다룬다. 이러한 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory가 매번 하드웨어 DMA 셋업 오버헤드를 치르는 반면, No-Pin은 CPU 캐시 복사로 더 빠르게 처리되기 때문으로 설명되나, 이 비교는 특정 측정 환경과 반복 조건에서 얻은 결과이므로 다른 플랫폼이나 더 큰 데이터 전송 조건으로의 일반화는 제한적이다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p0",
+      "paragraph_id": "limitations_p12",
+      "source_id": "limitations_p12_s1",
+      "action": "replace",
+      "text": "본 연구의 적용 범위는 256-491-491-16 구조 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list를 기준으로 한 CROWN 검증의 CUDA 구현에 한정된다. 이 범위를 벗어나 더 큰 신경망이나 다른 입력 규모, 다른 eps 조건, 다른 출력 차원으로 확장할 경우 동일한 효율 양상이 유지된다고 단정하기 어렵다. 현재 입력 기준 약 1KB 수준의 작은 데이터를 staging buffer로 옮기는 고정 비용이 크지 않을 수 있다는 해석이 있으나, 이는 정량적 고정 비용 측정이 아니라 해석 수준의 관찰이다. pinned memory 적용 여부에 따른 cudaMemcpyAsync 시간은 여러 번 측정에서 빠르거나 느리게 바뀌어, 2copy에서 1copy로 변경한 효과가 크지 않았다고 보았으나 마지막 측정에서는 nopinned가 더 빠르게 나타나 확신할 수 없게 되었다. 추론 종료까지의 동기화 시간은 pinned memory 미적용 버전이 가장 빨랐으며, 이는 H2D 복사 시간의 영향 가능성으로 해석되지만 인과가 확정적으로 분리된 것은 아니다. backward_only가 왜 가장 빠른지에 대한 질문도 제기되었으나 이 절에서 답변이 완료되지는 않았다. 아울러 각 최적화 기법을 체계적으로 분리해 ablation study로 검토하지 못한 점 역시 한계로 남는다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p1",
+      "paragraph_id": "limitations_p14",
+      "source_id": "limitations_p14_s1",
+      "action": "replace",
+      "text": "방법·구현·설정 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀), 가중치 사전 업로드(PRELOAD ON GPU), forward 함수의 DTOH memcpy 제거, make_zero_matrix·make_zero_vector의 CPU 회귀, cuSPARSE SpMV/spMM 적용, cudaHostRegister(Pinned) 대 No Pinning 비교, GPU 클록 고정 재실험 시도까지 적용·시도된 요소를 중심으로 정리한다. 이 과정에서 cuBLAS Batched GEMM과 텐서 코어를 활용한 antenna_lirpa 대비 현재 C++ 멀티스트림 구현의 체급 차이, 그리고 차기 Batched GEMM·3D 텐서 연산화 로드맵도 함께 확인된다. 다만 커널 퓨전, cudaGraph, pinned memory의 체계적 비교, 전력·에너지 효율, 반복 측정 기반 통계, 각 최적화 기법의 개별 효과 분리는 이번 검토에서 충분히 다루지 못했거나 보류된 항목이며, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않은 점도 공정 비교의 한계로 남는다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p1",
+      "paragraph_id": "limitations_p15",
+      "source_id": "limitations_p15_s1",
+      "action": "delete",
+      "text": ""
+    },
+    {
+      "section_id": "limitations",
+      "part": "p1",
+      "paragraph_id": "limitations_p16",
+      "source_id": "limitations_p16_s1",
+      "action": "replace",
+      "text": "이 절은 방법·구현·설정 효율 검토 범위와 해석상 한계를 정리한다. 본 연구는 CROWN 검증의 실시간 가속 가능성을 CUDA 구현과 최적화 시도 기록으로 검토했으며, CPU 대비 속도 개선 여부와 최적화 과정의 요인을 함께 확인하는 데 초점을 두었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 않아 개별 변경의 효과를 정량적으로 분리하기 어렵다. GPU 클록 고정은 CUDA 강의 19장을 참고해 nvidia-smi -q -d CLOCK로 확인하고, sudo nvidia-smi -pm 1로 Persistence mode를 활성화한 뒤 sudo nvidia-smi -lgc 1410으로 그래픽 클록을 잠그는 방식으로 설정했다. 이는 초기화 지연 제거와 일관된 측정을 위한 환경 설정이지만, 실제 적용 결과나 고정 후 측정 수치는 이 요소만으로 제시되지 않는다. 구현 측면에서는 메모리 풀, cuBLAS 기반 행렬곱, 커널 퓨전, cudaGraph, pinned memory 등 여러 GPU 최적화 요소가 시도되거나 검토되었으나, 전체 처리 과정을 비교할 때 여러 요소가 동시에 바뀌어 개별 효과 분리가 제한된다. 예를 들어 hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 CPU for문으로 되돌린 버전으로, 새로 추가된 요소 없이 GPU 코드를 삭제해 빨라진 사례에 가깝다. 또한 forward와 backward의 cudaMemcpy 호출 횟수는 동일하지만 전체 실행 시간과 cudaMemcpy 시간 분포는 다르게 관측되어, 호출 횟수만으로 성능 차이를 설명하기 어렵다. fp32 단정밀도 연산 변경 시도처럼 일부 항목은 별도 고찰로만 언급되었고, switch 문 안 구조체 선언·초기화 문제처럼 컴파일 제약에 따른 구현 조정도 기록되었다. 따라서 본 결과의 해석 범위는 최적화 시도 기록과 단일 실행 관측에 머물며, 반복 측정 통계나 조건별 분리 측정이 충분히 제시되지 않은 점은 한계로 남는다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p1",
+      "paragraph_id": "limitations_p17",
+      "source_id": "limitations_p17_s1",
+      "action": "replace",
+      "text": "본 연구의 최적화 시도는 개별 기법의 효과를 체계적으로 분리하기보다, 여러 변경을 함께 적용한 뒤 전체 실행 시간의 변화를 관찰하는 방식으로 진행되었다. 예를 들어 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다. 또한 forward_cuda_graph의 전체 시간이 약 983초이고, CPU에서 필요한 만큼만 계산한 뒤 복사한 버전(1055)이 72초 더 느렸으며, 이는 더 늦어진 결과다. 이러한 관측은 변경 사실과 시간 비교만을 포함하며, 각 최적화 기법의 기여나 시간 차이의 원인을 정량적으로 분리한 측정 결과는 포함하지 않는다. 따라서 본 절에서 다루는 효율 검토 범위는 메모리 풀, cuBLAS, 커널 퓨전, cudaGraph, pinned memory 등 적용·시도된 구현 요소의 관측된 변화에 한정되며, 개별 기법의 독립적 효과나 미검토·보류 항목의 평가는 이 기록만으로 확정하기 어렵다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p1",
+      "paragraph_id": "limitations_p18",
+      "source_id": "limitations_p18_s1",
+      "action": "replace",
+      "text": "방법·구현·설정 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀), 가중치 사전 업로드(PRELOAD ON GPU), forward 함수의 DTOH memcpy 제거, make_zero 계열 함수의 CPU 회귀, cuSparse spMV/spMM 적용, cudaHostRegister(Pinned)와 No Pinning 비교, GPU 클록 고정, C++ 멀티스트림(Task Parallelism) 구성, antenna_lirpa 대비 싱글 스트림·cuBLAS Batched GEMM·텐서 코어 활용 차이 등을 대상으로 했다. 이 검토는 각 기법의 적용·제거 시도와 관측된 경향을 정리하지만, 개별 기법을 체계적으로 분리한 ablation study는 수행하지 않았고, 단일 실행 결과나 기록자 요약 중심의 수치가 많아 반복 측정 기반 통계가 부족하다. only_GPU와 hybrid 비교처럼 여러 요소가 동시에 바뀌어 개별 효과 분리가 어려운 경우도 있으며, backward_bound_gpu의 affine 중복 계산 삭제(커널 2개 함수 감소)와 backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합한 변경은 함수 감소나 관측된 경향만 기록하고 정량 성능 수치나 정확도 결과는 포함하지 않는다. HYBRID 모드에서는 CROWN Verification 실행 시간이 201.670100ms로, HYBRID V2에서는 85.785300ms로 기록되어 기록자가 CPU보다 빨라졌다고 평가했다. 따라서 효율 검토 결과는 적용 범위와 해석 범위가 제한적이며, 향후 연구에서는 최적화 기법의 체계적 분리, 반복 측정 기반 통계 확보, 복합 변경 해석의 한계 보완이 필요하다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p2",
+      "paragraph_id": "limitations_p20",
+      "source_id": "limitations_p20_s1",
+      "action": "replace",
+      "text": "본 연구의 CUDA 기반 CROWN 검증 가속은 실시간 대규모 연산 충족 가능성을 확인하는 데 초점을 두었으며, 현재 CPU 환경이 CROWN 검증에서 매우 느리고 신경망 검증팀의 빠른 실행도 오프라인 환경에 제한적으로 머물러 있다는 배경에서 출발한다. 다만 이 연구의 기록은 최적화 시도 과정 중심이므로, 적용 범위는 특정 신경망 크기(256-491-491-16)와 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 사이즈 1, 그리고 CROWN의 forward·forward+backward·backward_only 실행 방식에 한정된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고 warm up은 초기에 적용된 점으로, 실행 조건의 일부가 사후 정리되었다는 점도 해석 범위에 포함된다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p2",
+      "paragraph_id": "limitations_p21",
+      "source_id": "limitations_p21_s1",
+      "action": "replace",
+      "text": "방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p2",
+      "paragraph_id": "limitations_p22",
+      "source_id": "limitations_p22_s1",
+      "action": "replace",
+      "text": "향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다."
+    },
+    {
+      "section_id": "limitations",
+      "part": "p2",
+      "paragraph_id": "limitations_p23",
+      "source_id": "limitations_p23_s1",
+      "action": "replace",
+      "text": "결과 해석 범위는 최적화 시도 기록 중심이라는 성격에 따라 제한된다. 본 절에서 정리한 향후 과제와 적용 범위, 효율 검토 범위의 공백은 실제 구현 완료·측정 결과로 입증된 내용이 아니라 연구 노트에 남은 방향·계획·할 일 기록에 기반하므로, 각 항목의 실현 여부나 성능 영향은 아직 검증되지 않았다. 따라서 후속 연구에서 개별 기법의 분리 평가, 측정 조건 고정, 대규모 텐서 연산화 구현과 실측을 통해 현재 제시된 방향성과 목표치를 다시 확인할 필요가 있다."
+    }
+  ],
+  "paragraph_joins": [],
+  "preserved_subsections": []
+}

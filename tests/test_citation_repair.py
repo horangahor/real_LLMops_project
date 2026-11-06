@@ -80,7 +80,7 @@ class WriterRevisionRegressionTests(unittest.TestCase):
             self.assertNotIn("F2", snapshot["paragraphs"]["s0_p1"]["text"])
             self.assertTrue(result["review"]["content_warnings"])
             self.assertEqual(sum(k == "citation_repair" for _, k, _ in client.events), 0)
-            self.assertEqual(sum(k == "generate" and s == "subsection-s0-p0" for s, k, _ in client.events), 3)
+            self.assertEqual(sum(k == "generate" and s == "subsection-s0-p0" for s, k, _ in client.events), 5)  # includes bounded local replacement repairs
 
 
 if __name__ == "__main__":

@@ -1,0 +1,199 @@
+{
+  "stage": "section-sec_conclusion",
+  "approved": false,
+  "review_kind": "editorial",
+  "items": [],
+  "paragraphs": {
+    "sec_conclusion_p1": {
+      "section_id": "sec_conclusion",
+      "text": "이 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 옮겨 실시간 대규모 연산에 대응할 수 있는지 확인하고, 그 과정에서 적용한 최적화들을 정리한다. 제안 접근의 핵심은 병렬 연산이 필요한 부분을 커널 함수로 옮기고, 메모리 풀·cuBLAS·가중치 GPU 사전 업로드·커널 퓨전·alpha/beta GPU 버퍼·pinned memory·cuda graph·배칭·멀티 스트림 등을 결합해 memcpy 병목과 커널 호출 오버헤드를 줄이는 데 있다. 평가 대상은 256-491-491-16 크기의 신경망을 CROWN의 세 실행 방식(forward, forward+backward, backward_only)으로 처리하는 C++ 프로그램이며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 배치 사이즈는 1로 두었고, 최적화 과정에서 정확도 지표는 기존 신경망 검증팀 프로그램과 모두 동일하게 유지되었다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00296,E00211,E00331,E00333,E00263,E00277,E00278,E00292,E00293,E00294,E00297,E00299,E00300,E00314,E00321,E00021,E00027,E00029,E00031]"
+    },
+    "sec_conclusion_p2": {
+      "section_id": "sec_conclusion",
+      "text": "주요 정량 결과는 단일 실행 결과 중심으로 정리된다. CPU ONLY는 101.237800 ms, GPU OPTIMIZED는 229.691800 ms, HYBRID는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었으며, HYBRID V2에서 처음으로 CPU보다 빨라졌다고 평가되었다. 이후 메모리 풀과 warmup 조합에서 152.902900 ms, mempool+cuBLAS+warmup에서 174.978400 ms, 결과 벡터 memcpy 제거 후 128.894800 ms, forward 함수 DTOH memcpy 제거 후 64.716000 ms, alpha/beta 메모리 풀 적용 후 21.018800 ms, 커널 퓨전 후 22.342900 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms, 커널 퓨전 완료 후 15.751000 ms, mempool+warmup calc success에서 15.828400 ms가 관측되었다. 더 큰 규모의 실행에서는 cuda graph 적용 후 backward_only가 787.8832s에서 630s로, forward가 1029s에서 668s로, forward+backward가 1138s에서 758s로 감소하는 경향이 기록되었다. [근거:E00035,E00044,E00046,E00064,E00075,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368,E00375]"
+    },
+    "sec_conclusion_p3": {
+      "section_id": "sec_conclusion",
+      "text": "다만 이러한 수치는 대부분 단일 실행 결과에 기반하며, 반복 측정 통계가 부족하다는 한계가 있다. 또한 메모리 풀+warmup, 가중치 사전 업로드, 커널 퓨전, cuda graph, pinned memory 등 여러 요소가 동시에 바뀌어 개별 효과를 분리하기 어렵고, preload가 의도치 않게 GPU warmup 역할을 한 사례처럼 효과 혼입이 발생할 수 있다. 따라서 개별 구성 요소의 변경 효과와 전체 처리 과정의 변경 효과를 구분해야 하며, 이를 구분하지 않으면 관측된 속도 개선을 특정 기법의 효과로 단정하기 어렵다. [근거:E00047,E00048,E00049,E00072,E00076,E00077,E00078,E00081,E00105,E00106,E00107,E00122,E00124,E00130,E00133,E00135,E00136,E00137,E00138,E00166,E00257]"
+    },
+    "sec_conclusion_p4": {
+      "section_id": "sec_conclusion",
+      "text": "정확도와 지연 시간 사이의 trade-off도 함께 고려해야 한다. 본 연구에서는 정확도 지표가 기존 신경망 검증팀 프로그램과 모두 동일했지만, 실시간성 관점에서는 평균 속도뿐 아니라 최대 지연, 지터, 지연 스파이크의 안정성이 중요하다. 따라서 속도 개선만을 기준으로 결론을 내리기보다, 지연 시간의 안정성과 예측 가능성을 함께 검토해야 한다. [근거:E00035,E00044,E00046,E00072,E00075,E00131]"
+    }
+  },
+  "issues": [
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p1",
+      "category": "style",
+      "severity": "warning",
+      "reason": "서술 대상이 '이 연구'와 '제안 접근'으로 혼재되어 있어, 결론 절에서 연구 주체와 방법 주체의 지칭이 일관되지 않다. '제안 접근'을 '본 연구의 접근' 또는 '제안 방법'으로 통일하면 문단 내 결속력이 높아진다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "이 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 옮겨 실시간 대규모 연산에 대응할 수 있는지 확인하고, 그 과정에서 적용한 최적화들을 정리한다. 제안 접근의 핵심은 병렬 연산이 필요한 부분을 커널 함수로 옮기고, 메모리 풀·cuBLAS·가중치 GPU 사전 업로드·커널 퓨전·alpha/beta GPU 버퍼·pinned memory·cuda graph·배칭·멀티 스트림 등을 결합해 memcpy 병목과 커널 호출 오버헤드를 줄이는 데 있다. 평가 대상은 256-491-491-16 크기의 신경망을 CROWN의 세 실행 방식(forward, forward+backward, backward_only)으로 처리하는 C++ 프로그램이며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 배치 사이즈는 1로 두었고, 최적화 과정에서 정확도 지표는 기존 신경망 검증팀 프로그램과 모두 동일하게 유지되었다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00296,E00211,E00331,E00333,E00263,E00277,E00278,E00292,E00293,E00294,E00297,E00299,E00300,E00314,E00321,E00021,E00027,E00029,E00031]"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p1",
+      "category": "style",
+      "severity": "warning",
+      "reason": "최적화 기법 목록이 길게 병렬 나열되어 있어, 결론 절의 요약 기능보다 방법 절의 열거에 가까운 인상을 준다. 핵심 기법과 보조 기법을 묶거나 대표 기법 중심으로 압축하면 간결성이 개선된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "이 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 옮겨 실시간 대규모 연산에 대응할 수 있는지 확인하고, 그 과정에서 적용한 최적화들을 정리한다. 제안 접근의 핵심은 병렬 연산이 필요한 부분을 커널 함수로 옮기고, 메모리 풀·cuBLAS·가중치 GPU 사전 업로드·커널 퓨전·alpha/beta GPU 버퍼·pinned memory·cuda graph·배칭·멀티 스트림 등을 결합해 memcpy 병목과 커널 호출 오버헤드를 줄이는 데 있다. 평가 대상은 256-491-491-16 크기의 신경망을 CROWN의 세 실행 방식(forward, forward+backward, backward_only)으로 처리하는 C++ 프로그램이며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 배치 사이즈는 1로 두었고, 최적화 과정에서 정확도 지표는 기존 신경망 검증팀 프로그램과 모두 동일하게 유지되었다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00296,E00211,E00331,E00333,E00263,E00277,E00278,E00292,E00293,E00294,E00297,E00299,E00300,E00314,E00321,E00021,E00027,E00029,E00031]"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p2",
+      "category": "flow",
+      "severity": "error",
+      "reason": "단일 실행 결과 나열과 대규모 실행 결과 서술이 같은 문단 안에서 연결어 없이 전환되어, 결과 제시 순서가 다소 abrupt하다. '단일 실행 기준'과 '더 큰 규모 실행 기준'을 명시적으로 구분하거나 소결을 한 문장 추가하면 논리 흐름이 안정된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "주요 정량 결과는 단일 실행 결과 중심으로 정리된다. CPU ONLY는 101.237800 ms, GPU OPTIMIZED는 229.691800 ms, HYBRID는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었으며, HYBRID V2에서 처음으로 CPU보다 빨라졌다고 평가되었다. 이후 메모리 풀과 warmup 조합에서 152.902900 ms, mempool+cuBLAS+warmup에서 174.978400 ms, 결과 벡터 memcpy 제거 후 128.894800 ms, forward 함수 DTOH memcpy 제거 후 64.716000 ms, alpha/beta 메모리 풀 적용 후 21.018800 ms, 커널 퓨전 후 22.342900 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms, 커널 퓨전 완료 후 15.751000 ms, mempool+warmup calc success에서 15.828400 ms가 관측되었다. 더 큰 규모의 실행에서는 cuda graph 적용 후 backward_only가 787.8832s에서 630s로, forward가 1029s에서 668s로, forward+backward가 1138s에서 758s로 감소하는 경향이 기록되었다. [근거:E00035,E00044,E00046,E00064,E00075,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368,E00375]"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p2",
+      "category": "style",
+      "severity": "warning",
+      "reason": "수치가 매우 촘촘하게 나열되어 있어 결론 절에서 핵심 메시지가 속도 개선 경향인지, 특정 구성의 우수성인지 읽기 어렵다. 가장 의미 있는 비교 지점(예: CPU 대비 HYBRID V2, 최종 구성)을 먼저 요약하고 나머지는 보조 서술로 정리하면 가독성이 좋아진다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "주요 정량 결과는 단일 실행 결과 중심으로 정리된다. CPU ONLY는 101.237800 ms, GPU OPTIMIZED는 229.691800 ms, HYBRID는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었으며, HYBRID V2에서 처음으로 CPU보다 빨라졌다고 평가되었다. 이후 메모리 풀과 warmup 조합에서 152.902900 ms, mempool+cuBLAS+warmup에서 174.978400 ms, 결과 벡터 memcpy 제거 후 128.894800 ms, forward 함수 DTOH memcpy 제거 후 64.716000 ms, alpha/beta 메모리 풀 적용 후 21.018800 ms, 커널 퓨전 후 22.342900 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms, 커널 퓨전 완료 후 15.751000 ms, mempool+warmup calc success에서 15.828400 ms가 관측되었다. 더 큰 규모의 실행에서는 cuda graph 적용 후 backward_only가 787.8832s에서 630s로, forward가 1029s에서 668s로, forward+backward가 1138s에서 758s로 감소하는 경향이 기록되었다. [근거:E00035,E00044,E00046,E00064,E00075,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368,E00375]"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p3",
+      "category": "style",
+      "severity": "warning",
+      "reason": "한계 서술에서 '개별 효과 분리 어려움'과 '효과 혼입'이 반복되어 의미가 겹친다. 두 진술을 한 문장으로 통합하면 중복이 줄고 인과 관계가 더 분명해진다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "다만 이러한 수치는 대부분 단일 실행 결과에 기반하며, 반복 측정 통계가 부족하다는 한계가 있다. 또한 메모리 풀+warmup, 가중치 사전 업로드, 커널 퓨전, cuda graph, pinned memory 등 여러 요소가 동시에 바뀌어 개별 효과를 분리하기 어렵고, preload가 의도치 않게 GPU warmup 역할을 한 사례처럼 효과 혼입이 발생할 수 있다. 따라서 개별 구성 요소의 변경 효과와 전체 처리 과정의 변경 효과를 구분해야 하며, 이를 구분하지 않으면 관측된 속도 개선을 특정 기법의 효과로 단정하기 어렵다. [근거:E00047,E00048,E00049,E00072,E00076,E00077,E00078,E00081,E00105,E00106,E00107,E00122,E00124,E00130,E00133,E00135,E00136,E00137,E00138,E00166,E00257]"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p4",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "정확도-지연 trade-off를 언급하지만, 앞선 정량 결과 문단과의 연결이 약해 결론 내 문단 간 호응이 다소 느슨하다. '속도 개선 결과에도 불구하고' 또는 '위 결과 해석 시' 같은 연결 표현을 넣으면 결론의 종합 기능이 강화된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "정확도와 지연 시간 사이의 trade-off도 함께 고려해야 한다. 본 연구에서는 정확도 지표가 기존 신경망 검증팀 프로그램과 모두 동일했지만, 실시간성 관점에서는 평균 속도뿐 아니라 최대 지연, 지터, 지연 스파이크의 안정성이 중요하다. 따라서 속도 개선만을 기준으로 결론을 내리기보다, 지연 시간의 안정성과 예측 가능성을 함께 검토해야 한다. [근거:E00035,E00044,E00046,E00072,E00075,E00131]"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p4",
+      "category": "style",
+      "severity": "warning",
+      "reason": "결론의 마지막 문단으로서 실용적 의미를 더 명시적으로 닫지 못하고, 검토 필요 사항 제시에 그친다. 실시간 대규모 연산 대응이라는 서론 목적과 호응하도록, 안정성 검토가 실제 적용 판단에 어떤 의미를 갖는지 한 문장 정도 정리하면 결론의 마무리가 더 분명해진다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "정확도와 지연 시간 사이의 trade-off도 함께 고려해야 한다. 본 연구에서는 정확도 지표가 기존 신경망 검증팀 프로그램과 모두 동일했지만, 실시간성 관점에서는 평균 속도뿐 아니라 최대 지연, 지터, 지연 스파이크의 안정성이 중요하다. 따라서 속도 개선만을 기준으로 결론을 내리기보다, 지연 시간의 안정성과 예측 가능성을 함께 검토해야 한다. [근거:E00035,E00044,E00046,E00072,E00075,E00131]"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "none",
+      "part": "p0",
+      "severity": "error",
+      "evidence_ids": [],
+      "quote": "",
+      "review_stage": "composition",
+      "failure_owner": "editor",
+      "category": "flow",
+      "validation_code": "composition_layout",
+      "reason": "sec_conclusion/p0: 가장 긴 문단이 642자로 공통 문단 목표 600자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요."
+    }
+  ],
+  "editorial_status": "needs_revision",
+  "editorial_warnings": [
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p1",
+      "category": "style",
+      "severity": "warning",
+      "reason": "서술 대상이 '이 연구'와 '제안 접근'으로 혼재되어 있어, 결론 절에서 연구 주체와 방법 주체의 지칭이 일관되지 않다. '제안 접근'을 '본 연구의 접근' 또는 '제안 방법'으로 통일하면 문단 내 결속력이 높아진다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "이 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 옮겨 실시간 대규모 연산에 대응할 수 있는지 확인하고, 그 과정에서 적용한 최적화들을 정리한다. 제안 접근의 핵심은 병렬 연산이 필요한 부분을 커널 함수로 옮기고, 메모리 풀·cuBLAS·가중치 GPU 사전 업로드·커널 퓨전·alpha/beta GPU 버퍼·pinned memory·cuda graph·배칭·멀티 스트림 등을 결합해 memcpy 병목과 커널 호출 오버헤드를 줄이는 데 있다. 평가 대상은 256-491-491-16 크기의 신경망을 CROWN의 세 실행 방식(forward, forward+backward, backward_only)으로 처리하는 C++ 프로그램이며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 배치 사이즈는 1로 두었고, 최적화 과정에서 정확도 지표는 기존 신경망 검증팀 프로그램과 모두 동일하게 유지되었다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00296,E00211,E00331,E00333,E00263,E00277,E00278,E00292,E00293,E00294,E00297,E00299,E00300,E00314,E00321,E00021,E00027,E00029,E00031]",
+      "stage": "section-sec_conclusion"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p1",
+      "category": "style",
+      "severity": "warning",
+      "reason": "최적화 기법 목록이 길게 병렬 나열되어 있어, 결론 절의 요약 기능보다 방법 절의 열거에 가까운 인상을 준다. 핵심 기법과 보조 기법을 묶거나 대표 기법 중심으로 압축하면 간결성이 개선된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "이 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 옮겨 실시간 대규모 연산에 대응할 수 있는지 확인하고, 그 과정에서 적용한 최적화들을 정리한다. 제안 접근의 핵심은 병렬 연산이 필요한 부분을 커널 함수로 옮기고, 메모리 풀·cuBLAS·가중치 GPU 사전 업로드·커널 퓨전·alpha/beta GPU 버퍼·pinned memory·cuda graph·배칭·멀티 스트림 등을 결합해 memcpy 병목과 커널 호출 오버헤드를 줄이는 데 있다. 평가 대상은 256-491-491-16 크기의 신경망을 CROWN의 세 실행 방식(forward, forward+backward, backward_only)으로 처리하는 C++ 프로그램이며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 배치 사이즈는 1로 두었고, 최적화 과정에서 정확도 지표는 기존 신경망 검증팀 프로그램과 모두 동일하게 유지되었다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00296,E00211,E00331,E00333,E00263,E00277,E00278,E00292,E00293,E00294,E00297,E00299,E00300,E00314,E00321,E00021,E00027,E00029,E00031]",
+      "stage": "section-sec_conclusion"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p2",
+      "category": "style",
+      "severity": "warning",
+      "reason": "수치가 매우 촘촘하게 나열되어 있어 결론 절에서 핵심 메시지가 속도 개선 경향인지, 특정 구성의 우수성인지 읽기 어렵다. 가장 의미 있는 비교 지점(예: CPU 대비 HYBRID V2, 최종 구성)을 먼저 요약하고 나머지는 보조 서술로 정리하면 가독성이 좋아진다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "주요 정량 결과는 단일 실행 결과 중심으로 정리된다. CPU ONLY는 101.237800 ms, GPU OPTIMIZED는 229.691800 ms, HYBRID는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었으며, HYBRID V2에서 처음으로 CPU보다 빨라졌다고 평가되었다. 이후 메모리 풀과 warmup 조합에서 152.902900 ms, mempool+cuBLAS+warmup에서 174.978400 ms, 결과 벡터 memcpy 제거 후 128.894800 ms, forward 함수 DTOH memcpy 제거 후 64.716000 ms, alpha/beta 메모리 풀 적용 후 21.018800 ms, 커널 퓨전 후 22.342900 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms, 커널 퓨전 완료 후 15.751000 ms, mempool+warmup calc success에서 15.828400 ms가 관측되었다. 더 큰 규모의 실행에서는 cuda graph 적용 후 backward_only가 787.8832s에서 630s로, forward가 1029s에서 668s로, forward+backward가 1138s에서 758s로 감소하는 경향이 기록되었다. [근거:E00035,E00044,E00046,E00064,E00075,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368,E00375]",
+      "stage": "section-sec_conclusion"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p3",
+      "category": "style",
+      "severity": "warning",
+      "reason": "한계 서술에서 '개별 효과 분리 어려움'과 '효과 혼입'이 반복되어 의미가 겹친다. 두 진술을 한 문장으로 통합하면 중복이 줄고 인과 관계가 더 분명해진다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "다만 이러한 수치는 대부분 단일 실행 결과에 기반하며, 반복 측정 통계가 부족하다는 한계가 있다. 또한 메모리 풀+warmup, 가중치 사전 업로드, 커널 퓨전, cuda graph, pinned memory 등 여러 요소가 동시에 바뀌어 개별 효과를 분리하기 어렵고, preload가 의도치 않게 GPU warmup 역할을 한 사례처럼 효과 혼입이 발생할 수 있다. 따라서 개별 구성 요소의 변경 효과와 전체 처리 과정의 변경 효과를 구분해야 하며, 이를 구분하지 않으면 관측된 속도 개선을 특정 기법의 효과로 단정하기 어렵다. [근거:E00047,E00048,E00049,E00072,E00076,E00077,E00078,E00081,E00105,E00106,E00107,E00122,E00124,E00130,E00133,E00135,E00136,E00137,E00138,E00166,E00257]",
+      "stage": "section-sec_conclusion"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p4",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "정확도-지연 trade-off를 언급하지만, 앞선 정량 결과 문단과의 연결이 약해 결론 내 문단 간 호응이 다소 느슨하다. '속도 개선 결과에도 불구하고' 또는 '위 결과 해석 시' 같은 연결 표현을 넣으면 결론의 종합 기능이 강화된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "정확도와 지연 시간 사이의 trade-off도 함께 고려해야 한다. 본 연구에서는 정확도 지표가 기존 신경망 검증팀 프로그램과 모두 동일했지만, 실시간성 관점에서는 평균 속도뿐 아니라 최대 지연, 지터, 지연 스파이크의 안정성이 중요하다. 따라서 속도 개선만을 기준으로 결론을 내리기보다, 지연 시간의 안정성과 예측 가능성을 함께 검토해야 한다. [근거:E00035,E00044,E00046,E00072,E00075,E00131]",
+      "stage": "section-sec_conclusion"
+    },
+    {
+      "section_id": "sec_conclusion",
+      "paragraph_id": "sec_conclusion_p4",
+      "category": "style",
+      "severity": "warning",
+      "reason": "결론의 마지막 문단으로서 실용적 의미를 더 명시적으로 닫지 못하고, 검토 필요 사항 제시에 그친다. 실시간 대규모 연산 대응이라는 서론 목적과 호응하도록, 안정성 검토가 실제 적용 판단에 어떤 의미를 갖는지 한 문장 정도 정리하면 결론의 마무리가 더 분명해진다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "정확도와 지연 시간 사이의 trade-off도 함께 고려해야 한다. 본 연구에서는 정확도 지표가 기존 신경망 검증팀 프로그램과 모두 동일했지만, 실시간성 관점에서는 평균 속도뿐 아니라 최대 지연, 지터, 지연 스파이크의 안정성이 중요하다. 따라서 속도 개선만을 기준으로 결론을 내리기보다, 지연 시간의 안정성과 예측 가능성을 함께 검토해야 한다. [근거:E00035,E00044,E00046,E00072,E00075,E00131]",
+      "stage": "section-sec_conclusion"
+    }
+  ],
+  "editorial_completion": null,
+  "inherited_content_coverage": {
+    "met": 6,
+    "total": 6,
+    "value": 1.0,
+    "scope": "inherited_subsection_reviews",
+    "rechecked": false
+  }
+}

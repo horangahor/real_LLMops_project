@@ -1,0 +1,33 @@
+{
+  "id": "96a3893a-02b2-4bfd-9712-d1ba3ccf8a4e",
+  "object": "chat.completion",
+  "created": 1793986043,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"sections\": {\n    \"sec_limitations\": {\n      \"parts\": {\n        \"p0\": {\n          \"sec_limitations_p4_s1\": {\n            \"action\": \"replace\",\n            \"text\": \"본 연구의 검증 범위는 256-491-491-16 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 데이터셋·eps_list로 한정되며, CROWN의 forward·forward+backward·backward_only 실행 방식 중 forward+backward를 유지했다. 향후 과제로 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 배칭·다중 스트림과 실제 환경의 괴리 검토, 컴파일러 팀 모델 공유가 정리되었다. cuBlas·cuSparse 도입은 보류했고, CROWN range 정렬 문제는 localrobustness_fwd_bwd.py 코드를 참고해 알고리즘 완성을 목표로 했다. 아울러 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못해 한계로 남는다.\",\n            \"join_previous\": false\n          }\n        }\n      }\n    },\n    \"sec_conclusion\": {\n      \"parts\": {\n        \"p0\": {\n          \"sec_conclusion_p1_s1\": {\n            \"action\": \"replace\",\n            \"text\": \"본 연구는 CPU 환경에서만 실행되던 CROWN 신경망 검증을 CUDA 기반으로 옮겨 실시간 대규모 연산에 대응할 수 있는지 확인하고, 그 과정에서 적용한 최적화들을 정리한다. 제안 방법의 핵심은 병렬 연산이 필요한 부분을 커널 함수로 옮기고, 메모리 풀·가중치 GPU 사전 업로드·커널 퓨전·alpha/beta GPU 버퍼·pinned memory·cuda graph·배칭·멀티 스트림 등을 결합해 memcpy 병목과 커널 호출 오버헤드를 줄이는 데 있다. 평가 대상은 256-491-491-16 크기의 신경망을 CROWN의 세 실행 방식(forward, forward+backward, backward_only)으로 처리하는 C++ 프로그램이며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 배치 사이즈는 1로 두었고, 최적화 과정에서 정확도 지표는 기존 신경망 검증팀 프로그램과 모두 동일하게 유지되었다.\",\n            \"join_previous\": false\n          },\n          \"sec_conclusion_p2_s1\": {\n            \"action\": \"replace\",\n            \"text\": \"주요 정량 결과는 단일 실행 결과 중심으로 정리된다. CPU ONLY는 101.237800 ms, GPU OPTIMIZED는 229.691800 ms, HYBRID는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었으며, HYBRID V2에서 처음으로 CPU보다 빨라졌다고 평가되었다. 이후 메모리 풀과 warmup 조합에서 152.902900 ms, mempool+cuBLAS+warmup에서 174.978400 ms, 결과 벡터 memcpy 제거 후 128.894800 ms, forward 함수 DTOH memcpy 제거 후 64.716000 ms, alpha/beta 메모리 풀 적용 후 21.018800 ms, 커널 퓨전 후 22.342900 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms, 커널 퓨전 완료 후 15.751000 ms, mempool+warmup calc success에서 15.828400 ms가 관측되었다. 더 큰 규모의 실행에서는 cuda graph 적용 후 backward_only가 787.8832s에서 630s로, forward가 1029s에서 668s로, forward+backward가 1138s에서 758s로 감소하는 경향이 기록되었다.\",\n            \"join_previous\": false\n          },\n          \"sec_conclusion_p3_s1\": {\n            \"action\": \"replace\",\n            \"text\": \"다만 이러한 수치는 대부분 단일 실행 결과에 기반하며, 반복 측정 통계가 부족하다는 한계가 있다. 또한 메모리 풀+warmup, 가중치 사전 업로드, 커널 퓨전, cuda graph, pinned memory 등 여러 요소가 동시에 바뀌어 개별 효과를 분리하기 어렵고, preload가 의도치 않게 GPU warmup 역할을 한 사례처럼 효과 혼입이 발생할 수 있다. 따라서 개별 구성 요소의 변경 효과와 전체 처리 과정의 변경 효과를 구분해야 하며, 이를 구분하지 않으면 관측된 속도 개선을 특정 기법의 효과로 단정하기 어렵다.\",\n            \"join_previous\": false\n          },\n          \"sec_conclusion_p4_s1\": {\n            \"action\": \"replace\",\n            \"text\": \"정확도와 지연 시간 사이의 trade-off도 함께 고려해야 한다. 본 연구에서는 정확도 지표가 기존 신경망 검증팀 프로그램과 모두 동일했지만, 실시간성 관점에서는 평균 속도뿐 아니라 최대 지연, 지터, 지연 스파이크의 안정성이 중요하다. 따라서 속도 개선만을 기준으로 결론을 내리기보다, 지연 시간의 안정성과 예측 가능성을 함께 검토해야 한다.\",\n            \"join_previous\": false\n          }\n        }\n      }\n    }\n  }\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 13945,
+    "completion_tokens": 1032,
+    "total_tokens": 14977,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

@@ -1,6 +1,18 @@
 """Synthetic editorial responses; these do not judge semantic correctness."""
 
 
+def editorial_review_reply(packet, issues):
+    if packet.get("recheck_policy") != "editorial-recheck-v3":
+        return {"issues": issues}
+    rows = {i["finding_id"]: {"status": "resolved", "paragraph_id": "none"} for i in packet["previous_findings"]}
+    for issue in issues:
+        target = next((i for i in packet["previous_findings"] if i["section_id"] == issue["section_id"]
+                       and i["category"] == issue["category"] and rows[i["finding_id"]]["status"] == "resolved"), None)
+        key = target["finding_id"] if target else "unexpected-finding"
+        rows[key] = {"status": "unresolved", "paragraph_id": issue["paragraph_id"]}
+    return {"findings": rows}
+
+
 def editorial_reply(packet):
     if packet.get("output_mode") == "fixed_spans":
         parts = packet["source_parts"]

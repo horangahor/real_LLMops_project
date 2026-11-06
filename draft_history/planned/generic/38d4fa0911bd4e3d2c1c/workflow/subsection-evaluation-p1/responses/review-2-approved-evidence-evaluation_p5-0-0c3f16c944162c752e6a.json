@@ -1,0 +1,35 @@
+{
+  "request_fingerprint": "0c3f16c944162c752e6aca8cf968b21df1c19b990e8a553196298d848496a27a",
+  "value": {
+    "issues": [
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p5",
+        "reason": "근거 E00309의 측정 단위와 본문 서술이 불일치한다. E00309는 noPinning의 memcpy 복사 시간을 340ns(3.4E+2 ns)로 제시하는데, 본문은 이를 '340ns'로 표기해 수치 자체는 일치하지만, hostRegister/hostAlloc의 memcpy 복사 시간(1.117μs/1.142μs)과 noPinning의 340ns를 같은 '복사 시간' 항목으로 병렬 비교하면서 단위 차이(μs vs ns)를 명시하지 않아 독자가 규모 차이를 오인할 수 있다. 또한 E00309의 표는 평균값(n=920000) 기준 동기화·복사 시간 비교만 포함하며, '작은 전송에서 CPU 캐시 복사 이득이 DMA 셋업 오버헤드보다 유리할 수 있다'는 조건별 역전 해석은 E00309에 직접 포함되지 않는다. 해당 해석은 Hefd7e87bb735_41의 관찰(1KB급 초소형 데이터에서는 대역폭보다 셋업 지연시간이 지배, No-Pin은 CPU 캐시빨로 살짝 빠를 수 있음)에 가깝지만, 본문은 이를 E00309와 같은 문장에 섞어 근거 귀속을 흐렸다.",
+        "evidence_ids": [
+          "E00309",
+          "Hefd7e87bb735_41"
+        ]
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p5",
+        "reason": "근거 Hefd7e87bb735_41의 '공정 비교를 저해하는 요소' 중 'OS 페이징/백그라운드 작업 개입에 따른 지연 스파이크'는 해당 근거의 관찰에 포함되지만, 본문은 이 문장에서 OS 페이징·백그라운드 작업을 직접 언급하지 않고 'CPU 캐시 복사 이득 vs DMA 셋업 오버헤드'와 'cudaMemcpyAsync 매 루프 개별 호출'만 공정 비교 저해 요인으로 서술해 근거의 일부 관찰을 누락·축소한 채 인용했다. 또한 Hefd7e87bb735_41은 cudaMemcpyAsync가 CUDA Graph 바깥에서 매 루프 개별 호출된다고 기술하는데, 본문은 '매 루프마다 개별 호출되어 DMA 셋업이 반복 누적되는 구조'라고만 써 Graph 바깥이라는 맥락을 생략했다. 이는 경미한 누락이지만 근거의 조건을 완전히 반영하지 못한 부분이다.",
+        "evidence_ids": [
+          "Hefd7e87bb735_41"
+        ]
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p5",
+        "reason": "근거 Hefd7e87bb735_67은 hostRegister/hostAlloc/noPinning의 cudaStreamSynchronize, cudaMemcpyAsync, memcpy 복사 시간 수치와 그 유사성·차이를 진술할 뿐, 'cudaMemcpyAsync가 매 루프마다 개별 호출되어 DMA 셋업이 반복 누적되는 구조'라거나 '작은 전송에서 CPU 캐시 복사 이득이 DMA 셋업 오버헤드보다 유리할 수 있다'는 공정 비교 저해 해석을 포함하지 않는다. 본문은 Hefd7e87bb735_67을 인용하면서 해당 근거에 없는 인과·해석을 함께 서술해 근거를 부당하게 확대했다.",
+        "evidence_ids": [
+          "Hefd7e87bb735_67"
+        ]
+      }
+    ]
+  }
+}

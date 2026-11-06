@@ -1,0 +1,137 @@
+{
+  "request_fingerprint": "0db5849e15bf60a93941a6088bcec22a69b99048df73de8e8317a2ff1b9ed162",
+  "value": {
+    "sections": {
+      "sec_limitations": {
+        "parts": {
+          "p0": {
+            "sec_limitations_p2_s1": {
+              "action": "replace",
+              "text": "본 검증은 256-491-491-16 크기의 신경망과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list를 대상으로 CROWN을 구현한 C++ 프로그램을 평가한 결과이며, GPU 클록 고정과 warm up은 연구 일지에서 확인된 뒤 적용된 사항이다. 신경망 크기가 매우 작아 cuBLAS·cuSparse가 오히려 느려질 수 있어 현 기준 코드에는 포함하지 않았고, 실시간 환경에서 데이터셋을 꽉 채워 넣기 어렵다는 점도 한계로 남는다. CPU보다 빨라지려면 memcpy 병목을 잡아야 한다는 판단이 있었으며, GPU OPTIMIZED 모드에서도 실행 시간이 229.691800 ms로 약 100ms 줄었지만 여전히 CPU보다 느리다고 기록되어 하이브리드 방식(matmul만 GPU로 실행)을 시도하는 동기가 되었다. 각 최적화 기법의 효과를 체계적으로 분리한 ablation study가 이루어지지 못한 점도 한계로 남는다.",
+              "join_previous": false
+            },
+            "sec_limitations_p3_s1": {
+              "action": "replace",
+              "text": "현재 신경망 크기와 호출 패턴에서는 cuBLAS·cuSparse가 느려져 현 기준 코드에 포함하지 않은 상태이며, 실시간 환경에서 데이터셋을 꽉 채워 넣기 어렵고 CPU보다 빨라지려면 memcpy 병목을 잡아야 한다는 판단이 있었다. 배칭은 기존 데이터셋이 준비된 실험 환경에서 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었으나, 실시간 환경에서는 이런 방식으로 데이터를 채우기 어렵다고 보았다. 이에 따라 데이터셋이 있는 부분을 pinned Memory로 지정하고 메모리 복사 속도를 최대로 늘리는 방향으로 전환했으며, cudaMemcpyAsync를 사용하기도 했다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 반면 antenna_lirpa는 싱글 스트림으로 동작하지만 cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림보다 약 4배 빠르다. 차기 로드맵은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 한다.",
+              "join_previous": false
+            },
+            "sec_limitations_p4_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p5_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p6_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p7_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p8_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            }
+          },
+          "p1": {
+            "sec_limitations_p10_s1": {
+              "action": "replace",
+              "text": "각 최적화 기법을 체계적으로 분리해 개별 효과를 확인하는 ablation study는 수행하지 못했다. 여러 요소가 동시에 바뀌었기 때문에 개별 최적화의 효과를 분리하기 어렵다. 가중치 사전 업로드, make_zero 계열 CPU 회귀, 영벡터 GPU 재시도처럼 효과가 미미하거나 롤백된 사례도 있었고, backward_only는 그래프 미적용 상태에서도 bound 평균이 forward 대비 약 2.5배 수준으로 관측되었다.",
+              "join_previous": false
+            },
+            "sec_limitations_p11_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p12_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p13_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p14_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p15_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p16_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p17_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            }
+          },
+          "p2": {
+            "sec_limitations_p19_s1": {
+              "action": "replace",
+              "text": "GPU OPTIMIZED 모드의 229.691800 ms, MEMPOOL + Weights PRELOAD ON GPU의 149.820400 ms, mempool + warmup의 128.894800 ms와 152.902900 ms, DTOH memcpy 제거 후 64.716000 ms, 커널 퓨전 적용 후 22.342900 ms, alpha/beta 메모리 풀 적용 후 21.018800 ms, mempool + warmup calc success의 15.828400 ms 등은 모두 해당 조건의 단일 실행 결과로 확인된다. CPU ONLY iteration ver의 193.665600 ms 역시 단일 실행 값이다. GPU OPTIMIZED 적용 후 약 100ms가 줄었지만 여전히 CPU보다 느리다고 평가했고, 50ms만 더 단축하면 CPU를 따라잡을 수 있다고 판단했으나, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 이 자료에 제시되지 않았다.",
+              "join_previous": false
+            },
+            "sec_limitations_p20_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p21_s1": {
+              "action": "replace",
+              "text": "현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 이 결과는 figure 캡션에 기록된 단일 서술이며, 반복 측정 통계나 조건별 분리 측정은 함께 제시되지 않는다. cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 보고되었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. 그러나 cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느리게 측정되어 결과가 일관되지 않았고, 마지막 측정에서는 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 또한 클록 고정, Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않으며, pinned 적용 여부에 따라 cudaMemcpyAsync 결과가 일관되지 않아 확정하기 어렵다는 판단이 기록되었다.",
+              "join_previous": false
+            },
+            "sec_limitations_p22_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p23_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p24_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p25_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p26_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            },
+            "sec_limitations_p27_s1": {
+              "action": "keep",
+              "text": "",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

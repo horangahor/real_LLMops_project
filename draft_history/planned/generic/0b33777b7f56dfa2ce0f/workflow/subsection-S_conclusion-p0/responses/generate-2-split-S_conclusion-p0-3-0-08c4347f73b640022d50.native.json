@@ -1,0 +1,33 @@
+{
+  "id": "fb3da372-50cf-4f26-8774-a812964bf996",
+  "object": "chat.completion",
+  "created": 1793954730,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": [{\"text\": \"CUDA 포팅·최적화 과정은 복사·초기화·커널 호출·실시간성 병목을 줄이는 데 초점을 두었다. 메모리 풀과 cuBLAS Batched GEMM, 텐서 코어 활용은 싱글 스트림에서도 기존 C++ 멀티스트림(8분)보다 약 4배 빠른 2분 미만을 가능하게 했고, 방법 A(Multi-Stream 배칭)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나 스트림 수 한계(SM 포화)로 7~8분이 한계선이었다. 하이브리드 구성, 커널 퓨전, alpha/beta GPU 버퍼, cudaGraph, 메모리 방식 선택은 각각 복사·초기화·커널 호출·실시간성 관련 병목을 겨냥했으며, 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 30초~1분대 진입을 목표로 한다.\", \"evidence_ids\": [\"E00261\", \"E00262\", \"E00263\"]}, {\"text\": \"주요 정량 결과는 버전별 실행 시간과 최적화 적용 후 시간 감소로 요약된다. cudaHostRegister(Pinned)와 No Pinning(일반 메모리)의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초), 92만 번 루프 기준 1회당 약 12μs 수준이었다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨라 DMA 효과가 확인되었으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐으나, 최대 지연(Max Spike)은 No-Pin이 8.8~11.6ms로 치명적인 반면 Pinned Memory는 1.64ms로 안정적이었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소했다. 이는 작은 데이터를 매 루프마다 전송할 때 Pinned의 DMA 셋업 오버헤드 때문에 총 소요 시간이 더 길어질 수 있지만, OS 페이징 간섭을 차단해 결정론적 안정성을 확보한다는 해석으로 이어졌다. 실시간 무선 안테나 선택 시스템 관점에서는 Pinned Memory 도입이 필수적이라는 결론이 제시되었다. 다만 이 결과들은 단일 실행·요약값 중심이며 반복 측정 통계가 제한적이어서, 평균 속도·최대 지연·지터·WCET을 함께 고려한 해석이 필요하다.\", \"evidence_ids\": [\"E00277\", \"E00278\", \"E00292\", \"E00293\", \"E00294\", \"E00296\", \"E00297\", \"E00299\", \"E00300\", \"E00301\"]}]}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 29185,
+    "completion_tokens": 698,
+    "total_tokens": 29883,
+    "prompt_tokens_details": {
+      "cached_tokens": 16320,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

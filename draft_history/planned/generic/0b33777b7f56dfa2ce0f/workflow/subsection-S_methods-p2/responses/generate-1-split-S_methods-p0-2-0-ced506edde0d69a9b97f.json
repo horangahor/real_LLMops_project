@@ -1,0 +1,20 @@
+{
+  "request_fingerprint": "ced506edde0d69a9b97fc79e9124b0bd669c8836c0e876eace8e12e45eddbd85",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "구성 요소별 역할과 결합 방식은 실제 구현·실행에서 확인되는 범위로 서술된다. backward_bound_gpu에서는 기존 GPU 계산 결과 → CPU → affine_min/max → 최종 결과 흐름에서 발생하던 불필요한 GPU↔CPU 복사를 줄이기 위해, affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 메모리 복사를 최소화하였다. 측정 환경 통제에서는 현재 클록 확인(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1), graphics clock 잠금(sudo nvidia-smi -lgc 1410) 등의 명령어가 사용되었고, 클록 고정 재실험을 위해 RAII 방식의 ScopedGpuClockLock 구조체가 작성되었다. cudaHostRegister(Pinned)와 No Pinning(일반 메모리) 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 다만 현재 기록은 figure 캡션에 제시된 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다.",
+          "evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00281",
+            "E00283",
+            "E00284",
+            "E00286"
+          ]
+        }
+      ]
+    }
+  }
+}

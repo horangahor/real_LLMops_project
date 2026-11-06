@@ -1,0 +1,20 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00277",
+          "E00278",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00297"
+        ],
+        "text": "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 입력 조건은 신경망 크기 256-491-491-16, 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only), 데이터셋과 eps_list가 기존 신경망 검증팀이 사용하던 인풋이라는 점으로 정리된다. 실행 환경은 CUDA 컴파일러(nvcc)와 CUDA Toolkit 설치 환경을 기반으로 하며 cuBLAS가 사용되고, 컴파일에는 -lcublas 옵션이 사용된다. 측정 환경 설정으로 Persistence mode를 위해 sudo nvidia-smi -pm 1을 사용하고, 클록 확인은 nvidia-smi -q -d CLOCK로 수행한다. cudaHostRegister와 No Pinning의 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 기록된다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 차이는 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 나타난 것으로 기록된다. 이후 GPU 클록을 고정하고 재실험하기로 하여 ScopedGpuClockLock 구조체를 작성했고, 클록을 2800MHz로 고정한 상태에서 기존 HostRegister 방식으로 실험을 진행했다. 1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory는 매번 하드웨어 DMA 셋업을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사로 약 0.02~0.05μs에 복사가 끝나 DMA 셋업보다 30~50배 빠르다는 해석이 함께 제시된다. 다만 현재 기록은 figure 캡션에 기록된 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다."
+      }
+    }
+  },
+  "reason": "교체 문단이 허용 분량 257자를 넘었습니다."
+}

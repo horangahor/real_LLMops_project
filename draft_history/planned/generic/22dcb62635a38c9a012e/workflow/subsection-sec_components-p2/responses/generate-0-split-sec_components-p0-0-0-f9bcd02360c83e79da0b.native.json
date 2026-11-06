@@ -1,0 +1,33 @@
+{
+  "id": "5b1f285d-6acd-4758-b7a6-9eb1373268f3",
+  "object": "chat.completion",
+  "created": 1793999064,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"parts\": {\n    \"p0\": [\n      {\n        \"text\": \"가중치 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 GPU 메모리에 미리 올려, matmul·matvec 호출마다 반복되는 호스트-디바이스 복사를 줄이려는 목적으로 도입되었다. 이를 위해 pre_upload_weights_to_gpu 함수를 구현하여 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하고, 할당된 메모리를 net->d_W[i]에 저장해 두었다. 이후 v1-1-3(crown_test_preload_fix)에서는 GPU 주소를 저장하던 double* 타입을 Matrix*로 바꾸고, pre_upload_weights_to_gpu도 memcpy2D 대신 Matrix를 할당·복사하도록 변경하여 사전 업로드된 가중치를 실제 연산에서 활용하도록 수정하였다. 이 변경으로 positive_part와 negative_part에서 W 복사를 스킵해 각각 2MB를 절약하고, matmul의 B행렬 복사 스킵(backward)으로 4MB, matvec의 A행렬 복사 스킵(forward)으로 2MB를 절약하는 구성이 확인되었다.\",\n        \"evidence_ids\": [\"E00042\", \"E00051\", \"E00079\", \"E00135\", \"E00136\"]\n      },\n      {\n        \"text\": \"다만 bias까지 GPU에 사전 업로드하는 시도도 있었으나, bias는 Vector이고 코드상 약 4KB 정도로 작아 CPU가 연산하기에도 무리가 없는 수준이라 성능 개선에 큰 의미를 미치지 못하는 것으로 판단되었다. 또한 가중치 사전 업로드로 memcpy를 줄이려는 접근 자체는, 실제 활용 구조가 갖춰지기 전에는 기대한 만큼의 효과를 내지 못한 것으로 기록되었다. 이와 함께 forward-backward 간 전달되는 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가해 backward가 호스트 복사 없이 GPU 버퍼를 직접 사용하도록 바꾸는 등, 메모리 전송 최적화는 가중치 사전 업로드와 별개로도 계속 조정되었다.\",\n        \"evidence_ids\": [\"E00045\", \"E00079\", \"E00130\", \"E00133\"]\n      }\n    ]\n  }\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 51705,
+    "completion_tokens": 449,
+    "total_tokens": 52154,
+    "prompt_tokens_details": {
+      "cached_tokens": 2176,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

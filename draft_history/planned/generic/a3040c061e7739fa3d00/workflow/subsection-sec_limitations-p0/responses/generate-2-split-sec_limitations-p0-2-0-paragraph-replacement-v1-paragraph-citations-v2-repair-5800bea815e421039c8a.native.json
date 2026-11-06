@@ -1,0 +1,33 @@
+{
+  "id": "df504aa9-3ea8-46fc-87fe-0047d2f4b1b1",
+  "object": "chat.completion",
+  "created": 1793985122,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": {\"evidence_ids\": [\"E00216\", \"E00217\", \"E00277\", \"E00278\", \"E00279\", \"E00280\", \"E00281\", \"E00282\", \"E00283\", \"E00284\", \"E00286\", \"E00292\", \"E00293\", \"E00294\", \"E00295\", \"E00296\", \"E00297\", \"E00298\"], \"text\": \"본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. 또한 배칭으로 데이터셋을 통째로 넘기는 방식은 실시간 환경이 아니라 판단하여, 대신 데이터셋이 있는 부분을 pinned Memory로 지정하고 메모리 복사 속도를 최대로 늘렸으며, 그 과정에서 cudaMemcpyAsync를 사용하기도 했다. 이후 cudaHostRegister(Pinned)와 No Pinning(Pageable) 간 비교를 수행한 결과, 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 이 역전 현상에 대해 기록자는 추론 단계에서 시간이 느려졌다고 관측했으며, 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록하였다. 측정 환경으로는 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용하고, GPU 클록 고정을 위해 CUDA 강의 19장을 참고하여 ScopedGpuClockLock 구조체를 작성해 클록을 2800MHz로 고정한 뒤 재실험을 진행하였다. 평균 속도에서는 No-Pin이 약 13초 빨랐으나, 실시간성 관점에서는 No-Pin이 최대 8.8~11.6ms의 치명적 지연 스파이크를 유발할 수 있는 반면 Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라는 결론이 제시되었다. 다만 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있으며, 이는 1KB 데이터를 매 루프마다 전송할 때 Pinned Memory가 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사로 약 0.02~0.05μs(20~50ns)에 복사가 끝나 DMA 셋업보다 30~50배 빠르기 때문이다. infer 단계에서 40,000번 동안 CPU 스레드가 cudaStreamSynchronize로 대기하고 깨어나는 과정에서의 미세 지연과 드라이버 동기화 비용이 맞물려 Pinned 쪽이 총 루프 시간에서 약 13초 정도 느려지는 결과가 나왔다. 한편 auto_LiRPA 실행에서는 포워드+백워드와 백워드_only 두 모드의 검증 결과가 각각 [auto_LiRPA Verification Results] 표로 제시되었으며, 백워드_only 실행 결과는 지정된 CSV 경로에 저장되었다. 백워드_only 실행에서 EPS별 연산 시간 합산은 55.77s, 전체 프로그램 총 소요 시간은 55.78s로 기록되었고, backward_only가 제일 빠르며 forward가 제일 느리다는 관측이 있었다. 이는 보통의 상식으로는 forward < forward + backward < backward_only로 알고 있었던 것과 차이가 있는 관측이었다. auto_LiRPA 실행은 python autolirpa_topk_robustness.py --data-path \\\"경로/데이터.pickle\\\" --device cuda --batch-size 1024 방식으로 실행되었으며, 배치 사이즈를 1024로 하였다(그리고 싱글 스트림인듯). 배치 사이즈 64일 때 약 424초가 걸렸으며, 현재 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들어 각 스트림이 GPU 메모리를 차지하는 방식이다. 배치 사이즈를 512로 하면 메모리를 넘지 않지만 느리며, 그 이유는 각 스트림마다 CPU가 돌아가면서 다음 커널을 런치해줘야 해서 1024개의 스트림이 각각 CPU가 다음 커널을 런치해줄 때까지 기다리고 있기 때문이다. 스트림 수를 64개 정도로 줄이고 배치 사이즈를 1024로 하는 방안은 의미가 없다고 판단했으며, 그 이유는 하나의 스트림이 하나의 입력을 처리하므로 동시에 돌릴 수 있는 데이터가 64개라는 뜻이고 16번씩 나눠서 처리하게 되기 때문이다. 초기 데이터 H2D 비용은 확실히 줄지만, 연산 병목은 스트림이 64개라 한 번에 64개밖에 대응하지 못하는 제약이 있다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 현재 작성자는 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계로 지적되었으며, auto_lirpa의 빠른 이유에 대한 고민이 기록되어 있고 이는 이후 페이지에서 커널 런치 횟수 감소와 관련된 설명으로 이어진다.\"}}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 52935,
+    "completion_tokens": 1624,
+    "total_tokens": 54559,
+    "prompt_tokens_details": {
+      "cached_tokens": 1088,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

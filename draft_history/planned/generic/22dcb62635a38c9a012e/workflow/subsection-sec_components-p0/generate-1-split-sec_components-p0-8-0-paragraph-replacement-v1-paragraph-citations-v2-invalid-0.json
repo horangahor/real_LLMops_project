@@ -1,0 +1,17 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00276",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280"
+        ],
+        "text": "CUDA 포팅은 lirpa_forward_backward_fc_array.cpp의 기본 틀을 유지한 채 병렬 연산이 필요한 부분만 커널로 바꾸는 방향으로 진행했고, CUDA 동작이 필요한 코드만 수정해 nvcc로 컴파일하는 구성을 취했다. 최종 포팅·컴파일·실행 검증을 거쳐 동일 동작을 확인했다. 메모리 전송 방식 비교에서는 pinned memory 미적용, HostAlloc, HostRegister 세 가지를 측정 대상으로 삼았다. cudaHostRegister와 No Pinning의 전체 실행 시간은 92만 번 루프 기준 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. cudaHostRegister가 더 느리게 측정된 이유로는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남았다."
+      }
+    }
+  },
+  "reason": "교체 문단이 허용 분량 600자를 넘었습니다."
+}

@@ -33,7 +33,7 @@ class StructuredClient(Client):
         def convert(scoped, part_schema):
             result = {}
             for key, prop in part_schema["properties"]["parts"]["properties"].items():
-                if prop["type"] != "array":
+                if prop["type"] not in ("array", "object"):
                     raise AssertionError("New generation calls must use the paragraph schema")
                 ids = allowed_ids(scoped, key)
                 result[key] = paragraphs("배정된 기록의 조건과 한계를 설명한다.", ids)
@@ -122,15 +122,15 @@ class DraftProseTests(unittest.TestCase):
             self.assertTrue(result["review"]["approved"])
             generations = [p for s, k, p in client.events if s == "subsection-s0-p0" and k == "generate"]
             self.assertEqual(len(generations), 4)  # three content attempts + one format-only repair
-            repaired = generations[2]["revision"]
-            self.assertIn("validation_error", repaired)
+            repair_request = next(p for p in generations if "fragment_validation_error" in p or "replacement_validation_error" in p)
+            repaired = repair_request["revision"]
             self.assertEqual(repaired["review"]["checks"][0]["missing_body_evidence_ids"], ["F2"])
             self.assertEqual(repaired["evidence_link_gaps"][0]["evidence_id"], "F2")
             self.assertEqual(repaired["evidence_link_gaps"][0]["statement"], research()["facts"][1]["statement"])
             self.assertIn("content_repair_instruction", repaired)
             self.assertNotIn("validation_error", generations[3]["revision"])
             folder = Path(result["run_dir"]) / "workflow/subsection-s0-p0"
-            self.assertTrue(list((folder / "responses").glob("generate-1-format-repair-1-*.json")))
+            self.assertTrue(list(folder.glob("*invalid-*.json")))
 
     def test_new_format_runs_through_leaf_and_both_editors_and_reviewers(self):
         with TemporaryDirectory() as tmp:

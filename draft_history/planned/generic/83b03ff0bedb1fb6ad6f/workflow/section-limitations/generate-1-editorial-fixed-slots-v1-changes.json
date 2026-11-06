@@ -1,0 +1,103 @@
+{
+  "changed_parts": [
+    {
+      "section_id": "limitations",
+      "part": "p0"
+    },
+    {
+      "section_id": "limitations",
+      "part": "p2"
+    }
+  ],
+  "unchanged_findings": [
+    {
+      "section_id": "limitations",
+      "paragraph_id": "limitations_p9",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "'ablation study 미수행' 한계를 다시 진술하고, C++ 멀티스트림 64개 스트림·약 8분·3.2배 가속·7~8분 한계선·텐서 코어/Batched GEMM 로드맵이 나오지만, 이 로드맵 내용은 limitations_p21과 겹쳐 소절 내 분산 중복이 된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "최적화 과정은 각 기법을 체계적으로 분리한 ablation study가 아니라, 적용했다가 되돌리는 시도를 반복하며 얻은 기록 중심이므로 개별 최적화의 기여도를 독립적으로 분리해 해석하기 어렵다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 이 방식은 기존 단일 샘플 커널을 유지한 채 3.2배 가속(25분→8분)을 얻었지만, 스트림 수 한계와 SM 포화로 7~8분이 한계선으로 해석된다. 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된 것으로 보며, 차기 로드맵은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 활용해 30초~1분대 진입을 목표로 한다. [근거:E00257,E00260,E00263]"
+    },
+    {
+      "section_id": "limitations",
+      "paragraph_id": "limitations_p14",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "방법·구현·설정 효율 검토 범위를 정리하면서 GPU OPTIMIZED, PRELOAD ON GPU, DTOH memcpy 제거, make_zero CPU 회귀, cuSPARSE SpMV/spMM, Pinned/No-Pin, GPU 클록 고정, 멀티스트림, antenna_lirpa 대비 Batched GEMM·텐서 코어 등을 나열하지만, 이 요소들이 limitations_p3·p6·p9·p15·p17에도 분산돼 중복된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "방법·구현·설정 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀), 가중치 사전 업로드(PRELOAD ON GPU), forward 함수의 DTOH memcpy 제거, make_zero_matrix·make_zero_vector의 CPU 회귀, cuSPARSE SpMV/spMM 적용, cudaHostRegister(Pinned) 대 No Pinning 비교, GPU 클록 고정 재실험 시도까지 적용·시도된 요소를 중심으로 정리한다. 이 과정에서 cuBLAS Batched GEMM과 텐서 코어를 활용한 antenna_lirpa 대비 현재 C++ 멀티스트림 구현의 체급 차이, 그리고 차기 Batched GEMM·3D 텐서 연산화 로드맵도 함께 확인된다. 다만 커널 퓨전, cudaGraph, pinned memory의 체계적 비교, 전력·에너지 효율, 반복 측정 기반 통계, 각 최적화 기법의 개별 효과 분리는 이번 검토에서 충분히 다루지 못했거나 보류된 항목이며, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않은 점도 공정 비교의 한계로 남는다. [근거:E00029,E00030,E00044,E00046,E00073,E00074,E00076,E00077,E00083,E00105,E00106,E00115,E00116,E00167,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00257,E00259,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280]"
+    },
+    {
+      "section_id": "limitations",
+      "paragraph_id": "limitations_p15",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "효율 검토 범위와 'ablation study 미수행' 한계를 다시 정리하고, GPU 클록 고정 설정 절차(nvidia-smi -q -d CLOCK, -pm 1, -lgc 1410)와 hybrid only_GPU 비교, forward/backward memcpy 호출 횟수 동일 관찰, fp32 변경·switch 문 구조체 문제 등을 추가하지만 소절 전체 반복 구조 속에 묻힌다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "이 절은 방법·구현·설정 효율 검토 범위와 해석상 한계를 정리한다. 본 연구는 CROWN 검증의 실시간 가속 가능성을 CUDA 구현과 최적화 시도 기록으로 검토했으며, CPU 대비 속도 개선 여부와 최적화 과정의 요인을 함께 확인하는 데 초점을 두었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 않아 개별 변경의 효과를 정량적으로 분리하기 어렵다. GPU 클록 고정은 CUDA 강의 19장을 참고해 nvidia-smi -q -d CLOCK로 확인하고, sudo nvidia-smi -pm 1로 Persistence mode를 활성화한 뒤 sudo nvidia-smi -lgc 1410으로 그래픽 클록을 잠그는 방식으로 설정했다. 이는 초기화 지연 제거와 일관된 측정을 위한 환경 설정이지만, 실제 적용 결과나 고정 후 측정 수치는 이 요소만으로 제시되지 않는다. 구현 측면에서는 메모리 풀, cuBLAS 기반 행렬곱, 커널 퓨전, cudaGraph, pinned memory 등 여러 GPU 최적화 요소가 시도되거나 검토되었으나, 전체 처리 과정을 비교할 때 여러 요소가 동시에 바뀌어 개별 효과 분리가 제한된다. 예를 들어 hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 CPU for문으로 되돌린 버전으로, 새로 추가된 요소 없이 GPU 코드를 삭제해 빨라진 사례에 가깝다. 또한 forward와 backward의 cudaMemcpy 호출 횟수는 동일하지만 전체 실행 시간과 cudaMemcpy 시간 분포는 다르게 관측되어, 호출 횟수만으로 성능 차이를 설명하기 어렵다. fp32 단정밀도 연산 변경 시도처럼 일부 항목은 별도 고찰로만 언급되었고, switch 문 안 구조체 선언·초기화 문제처럼 컴파일 제약에 따른 구현 조정도 기록되었다. 따라서 본 결과의 해석 범위는 최적화 시도 기록과 단일 실행 관측에 머물며, 반복 측정 통계나 조건별 분리 측정이 충분히 제시되지 않은 점은 한계로 남는다. [근거:E00283,E00284,E00286,E00037,E00165,E00166,E00150,E00353,E00354,E00050,E00047,E00048,E00049,E00130,E00133,E00135,E00136,E00137,E00138,E00146,E00147,E00148,E00149,E00151,E00152,E00153,E00154,E00155,E00156,E00157,E00158,E00159,E00160,E00161,E00162,E00172,E00201,E00318,E00319,E00330]"
+    },
+    {
+      "section_id": "limitations",
+      "paragraph_id": "limitations_p16",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "'여러 변경을 함께 적용한 뒤 전체 실행 시간 변화를 관찰'했다는 서술이 limitations_p3·p14·p15·p17의 반복 프레임과 겹치고, MAXDIM 512 float 복사 변경, forward_cuda_graph 약 983초, CPU 계산 후 복사 버전(1055) 72초 느림 같은 개별 사례는 새 정보이나 주변 중복이 크다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "본 연구의 최적화 시도는 개별 기법의 효과를 체계적으로 분리하기보다, 여러 변경을 함께 적용한 뒤 전체 실행 시간의 변화를 관찰하는 방식으로 진행되었다. 예를 들어 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다. 또한 forward_cuda_graph의 전체 시간이 약 983초이고, CPU에서 필요한 만큼만 계산한 뒤 복사한 버전(1055)이 72초 더 느렸으며, 이는 더 늦어진 결과다. 이러한 관측은 변경 사실과 시간 비교만을 포함하며, 각 최적화 기법의 기여나 시간 차이의 원인을 정량적으로 분리한 측정 결과는 포함하지 않는다. 따라서 본 절에서 다루는 효율 검토 범위는 메모리 풀, cuBLAS, 커널 퓨전, cudaGraph, pinned memory 등 적용·시도된 구현 요소의 관측된 변화에 한정되며, 개별 기법의 독립적 효과나 미검토·보류 항목의 평가는 이 기록만으로 확정하기 어렵다. [근거:E00370,E00374]"
+    },
+    {
+      "section_id": "limitations",
+      "paragraph_id": "limitations_p17",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "효율 검토 대상 목록을 limitations_p14와 유사하게 다시 제시하고, 'ablation study 미수행', 단일 실행/기록자 요약 중심, only_GPU vs hybrid 동시 변경 문제, backward_bound_gpu affine 중복 삭제와 backward_matmul_pair_gpu 통합, HYBRID 201.670100ms/HYBRID V2 85.785300ms를 담지만 소절 내 중복이 누적된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "방법·구현·설정 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀), 가중치 사전 업로드(PRELOAD ON GPU), forward 함수의 DTOH memcpy 제거, make_zero 계열 함수의 CPU 회귀, cuSparse spMV/spMM 적용, cudaHostRegister(Pinned)와 No Pinning 비교, GPU 클록 고정, C++ 멀티스트림(Task Parallelism) 구성, antenna_lirpa 대비 싱글 스트림·cuBLAS Batched GEMM·텐서 코어 활용 차이 등을 대상으로 했다. 이 검토는 각 기법의 적용·제거 시도와 관측된 경향을 정리하지만, 개별 기법을 체계적으로 분리한 ablation study는 수행하지 않았고, 단일 실행 결과나 기록자 요약 중심의 수치가 많아 반복 측정 기반 통계가 부족하다. only_GPU와 hybrid 비교처럼 여러 요소가 동시에 바뀌어 개별 효과 분리가 어려운 경우도 있으며, backward_bound_gpu의 affine 중복 계산 삭제(커널 2개 함수 감소)와 backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합한 변경은 함수 감소나 관측된 경향만 기록하고 정량 성능 수치나 정확도 결과는 포함하지 않는다. HYBRID 모드에서는 CROWN Verification 실행 시간이 201.670100ms로, HYBRID V2에서는 85.785300ms로 기록되어 기록자가 CPU보다 빨라졌다고 평가했다. 따라서 효율 검토 결과는 적용 범위와 해석 범위가 제한적이며, 향후 연구에서는 최적화 기법의 체계적 분리, 반복 측정 기반 통계 확보, 복합 변경 해석의 한계 보완이 필요하다. [근거:E00031,E00035,E00036,E00122,E00124]"
+    },
+    {
+      "section_id": "limitations",
+      "paragraph_id": "limitations_p20",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "'ablation study 미수행' 공백과 GPU OPTIMIZED 이후 CPU보다 느려 하이브리드 시도, v2 적용 방안(cuBLAS 예열, W 사전 업로드, 16×491 행렬만 복사)을 limitations_p2·p4·p7·p10과 겹치게 재진술하고, cuBlas/cuSparse 기본 형태 사용과 Nsight Compute 병행 검토 방향을 덧붙인다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "방법·구현·설정 효율 검토 범위는 아직 개별 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 않았다는 공백과 연결된다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제로 matmul만 GPU에서 실행하는 하이브리드 프로그램을 만들어보는 시도가 있었고, v2 적용 방안으로 cuBLAS 미리 예열, 가중치(W)의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 제시되었으나, 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 제시되지 않았다. 현재까지 cuBlas/cuSparse의 기본 형태 행렬곱 함수를 사용했으며, 행렬곱 변형 함수가 매우 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. [근거:E00030,E00033,E00331]"
+    },
+    {
+      "section_id": "limitations",
+      "paragraph_id": "limitations_p21",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "향후 연구 초점을 정리하면서 방법 C(Batched GEMM, 3D 텐서 연산화, cublasSgemmBatched, 텐서 코어 100%, 30초~1분대 목표)가 계획 단계임을 명시하지만, 이 로드맵은 limitations_p9와 겹치고, 6번째 세미나 이후 할 일 목록도 분산 중복된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "향후 연구 초점은 현재 결과의 공백과 제약을 이어받는 방향으로 정리된다. 차기 로드맵의 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표는 계획 단계의 서술이며 실제 구현·평가 결과는 아니다. 이와 함께 3D 텐서 연산화, Batched GEMM, cudaGraph 캡처 방식 개선, pinned memory 성능 측정, backward_only 속도 원인 조사 등이 향후 과제로 언급되며, 6번째 세미나 이후 할 일에는 cuBlas·cuSparse 도입 보류, forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석 등이 기록되었다. [근거:E00262,E00333,E00331]"
+    },
+    {
+      "section_id": "limitations",
+      "paragraph_id": "limitations_p22",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "결과 해석 범위가 최적화 시도 기록 중심이라는 성격과 향후 과제·적용 범위·효율 검토 공백의 미검증성을 다시 요약해 limitations_p2·p3·p7·p10·p17·p21과 중복된다. 소절 마무리 문단이지만 반복 요약에 가깝다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "결과 해석 범위는 최적화 시도 기록 중심이라는 성격에 따라 제한된다. 본 절에서 정리한 향후 과제와 적용 범위, 효율 검토 범위의 공백은 실제 구현 완료·측정 결과로 입증된 내용이 아니라 연구 노트에 남은 방향·계획·할 일 기록에 기반하므로, 각 항목의 실현 여부나 성능 영향은 아직 검증되지 않았다. 따라서 후속 연구에서 개별 기법의 분리 평가, 측정 조건 고정, 대규모 텐서 연산화 구현과 실측을 통해 현재 제시된 방향성과 목표치를 다시 확인할 필요가 있다. [근거:E00030,E00033,E00262,E00331,E00333]"
+    }
+  ],
+  "prose_changed": true
+}

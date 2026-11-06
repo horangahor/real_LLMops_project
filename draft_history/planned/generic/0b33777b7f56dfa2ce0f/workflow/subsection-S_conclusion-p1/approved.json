@@ -1,0 +1,1055 @@
+{
+  "sha256": "87249947b2025146b10b7b52b8b82053ba2913d23a64faaf62c4a784658a35fc",
+  "value": {
+    "input_fingerprint": "1846af187f8dde66284a32c2d90a922df9decb2a869b30101ba63272355a7d86",
+    "sections": {
+      "S_conclusion": {
+        "parts": {
+          "p0": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 행렬곱만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131]\n\nPinned Memory와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. 이 수치와 해석은 figure 캡션에 기록된 값에만 근거하며, 반복 측정 통계나 조건별 분리 측정은 현재 페이지에 제시되지 않았다. 또한 Bound와 Infer 합산이 전체 실행 시간과 약 1.9초 차이가 있어 certify 단계 등 미분해 오버헤드가 존재할 수 있다. [근거:E00277,E00278]\n\nPageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 다만 이 결론은 지연 특성 비교와 규범적 판단에 근거하며, 실제 측정 결과나 정량 수치는 별도 요소에서 다루어진다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 벡터라서 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00296,E00211,E00045]\n\n향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이 내용은 연구 노트의 계획·검토 기록에 근거한 목표·방식 서술이며, 실제 구현·평가 결과로 서술하지 않는다. [근거:E00262]\n\n본 연구의 CUDA 포팅·최적화는 CPU 환경에서만 제한적으로 수행되던 CROWN 검증을 GPU 기반으로 옮겨 대규모 연산 처리 가능성을 검토한 데 의미가 있다. 다만 현재 단계에서는 cuBlas·cuSparse의 기본 행렬곱 함수만 사용했고, 행렬곱 변형 함수가 다수 존재한다는 점을 고려해 이후 sm 내 분석과 함께 적합한 함수를 선정하는 방향을 검토하였다. 외부 라이브러리 도입은 보류했으며, backward_only 대신 forward+backward 진행을 유지하는 등 실행 방식은 최적화 과정에서 적용·유보된 항목이 많았다. Nsight Compute를 활용한 CUDA core 점유율 분석은 50% 초과를 목표로 검토되었으나, 이는 향후 진행 방향에 대한 검토·계획 기록이며 실제 변형 함수 적용 결과나 성능 수치는 현재 페이지에 제시되지 않았다. [근거:E00331,E00333]\n\n향후 방향으로는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성, 그리고 단계별 분리 측정과 요인 분리의 필요성이 검토될 수 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00331,E00333]\n\n실시간성 관점의 시사점과 향후 방향은 현재 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한다. 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등은 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. cuBlas·cuSparse의 기본 행렬곱 함수를 사용해 온 상황에서 행렬곱 변형 함수가 많고, 이 함수들은 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 일단 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 정리되었다. Nsight Compute 분석에서는 CUDA core 점유율이 50% 정도만 넘어도 잘된 편으로 볼 수 있다는 의견이 제시되어, 이를 목표 분석의 기준으로 삼는 방향이 기록되었다. 이러한 방향은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]\n\nCUDA 포팅과 최적화 과정은 cuBLAS 예열, 가중치의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안처럼 반복 호출과 불필요한 memcpy를 줄이는 방향으로 설계되었다. 다만 이 방안들은 v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다. 실행 측면에서는 eps_list에 대한 이중 루프 안에서 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 lirpa_forward_bound_impl 또는 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 구조가 사용되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경되었으며, elapsed 타임과 미세한 오차가 있어 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하였다. 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었고, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍어 추론 시간을 계산하는 방식이 적용되었다. 각 forward, backward는 20번씩 측정이 완료되었으며, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이었다. alpha/beta 메모리 풀 적용 후 실행 시간이 21.0ms 정도 나온다는 정성적 요약이 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 목표도 함께 언급되었다. 이 50ms는 기록자의 목표·판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다. 실시간성 관점에서는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 같은 방향이 향후 과제로 남는다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해서는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남아 있다. 이를 확인하기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, ScopedGpuClockLock이라는 RAII 구조체를 작성해 GPU 클록의 자동 잠금·해제를 구현하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었고, Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. 다만 단계별 분리 측정과 요인 분리의 필요성은 남아 있으며, 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 못했다. [근거:E00033,E00072,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286]"
+        }
+      }
+    },
+    "raw_review": {
+      "checks": [
+        {
+          "item_id": "RI_conc_3",
+          "verdict": "met",
+          "paragraph_ids": [
+            "S_conclusion_p1",
+            "S_conclusion_p2",
+            "S_conclusion_p3",
+            "S_conclusion_p4",
+            "S_conclusion_p6",
+            "S_conclusion_p7",
+            "S_conclusion_p8"
+          ],
+          "evidence_ids": [
+            "E00211",
+            "E00262",
+            "E00296",
+            "E00030",
+            "E00033",
+            "E00044",
+            "E00045",
+            "E00046",
+            "E00071",
+            "E00072",
+            "E00073",
+            "E00083",
+            "E00131",
+            "E00132",
+            "E00174",
+            "E00187",
+            "E00188",
+            "E00189",
+            "E00190",
+            "E00191",
+            "E00192",
+            "E00193",
+            "E00194",
+            "E00195",
+            "E00196",
+            "E00197",
+            "E00198",
+            "E00199",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00331",
+            "E00333"
+          ]
+        }
+      ],
+      "reference_checks": [
+        {
+          "section_id": "S_conclusion",
+          "reference_id": "ref1_conclusion",
+          "verdict": "not_visible",
+          "paragraph_ids": [],
+          "reason": "결론 절은 현재 subsection 단위로 검토 중이며, reference_checks는 section_id 아래 reference_id를 키로 하는 객체이므로 이 칸은 비워 둔다."
+        },
+        {
+          "section_id": "S_conclusion",
+          "reference_id": "ref2_conclusion",
+          "verdict": "not_visible",
+          "paragraph_ids": [],
+          "reason": "결론 절은 현재 subsection 단위로 검토 중이며, reference_checks는 section_id 아래 reference_id를 키로 하는 객체이므로 이 칸은 비워 둔다."
+        }
+      ],
+      "issues": [
+        {
+          "section_id": "S_conclusion",
+          "severity": "error",
+          "paragraph_id": "S_conclusion_p2",
+          "reason": "E00278의 limits에는 Bound+Infer 합산(658.80+127.18=785.98s)이 전체 787.88s와 약 1.9s 차이가 있다는 서술이 포함되어 있으나, 본문은 '약 1.9초 차이'라고만 적어 수치의 출처·계산 근거를 정확히 반영하지 못했다. 또한 E00278의 figure 캡션 비교 표는 Bound/Infer 두 단계만 제시한다는 한계도 함께 서술되어 있는데, 본문은 이를 'figure 캡션에 기록된 값에만 근거하며'라는 일반 서술로만 처리해 근거의 구체적 한계를 충분히 옮기지 못했다.",
+          "evidence_ids": [
+            "E00278"
+          ],
+          "failure_owner": "writer"
+        },
+        {
+          "section_id": "S_conclusion",
+          "severity": "error",
+          "paragraph_id": "S_conclusion_p4",
+          "reason": "E00262의 limits는 방법 C 로드맵이 목표·방식 서술이며 실제 구현·평가 결과가 아니고, 30초~1분대 진입은 목표치이지 실측값이 아니며 전체 40,000개 규모에서의 실현 여부는 검증되지 않았다고 명시한다. 본문은 '목표로 한다'라고 적었으나 바로 다음 문장에서 '실제 구현·평가 결과로 서술하지 않는다'라고만 하여, 목표치와 실측값의 구분이 문단 내에서 명확히 유지되지 않는다.",
+          "evidence_ids": [
+            "E00262"
+          ],
+          "failure_owner": "writer"
+        },
+        {
+          "section_id": "S_conclusion",
+          "severity": "error",
+          "paragraph_id": "S_conclusion_p5",
+          "reason": "E00333의 limits는 현재 페이지가 세미나 이후 할 일 목록과 코드·문제 관련 메모만 포함하며 실제 구현 완료·측정 결과·발표 결과는 포함하지 않는다고 명시한다. 본문은 Nsight Compute 분석 목표(50% 초과)를 '향후 진행 방향에 대한 검토·계획 기록'으로 서술했으나, 같은 문단에서 '외부 라이브러리 도입은 보류했으며, backward_only 대신 forward+backward 진행을 유지하는 등 실행 방식은 최적화 과정에서 적용·유보된 항목이 많았다'라고 적어, 계획·유보 항목을 실제 적용·유보 결과로 읽히게 할 여지가 있다.",
+          "evidence_ids": [
+            "E00333"
+          ],
+          "failure_owner": "writer"
+        },
+        {
+          "section_id": "S_conclusion",
+          "severity": "error",
+          "paragraph_id": "S_conclusion_p8",
+          "reason": "E00033의 limits는 v2 적용 방안 목록만 기록되어 있으며 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 없다고 명시한다. 본문은 'v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다'라고 적어 이 한계를 반영했지만, 바로 뒤의 측정 방식·코드 구조·측정 횟수·목표 서술과 한 문단에 섞여 있어 계획 목록과 관측/계획 항목이 구분 없이 나열된다. 또한 E00072의 limits는 '50ms'가 기록자의 목표·판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않는다고 명시하는데, 본문은 이를 반영하면서도 '목표도 함께 언급되었다' 수준의 서술로 처리해 근거의 한계를 충분히 강조하지 못했다.",
+          "evidence_ids": [
+            "E00033",
+            "E00072"
+          ],
+          "failure_owner": "writer"
+        },
+        {
+          "section_id": "S_conclusion",
+          "severity": "error",
+          "paragraph_id": "S_conclusion_p7",
+          "reason": "E00333의 limits는 현재 페이지가 세미나 이후 할 일 목록과 코드·문제 관련 메모만 포함하며 실제 구현 완료·측정 결과·발표 결과는 포함하지 않는다고 명시한다. 본문은 '이러한 방향은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로'라고 한계를 적었지만, 같은 문단에서 Nsight Compute 목표(50% 초과)와 외부 라이브러리 도입 보류, forward+backward 유지 등을 함께 서술해 계획·유보 항목을 실제 적용·유보 결과로 오인하게 할 여지가 있다.",
+          "evidence_ids": [
+            "E00333"
+          ],
+          "failure_owner": "writer"
+        }
+      ],
+      "review_policy": "approved-facts-v1",
+      "review_selection_bindings": []
+    },
+    "reviews": [
+      {
+        "checks": [
+          {
+            "item_id": "RI_conc_3",
+            "verdict": "missing",
+            "paragraph_ids": [
+              "S_conclusion_p1",
+              "S_conclusion_p3"
+            ],
+            "evidence_ids": [
+              "E00211",
+              "E00262",
+              "E00296",
+              "E00030",
+              "E00033",
+              "E00044",
+              "E00045",
+              "E00046",
+              "E00071",
+              "E00072",
+              "E00073",
+              "E00083",
+              "E00131",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00331",
+              "E00333"
+            ],
+            "quote": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+            "paragraph_quotes": [
+              "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+              "실시간성 관점의 시사점과 향후 방향으로는, 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등을 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. 이러한 방향은 실제 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한 것이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]"
+            ],
+            "guideline_ids": [
+              "ref1_conclusion_required_3",
+              "ref2_conclusion_required_4"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [
+              "E00033",
+              "E00072",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "model_verdict": "met",
+            "missing_review_evidence_ids": [],
+            "missing_body_evidence_ids": [
+              "E00033",
+              "E00072",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "missing_section_evidence_ids": [
+              "E00033",
+              "E00072",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "unselected_cited_evidence_ids": [],
+            "failure_owner": "writer",
+            "validation_note": "검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다."
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "S_conclusion",
+            "reference_id": "ref1_conclusion",
+            "verdict": "not_visible",
+            "paragraph_ids": [
+              "S_conclusion_p1",
+              "S_conclusion_p2",
+              "S_conclusion_p3"
+            ],
+            "reason": "결론 절은 문제·방법·핵심 결과·실용적 의미를 짧게 묶고 후속 방향을 제시하는 흐름으로 작성되었으나, 본 절은 연구 노트 기반 최적화 과정 기록에 의존해 실용적 기여와 향후 방향을 제한적으로 서술한다. 원문에 직접 명시된 주요 목표·기여 수치나 반복 측정 기반 비교는 확인되지 않아 ref1_conclusion의 실용적 기여·향후 방향 요건을 완전히 충족하지 않는다.",
+            "quote": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+            "paragraph_quotes": [
+              "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+              "본 연구는 CPU 환경에서만 제한적으로 수행되던 CROWN 신경망 검증을 CUDA 기반으로 포팅·최적화하여, 실시간 환경의 대규모 연산을 감당할 수 있는지 검토하였다. 핵심 설계로는 cuBlas·cuSparse의 기본 행렬곱 함수를 사용하되, 행렬곱 변형 함수들이 다수 존재한다는 점을 고려해 이후 sm 내 분석과 함께 적합한 함수를 선정하는 방향을 검토하였다. 실행 시간 측면에서는 커널 퓨전을 backward_bound_gpu()에 우선 적용하는 등 단계별 최적화를 진행했으며, Nsight Compute를 활용한 CUDA core 점유율 분석을 50% 초과를 목표로 검토하였다. 다만 외부 라이브러리 도입은 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 등 실행 방식은 최적화 과정에서 적용·유보된 항목이 많았다. [근거:E00331,E00333]",
+              "실시간성 관점의 시사점과 향후 방향으로는, 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등을 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. 이러한 방향은 실제 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한 것이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]"
+            ]
+          },
+          {
+            "section_id": "S_conclusion",
+            "reference_id": "ref2_conclusion",
+            "verdict": "not_visible",
+            "paragraph_ids": [
+              "S_conclusion_p1",
+              "S_conclusion_p3"
+            ],
+            "reason": "결론 절은 실시간성 관점의 시사점과 향후 방향(배칭·다중 스트림, 3D 텐서·cublasSgemmBatched, pinned memory 안정성, 단계별 분리 측정·요인 분리 필요성)을 제시하지만, 이는 연구 노트상 계획·검토·과제 정리 수준의 기록에 기반한다. 실제 구현·평가 결과로 뒷받침된 확장 방향 서술은 아니므로 ref2_conclusion의 향후 작업 방향 요건을 충분히 충족하지 않는다.",
+            "quote": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+            "paragraph_quotes": [
+              "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+              "실시간성 관점의 시사점과 향후 방향으로는, 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등을 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. 이러한 방향은 실제 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한 것이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p1",
+            "reason": "결론 절의 핵심 결과 서술은 연구 노트의 관측·기록 범위를 벗어나지 않으나, cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되지 않은 점, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않은 점은 공정 비교를 위한 통제 조건으로 확정하기 어렵다. 이 절에서 해당 비교를 통제된 공정 비교로 단정하지 않도록 표현 범위를 제한할 필요가 있다.",
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "failure_owner": "none",
+            "quote": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p3",
+            "reason": "향후 방향 서술 중 배칭·다중 스트림, 3D 텐서·cublasSgemmBatched, 단계별 분리 측정·요인 분리 필요성은 실제 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획(E00331, E00333)에 근거한다. 이를 실제 성과나 검증된 방향으로 읽히지 않도록 계획·검토 성격임을 명시해야 한다.",
+            "evidence_ids": [
+              "E00331",
+              "E00333"
+            ],
+            "failure_owner": "none",
+            "quote": "실시간성 관점의 시사점과 향후 방향으로는, 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등을 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. 이러한 방향은 실제 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한 것이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "error",
+            "quote": "",
+            "reason": "필수 내용 RI_conc_3: missing. 검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다. 누락 근거=E00033,E00072,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286",
+            "evidence_ids": [
+              "E00033",
+              "E00072",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "validation_code": "required_content",
+            "item_id": "RI_conc_3",
+            "review_stage": "required_evidence_validation",
+            "failure_owner": "writer"
+          },
+          {
+            "section_id": "S_conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "flow",
+            "validation_code": "composition_layout",
+            "reason": "S_conclusion/p0: 가장 긴 문단이 1283자로 공통 문단 목표 800자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 0,
+          "total": 1,
+          "value": 0.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 0,
+          "not_visible": 2,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "RI_conc_3",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_conclusion_p1",
+              "S_conclusion_p2",
+              "S_conclusion_p3",
+              "S_conclusion_p4"
+            ],
+            "evidence_ids": [
+              "E00211",
+              "E00262",
+              "E00296",
+              "E00030",
+              "E00033",
+              "E00044",
+              "E00045",
+              "E00046",
+              "E00071",
+              "E00072",
+              "E00073",
+              "E00083",
+              "E00131",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00331",
+              "E00333"
+            ],
+            "quote": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+            "paragraph_quotes": [
+              "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+              "실시간성 관점에서 본 연구의 CUDA 포팅·최적화는 CPU 환경에서만 제한적으로 수행되던 CROWN 검증을 GPU 기반으로 옮겨 대규모 연산 처리 가능성을 검토한 데 의미가 있다. 다만 현재 단계에서는 cuBlas·cuSparse의 기본 행렬곱 함수만 사용했고, 행렬곱 변형 함수가 다수 존재한다는 점을 고려해 이후 sm 내 분석과 함께 적합한 함수를 선정하는 방향을 검토하였다. 외부 라이브러리 도입은 보류했으며, backward_only 대신 forward+backward 진행을 유지하는 등 실행 방식은 최적화 과정에서 적용·유보된 항목이 많았다. Nsight Compute를 활용한 CUDA core 점유율 분석은 50% 초과를 목표로 검토되었으나, 이는 향후 진행 방향에 대한 검토·계획 기록이며 실제 변형 함수 적용 결과나 성능 수치는 현재 페이지에 제시되지 않았다. 향후 방향으로는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성, 그리고 단계별 분리 측정과 요인 분리의 필요성이 검토될 수 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00331,E00333]",
+              "실시간성 관점의 시사점과 향후 방향은 현재 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한다. 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등은 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. cuBlas·cuSparse의 기본 행렬곱 함수를 사용해 온 상황에서 행렬곱 변형 함수가 많고, 이 함수들은 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 일단 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 정리되었다. Nsight Compute 분석에서는 CUDA core 점유율이 50% 정도만 넘어도 잘된 편으로 볼 수 있다는 의견이 제시되어, 이를 목표 분석의 기준으로 삼는 방향이 기록되었다. 이러한 방향은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]",
+              "CUDA 포팅과 최적화 과정은 cuBLAS 예열, 가중치의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안처럼 반복 호출과 불필요한 memcpy를 줄이는 방향으로 설계되었다. 다만 이 방안들은 v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다. 실행 측면에서는 eps_list에 대한 이중 루프 안에서 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 lirpa_forward_bound_impl 또는 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 구조가 사용되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경되었으며, elapsed 타임과 미세한 오차가 있어 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하였다. 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었고, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍어 추론 시간을 계산하는 방식이 적용되었다. 각 forward, backward는 20번씩 측정이 완료되었으며, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이었다. alpha/beta 메모리 풀 적용 후 실행 시간이 21.0ms 정도 나온다는 정성적 요약이 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 목표도 함께 언급되었다. 이 50ms는 기록자의 목표·판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다. 실시간성 관점에서는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 같은 방향이 향후 과제로 남는다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해서는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남아 있다. 이를 확인하기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, ScopedGpuClockLock이라는 RAII 구조체를 작성해 GPU 클록의 자동 잠금·해제를 구현하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었고, Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. 다만 단계별 분리 측정과 요인 분리의 필요성은 남아 있으며, 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 못했다. [근거:E00033,E00072,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286]"
+            ],
+            "guideline_ids": [
+              "ref1_conclusion_required_3",
+              "ref2_conclusion_required_4"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": []
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "S_conclusion",
+            "reference_id": "ref1_conclusion",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "S_conclusion_p1",
+              "S_conclusion_p2",
+              "S_conclusion_p3",
+              "S_conclusion_p4"
+            ],
+            "reason": "결론의 문제·방법·핵심 결과·실용적 의미 정리 흐름은 반영되었으나, 실용적 기여와 향후 방향을 연구 노트 기반 서술로만 제시하고 있어 ref1_conclusion_required_3의 '실용적 기여와 향후 방향' 항목을 완전히 충족한다고 보기 어렵다. 특히 실시간 환경에서의 대규모 연산 충족 여부나 주요 기여 요약은 사용자 승인 범위의 설명으로만 반영되어 원문에 직접 명시된 기여·수치로 확정하기 어렵다.",
+            "quote": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+            "paragraph_quotes": [
+              "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+              "실시간성 관점에서 본 연구의 CUDA 포팅·최적화는 CPU 환경에서만 제한적으로 수행되던 CROWN 검증을 GPU 기반으로 옮겨 대규모 연산 처리 가능성을 검토한 데 의미가 있다. 다만 현재 단계에서는 cuBlas·cuSparse의 기본 행렬곱 함수만 사용했고, 행렬곱 변형 함수가 다수 존재한다는 점을 고려해 이후 sm 내 분석과 함께 적합한 함수를 선정하는 방향을 검토하였다. 외부 라이브러리 도입은 보류했으며, backward_only 대신 forward+backward 진행을 유지하는 등 실행 방식은 최적화 과정에서 적용·유보된 항목이 많았다. Nsight Compute를 활용한 CUDA core 점유율 분석은 50% 초과를 목표로 검토되었으나, 이는 향후 진행 방향에 대한 검토·계획 기록이며 실제 변형 함수 적용 결과나 성능 수치는 현재 페이지에 제시되지 않았다. 향후 방향으로는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성, 그리고 단계별 분리 측정과 요인 분리의 필요성이 검토될 수 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00331,E00333]",
+              "실시간성 관점의 시사점과 향후 방향은 현재 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한다. 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등은 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. cuBlas·cuSparse의 기본 행렬곱 함수를 사용해 온 상황에서 행렬곱 변형 함수가 많고, 이 함수들은 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 일단 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 정리되었다. Nsight Compute 분석에서는 CUDA core 점유율이 50% 정도만 넘어도 잘된 편으로 볼 수 있다는 의견이 제시되어, 이를 목표 분석의 기준으로 삼는 방향이 기록되었다. 이러한 방향은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]",
+              "CUDA 포팅과 최적화 과정은 cuBLAS 예열, 가중치의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안처럼 반복 호출과 불필요한 memcpy를 줄이는 방향으로 설계되었다. 다만 이 방안들은 v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다. 실행 측면에서는 eps_list에 대한 이중 루프 안에서 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 lirpa_forward_bound_impl 또는 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 구조가 사용되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경되었으며, elapsed 타임과 미세한 오차가 있어 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하였다. 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었고, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍어 추론 시간을 계산하는 방식이 적용되었다. 각 forward, backward는 20번씩 측정이 완료되었으며, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이었다. alpha/beta 메모리 풀 적용 후 실행 시간이 21.0ms 정도 나온다는 정성적 요약이 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 목표도 함께 언급되었다. 이 50ms는 기록자의 목표·판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다. 실시간성 관점에서는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 같은 방향이 향후 과제로 남는다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해서는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남아 있다. 이를 확인하기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, ScopedGpuClockLock이라는 RAII 구조체를 작성해 GPU 클록의 자동 잠금·해제를 구현하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었고, Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. 다만 단계별 분리 측정과 요인 분리의 필요성은 남아 있으며, 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 못했다. [근거:E00033,E00072,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286]"
+            ]
+          },
+          {
+            "section_id": "S_conclusion",
+            "reference_id": "ref2_conclusion",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "S_conclusion_p1",
+              "S_conclusion_p2",
+              "S_conclusion_p3",
+              "S_conclusion_p4"
+            ],
+            "reason": "수준별 핵심 발견 정리와 향후 확장 방향(배칭·다중 스트림, 3D 텐서·cuBLAS Batched GEMM, pinned memory 안정성, 단계별 분리 측정·요인 분리 필요성 등)은 서술되었으나, 향후 작업 방향을 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용으로 제시하고 있어 ref2_conclusion_required_4의 '향후 작업 방향' 항목을 완전히 충족한다고 보기 어렵다.",
+            "quote": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+            "paragraph_quotes": [
+              "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]",
+              "실시간성 관점에서 본 연구의 CUDA 포팅·최적화는 CPU 환경에서만 제한적으로 수행되던 CROWN 검증을 GPU 기반으로 옮겨 대규모 연산 처리 가능성을 검토한 데 의미가 있다. 다만 현재 단계에서는 cuBlas·cuSparse의 기본 행렬곱 함수만 사용했고, 행렬곱 변형 함수가 다수 존재한다는 점을 고려해 이후 sm 내 분석과 함께 적합한 함수를 선정하는 방향을 검토하였다. 외부 라이브러리 도입은 보류했으며, backward_only 대신 forward+backward 진행을 유지하는 등 실행 방식은 최적화 과정에서 적용·유보된 항목이 많았다. Nsight Compute를 활용한 CUDA core 점유율 분석은 50% 초과를 목표로 검토되었으나, 이는 향후 진행 방향에 대한 검토·계획 기록이며 실제 변형 함수 적용 결과나 성능 수치는 현재 페이지에 제시되지 않았다. 향후 방향으로는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성, 그리고 단계별 분리 측정과 요인 분리의 필요성이 검토될 수 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00331,E00333]",
+              "실시간성 관점의 시사점과 향후 방향은 현재 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한다. 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등은 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. cuBlas·cuSparse의 기본 행렬곱 함수를 사용해 온 상황에서 행렬곱 변형 함수가 많고, 이 함수들은 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 일단 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 정리되었다. Nsight Compute 분석에서는 CUDA core 점유율이 50% 정도만 넘어도 잘된 편으로 볼 수 있다는 의견이 제시되어, 이를 목표 분석의 기준으로 삼는 방향이 기록되었다. 이러한 방향은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]",
+              "CUDA 포팅과 최적화 과정은 cuBLAS 예열, 가중치의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안처럼 반복 호출과 불필요한 memcpy를 줄이는 방향으로 설계되었다. 다만 이 방안들은 v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다. 실행 측면에서는 eps_list에 대한 이중 루프 안에서 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 lirpa_forward_bound_impl 또는 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 구조가 사용되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경되었으며, elapsed 타임과 미세한 오차가 있어 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하였다. 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었고, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍어 추론 시간을 계산하는 방식이 적용되었다. 각 forward, backward는 20번씩 측정이 완료되었으며, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이었다. alpha/beta 메모리 풀 적용 후 실행 시간이 21.0ms 정도 나온다는 정성적 요약이 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 목표도 함께 언급되었다. 이 50ms는 기록자의 목표·판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다. 실시간성 관점에서는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 같은 방향이 향후 과제로 남는다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해서는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남아 있다. 이를 확인하기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, ScopedGpuClockLock이라는 RAII 구조체를 작성해 GPU 클록의 자동 잠금·해제를 구현하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었고, Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. 다만 단계별 분리 측정과 요인 분리의 필요성은 남아 있으며, 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 못했다. [근거:E00033,E00072,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p1",
+            "reason": "실시간성 관점의 시사점과 향후 방향을 서술하면서 배칭·다중 스트림, 3D 텐서·cuBLAS Batched GEMM, pinned memory의 실시간 안정성, 단계별 분리 측정·요인 분리 필요성 등을 언급했으나, 이 내용은 연구 노트의 계획·검토 기록에 근거하므로 실제 구현·평가 결과로 서술하지 않도록 주의가 필요하다.",
+            "evidence_ids": [
+              "E00211",
+              "E00262",
+              "E00296",
+              "E00331",
+              "E00333"
+            ],
+            "failure_owner": "none",
+            "quote": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p1",
+            "reason": "cudaHostRegister와 No Pinning의 전체 실행 시간 차이(787.88초 대 776.70초, 약 1.4%, 약 11초)와 Bound/Infer 단계별 역전 해석은 figure 캡션(p74:e582)에 기록된 수치와 해석에만 근거하며, 반복 측정 통계나 조건별 분리 측정은 현재 페이지에 제시되지 않았다. 또한 Bound+Infer 합산(658.80+127.18=785.98s)이 전체 787.88s와 약 1.9s 차이가 있으나, 이는 figure 캡션의 비교 표가 Bound/Infer 두 단계만 제시하고 있어 certify 단계 등 미분해 오버헤드로 추정될 수 있다는 한계가 있다.",
+            "evidence_ids": [
+              "E00277",
+              "E00278"
+            ],
+            "failure_owner": "none",
+            "quote": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p1",
+            "reason": "Pageable 메모리의 최대 11.6ms 지연 스파이크, Pinned Memory의 WCET 1.64ms 제한, 지터 60% 이상 안정화, 실시간 무선 안테나 선택 시스템에서 Pinned Memory 도입 필수성 등은 E00296에 기록된 결론 설명이나, 실제 측정 결과나 정량 수치는 별도 요소에서 다루므로 본 문단에서 측정 결과로 단정하지 않도록 주의가 필요하다.",
+            "evidence_ids": [
+              "E00296"
+            ],
+            "failure_owner": "none",
+            "quote": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 matmul만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. 한편 cudaHostRegister와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 Vector라서 성능 개선 의미가 크지 않은 것으로 판단되었다. 향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131,E00277,E00278,E00296,E00211,E00045,E00262]"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p2",
+            "reason": "cuBlas·cuSparse 기본 행렬곱 함수 사용, 행렬곱 변형 함수 다수 존재, sm 내 분석과 함께 사용 필요, Nsight Compute 분석 시 함께 진행 검토, 외부 라이브러리 도입 보류, backward_only 대신 forward+backward 진행 유지, CUDA core 점유율 50% 초과 목표 검토 등은 E00331·E00333의 검토·계획 기록이며 실제 변형 함수 적용 결과나 성능 수치는 현재 페이지에 제시되지 않았다. 이를 실제 구현·측정 결과로 서술하지 않도록 주의가 필요하다.",
+            "evidence_ids": [
+              "E00331",
+              "E00333"
+            ],
+            "failure_owner": "none",
+            "quote": "실시간성 관점에서 본 연구의 CUDA 포팅·최적화는 CPU 환경에서만 제한적으로 수행되던 CROWN 검증을 GPU 기반으로 옮겨 대규모 연산 처리 가능성을 검토한 데 의미가 있다. 다만 현재 단계에서는 cuBlas·cuSparse의 기본 행렬곱 함수만 사용했고, 행렬곱 변형 함수가 다수 존재한다는 점을 고려해 이후 sm 내 분석과 함께 적합한 함수를 선정하는 방향을 검토하였다. 외부 라이브러리 도입은 보류했으며, backward_only 대신 forward+backward 진행을 유지하는 등 실행 방식은 최적화 과정에서 적용·유보된 항목이 많았다. Nsight Compute를 활용한 CUDA core 점유율 분석은 50% 초과를 목표로 검토되었으나, 이는 향후 진행 방향에 대한 검토·계획 기록이며 실제 변형 함수 적용 결과나 성능 수치는 현재 페이지에 제시되지 않았다. 향후 방향으로는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성, 그리고 단계별 분리 측정과 요인 분리의 필요성이 검토될 수 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00331,E00333]"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p3",
+            "reason": "실시간성 관점의 시사점과 향후 방향이 세미나 이후 과제 정리와 검토 계획에 근거한다고 명시했으나, 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성, 단계별 분리 측정과 요인 분리 필요성, ablation study 미수행 한계 등은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로 후속 연구에서 구체적 성능 수치와 함께 확인할 필요가 있다는 한계를 명확히 유지해야 한다.",
+            "evidence_ids": [
+              "E00331",
+              "E00333"
+            ],
+            "failure_owner": "none",
+            "quote": "실시간성 관점의 시사점과 향후 방향은 현재 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한다. 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등은 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. cuBlas·cuSparse의 기본 행렬곱 함수를 사용해 온 상황에서 행렬곱 변형 함수가 많고, 이 함수들은 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 일단 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 정리되었다. Nsight Compute 분석에서는 CUDA core 점유율이 50% 정도만 넘어도 잘된 편으로 볼 수 있다는 의견이 제시되어, 이를 목표 분석의 기준으로 삼는 방향이 기록되었다. 이러한 방향은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p4",
+            "reason": "v2 적용 방안(cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사)은 E00033의 적용 계획 목록으로만 기록되어 있으며 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다. 또한 CPU보다 빨라지기 위해 50ms만 더 단축하면 된다는 진술은 기록자의 목표·판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다. 이를 사실적 비교 결과로 서술하지 않도록 주의가 필요하다.",
+            "evidence_ids": [
+              "E00033",
+              "E00072"
+            ],
+            "failure_owner": "none",
+            "quote": "CUDA 포팅과 최적화 과정은 cuBLAS 예열, 가중치의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안처럼 반복 호출과 불필요한 memcpy를 줄이는 방향으로 설계되었다. 다만 이 방안들은 v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다. 실행 측면에서는 eps_list에 대한 이중 루프 안에서 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 lirpa_forward_bound_impl 또는 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 구조가 사용되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경되었으며, elapsed 타임과 미세한 오차가 있어 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하였다. 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었고, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍어 추론 시간을 계산하는 방식이 적용되었다. 각 forward, backward는 20번씩 측정이 완료되었으며, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이었다. alpha/beta 메모리 풀 적용 후 실행 시간이 21.0ms 정도 나온다는 정성적 요약이 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 목표도 함께 언급되었다. 이 50ms는 기록자의 목표·판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다. 실시간성 관점에서는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 같은 방향이 향후 과제로 남는다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해서는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남아 있다. 이를 확인하기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, ScopedGpuClockLock이라는 RAII 구조체를 작성해 GPU 클록의 자동 잠금·해제를 구현하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었고, Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. 다만 단계별 분리 측정과 요인 분리의 필요성은 남아 있으며, 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 못했다. [근거:E00033,E00072,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286]"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p4",
+            "reason": "cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나, 3가지 이유의 구체적 내용은 E00279만으로는 제시되지 않으며 동일 figure 캡션 및 후속 페이지(p77:e596 이후 Gemini 응답 인용 등)에 기록되어 있다. 또한 추론 단계에서 시간이 느려졌다는 정성적 관찰(E00280)은 정량 수치나 원인 분석을 포함하지 않으므로, 본 문단에서 원인 분석으로 확장하지 않도록 주의가 필요하다.",
+            "evidence_ids": [
+              "E00279",
+              "E00280"
+            ],
+            "failure_owner": "none",
+            "quote": "CUDA 포팅과 최적화 과정은 cuBLAS 예열, 가중치의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안처럼 반복 호출과 불필요한 memcpy를 줄이는 방향으로 설계되었다. 다만 이 방안들은 v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다. 실행 측면에서는 eps_list에 대한 이중 루프 안에서 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 lirpa_forward_bound_impl 또는 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 구조가 사용되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경되었으며, elapsed 타임과 미세한 오차가 있어 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하였다. 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었고, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍어 추론 시간을 계산하는 방식이 적용되었다. 각 forward, backward는 20번씩 측정이 완료되었으며, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이었다. alpha/beta 메모리 풀 적용 후 실행 시간이 21.0ms 정도 나온다는 정성적 요약이 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 목표도 함께 언급되었다. 이 50ms는 기록자의 목표·판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다. 실시간성 관점에서는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 같은 방향이 향후 과제로 남는다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해서는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남아 있다. 이를 확인하기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, ScopedGpuClockLock이라는 RAII 구조체를 작성해 GPU 클록의 자동 잠금·해제를 구현하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었고, Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. 다만 단계별 분리 측정과 요인 분리의 필요성은 남아 있으며, 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 못했다. [근거:E00033,E00072,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286]"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p4",
+            "reason": "GPU 클록 고정 후 재실험 계획, ScopedGpuClockLock RAII 구조체 작성, 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, sudo nvidia-smi -pm 1, sudo nvidia-smi -lgc 1410), Persistence mode 설정 등은 E00281·E00283·E00284·E00286의 figure 캡션 기록이며 실제 클록 고정 후 측정 결과는 이 요소들만으로는 제시되지 않았다. 또한 ScopedGpuClockLock 기본 생성자의 기본 클록 목표값은 2475 MHz이나 실제 실험에서는 2800 MHz가 사용되었으므로(E00282), 이를 모순이 아닌 파라미터 전달 방식의 차이로 이해해야 한다.",
+            "evidence_ids": [
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286"
+            ],
+            "failure_owner": "none",
+            "quote": "CUDA 포팅과 최적화 과정은 cuBLAS 예열, 가중치의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안처럼 반복 호출과 불필요한 memcpy를 줄이는 방향으로 설계되었다. 다만 이 방안들은 v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다. 실행 측면에서는 eps_list에 대한 이중 루프 안에서 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 lirpa_forward_bound_impl 또는 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 구조가 사용되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경되었으며, elapsed 타임과 미세한 오차가 있어 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하였다. 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었고, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍어 추론 시간을 계산하는 방식이 적용되었다. 각 forward, backward는 20번씩 측정이 완료되었으며, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이었다. alpha/beta 메모리 풀 적용 후 실행 시간이 21.0ms 정도 나온다는 정성적 요약이 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 목표도 함께 언급되었다. 이 50ms는 기록자의 목표·판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다. 실시간성 관점에서는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 같은 방향이 향후 과제로 남는다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해서는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남아 있다. 이를 확인하기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, ScopedGpuClockLock이라는 RAII 구조체를 작성해 GPU 클록의 자동 잠금·해제를 구현하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었고, Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. 다만 단계별 분리 측정과 요인 분리의 필요성은 남아 있으며, 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 못했다. [근거:E00033,E00072,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286]"
+          },
+          {
+            "section_id": "S_conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 5.2 실시간성 관점의 시사점과 향후 방향: 본문 3978자 / 목표 2143자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요."
+          },
+          {
+            "section_id": "S_conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "flow",
+            "validation_code": "composition_layout",
+            "reason": "S_conclusion/p0: 가장 긴 문단이 1450자로 공통 문단 목표 800자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요."
+          },
+          {
+            "section_id": "S_conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "style",
+            "validation_code": "composition_style",
+            "reason": "S_conclusion/p0: 기록자·자료 중심 표현 ['현재 페이지에 제시']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 2,
+          "not_visible": 0,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "RI_conc_3",
+            "verdict": "met",
+            "paragraph_ids": [
+              "S_conclusion_p1",
+              "S_conclusion_p2",
+              "S_conclusion_p3",
+              "S_conclusion_p4",
+              "S_conclusion_p6",
+              "S_conclusion_p7",
+              "S_conclusion_p8"
+            ],
+            "evidence_ids": [
+              "E00211",
+              "E00262",
+              "E00296",
+              "E00030",
+              "E00033",
+              "E00044",
+              "E00045",
+              "E00046",
+              "E00071",
+              "E00072",
+              "E00073",
+              "E00083",
+              "E00131",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00331",
+              "E00333"
+            ],
+            "quote": "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 행렬곱만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131]",
+            "paragraph_quotes": [
+              "CUDA 포팅과 최적화 과정은 CROWN 검증의 실행 시간을 단계적으로 줄였으나, 실시간 환경의 대규모 연산을 CPU 대비 충분히 따라잡는 수준에는 아직 도달하지 못했다. GPU OPTIMIZED 모드 이후에도 CPU보다 느린 문제가 남아 행렬곱만 GPU로 실행하는 하이브리드 방식이 시도되었고, memcpy 병목이 CPU보다 빨라지기 위해 해결해야 할 핵심 과제로 인식되었다. 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms를 단축하는 효과를 보였으며, forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 가중치 사전 업로드 후에는 149~155ms 범위가, alpha/beta 메모리 풀 적용 후에는 21.0188ms가 관측되었다. [근거:E00030,E00073,E00071,E00083,E00044,E00046,E00131]",
+              "Pinned Memory와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. 이 수치와 해석은 figure 캡션에 기록된 값에만 근거하며, 반복 측정 통계나 조건별 분리 측정은 현재 페이지에 제시되지 않았다. 또한 Bound와 Infer 합산이 전체 실행 시간과 약 1.9초 차이가 있어 certify 단계 등 미분해 오버헤드가 존재할 수 있다. [근거:E00277,E00278]",
+              "Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. 다만 이 결론은 지연 특성 비교와 규범적 판단에 근거하며, 실제 측정 결과나 정량 수치는 별도 요소에서 다루어진다. 배칭 시스템 구현으로 3배 빨라지는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, bias 사전 업로드는 약 4KB 수준의 벡터라서 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00296,E00211,E00045]",
+              "향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이 내용은 연구 노트의 계획·검토 기록에 근거한 목표·방식 서술이며, 실제 구현·평가 결과로 서술하지 않는다. [근거:E00262]",
+              "향후 방향으로는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성, 그리고 단계별 분리 측정과 요인 분리의 필요성이 검토될 수 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00331,E00333]",
+              "실시간성 관점의 시사점과 향후 방향은 현재 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한다. 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등은 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. cuBlas·cuSparse의 기본 행렬곱 함수를 사용해 온 상황에서 행렬곱 변형 함수가 많고, 이 함수들은 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 일단 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 정리되었다. Nsight Compute 분석에서는 CUDA core 점유율이 50% 정도만 넘어도 잘된 편으로 볼 수 있다는 의견이 제시되어, 이를 목표 분석의 기준으로 삼는 방향이 기록되었다. 이러한 방향은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]",
+              "CUDA 포팅과 최적화 과정은 cuBLAS 예열, 가중치의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안처럼 반복 호출과 불필요한 memcpy를 줄이는 방향으로 설계되었다. 다만 이 방안들은 v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다. 실행 측면에서는 eps_list에 대한 이중 루프 안에서 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 lirpa_forward_bound_impl 또는 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 구조가 사용되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경되었으며, elapsed 타임과 미세한 오차가 있어 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하였다. 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었고, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍어 추론 시간을 계산하는 방식이 적용되었다. 각 forward, backward는 20번씩 측정이 완료되었으며, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이었다. alpha/beta 메모리 풀 적용 후 실행 시간이 21.0ms 정도 나온다는 정성적 요약이 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 목표도 함께 언급되었다. 이 50ms는 기록자의 목표·판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다. 실시간성 관점에서는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 같은 방향이 향후 과제로 남는다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해서는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남아 있다. 이를 확인하기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, ScopedGpuClockLock이라는 RAII 구조체를 작성해 GPU 클록의 자동 잠금·해제를 구현하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었고, Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. 다만 단계별 분리 측정과 요인 분리의 필요성은 남아 있으며, 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 못했다. [근거:E00033,E00072,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286]"
+            ],
+            "guideline_ids": [
+              "ref1_conclusion_required_3",
+              "ref2_conclusion_required_4"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": []
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "S_conclusion",
+            "reference_id": "ref1_conclusion",
+            "verdict": "not_visible",
+            "paragraph_ids": [],
+            "reason": "결론 절은 현재 subsection 단위로 검토 중이며, reference_checks는 section_id 아래 reference_id를 키로 하는 객체이므로 이 칸은 비워 둔다.",
+            "quote": "",
+            "paragraph_quotes": []
+          },
+          {
+            "section_id": "S_conclusion",
+            "reference_id": "ref2_conclusion",
+            "verdict": "not_visible",
+            "paragraph_ids": [],
+            "reason": "결론 절은 현재 subsection 단위로 검토 중이며, reference_checks는 section_id 아래 reference_id를 키로 하는 객체이므로 이 칸은 비워 둔다.",
+            "quote": "",
+            "paragraph_quotes": []
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p2",
+            "reason": "E00278의 limits에는 Bound+Infer 합산(658.80+127.18=785.98s)이 전체 787.88s와 약 1.9s 차이가 있다는 서술이 포함되어 있으나, 본문은 '약 1.9초 차이'라고만 적어 수치의 출처·계산 근거를 정확히 반영하지 못했다. 또한 E00278의 figure 캡션 비교 표는 Bound/Infer 두 단계만 제시한다는 한계도 함께 서술되어 있는데, 본문은 이를 'figure 캡션에 기록된 값에만 근거하며'라는 일반 서술로만 처리해 근거의 구체적 한계를 충분히 옮기지 못했다.",
+            "evidence_ids": [
+              "E00278"
+            ],
+            "failure_owner": "writer",
+            "quote": "Pinned Memory와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. 이 수치와 해석은 figure 캡션에 기록된 값에만 근거하며, 반복 측정 통계나 조건별 분리 측정은 현재 페이지에 제시되지 않았다. 또한 Bound와 Infer 합산이 전체 실행 시간과 약 1.9초 차이가 있어 certify 단계 등 미분해 오버헤드가 존재할 수 있다. [근거:E00277,E00278]",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p4",
+            "reason": "E00262의 limits는 방법 C 로드맵이 목표·방식 서술이며 실제 구현·평가 결과가 아니고, 30초~1분대 진입은 목표치이지 실측값이 아니며 전체 40,000개 규모에서의 실현 여부는 검증되지 않았다고 명시한다. 본문은 '목표로 한다'라고 적었으나 바로 다음 문장에서 '실제 구현·평가 결과로 서술하지 않는다'라고만 하여, 목표치와 실측값의 구분이 문단 내에서 명확히 유지되지 않는다.",
+            "evidence_ids": [
+              "E00262"
+            ],
+            "failure_owner": "writer",
+            "quote": "향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이 내용은 연구 노트의 계획·검토 기록에 근거한 목표·방식 서술이며, 실제 구현·평가 결과로 서술하지 않는다. [근거:E00262]",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p5",
+            "reason": "E00333의 limits는 현재 페이지가 세미나 이후 할 일 목록과 코드·문제 관련 메모만 포함하며 실제 구현 완료·측정 결과·발표 결과는 포함하지 않는다고 명시한다. 본문은 Nsight Compute 분석 목표(50% 초과)를 '향후 진행 방향에 대한 검토·계획 기록'으로 서술했으나, 같은 문단에서 '외부 라이브러리 도입은 보류했으며, backward_only 대신 forward+backward 진행을 유지하는 등 실행 방식은 최적화 과정에서 적용·유보된 항목이 많았다'라고 적어, 계획·유보 항목을 실제 적용·유보 결과로 읽히게 할 여지가 있다.",
+            "evidence_ids": [
+              "E00333"
+            ],
+            "failure_owner": "writer",
+            "quote": "본 연구의 CUDA 포팅·최적화는 CPU 환경에서만 제한적으로 수행되던 CROWN 검증을 GPU 기반으로 옮겨 대규모 연산 처리 가능성을 검토한 데 의미가 있다. 다만 현재 단계에서는 cuBlas·cuSparse의 기본 행렬곱 함수만 사용했고, 행렬곱 변형 함수가 다수 존재한다는 점을 고려해 이후 sm 내 분석과 함께 적합한 함수를 선정하는 방향을 검토하였다. 외부 라이브러리 도입은 보류했으며, backward_only 대신 forward+backward 진행을 유지하는 등 실행 방식은 최적화 과정에서 적용·유보된 항목이 많았다. Nsight Compute를 활용한 CUDA core 점유율 분석은 50% 초과를 목표로 검토되었으나, 이는 향후 진행 방향에 대한 검토·계획 기록이며 실제 변형 함수 적용 결과나 성능 수치는 현재 페이지에 제시되지 않았다. [근거:E00331,E00333]",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p8",
+            "reason": "E00033의 limits는 v2 적용 방안 목록만 기록되어 있으며 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 없다고 명시한다. 본문은 'v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다'라고 적어 이 한계를 반영했지만, 바로 뒤의 측정 방식·코드 구조·측정 횟수·목표 서술과 한 문단에 섞여 있어 계획 목록과 관측/계획 항목이 구분 없이 나열된다. 또한 E00072의 limits는 '50ms'가 기록자의 목표·판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않는다고 명시하는데, 본문은 이를 반영하면서도 '목표도 함께 언급되었다' 수준의 서술로 처리해 근거의 한계를 충분히 강조하지 못했다.",
+            "evidence_ids": [
+              "E00033",
+              "E00072"
+            ],
+            "failure_owner": "writer",
+            "quote": "CUDA 포팅과 최적화 과정은 cuBLAS 예열, 가중치의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안처럼 반복 호출과 불필요한 memcpy를 줄이는 방향으로 설계되었다. 다만 이 방안들은 v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다. 실행 측면에서는 eps_list에 대한 이중 루프 안에서 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 lirpa_forward_bound_impl 또는 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 구조가 사용되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경되었으며, elapsed 타임과 미세한 오차가 있어 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하였다. 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었고, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍어 추론 시간을 계산하는 방식이 적용되었다. 각 forward, backward는 20번씩 측정이 완료되었으며, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이었다. alpha/beta 메모리 풀 적용 후 실행 시간이 21.0ms 정도 나온다는 정성적 요약이 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 목표도 함께 언급되었다. 이 50ms는 기록자의 목표·판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다. 실시간성 관점에서는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 같은 방향이 향후 과제로 남는다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해서는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남아 있다. 이를 확인하기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, ScopedGpuClockLock이라는 RAII 구조체를 작성해 GPU 클록의 자동 잠금·해제를 구현하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었고, Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. 다만 단계별 분리 측정과 요인 분리의 필요성은 남아 있으며, 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 못했다. [근거:E00033,E00072,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286]",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p7",
+            "reason": "E00333의 limits는 현재 페이지가 세미나 이후 할 일 목록과 코드·문제 관련 메모만 포함하며 실제 구현 완료·측정 결과·발표 결과는 포함하지 않는다고 명시한다. 본문은 '이러한 방향은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로'라고 한계를 적었지만, 같은 문단에서 Nsight Compute 목표(50% 초과)와 외부 라이브러리 도입 보류, forward+backward 유지 등을 함께 서술해 계획·유보 항목을 실제 적용·유보 결과로 오인하게 할 여지가 있다.",
+            "evidence_ids": [
+              "E00333"
+            ],
+            "failure_owner": "writer",
+            "quote": "실시간성 관점의 시사점과 향후 방향은 현재 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한다. 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등은 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. cuBlas·cuSparse의 기본 행렬곱 함수를 사용해 온 상황에서 행렬곱 변형 함수가 많고, 이 함수들은 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 일단 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 정리되었다. Nsight Compute 분석에서는 CUDA core 점유율이 50% 정도만 넘어도 잘된 편으로 볼 수 있다는 의견이 제시되어, 이를 목표 분석의 기준으로 삼는 방향이 기록되었다. 이러한 방향은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "S_conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 5.2 실시간성 관점의 시사점과 향후 방향: 본문 4240자 / 목표 2143자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "S_conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "flow",
+            "validation_code": "composition_layout",
+            "reason": "S_conclusion/p0: 가장 긴 문단이 1450자로 공통 문단 목표 800자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+            "original_severity": "error",
+            "deferred": true
+          },
+          {
+            "section_id": "S_conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "style",
+            "validation_code": "composition_style",
+            "reason": "S_conclusion/p0: 기록자·자료 중심 표현 ['현재 페이지에 제시']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+            "original_severity": "error",
+            "deferred": true
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": true,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 0,
+          "not_visible": 2,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+        "content_completion": {
+          "policy": "content-warning-v1",
+          "status": "needs_attention",
+          "revisions": 2,
+          "reason": "revision_limit"
+        },
+        "content_warnings": [
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p2",
+            "reason": "E00278의 limits에는 Bound+Infer 합산(658.80+127.18=785.98s)이 전체 787.88s와 약 1.9s 차이가 있다는 서술이 포함되어 있으나, 본문은 '약 1.9초 차이'라고만 적어 수치의 출처·계산 근거를 정확히 반영하지 못했다. 또한 E00278의 figure 캡션 비교 표는 Bound/Infer 두 단계만 제시한다는 한계도 함께 서술되어 있는데, 본문은 이를 'figure 캡션에 기록된 값에만 근거하며'라는 일반 서술로만 처리해 근거의 구체적 한계를 충분히 옮기지 못했다.",
+            "evidence_ids": [
+              "E00278"
+            ],
+            "failure_owner": "writer",
+            "quote": "Pinned Memory와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. 이 수치와 해석은 figure 캡션에 기록된 값에만 근거하며, 반복 측정 통계나 조건별 분리 측정은 현재 페이지에 제시되지 않았다. 또한 Bound와 Infer 합산이 전체 실행 시간과 약 1.9초 차이가 있어 certify 단계 등 미분해 오버헤드가 존재할 수 있다. [근거:E00277,E00278]",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-S_conclusion-p1"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p4",
+            "reason": "E00262의 limits는 방법 C 로드맵이 목표·방식 서술이며 실제 구현·평가 결과가 아니고, 30초~1분대 진입은 목표치이지 실측값이 아니며 전체 40,000개 규모에서의 실현 여부는 검증되지 않았다고 명시한다. 본문은 '목표로 한다'라고 적었으나 바로 다음 문장에서 '실제 구현·평가 결과로 서술하지 않는다'라고만 하여, 목표치와 실측값의 구분이 문단 내에서 명확히 유지되지 않는다.",
+            "evidence_ids": [
+              "E00262"
+            ],
+            "failure_owner": "writer",
+            "quote": "향후 방향으로는 배칭·다중 스트림의 활용과 함께 3D 텐서 레이아웃 변환 및 cublasSgemmBatched 호출을 통한 텐서 코어 활용, 단계별 분리 측정과 요인 분리의 필요성이 제시되었다. 차기 로드맵의 방법 C는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이 내용은 연구 노트의 계획·검토 기록에 근거한 목표·방식 서술이며, 실제 구현·평가 결과로 서술하지 않는다. [근거:E00262]",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-S_conclusion-p1"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p5",
+            "reason": "E00333의 limits는 현재 페이지가 세미나 이후 할 일 목록과 코드·문제 관련 메모만 포함하며 실제 구현 완료·측정 결과·발표 결과는 포함하지 않는다고 명시한다. 본문은 Nsight Compute 분석 목표(50% 초과)를 '향후 진행 방향에 대한 검토·계획 기록'으로 서술했으나, 같은 문단에서 '외부 라이브러리 도입은 보류했으며, backward_only 대신 forward+backward 진행을 유지하는 등 실행 방식은 최적화 과정에서 적용·유보된 항목이 많았다'라고 적어, 계획·유보 항목을 실제 적용·유보 결과로 읽히게 할 여지가 있다.",
+            "evidence_ids": [
+              "E00333"
+            ],
+            "failure_owner": "writer",
+            "quote": "본 연구의 CUDA 포팅·최적화는 CPU 환경에서만 제한적으로 수행되던 CROWN 검증을 GPU 기반으로 옮겨 대규모 연산 처리 가능성을 검토한 데 의미가 있다. 다만 현재 단계에서는 cuBlas·cuSparse의 기본 행렬곱 함수만 사용했고, 행렬곱 변형 함수가 다수 존재한다는 점을 고려해 이후 sm 내 분석과 함께 적합한 함수를 선정하는 방향을 검토하였다. 외부 라이브러리 도입은 보류했으며, backward_only 대신 forward+backward 진행을 유지하는 등 실행 방식은 최적화 과정에서 적용·유보된 항목이 많았다. Nsight Compute를 활용한 CUDA core 점유율 분석은 50% 초과를 목표로 검토되었으나, 이는 향후 진행 방향에 대한 검토·계획 기록이며 실제 변형 함수 적용 결과나 성능 수치는 현재 페이지에 제시되지 않았다. [근거:E00331,E00333]",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-S_conclusion-p1"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p8",
+            "reason": "E00033의 limits는 v2 적용 방안 목록만 기록되어 있으며 각 방안의 실제 적용 결과나 성능 영향은 현재 페이지에 없다고 명시한다. 본문은 'v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다'라고 적어 이 한계를 반영했지만, 바로 뒤의 측정 방식·코드 구조·측정 횟수·목표 서술과 한 문단에 섞여 있어 계획 목록과 관측/계획 항목이 구분 없이 나열된다. 또한 E00072의 limits는 '50ms'가 기록자의 목표·판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않는다고 명시하는데, 본문은 이를 반영하면서도 '목표도 함께 언급되었다' 수준의 서술로 처리해 근거의 한계를 충분히 강조하지 못했다.",
+            "evidence_ids": [
+              "E00033",
+              "E00072"
+            ],
+            "failure_owner": "writer",
+            "quote": "CUDA 포팅과 최적화 과정은 cuBLAS 예열, 가중치의 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안처럼 반복 호출과 불필요한 memcpy를 줄이는 방향으로 설계되었다. 다만 이 방안들은 v2 적용 계획 목록으로만 기록되어 있으며, 실제 적용 결과나 성능 영향은 현재 자료에 제시되지 않았다. 실행 측면에서는 eps_list에 대한 이중 루프 안에서 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 lirpa_forward_bound_impl 또는 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시키는 구조가 사용되었다. 측정 방식은 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 변경되었으며, elapsed 타임과 미세한 오차가 있어 3개 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하였다. 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었고, 측정 시작을 기준으로 추론 이후 타임스탬프를 찍어 추론 시간을 계산하는 방식이 적용되었다. 각 forward, backward는 20번씩 측정이 완료되었으며, 튀는 값이 있어 각 20번 실행 시간의 평균과 분산을 구해 슬라이드에 넣을 예정이었다. alpha/beta 메모리 풀 적용 후 실행 시간이 21.0ms 정도 나온다는 정성적 요약이 기록되었고, CPU보다 빨라지기 위해서는 50ms만 더 단축하면 된다는 목표도 함께 언급되었다. 이 50ms는 기록자의 목표·판단이며, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다. 실시간성 관점에서는 배칭·다중 스트림, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 같은 방향이 향후 과제로 남는다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해서는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남아 있다. 이를 확인하기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, ScopedGpuClockLock이라는 RAII 구조체를 작성해 GPU 클록의 자동 잠금·해제를 구현하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었고, Persistence mode는 초기화 지연 제거를 위한 측정 환경 설정으로 사용되었다. 다만 단계별 분리 측정과 요인 분리의 필요성은 남아 있으며, 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 못했다. [근거:E00033,E00072,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00279,E00280,E00281,E00282,E00283,E00284,E00286]",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-S_conclusion-p1"
+          },
+          {
+            "section_id": "S_conclusion",
+            "severity": "warning",
+            "paragraph_id": "S_conclusion_p7",
+            "reason": "E00333의 limits는 현재 페이지가 세미나 이후 할 일 목록과 코드·문제 관련 메모만 포함하며 실제 구현 완료·측정 결과·발표 결과는 포함하지 않는다고 명시한다. 본문은 '이러한 방향은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로'라고 한계를 적었지만, 같은 문단에서 Nsight Compute 목표(50% 초과)와 외부 라이브러리 도입 보류, forward+backward 유지 등을 함께 서술해 계획·유보 항목을 실제 적용·유보 결과로 오인하게 할 여지가 있다.",
+            "evidence_ids": [
+              "E00333"
+            ],
+            "failure_owner": "writer",
+            "quote": "실시간성 관점의 시사점과 향후 방향은 현재 구현·측정 결과가 아니라 세미나 이후 과제 정리와 검토 계획에 근거한다. 배칭과 다중 스트림 활용, 3D 텐서와 cuBLAS Batched GEMM, pinned memory의 실시간 안정성 등은 후속 검토 대상으로 남겨 두었다. 또한 단계별 분리 측정과 요인 분리의 필요성이 지적되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study가 이루어지지 못한 점은 한계로 남는다. cuBlas·cuSparse의 기본 행렬곱 함수를 사용해 온 상황에서 행렬곱 변형 함수가 많고, 이 함수들은 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방향이 검토되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 일단 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 정리되었다. Nsight Compute 분석에서는 CUDA core 점유율이 50% 정도만 넘어도 잘된 편으로 볼 수 있다는 의견이 제시되어, 이를 목표 분석의 기준으로 삼는 방향이 기록되었다. 이러한 방향은 실제 구현·측정 결과가 아니라 검토·계획 단계의 내용이므로, 후속 연구에서 구체적인 성능 수치와 함께 확인할 필요가 있다. [근거:E00331,E00333]",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-S_conclusion-p1"
+          },
+          {
+            "section_id": "S_conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 5.2 실시간성 관점의 시사점과 향후 방향: 본문 4240자 / 목표 2143자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-S_conclusion-p1"
+          },
+          {
+            "section_id": "S_conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "flow",
+            "validation_code": "composition_layout",
+            "reason": "S_conclusion/p0: 가장 긴 문단이 1450자로 공통 문단 목표 800자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-S_conclusion-p1"
+          },
+          {
+            "section_id": "S_conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "evidence_ids": [],
+            "quote": "",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "category": "style",
+            "validation_code": "composition_style",
+            "reason": "S_conclusion/p0: 기록자·자료 중심 표현 ['현재 페이지에 제시']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-S_conclusion-p1"
+          }
+        ],
+        "content_status": "needs_attention",
+        "content_approved": false
+      }
+    ],
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    }
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "request_fingerprint": "1cdc344947a1545f44afce470aac549fa8b2c881cb06a83465c0b97075752de5",
+  "value": {
+    "checks": {
+      "ri_comp_3": {
+        "verdict": "met",
+        "paragraph_ids": [
+          "sec_components_p1",
+          "sec_components_p2",
+          "sec_components_p3",
+          "sec_components_p4",
+          "sec_components_p5"
+        ],
+        "evidence_ids": [
+          "E00042",
+          "E00045",
+          "E00051",
+          "E00079",
+          "E00135",
+          "E00136",
+          "E00148",
+          "E00149",
+          "E00150",
+          "E00163",
+          "E00322",
+          "E00370"
+        ]
+      }
+    },
+    "reference_checks": {
+      "sec_components": {
+        "ref1_methods": {
+          "verdict": "partial",
+          "paragraph_ids": [
+            "sec_components_p1",
+            "sec_components_p2",
+            "sec_components_p3",
+            "sec_components_p4",
+            "sec_components_p5"
+          ],
+          "reason": "구성 요소별 역할과 결합 방식 서술은 반영되었으나, ref1_methods의 다른 필수 서술 요소(실험 준비·조건 통제, 촬영 시스템·계산 플랫폼, 데이터 구성·증강·분할, 기준 구조·변형 단계적 서술, 융합 수준 구분, 학습·검증 절차 정리 등)는 이 절의 범위와 맞지 않아 이전되지 않았다. 또한 이 절의 서술은 연구 노트 기반 최적화 과정 기록에 의존하므로, ref1_methods가 요구하는 재현 가능한 실험 환경·데이터·모델·학습 설정의 완전한 재현 서술 수준에는 미치지 못한다."
+        },
+        "ref2_methods": {
+          "verdict": "partial",
+          "paragraph_ids": [
+            "sec_components_p1",
+            "sec_components_p2",
+            "sec_components_p3",
+            "sec_components_p4",
+            "sec_components_p5"
+          ],
+          "reason": "구성 비교·조건 정의·측정 구간·워크로드·플랫폼 정리 등 ref2_methods의 방법론적 틀은 이 절에서 직접 적용되지 않았다. 이 절은 최적화 구성 요소와 결합 방식, 상호작용 관찰에 초점을 두고 있어, ref2_methods가 의도하는 실험 구성·프레임워크·조건·워크로드·데이터셋·배포 설정·환경의 단계적 정의까지 충족하지는 않는다."
+        }
+      }
+    },
+    "issues": [
+      {
+        "section_id": "sec_components",
+        "severity": "error",
+        "paragraph_id": "sec_components_p3",
+        "reason": "sec_components_p3은 description(ri_comp_3)이 요구하는 핵심 내용인 pre_upload_weights_to_gpu의 cudaMalloc·cudaMemcpy2D·net->d_W[i] 저장, d_W 타입 double*→Matrix* 변경, positive_part/negative_part/matmul/matvec 복사 스킵, bias 약 4KB로 의미 미미 판단, 필요한 부분만 복사(16x491 등) 방안을 직접 서술하지 않고, 관련 최적화 조정(alpha/beta 메모리 풀, backward GPU 버퍼 직접 사용 등)을 함께 묶어 서술했다. 또한 이 문단에 연결된 evidence_ids에는 실제 본문에서 인용되지 않은 후보 근거가 다수 포함되어 있어, 실제 사용한 주장과 근거 연결이 과다하게 잡혀 있다.",
+        "evidence_ids": [
+          "E00148",
+          "E00149",
+          "E00150",
+          "E00163",
+          "E00174",
+          "E00180",
+          "E00183",
+          "E00184",
+          "E00202",
+          "E00203",
+          "E00205",
+          "E00211",
+          "E00212",
+          "E00213",
+          "E00214",
+          "E00216",
+          "E00220",
+          "E00224",
+          "E00226",
+          "E00232",
+          "E00236",
+          "E00237",
+          "E00259",
+          "E00267",
+          "E00268",
+          "E00313",
+          "E00314",
+          "E00318",
+          "E00319",
+          "E00322",
+          "E00330",
+          "E00331",
+          "E00353",
+          "E00354",
+          "E00370",
+          "E00374"
+        ]
+      },
+      {
+        "section_id": "sec_components",
+        "severity": "error",
+        "paragraph_id": "sec_components_p4",
+        "reason": "sec_components_p4는 memcpy 총 18번/외부 12번, 가중치 행 3개, 신경망 구조 256*491*491*16, MAXDIM 512 float 고정 복사→필요 크기만 복사 변경 후 CPU 오버헤드 증가로 시간 증가라는 내용은 서술했으나, description(ri_comp_3)이 요구한 가중치 사전 업로드 함수 구현·d_W 타입 변경·positive_part/negative_part/matmul/matvec 복사 스킵·bias 약 4KB 판단·필요한 부분만 복사(16x491 등) 방안 중 상당 부분을 직접 다루지 않았다. 즉 이 문단은 memcpy 횟수 분석과 복사 크기 축소의 부작용만 다루고 있어 ri_comp_3의 필수 내용을 충분히 충족하지 않는다.",
+        "evidence_ids": [
+          "E00163",
+          "E00370"
+        ]
+      },
+      {
+        "section_id": "sec_components",
+        "severity": "error",
+        "paragraph_id": "sec_components_p5",
+        "reason": "sec_components_p5는 v1-1-2의 가중치만 미리 업로드와 149~155ms 범위만 서술하여, description(ri_comp_3)이 요구한 사전 업로드 함수 구현·타입 변경·복사 스킵·bias 판단·필요한 부분만 복사 방안 등 핵심 내용을 거의 다루지 않았다. 이 문단은 ri_comp_3의 필수 내용 충족에 기여하지 않는다.",
+        "evidence_ids": [
+          "E00322"
+        ]
+      }
+    ]
+  }
+}

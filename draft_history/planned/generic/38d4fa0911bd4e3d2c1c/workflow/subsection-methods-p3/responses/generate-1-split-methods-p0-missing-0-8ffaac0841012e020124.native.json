@@ -1,0 +1,33 @@
+{
+  "id": "a8fb10e2-130b-4680-84fc-b599d8d14a6f",
+  "object": "chat.completion",
+  "created": 1793989386,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\":{\"p0\":[{\"text\":\"측정은 CROWN 검증을 수행하는 C++ 프로그램을 대상으로 진행했으며, 입력은 256-491-491-16 크기의 신경망과 기존 신경망 검증팀이 사용하던 데이터셋 및 eps_list를 사용했다. 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지 방법을 포함했고, 배치 크기는 1로 설정했다. GPU 클록 고정은 연구 일지에서 확인된 바와 같이 나중에 적용된 사항이며, warm up은 초기에 이루어졌다.\",\"evidence_ids\":[\"E00257\",\"E00260\",\"E00261\",\"E00263\"]},{\"text\":\"시간 측정은 추론 이후 타임스탬프를 기준으로 추론 시간을 계산하는 방식으로 구성했고, bound 계산과 출력 수행도 각각 시간을 기록하도록 설계했다. GPU OPTIMIZED 모드(cuBLAS + Pool)에서 CROWN Verification을 실행한 결과 Elapsed time은 229.691800 ms로 기록되었으며, 이때 eps는 1e-06, 출력 차원은 16이었다. 이 값은 단일 실행 결과이며, CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다.\",\"evidence_ids\":[\"E00027\",\"E00261\"]},{\"text\":\"GPU OPTIMIZED 모드 적용 후 실행 시간이 229.691ms로 약 100ms 줄었지만 여전히 CPU보다 느리다고 기록되었다. 이 비교 판단은 기록자의 정성적 평가이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다.\",\"evidence_ids\":[\"E00029\"]},{\"text\":\"현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림보다 약 4배 빠르다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다.\",\"evidence_ids\":[\"E00257\",\"E00261\",\"E00263\"]},{\"text\":\"현재 작성자는 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이는 계획 단계의 목표이며 실제 구현·평가 결과는 포함하지 않는다.\",\"evidence_ids\":[\"E00260\",\"E00262\"]},{\"text\":\"각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계로 남는다. 신경망 크기가 매우 작고 cuBLAS·cuSparse 동작 방식에서 오버헤드가 발생했으며 이 또한 신경망이 작기 때문이다. network_forward가 아직 GPU 파이프라인이 아니어서 최적화가 되어 있지 않고, CUDA Context 생성 및 런타임 오버헤드로 프로파일러 VRAM 사용량이 코드 계산값보다 작게 보이며, memcpy 병목을 잡아야 CPU보다 빨라질 수 있다. 동기화(cudaDeviceSynchronize) 제거, mempool + warmup 적용, 커널 퓨전 및 affine 중복 계산 삭제, 포인터 스와핑, 행렬곱 커널 통합 등 구현 변경이 비교 결과에 영향을 주는 요소로 나타난다. 전체 코드/구현물의 완전한 제공 여부, 환경·의존성 명세의 재현 가능 수준, 반복 측정 통계 및 조건별 분리 측정의 충분성, 데이터셋·모델 로드 절차의 재현 가능 세부 정보, 미해결/계획 항목의 재현 영향 명시 측면에서도 제한이 있다.\",\"evidence_ids\":[\"E00027\",\"E00029\",\"E00257\",\"E00260\",\"E00261\",\"E00262\",\"E00263\"]}]}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 18780,
+    "completion_tokens": 913,
+    "total_tokens": 19693,
+    "prompt_tokens_details": {
+      "cached_tokens": 1088,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

@@ -1,0 +1,33 @@
+{
+  "id": "b56ffb3a-dc27-43f0-ae7d-b22746029544",
+  "object": "chat.completion",
+  "created": 1793981880,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": {\"evidence_ids\": [\"E00023\", \"E00030\", \"E00031\", \"E00035\", \"E00036\", \"E00044\", \"E00045\", \"E00046\", \"E00068\", \"E00069\", \"E00070\", \"E00071\", \"E00075\", \"E00081\", \"E00083\", \"E00094\", \"E00095\", \"E00096\", \"E00097\", \"E00100\", \"H40849fcc17fe_1\", \"Hcdbfb7147ce4_2\"], \"text\": \"평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기 256-491-491-16, 배치 사이즈 1, 실행 방식은 forward, forward+backward, backward_only로 설정하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용했고, eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 실행하였다. 비교 구성은 CPU ONLY, GPU OPTIMIZED, HYBRID(matmul=GPU, rest=CPU), HYBRID V2, mempool+warmup, cuda graph 적용 버전 등으로 확장되었다. AI로 생성한 my_lirpa_op_only_GPU와 crown_test_op_only_GPU.cu를 만들어 실행해 보았고, GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도하였다. only_GPU와 hybrid의 차이는 함수별 실행 위치(GPU 커널/cudaMemset 대 CPU 생성자 초기화/for 문)와 GPU 메모리 풀 구조에서 나타나며, only_GPU는 d_mat[4]+d_vec[2]를 미리 할당하고 hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max가 GPU에서 CPU로 변경되었고, matmul은 cuBLAS+메모리풀로 동일하였다. 가중치 사전 업로드(PRELOAD ON GPU) 적용 후 149~155ms 범위가 기록되었고, bias까지 업로드했으나 약 4KB 수준의 벡터라 성능 개선 의미가 크지 않다고 판단되었다. 메모리 풀+warmup 조합은 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었고, mempool+warmup은 128.894800ms, mempool+cuBlas+warmup은 174.978400ms, mempool+warmup+cuda graph 적용 버전은 64.716000ms로 기록되었다. forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤 64.716000ms가 관측되었다. CPU ONLY iteration ver는 193.665600ms로 기록되었고 기존 backward보다 약 93ms 느리다고 평가되었다. 재현에 필요한 세부 정보는 연구 일지 수준에서 충분히 제공되지 않았으며, GPU 클록 고정 시도, Persistence mode 설정, warm up 삽입 등은 실제 비교의 공정성 조건으로 확정되었는지 원문에 직접 제시되지 않았다. 각 최적화 기법을 체계적으로 분리한 ablation study는 수행되지 않았다.\"}}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 38175,
+    "completion_tokens": 740,
+    "total_tokens": 38915,
+    "prompt_tokens_details": {
+      "cached_tokens": 16320,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

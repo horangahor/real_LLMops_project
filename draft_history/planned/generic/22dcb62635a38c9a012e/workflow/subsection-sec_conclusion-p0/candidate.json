@@ -1,0 +1,267 @@
+{
+  "sections": {
+    "sec_conclusion": {
+      "parts": {
+        "p0": "CUDA 기반 CROWN 검증 최적화에서는 GPU 포팅 이후 메모리 전송과 커널 호출 구조를 함께 조정하는 방향으로 구성 요소를 결합했다. 초기에는 GPU OPTIMIZED 모드에서도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 방식을 시도했고, 이후 v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방식이 정리되었다. 실행 과정에서 가장 중요한 병목은 memcpy로 인식되었으며, 메모리 풀과 warm up 조합만으로 거의 200ms가 단축되는 효과가 관측되었다. [근거:E00030,E00033,E00073,E00071]\n\n이후 forward 함수에서 DTOH memcpy를 극단적으로 제거해 CROWN Verification 실행 시간이 64.716ms로 기록되었고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 성능을 개선했다. 미리 작성해둔 퓨전 함수를 사용해 affine_min과 affine_max를 하나의 커널로 병합하는 커널 퓨전이 완료되었으며, 지금까지 수행한 최적화로 제로 memcpy, 커널 자체 실행 횟수 감소, 커널 퓨전, 커널 graph, GPU SM 구조를 고려한 FP64→FP32 및 double→float 변경이 진행되었다. [근거:E00083,E00118,E00143,E00212]\n\n메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. [근거:E00277,E00278]\n\nCUDA 포팅과 메모리 전송 방식 선택이 핵심 구성 요소이며, 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만 실시간성에서는 No-Pin의 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적이었다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. [근거:E00292,E00293,E00294,E00301,E00321]\n\nCUDA 기반 CROWN 검증 최적화에서는 싱글 스트림으로 동작하는 antenna_lirpa가 cuBLAS Batched GEMM과 텐서 코어를 활용해 현재 C++ 멀티스트림(8분)보다 약 4배 빠르게 동작한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 커널 감소 측면에서는 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회로 줄었고, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. [근거:E00261,E00263,E00314]"
+      }
+    }
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "ri_conc_1",
+        "verdict": "missing",
+        "paragraph_ids": [
+          "sec_conclusion_p1",
+          "sec_conclusion_p2",
+          "sec_conclusion_p3",
+          "sec_conclusion_p4",
+          "sec_conclusion_p5"
+        ],
+        "evidence_ids": [
+          "E00030",
+          "E00033",
+          "E00073",
+          "E00071",
+          "E00083",
+          "E00118",
+          "E00143",
+          "E00212",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00314",
+          "E00321"
+        ],
+        "quote": "CUDA 기반 CROWN 검증 최적화에서는 GPU 포팅 이후 메모리 전송과 커널 호출 구조를 함께 조정하는 방향으로 구성 요소를 결합했다. 초기에는 GPU OPTIMIZED 모드에서도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 방식을 시도했고, 이후 v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방식이 정리되었다. 실행 과정에서 가장 중요한 병목은 memcpy로 인식되었으며, 메모리 풀과 warm up 조합만으로 거의 200ms가 단축되는 효과가 관측되었다. [근거:E00030,E00033,E00073,E00071]",
+        "paragraph_quotes": [
+          "CUDA 기반 CROWN 검증 최적화에서는 GPU 포팅 이후 메모리 전송과 커널 호출 구조를 함께 조정하는 방향으로 구성 요소를 결합했다. 초기에는 GPU OPTIMIZED 모드에서도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 방식을 시도했고, 이후 v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방식이 정리되었다. 실행 과정에서 가장 중요한 병목은 memcpy로 인식되었으며, 메모리 풀과 warm up 조합만으로 거의 200ms가 단축되는 효과가 관측되었다. [근거:E00030,E00033,E00073,E00071]",
+          "이후 forward 함수에서 DTOH memcpy를 극단적으로 제거해 CROWN Verification 실행 시간이 64.716ms로 기록되었고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 성능을 개선했다. 미리 작성해둔 퓨전 함수를 사용해 affine_min과 affine_max를 하나의 커널로 병합하는 커널 퓨전이 완료되었으며, 지금까지 수행한 최적화로 제로 memcpy, 커널 자체 실행 횟수 감소, 커널 퓨전, 커널 graph, GPU SM 구조를 고려한 FP64→FP32 및 double→float 변경이 진행되었다. [근거:E00083,E00118,E00143,E00212]",
+          "메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. [근거:E00277,E00278]",
+          "CUDA 포팅과 메모리 전송 방식 선택이 핵심 구성 요소이며, 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만 실시간성에서는 No-Pin의 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적이었다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. [근거:E00292,E00293,E00294,E00301,E00321]",
+          "CUDA 기반 CROWN 검증 최적화에서는 싱글 스트림으로 동작하는 antenna_lirpa가 cuBLAS Batched GEMM과 텐서 코어를 활용해 현재 C++ 멀티스트림(8분)보다 약 4배 빠르게 동작한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 커널 감소 측면에서는 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회로 줄었고, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. [근거:E00261,E00263,E00314]"
+        ],
+        "guideline_ids": [
+          "ref1_conclusion_required_1"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [
+          "E00262",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300"
+        ],
+        "model_verdict": "met",
+        "missing_review_evidence_ids": [],
+        "missing_body_evidence_ids": [
+          "E00262",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300"
+        ],
+        "missing_section_evidence_ids": [
+          "E00262",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300"
+        ],
+        "unselected_cited_evidence_ids": [],
+        "failure_owner": "writer",
+        "validation_note": "검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다."
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "sec_conclusion",
+        "reference_id": "ref1_conclusion",
+        "verdict": "applied",
+        "paragraph_ids": [
+          "sec_conclusion_p1",
+          "sec_conclusion_p2",
+          "sec_conclusion_p3",
+          "sec_conclusion_p4",
+          "sec_conclusion_p5"
+        ],
+        "reason": "핵심 구성 요소(CUDA 포팅, 메모리 풀, cuBLAS, 가중치 사전 업로드, 커널 퓨전, 메모리 전송 방식, CUDA 그래프 등)와 결합 방향을 짧게 종합하고, 주요 실행 시간 결과와 실시간성 관점의 시사점을 함께 정리하였다.",
+        "quote": "CUDA 기반 CROWN 검증 최적화에서는 GPU 포팅 이후 메모리 전송과 커널 호출 구조를 함께 조정하는 방향으로 구성 요소를 결합했다. 초기에는 GPU OPTIMIZED 모드에서도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 방식을 시도했고, 이후 v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방식이 정리되었다. 실행 과정에서 가장 중요한 병목은 memcpy로 인식되었으며, 메모리 풀과 warm up 조합만으로 거의 200ms가 단축되는 효과가 관측되었다. [근거:E00030,E00033,E00073,E00071]",
+        "paragraph_quotes": [
+          "CUDA 기반 CROWN 검증 최적화에서는 GPU 포팅 이후 메모리 전송과 커널 호출 구조를 함께 조정하는 방향으로 구성 요소를 결합했다. 초기에는 GPU OPTIMIZED 모드에서도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 방식을 시도했고, 이후 v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방식이 정리되었다. 실행 과정에서 가장 중요한 병목은 memcpy로 인식되었으며, 메모리 풀과 warm up 조합만으로 거의 200ms가 단축되는 효과가 관측되었다. [근거:E00030,E00033,E00073,E00071]",
+          "이후 forward 함수에서 DTOH memcpy를 극단적으로 제거해 CROWN Verification 실행 시간이 64.716ms로 기록되었고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 성능을 개선했다. 미리 작성해둔 퓨전 함수를 사용해 affine_min과 affine_max를 하나의 커널로 병합하는 커널 퓨전이 완료되었으며, 지금까지 수행한 최적화로 제로 memcpy, 커널 자체 실행 횟수 감소, 커널 퓨전, 커널 graph, GPU SM 구조를 고려한 FP64→FP32 및 double→float 변경이 진행되었다. [근거:E00083,E00118,E00143,E00212]",
+          "메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. [근거:E00277,E00278]",
+          "CUDA 포팅과 메모리 전송 방식 선택이 핵심 구성 요소이며, 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만 실시간성에서는 No-Pin의 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적이었다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. [근거:E00292,E00293,E00294,E00301,E00321]",
+          "CUDA 기반 CROWN 검증 최적화에서는 싱글 스트림으로 동작하는 antenna_lirpa가 cuBLAS Batched GEMM과 텐서 코어를 활용해 현재 C++ 멀티스트림(8분)보다 약 4배 빠르게 동작한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 커널 감소 측면에서는 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회로 줄었고, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. [근거:E00261,E00263,E00314]"
+        ]
+      },
+      {
+        "section_id": "sec_conclusion",
+        "reference_id": "ref2_conclusion",
+        "verdict": "applied",
+        "paragraph_ids": [
+          "sec_conclusion_p3",
+          "sec_conclusion_p4",
+          "sec_conclusion_p5"
+        ],
+        "reason": "구성 요소 변경 효과와 전체 처리 과정 변경 효과를 구분하여 서술하고, 평균 처리 속도와 지연 시간·지터 간 trade-off를 함께 언급하며, 향후 방향(방법 C 등)을 제한적으로 정리하였다.",
+        "quote": "메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. [근거:E00277,E00278]",
+        "paragraph_quotes": [
+          "메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. [근거:E00277,E00278]",
+          "CUDA 포팅과 메모리 전송 방식 선택이 핵심 구성 요소이며, 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만 실시간성에서는 No-Pin의 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적이었다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. [근거:E00292,E00293,E00294,E00301,E00321]",
+          "CUDA 기반 CROWN 검증 최적화에서는 싱글 스트림으로 동작하는 antenna_lirpa가 cuBLAS Batched GEMM과 텐서 코어를 활용해 현재 C++ 멀티스트림(8분)보다 약 4배 빠르게 동작한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 커널 감소 측면에서는 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회로 줄었고, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. [근거:E00261,E00263,E00314]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "sec_conclusion",
+        "severity": "warning",
+        "quote": "",
+        "reason": "필수 내용 ri_conc_1: missing. 검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다. 누락 근거=E00262,E00296,E00297,E00299,E00300",
+        "evidence_ids": [
+          "E00262",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300"
+        ],
+        "validation_code": "required_content",
+        "item_id": "ri_conc_1",
+        "review_stage": "required_evidence_validation",
+        "failure_owner": "writer",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_conclusion",
+        "part": "p0",
+        "paragraph_id": "sec_conclusion_p5",
+        "evidence_ids": [
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00314"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "sec_conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 6.1 핵심 구성 요소와 결합 방식: 본문 1893자 / 목표 1111자 / 허용 상한 1388자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      }
+    ],
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 0,
+      "total": 1,
+      "value": 0.0
+    },
+    "reference_application": {
+      "applied": 2,
+      "partial": 0,
+      "not_visible": 0,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    },
+    "content_warnings": [
+      {
+        "section_id": "sec_conclusion",
+        "severity": "warning",
+        "quote": "",
+        "reason": "필수 내용 ri_conc_1: missing. 검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다. 누락 근거=E00262,E00296,E00297,E00299,E00300",
+        "evidence_ids": [
+          "E00262",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300"
+        ],
+        "validation_code": "required_content",
+        "item_id": "ri_conc_1",
+        "review_stage": "required_evidence_validation",
+        "failure_owner": "writer",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_conclusion-p0"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "part": "p0",
+        "paragraph_id": "sec_conclusion_p5",
+        "evidence_ids": [
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00314"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-sec_conclusion-p0"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 6.1 핵심 구성 요소와 결합 방식: 본문 1893자 / 목표 1111자 / 허용 상한 1388자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_conclusion-p0"
+      }
+    ],
+    "content_status": "needs_attention",
+    "content_approved": false
+  }
+}

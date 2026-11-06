@@ -1,0 +1,1591 @@
+{
+  "sections": {
+    "methods": {
+      "parts": {
+        "p0": "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]\n\n구성 요소는 cuBLAS, 메모리 풀, 가중치 GPU 사전 업로드, 벡터 연산의 CPU 전환으로 구분된다. cuBLAS는 NVIDIA GPU에서 선형대수 연산을 가속하는 라이브러리이며, 메모리 풀은 함수 호출마다의 메모리 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 사용된다. 가중치 GPU 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 미리 GPU에 올려 matmul 호출마다의 memcpy를 줄이려는 역할이고, 벡터 연산을 CPU로 돌리는 것은 matmul만 GPU로 실행하는 하이브리드 구성을 만들기 위한 역할이다. 다만 가중치 사전 업로드의 실제 효과는 크게 의미를 못 미친다는 기록도 함께 남아 있다. [근거:H85ca0e507c4e_88,H85ca0e507c4e_97]\n\n결합 방식은 초기에 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 구성되었다. 이후 matmul만 GPU로, 나머지를 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 바뀌었다. v2 적용 방안에서는 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하도록 memcpy 범위를 줄이는 방식이 추가로 결합되었다. [근거:H85ca0e507c4e_89,E00033]\n\n실행 결합은 forward+backward 결합, backward_only, CUDA 그래프 적용 버전으로 구분되어 측정되었다. backward_only가 forward+backward보다 빠르게 관측되었고 forward가 가장 느리게 관측되어, 일반적인 예상과 다른 실행 결과로 기록되었다. CUDA 그래프 적용 후 전체 소요 시간이 감소하였고, Phase breakdown에서는 bound 단계가 전체 elapsed의 대부분을 차지하고 infer 단계가 그 다음, certify 단계가 가장 작은 비중을 차지하였다. [근거:H85ca0e507c4e_92,H85ca0e507c4e_93,H85ca0e507c4e_94]\n\n최적화 과정에서 실행 시간 감소가 관측되었다. 1138s에서 758s로 감소했고, v1-1-2에서 가중치만 미리 업로드한 변경은 149~155ms 범위로 기록되었으며, memcpy 호출 횟수는 66개에서 56개로 줄었다. 이 값들은 각 변경의 관측 요약이며, 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 근거만으로 제시되지 않는다. [근거:E00320,E00322,E00339]\n\n구성 요소별 역할과 결합 방식은 커널 퓨전, 메모리 복사 커널 제거, cudaGraph 적용, 배칭(멀티 스트림)을 중심으로 정리한다. CROWN의 세 방법에서 사용하는 커널을 퓨전하고 backward_only에서 메모리 복사 커널을 제거하여, 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch 횟수를 Forward method=0 27→18회, Backward method=1 46→31회, Backward-only method=2 45→33회로 줄였다. 이때 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하고 CUDA kernel launch만 계수했다. [근거:H85ca0e507c4e_85,E00311]\n\n추론 커널은 그대로 둔 상태에서 graph mode=1, 샘플 1개 전체 기준으로 전체 커널 launch 횟수는 Forward 33→24회, Backward 52→37회, Backward-only 51→39회로 감소했다. 이는 CROWN 3가지 방법에서 사용하는 커널의 퓨전 및 backward_only에서 메모리 복사 커널을 제거한 결과로, 3-layer 네트워크 기준 bound에서도 Forward method=0 27→18회, Backward method=1 46→31회, Backward-only method=2 45→33회로 줄었다. [근거:E00313,H85ca0e507c4e_85]\n\n배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 다만 이 결과는 기존 데이터셋이 준비된 실험 환경에서의 관측이며, 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. memcpy 호출 횟수는 66개에서 56개로 줄었고, v1-1-2에서는 가중치만 미리 업로드할 수 있게 하여 149~155ms 범위가 기록되었다. [근거:E00216,E00339,E00322]\n\n추가 최적화 후보로는 infer의 크기 계산 주석 처리(vector라 크지 않다는 점)와 certify의 heap 재변경 여부가 검토되었으나, 실제 적용 결과나 성능 변화는 이 근거만으로 제시되지 않는다. 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00232]\n\n구성 요소별 역할은 연산의 성격에 따라 구분된다. 행렬곱(matmul)은 cuBLAS와 GPU 메모리 풀을 사용하는 유일한 GPU 상주 연산으로 유지되고, 영행렬·단위행렬 생성, 행렬 덧셈, 양수·음수 분리, 행 단위 스케일링, affine_min·affine_max 등은 원래 GPU 커널 또는 cudaMemset으로 처리되던 함수들이다. only_GPU와 hybrid의 차이는 이 함수들을 GPU에서 CPU로 옮긴 범위와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 행렬 4개와 벡터 2개를 미리 할당하는 d_mat[4]+d_vec[2] 구조를 사용하지만, hybrid는 matmul 전용의 d_A, d_B, d_C 세 개만 유지한다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 연산 없이 GPU 코드를 삭제하여 CPU로 회귀한 구성이다. 따라서 함수별 구현 위치는 GPU 커널과 CPU for문으로 나뉘고, matmul만 양쪽에서 동일하게 cuBLAS와 메모리 풀로 처리된다. [근거:E00036,H40849fcc17fe_1,E00037]\n\n결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]\n\n최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]\n\n커널 수준의 추가 변경으로는 backward_bound_gpu에서 사용하는 affine 중복 계산을 삭제하여 커널 2개 함수가 줄어든 점, backward에서 사용하는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 점이 기록되었다. Forward와 Backward의 cudaMemcpy 호출 횟수는 동일하다는 관측도 남아 있다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측이 있으나, 이는 초기화 이후 bound 계산 시간 비교에 대한 기록이며 초기화 비용 포함 여부나 반복 측정 통계는 이 사실만으로 제시되지 않는다. 한편 실행 인자 있는 forward와 실행 인자 없는 버전 간 실행 시간 차이가 관측되어, 실행 인자 있는 forward가 1360.22s, 실행 인자 없는 backward가 1447.17s, 다른 실행에서 1375.97s로 측정되었고, 실행 인자 추가와 switch문 사용이 성능에 영향을 줄 가능성이 제기되었다. 다만 이는 관측된 시간 차이와 의문 제기이며, 실행 인자·switch문의 인과적 영향 분리 실험 결과는 현재 페이지에 없다. [근거:E00122,E00124,E00165,E00202,E00180]\n\n측정 절차와 보완 계획은 반복 측정과 조건 분리 중심으로 정리되었다. 보완 실행 항목으로 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며, 교수님은 이를 초기화 비용 때문으로 언급했다. sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 다음 주 보완 과제로는 Compute Throughput과 Memory Throughput의 정확한 정의(수식) 확인, memory throughput 비율 감소 원인 검토, SM이 너무 바빠 메모리 병목이 생기는 경우의 가능성 검토, forward/backward 92만 번 실행에서 가끔 튀는 값의 평균·분산 산출, 추론+bound+검증을 합쳐 측정하던 것을 각각 나눠 측정하기로 한 계획이 기록되었다. cudaGraph를 이용한 커널 캡처는 92만 번의 입력값을 계산하면서 1번의 CROWN 계산 내에서도 수십 번의 커널이 호출되는 상황에서, graph 캡처를 통해 이 수십 번의 커널 호출을 하나의 호출로 압축하여 커널 호출 횟수로 인한 오버헤드를 줄일 수 있는 방법으로 설명되었고, 커널 자체 최적화까지 끝냈을 때 고려 가능한 기능이자 하나의 스냅샷을 만드는 기능으로 정리되었다. cudaGraph를 통해 추론과 bound를 따로 캡처한 경우와 추론+bound를 한 번에 캡처한 경우를 구분하여 커널 런치 비용을 최소화하는 실험도 수행되었다. [근거:E00184,E00183,E00213,E00214]\n\nv4에서는 cuBLAS 미리 예열, 가중치(W) GPU 사전 업로드, 16x491 행렬 등 필요한 부분만 복사하는 방안이 제시되었다. 다만 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않으며, 함수별 구현 방식 비교와 버전별 전체 실행 시간은 별개의 정보로 병렬 제시되었을 뿐 순위 비교로 연결되지 않았다. [근거:E00038,Hcdbfb7147ce4_2]"
+      }
+    }
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "methods_item_5",
+        "verdict": "met",
+        "paragraph_ids": [
+          "methods_p2",
+          "methods_p3"
+        ],
+        "evidence_ids": [
+          "H85ca0e507c4e_88",
+          "H85ca0e507c4e_97",
+          "H85ca0e507c4e_89",
+          "E00033"
+        ],
+        "quote": "구성 요소는 cuBLAS, 메모리 풀, 가중치 GPU 사전 업로드, 벡터 연산의 CPU 전환으로 구분된다. cuBLAS는 NVIDIA GPU에서 선형대수 연산을 가속하는 라이브러리이며, 메모리 풀은 함수 호출마다의 메모리 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 사용된다. 가중치 GPU 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 미리 GPU에 올려 matmul 호출마다의 memcpy를 줄이려는 역할이고, 벡터 연산을 CPU로 돌리는 것은 matmul만 GPU로 실행하는 하이브리드 구성을 만들기 위한 역할이다. 다만 가중치 사전 업로드의 실제 효과는 크게 의미를 못 미친다는 기록도 함께 남아 있다. [근거:H85ca0e507c4e_88,H85ca0e507c4e_97]",
+        "paragraph_quotes": [
+          "구성 요소는 cuBLAS, 메모리 풀, 가중치 GPU 사전 업로드, 벡터 연산의 CPU 전환으로 구분된다. cuBLAS는 NVIDIA GPU에서 선형대수 연산을 가속하는 라이브러리이며, 메모리 풀은 함수 호출마다의 메모리 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 사용된다. 가중치 GPU 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 미리 GPU에 올려 matmul 호출마다의 memcpy를 줄이려는 역할이고, 벡터 연산을 CPU로 돌리는 것은 matmul만 GPU로 실행하는 하이브리드 구성을 만들기 위한 역할이다. 다만 가중치 사전 업로드의 실제 효과는 크게 의미를 못 미친다는 기록도 함께 남아 있다. [근거:H85ca0e507c4e_88,H85ca0e507c4e_97]",
+          "결합 방식은 초기에 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 구성되었다. 이후 matmul만 GPU로, 나머지를 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 바뀌었다. v2 적용 방안에서는 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하도록 memcpy 범위를 줄이는 방식이 추가로 결합되었다. [근거:H85ca0e507c4e_89,E00033]"
+        ],
+        "guideline_ids": [
+          "ref1_methods_required_5"
+        ],
+        "used_non_candidate_evidence_ids": [
+          "E00033"
+        ],
+        "unused_candidate_evidence_ids": []
+      },
+      {
+        "item_id": "methods_item_7",
+        "verdict": "met",
+        "paragraph_ids": [
+          "methods_p1",
+          "methods_p10"
+        ],
+        "evidence_ids": [
+          "E00105",
+          "E00135",
+          "E00136",
+          "E00231",
+          "E00257",
+          "E00261",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00036",
+          "H40849fcc17fe_1",
+          "E00037"
+        ],
+        "quote": "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "paragraph_quotes": [
+          "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+          "구성 요소별 역할은 연산의 성격에 따라 구분된다. 행렬곱(matmul)은 cuBLAS와 GPU 메모리 풀을 사용하는 유일한 GPU 상주 연산으로 유지되고, 영행렬·단위행렬 생성, 행렬 덧셈, 양수·음수 분리, 행 단위 스케일링, affine_min·affine_max 등은 원래 GPU 커널 또는 cudaMemset으로 처리되던 함수들이다. only_GPU와 hybrid의 차이는 이 함수들을 GPU에서 CPU로 옮긴 범위와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 행렬 4개와 벡터 2개를 미리 할당하는 d_mat[4]+d_vec[2] 구조를 사용하지만, hybrid는 matmul 전용의 d_A, d_B, d_C 세 개만 유지한다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 연산 없이 GPU 코드를 삭제하여 CPU로 회귀한 구성이다. 따라서 함수별 구현 위치는 GPU 커널과 CPU for문으로 나뉘고, matmul만 양쪽에서 동일하게 cuBLAS와 메모리 풀로 처리된다. [근거:E00036,H40849fcc17fe_1,E00037]"
+        ],
+        "guideline_ids": [
+          "ref2_methods_required_1"
+        ],
+        "used_non_candidate_evidence_ids": [
+          "H40849fcc17fe_1"
+        ],
+        "unused_candidate_evidence_ids": [
+          "E00227",
+          "E00228",
+          "E00262"
+        ]
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "methods",
+        "reference_id": "ref1_methods",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "methods_p2",
+          "methods_p3",
+          "methods_p10",
+          "methods_p11"
+        ],
+        "reason": "구성 요소별 역할과 결합 방식은 연구 일지 근거로 정리되었으나, 실험 준비·조건 통제, 데이터 구성·증강·분할, 기준 구조 및 변형 단계적 서술, 학습·검증 절차 등 reference_guide의 paragraph_flow와 figures_tables 요구 항목은 본 초안에 포함되지 않았다.",
+        "quote": "구성 요소는 cuBLAS, 메모리 풀, 가중치 GPU 사전 업로드, 벡터 연산의 CPU 전환으로 구분된다. cuBLAS는 NVIDIA GPU에서 선형대수 연산을 가속하는 라이브러리이며, 메모리 풀은 함수 호출마다의 메모리 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 사용된다. 가중치 GPU 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 미리 GPU에 올려 matmul 호출마다의 memcpy를 줄이려는 역할이고, 벡터 연산을 CPU로 돌리는 것은 matmul만 GPU로 실행하는 하이브리드 구성을 만들기 위한 역할이다. 다만 가중치 사전 업로드의 실제 효과는 크게 의미를 못 미친다는 기록도 함께 남아 있다. [근거:H85ca0e507c4e_88,H85ca0e507c4e_97]",
+        "paragraph_quotes": [
+          "구성 요소는 cuBLAS, 메모리 풀, 가중치 GPU 사전 업로드, 벡터 연산의 CPU 전환으로 구분된다. cuBLAS는 NVIDIA GPU에서 선형대수 연산을 가속하는 라이브러리이며, 메모리 풀은 함수 호출마다의 메모리 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 사용된다. 가중치 GPU 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 미리 GPU에 올려 matmul 호출마다의 memcpy를 줄이려는 역할이고, 벡터 연산을 CPU로 돌리는 것은 matmul만 GPU로 실행하는 하이브리드 구성을 만들기 위한 역할이다. 다만 가중치 사전 업로드의 실제 효과는 크게 의미를 못 미친다는 기록도 함께 남아 있다. [근거:H85ca0e507c4e_88,H85ca0e507c4e_97]",
+          "결합 방식은 초기에 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 구성되었다. 이후 matmul만 GPU로, 나머지를 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 바뀌었다. v2 적용 방안에서는 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하도록 memcpy 범위를 줄이는 방식이 추가로 결합되었다. [근거:H85ca0e507c4e_89,E00033]",
+          "구성 요소별 역할은 연산의 성격에 따라 구분된다. 행렬곱(matmul)은 cuBLAS와 GPU 메모리 풀을 사용하는 유일한 GPU 상주 연산으로 유지되고, 영행렬·단위행렬 생성, 행렬 덧셈, 양수·음수 분리, 행 단위 스케일링, affine_min·affine_max 등은 원래 GPU 커널 또는 cudaMemset으로 처리되던 함수들이다. only_GPU와 hybrid의 차이는 이 함수들을 GPU에서 CPU로 옮긴 범위와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 행렬 4개와 벡터 2개를 미리 할당하는 d_mat[4]+d_vec[2] 구조를 사용하지만, hybrid는 matmul 전용의 d_A, d_B, d_C 세 개만 유지한다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 연산 없이 GPU 코드를 삭제하여 CPU로 회귀한 구성이다. 따라서 함수별 구현 위치는 GPU 커널과 CPU for문으로 나뉘고, matmul만 양쪽에서 동일하게 cuBLAS와 메모리 풀로 처리된다. [근거:E00036,H40849fcc17fe_1,E00037]",
+          "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]"
+        ]
+      },
+      {
+        "section_id": "methods",
+        "reference_id": "ref2_methods",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "methods_p1",
+          "methods_p10",
+          "methods_p11",
+          "methods_p14"
+        ],
+        "reason": "비교 구성/조건의 정의와 통제 범위, 실행 경로·측정 구간, 워크로드·데이터셋·정확도 지표, 플랫폼·소프트웨어 환경 등 reference_guide의 paragraph_flow와 figures_tables 요구 항목 중 일부는 연구 일지 근거로 정리되었으나, 표·그림 제시, 기준선 명시, 벤더별 배포 설정, 호스트 차이 등 통제 조건 서술은 초안에 포함되지 않았다.",
+        "quote": "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "paragraph_quotes": [
+          "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+          "구성 요소별 역할은 연산의 성격에 따라 구분된다. 행렬곱(matmul)은 cuBLAS와 GPU 메모리 풀을 사용하는 유일한 GPU 상주 연산으로 유지되고, 영행렬·단위행렬 생성, 행렬 덧셈, 양수·음수 분리, 행 단위 스케일링, affine_min·affine_max 등은 원래 GPU 커널 또는 cudaMemset으로 처리되던 함수들이다. only_GPU와 hybrid의 차이는 이 함수들을 GPU에서 CPU로 옮긴 범위와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 행렬 4개와 벡터 2개를 미리 할당하는 d_mat[4]+d_vec[2] 구조를 사용하지만, hybrid는 matmul 전용의 d_A, d_B, d_C 세 개만 유지한다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 연산 없이 GPU 코드를 삭제하여 CPU로 회귀한 구성이다. 따라서 함수별 구현 위치는 GPU 커널과 CPU for문으로 나뉘고, matmul만 양쪽에서 동일하게 cuBLAS와 메모리 풀로 처리된다. [근거:E00036,H40849fcc17fe_1,E00037]",
+          "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+          "측정 절차와 보완 계획은 반복 측정과 조건 분리 중심으로 정리되었다. 보완 실행 항목으로 forward/backward 92만 번 측정을 20번씩 측정 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며, 교수님은 이를 초기화 비용 때문으로 언급했다. sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 다음 주 보완 과제로는 Compute Throughput과 Memory Throughput의 정확한 정의(수식) 확인, memory throughput 비율 감소 원인 검토, SM이 너무 바빠 메모리 병목이 생기는 경우의 가능성 검토, forward/backward 92만 번 실행에서 가끔 튀는 값의 평균·분산 산출, 추론+bound+검증을 합쳐 측정하던 것을 각각 나눠 측정하기로 한 계획이 기록되었다. cudaGraph를 이용한 커널 캡처는 92만 번의 입력값을 계산하면서 1번의 CROWN 계산 내에서도 수십 번의 커널이 호출되는 상황에서, graph 캡처를 통해 이 수십 번의 커널 호출을 하나의 호출로 압축하여 커널 호출 횟수로 인한 오버헤드를 줄일 수 있는 방법으로 설명되었고, 커널 자체 최적화까지 끝냈을 때 고려 가능한 기능이자 하나의 스냅샷을 만드는 기능으로 정리되었다. cudaGraph를 통해 추론과 bound를 따로 캡처한 경우와 추론+bound를 한 번에 캡처한 경우를 구분하여 커널 런치 비용을 최소화하는 실험도 수행되었다. [근거:E00184,E00183,E00213,E00214]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p1",
+        "reason": "근거의 성격·범위 오용: E00105, E00135, E00136, E00231은 각각 cuSparse 도입 시도·적용 범위, CUDA 인자 전달 방식 설명, 단일 스트림 입력 복사 최적화 논의 제안일 뿐이며, 'only_GPU vs hybrid 구성 구분', '함수별 GPU 커널 이식', 'CPU for문 유지', 'GPU 메모리 풀 구조 차이', 'matmul의 cuBLAS·메모리 풀 동일 처리'를 직접 뒷받침하지 않는다. 본문은 근거 범위를 넘어 구성 비교·결합 방식으로 확장했다.",
+        "evidence_ids": [
+          "E00105",
+          "E00135",
+          "E00136",
+          "E00231"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p1-0",
+        "failure_owner": "writer",
+        "quote": "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p1",
+        "reason": "근거의 성격·범위 오용: E00257, E00261, E00263은 p68 figure 캡션에 기록된 현재 C++ 멀티스트림 구현 방식·소요 시간·속도 비교·한계선 해석이지, 'only_GPU/hybrid 구성', '함수별 GPU 커널 이식', 'CPU for문 유지', 'GPU 메모리 풀 구조 차이', 'matmul cuBLAS·메모리 풀 동일 처리'를 뒷받침하지 않는다. 본문은 이 근거들을 구성 비교로 전환했다.",
+        "evidence_ids": [
+          "E00257",
+          "E00261",
+          "E00263"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p1-0",
+        "failure_owner": "writer",
+        "quote": "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p1",
+        "reason": "근거의 성격·범위 오용: E00277~E00301은 cudaHostRegister vs No Pinning 비교, 클록 고정·Persistence mode 설정, Pinned/Pageable 지연·지터·WCET 특성 해석 및 결론 중심이며, 'only_GPU vs hybrid 구성', '함수별 GPU 커널 이식', 'CPU for문 유지', 'GPU 메모리 풀 구조 차이', 'matmul cuBLAS·메모리 풀 동일 처리'를 직접 뒷받침하지 않는다. 본문은 이 근거들을 구성 비교·결합 방식 서술로 사용했다.",
+        "evidence_ids": [
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p1-0",
+        "failure_owner": "writer",
+        "quote": "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p5",
+        "reason": "E00322의 측정 단위는 ms인데, 문단에서는 '149~155ms 범위'로만 표기하여 E00320·E00339의 s 단위 실행 시간 감소와 동일 문장 안에서 단위가 혼재되어 있다. 근거 자체는 단위가 명확하므로 단위 표기를 명확히 구분하면 독해의 혼선을 줄일 수 있다.",
+        "evidence_ids": [
+          "E00322"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p5-0",
+        "failure_owner": "none",
+        "quote": "최적화 과정에서 실행 시간 감소가 관측되었다. 1138s에서 758s로 감소했고, v1-1-2에서 가중치만 미리 업로드한 변경은 149~155ms 범위로 기록되었으며, memcpy 호출 횟수는 66개에서 56개로 줄었다. 이 값들은 각 변경의 관측 요약이며, 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 근거만으로 제시되지 않는다. [근거:E00320,E00322,E00339]"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p8",
+        "reason": "E00322의 '149~155ms'는 'v1-1-2에서 가중치만 미리 업로드'한 변경 내용의 결과 범위로 기록되어 있으나, 문단에서는 이를 배칭(멀티 스트림) 및 memcpy 호출 횟수 감소와 같은 문장 안에서 함께 서술하여, 서로 다른 최적화 기법/조건의 결과를 하나의 연속된 개선 흐름으로 오인하게 할 수 있다. 각 근거의 조건(v1-1-2, 가중치만 미리 업로드 vs 배칭/멀티 스트림 vs memcpy 호출 횟수 비교)이 분리되어 있지 않다.",
+        "evidence_ids": [
+          "E00322",
+          "E00216",
+          "E00339"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p8-0",
+        "failure_owner": "writer",
+        "quote": "배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 다만 이 결과는 기존 데이터셋이 준비된 실험 환경에서의 관측이며, 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. memcpy 호출 횟수는 66개에서 56개로 줄었고, v1-1-2에서는 가중치만 미리 업로드할 수 있게 하여 149~155ms 범위가 기록되었다. [근거:E00216,E00339,E00322]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p8",
+        "reason": "E00339의 memcpy 호출 횟수 감소(66→56)는 '호출 횟수 비교 기록'이며 각 호출의 시간이나 총 실행 시간과의 관계는 별도 문맥이 필요하다고 명시되어 있으나, 문단에서는 배칭의 시간 단축(25분→8분)과 인접하게 배치하여 호출 횟수 감소가 시간 단축과 직접 연결된 것처럼 읽힐 여지가 있다.",
+        "evidence_ids": [
+          "E00339",
+          "E00216"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p8-0",
+        "failure_owner": "none",
+        "quote": "배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 다만 이 결과는 기존 데이터셋이 준비된 실험 환경에서의 관측이며, 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. memcpy 호출 횟수는 66개에서 56개로 줄었고, v1-1-2에서는 가중치만 미리 업로드할 수 있게 하여 149~155ms 범위가 기록되었다. [근거:E00216,E00339,E00322]"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00130의 limits에 따르면 현재 페이지는 변경 내용과 단일 실행 결과만 기록하며 반복 측정 통계나 다른 조건과의 정량 비교는 포함하지 않는다. 본문은 'alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합'이라는 구체적 통합 수치를 서술했으나, 이는 E00130의 conditions에 포함된 항목이지만 단일 실행 결과/변경 내용 범위를 넘어서는 정량적 통합 결과로 읽힐 수 있어 limits와 충돌한다.",
+        "evidence_ids": [
+          "E00130"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00133의 limits는 '성능의 최고점이 올랐는지는 불확실함'으로 명시되어 있다. 본문은 bias 메모리 풀 관리 변경을 다른 최적화들과 함께 나열하며 마치 성능 개선 흐름의 일부로 결합·기여하는 것처럼 서술하고 있어, 성능 향상 여부를 불확실하다고 한 근거의 한계를 넘어선 확장으로 볼 수 있다.",
+        "evidence_ids": [
+          "E00133"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00137의 limits는 기존 방식의 복사 발생 구조에 대한 설명만 포함하며 개선 전 정량 성능 수치는 포함하지 않는다고 명시되어 있다. 본문은 E00137의 기존 방식 설명(GPU→CPU→GPU→CPU 복사)을 그대로 사용했으나, 이어서 E00138의 개선 내용과 결합해 '복사를 최소화했다'는 개선 효과 서술로 연결하고 있어, 기존 방식 설명만 담은 근거의 범위를 개선 효과 서술로 확대한 문제가 있다.",
+        "evidence_ids": [
+          "E00137"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00138의 limits는 개선 방향과 복사 최소화 목적만 포함하며 개선 후 정량 성능 수치는 포함하지 않는다고 명시되어 있다. 본문은 'affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다'고 서술해 개선 방향과 목적을 넘어서 실제 복사 최소화 결과를 단정하는 표현으로 읽힐 수 있어 limits와 충돌한다.",
+        "evidence_ids": [
+          "E00138"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00146과 E00147의 limits는 최적화 방향과 단일 실행 결과만 기록하며 반복 측정 통계나 다른 조건과의 정량 비교는 포함하지 않는다고 명시되어 있다. 본문은 두 최적화의 방향 설명뿐 아니라 'H2D 복사를 제거', 'PCIe 통신 오버헤드를 줄였다'처럼 결과/효과 단정 표현으로 서술해, 단일 실행 결과·방향만 담은 근거의 한계를 넘어선다.",
+        "evidence_ids": [
+          "E00146",
+          "E00147"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00174의 limits는 코드 구조와 분기 조건만 기록하며 실제 호출 횟수나 성능 수치는 포함하지 않는다고 명시되어 있고, OCR/파싱 한계로 증가 연산의 정확한 구문이 완전히 복원되지 않았을 수 있다는 한계도 함께 명시되어 있다. 본문은 'Ht_count 또는 f_count를 증가시킨다'고 단정적으로 서술해, 증가 연산 구문이 완전히 복원되지 않았을 수 있다는 근거의 한계를 반영하지 않았다.",
+        "evidence_ids": [
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "E00106의 limits에 명시된 대로 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았는데도, 본문은 '이전 27ms 수준보다 느려진 결과'라고 단정적으로 서술했다. 이는 근거가 허용하는 불확실성 범위를 넘어 비교 해석을 실측 결과처럼 승격시킨 표현이다.",
+        "evidence_ids": [
+          "E00106"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p12-0",
+        "failure_owner": "writer",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "E00114와 E00117은 현재 측정 기준 유지 및 공식 결과 유지·별도 비교 방안에 대한 판단·제안 기록인데, 본문은 이를 '현재 주 측정에서는 ~ 유지하는 판단이 제시되었고, 공식 결과는 ~ 유지하며 ~ 비교하는 방안이 정리되었다'처럼 수행된 측정 결과나 확정된 방법처럼 서술했다. 계획·제안·판단 기록을 실행 결과로 바꾸지 말아야 한다는 지침에 어긋난다.",
+        "evidence_ids": [
+          "E00114",
+          "E00117"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p12-0",
+        "failure_owner": "writer",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "E00115는 cuSPARSE pipeline 미완성 상태와 descriptor/buffer 처리 비용 추가에 대한 설명 기록이며 정량 분리 측정 결과는 제시되지 않았는데도, 본문은 이를 사실적 구조 설명처럼 사용했다. 근거의 limits가 허용하는 범위를 넘어 정량적 비용 구조를 단정적으로 서술한 것은 아니다 하더라도, 설명 기록의 성격을 측정·구조 사실로 혼동할 여지가 있다.",
+        "evidence_ids": [
+          "E00115"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p12-0",
+        "failure_owner": "writer",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "E00148과 E00149는 단일 실행 결과이며 반복 측정 기반 통계나 조건별 비교 해석이 제시되지 않았다는 limits가 있음에도, 본문은 두 근거를 함께 묶어 '13.939000 ms'와 '13ms 후반 거의 14ms 정도'를 나란히 서술해 반복·범위 관측을 실측 결과처럼 보이게 했다. 단일 실행 결과의 불확실성을 충분히 반영하지 못했다.",
+        "evidence_ids": [
+          "E00148",
+          "E00149"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p12-0",
+        "failure_owner": "writer",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "E00150은 fp32 단정밀도 연산 변경 시도 사실과 별도 고찰 참조만 기록하며 실제 변경 결과나 정량 성능 수치는 포함하지 않는다는 limits가 있는데도, 본문은 'fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다'라고 서술해, 실제 변경 결과가 존재하는 것처럼 읽힐 여지가 있다. 근거가 포함하지 않는 실제 변경 결과를 암시하지 않도록 표현을 제한해야 한다.",
+        "evidence_ids": [
+          "E00150"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p12-0",
+        "failure_owner": "writer",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p1",
+        "reason": "근거 ID가 29개로 과도하게 나열되어 있으며, 문단 내 서술과 개별 근거의 대응 관계가 읽기 어렵다. 핵심 근거만 남기고 나머지는 근거 목록 또는 부록으로 분리하는 편이 낫다.",
+        "evidence_ids": [
+          "E00105",
+          "E00135",
+          "E00136",
+          "E00231",
+          "E00257",
+          "E00261",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p8",
+        "reason": "배칭 관련 서술에서 멀티 스트림 3배 향상(25분→8분)과 memcpy 66→56, v1-1-2 가중치 업로드 149~155ms가 한 문단에 함께 묶여 있어, 각 관측의 조건과 근거가 혼동될 수 있다. 조건별로 분리하거나 근거 ID를 명확히 구분해야 한다.",
+        "evidence_ids": [
+          "E00216",
+          "E00339",
+          "E00322"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 다만 이 결과는 기존 데이터셋이 준비된 실험 환경에서의 관측이며, 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. memcpy 호출 횟수는 66개에서 56개로 줄었고, v1-1-2에서는 가중치만 미리 업로드할 수 있게 하여 149~155ms 범위가 기록되었다. [근거:E00216,E00339,E00322]"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "결합 방식 서술이 길어 alpha/beta 전달 삭제, 레이어별 GPU 버퍼 직접 사용, D2D 복사 통합, backward_bound_gpu 개선, 입력 버퍼 재사용, 초기화 최적화, bias 메모리 풀 관리 등 여러 변경이 한 문단에 섞여 있다. 변경 단위별로 문단을 나누거나 근거 ID를 분리해 대응 관계를 분명히 해야 한다.",
+        "evidence_ids": [
+          "E00174",
+          "E00130",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00133"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "cuSPARSE 27.107400ms, dense 24ms, backward 메모리 복사 제거 후 13.939000ms, 출력 차원 16, fp32 변경 시도 등 여러 수치·조건이 한 문단에 함께 제시되어, 각 수치의 측정 조건과 근거가 혼동될 수 있다. 조건별로 분리하거나 근거 ID를 명확히 구분해야 한다.",
+        "evidence_ids": [
+          "E00106",
+          "E00114",
+          "E00115",
+          "E00117",
+          "E00148",
+          "E00149",
+          "E00150"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]"
+      },
+      {
+        "section_id": "methods",
+        "part": "p0",
+        "paragraph_id": "methods_p11",
+        "evidence_ids": [
+          "E00130",
+          "E00133",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00174"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "methods",
+        "part": "p0",
+        "paragraph_id": "methods_p12",
+        "evidence_ids": [
+          "E00106",
+          "E00114",
+          "E00115",
+          "E00117",
+          "E00148",
+          "E00149",
+          "E00150"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "methods",
+        "part": "p0",
+        "paragraph_id": "methods_p14",
+        "evidence_ids": [
+          "E00183",
+          "E00184",
+          "E00213",
+          "E00214"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 2.3 구성 요소의 역할과 결합 방식: 본문 6049자 / 목표 1200자 / 허용 상한 1500자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "methods: 절 전체 본문 6049자가 공통 상한 6000자를 넘습니다. 절 전체에서 중복·실행 이력·표의 수치 재열거를 줄이고 소절·핵심 조건·반례는 보존하세요.",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "organization",
+        "validation_code": "composition_layout",
+        "reason": "methods/p0: 표 source_table_0008에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "flow",
+        "validation_code": "composition_layout",
+        "reason": "methods/p0: 가장 긴 문단이 847자로 공통 문단 목표 600자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "style",
+        "validation_code": "composition_style",
+        "reason": "methods/p0: 기록자·자료 중심 표현 ['연구 일지에서 확인']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+        "original_severity": "error",
+        "deferred": true
+      }
+    ],
+    "evidence_usage_review": {
+      "batches": [
+        {
+          "name": "review-2-approved-evidence-methods_p1-0",
+          "paragraph_id": "methods_p1",
+          "target_evidence_ids": [
+            "E00105",
+            "E00135",
+            "E00136",
+            "E00231",
+            "E00257",
+            "E00261",
+            "E00263",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00295",
+            "E00296",
+            "E00297",
+            "E00299",
+            "E00300",
+            "E00301"
+          ],
+          "context_evidence_ids": [
+            "E00105",
+            "E00135",
+            "E00136",
+            "E00231",
+            "E00257",
+            "E00261",
+            "E00263",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00295",
+            "E00296",
+            "E00297",
+            "E00299",
+            "E00300",
+            "E00301"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p2-0",
+          "paragraph_id": "methods_p2",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_97"
+          ],
+          "context_evidence_ids": [
+            "E00051",
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_89",
+            "H85ca0e507c4e_97"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p3-0",
+          "paragraph_id": "methods_p3",
+          "target_evidence_ids": [
+            "E00033",
+            "H85ca0e507c4e_89"
+          ],
+          "context_evidence_ids": [
+            "E00033",
+            "E00051",
+            "H85ca0e507c4e_88",
+            "H85ca0e507c4e_89"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p4-0",
+          "paragraph_id": "methods_p4",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_92",
+            "H85ca0e507c4e_93",
+            "H85ca0e507c4e_94"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_92",
+            "H85ca0e507c4e_93",
+            "H85ca0e507c4e_94"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p5-0",
+          "paragraph_id": "methods_p5",
+          "target_evidence_ids": [
+            "E00320",
+            "E00322",
+            "E00339"
+          ],
+          "context_evidence_ids": [
+            "E00320",
+            "E00322",
+            "E00339"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p6-0",
+          "paragraph_id": "methods_p6",
+          "target_evidence_ids": [
+            "E00311",
+            "H85ca0e507c4e_85"
+          ],
+          "context_evidence_ids": [
+            "E00311",
+            "E00313",
+            "H85ca0e507c4e_85"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p7-0",
+          "paragraph_id": "methods_p7",
+          "target_evidence_ids": [
+            "E00313",
+            "H85ca0e507c4e_85"
+          ],
+          "context_evidence_ids": [
+            "E00313",
+            "H85ca0e507c4e_85"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p8-0",
+          "paragraph_id": "methods_p8",
+          "target_evidence_ids": [
+            "E00216",
+            "E00322",
+            "E00339"
+          ],
+          "context_evidence_ids": [
+            "E00216",
+            "E00322",
+            "E00339"
+          ],
+          "issue_count": 2
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p9-0",
+          "paragraph_id": "methods_p9",
+          "target_evidence_ids": [
+            "E00232"
+          ],
+          "context_evidence_ids": [
+            "E00232"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p10-0",
+          "paragraph_id": "methods_p10",
+          "target_evidence_ids": [
+            "E00036",
+            "E00037",
+            "H40849fcc17fe_1"
+          ],
+          "context_evidence_ids": [
+            "E00031",
+            "E00035",
+            "E00036",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2",
+            "E00037"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p11-0",
+          "paragraph_id": "methods_p11",
+          "target_evidence_ids": [
+            "E00130",
+            "E00133",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00174"
+          ],
+          "context_evidence_ids": [
+            "E00130",
+            "E00133",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00174"
+          ],
+          "issue_count": 6
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p12-0",
+          "paragraph_id": "methods_p12",
+          "target_evidence_ids": [
+            "E00106",
+            "E00114",
+            "E00115",
+            "E00117",
+            "E00148",
+            "E00149",
+            "E00150"
+          ],
+          "context_evidence_ids": [
+            "E00106",
+            "E00114",
+            "E00115",
+            "E00117",
+            "E00148",
+            "E00149",
+            "E00150"
+          ],
+          "issue_count": 5
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p13-0",
+          "paragraph_id": "methods_p13",
+          "target_evidence_ids": [
+            "E00122",
+            "E00124",
+            "E00165",
+            "E00180",
+            "E00202"
+          ],
+          "context_evidence_ids": [
+            "E00122",
+            "E00124",
+            "E00165",
+            "E00180",
+            "E00202"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p14-0",
+          "paragraph_id": "methods_p14",
+          "target_evidence_ids": [
+            "E00183",
+            "E00184",
+            "E00213",
+            "E00214"
+          ],
+          "context_evidence_ids": [
+            "E00183",
+            "E00184",
+            "E00213",
+            "E00214"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-methods_p15-0",
+          "paragraph_id": "methods_p15",
+          "target_evidence_ids": [
+            "E00038",
+            "Hcdbfb7147ce4_2"
+          ],
+          "context_evidence_ids": [
+            "E00031",
+            "E00035",
+            "E00036",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2",
+            "E00038"
+          ],
+          "issue_count": 0
+        }
+      ],
+      "summary": {
+        "checked_paragraph_ids": [
+          "methods_p1",
+          "methods_p2",
+          "methods_p3",
+          "methods_p4",
+          "methods_p5",
+          "methods_p6",
+          "methods_p7",
+          "methods_p8",
+          "methods_p9",
+          "methods_p10",
+          "methods_p11",
+          "methods_p12",
+          "methods_p13",
+          "methods_p14",
+          "methods_p15"
+        ],
+        "checked_evidence_ids": [
+          "E00033",
+          "E00036",
+          "E00037",
+          "E00038",
+          "E00105",
+          "E00106",
+          "E00114",
+          "E00115",
+          "E00117",
+          "E00122",
+          "E00124",
+          "E00130",
+          "E00133",
+          "E00135",
+          "E00136",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00148",
+          "E00149",
+          "E00150",
+          "E00165",
+          "E00174",
+          "E00180",
+          "E00183",
+          "E00184",
+          "E00202",
+          "E00213",
+          "E00214",
+          "E00216",
+          "E00231",
+          "E00232",
+          "E00257",
+          "E00261",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00311",
+          "E00313",
+          "E00320",
+          "E00322",
+          "E00339",
+          "H40849fcc17fe_1",
+          "H85ca0e507c4e_85",
+          "H85ca0e507c4e_88",
+          "H85ca0e507c4e_89",
+          "H85ca0e507c4e_92",
+          "H85ca0e507c4e_93",
+          "H85ca0e507c4e_94",
+          "H85ca0e507c4e_97",
+          "Hcdbfb7147ce4_2"
+        ],
+        "issue_count": 17,
+        "blocking_paragraph_ids": [
+          "methods_p1",
+          "methods_p8",
+          "methods_p11",
+          "methods_p12"
+        ]
+      },
+      "coverage_batches": [
+        "all"
+      ]
+    },
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 2,
+      "total": 2,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 2,
+      "not_visible": 0,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    },
+    "content_warnings": [
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p1",
+        "reason": "근거의 성격·범위 오용: E00105, E00135, E00136, E00231은 각각 cuSparse 도입 시도·적용 범위, CUDA 인자 전달 방식 설명, 단일 스트림 입력 복사 최적화 논의 제안일 뿐이며, 'only_GPU vs hybrid 구성 구분', '함수별 GPU 커널 이식', 'CPU for문 유지', 'GPU 메모리 풀 구조 차이', 'matmul의 cuBLAS·메모리 풀 동일 처리'를 직접 뒷받침하지 않는다. 본문은 근거 범위를 넘어 구성 비교·결합 방식으로 확장했다.",
+        "evidence_ids": [
+          "E00105",
+          "E00135",
+          "E00136",
+          "E00231"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p1-0",
+        "failure_owner": "writer",
+        "quote": "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p1",
+        "reason": "근거의 성격·범위 오용: E00257, E00261, E00263은 p68 figure 캡션에 기록된 현재 C++ 멀티스트림 구현 방식·소요 시간·속도 비교·한계선 해석이지, 'only_GPU/hybrid 구성', '함수별 GPU 커널 이식', 'CPU for문 유지', 'GPU 메모리 풀 구조 차이', 'matmul cuBLAS·메모리 풀 동일 처리'를 뒷받침하지 않는다. 본문은 이 근거들을 구성 비교로 전환했다.",
+        "evidence_ids": [
+          "E00257",
+          "E00261",
+          "E00263"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p1-0",
+        "failure_owner": "writer",
+        "quote": "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p1",
+        "reason": "근거의 성격·범위 오용: E00277~E00301은 cudaHostRegister vs No Pinning 비교, 클록 고정·Persistence mode 설정, Pinned/Pageable 지연·지터·WCET 특성 해석 및 결론 중심이며, 'only_GPU vs hybrid 구성', '함수별 GPU 커널 이식', 'CPU for문 유지', 'GPU 메모리 풀 구조 차이', 'matmul cuBLAS·메모리 풀 동일 처리'를 직접 뒷받침하지 않는다. 본문은 이 근거들을 구성 비교·결합 방식 서술로 사용했다.",
+        "evidence_ids": [
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p1-0",
+        "failure_owner": "writer",
+        "quote": "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p5",
+        "reason": "E00322의 측정 단위는 ms인데, 문단에서는 '149~155ms 범위'로만 표기하여 E00320·E00339의 s 단위 실행 시간 감소와 동일 문장 안에서 단위가 혼재되어 있다. 근거 자체는 단위가 명확하므로 단위 표기를 명확히 구분하면 독해의 혼선을 줄일 수 있다.",
+        "evidence_ids": [
+          "E00322"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p5-0",
+        "failure_owner": "none",
+        "quote": "최적화 과정에서 실행 시간 감소가 관측되었다. 1138s에서 758s로 감소했고, v1-1-2에서 가중치만 미리 업로드한 변경은 149~155ms 범위로 기록되었으며, memcpy 호출 횟수는 66개에서 56개로 줄었다. 이 값들은 각 변경의 관측 요약이며, 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 근거만으로 제시되지 않는다. [근거:E00320,E00322,E00339]",
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p8",
+        "reason": "E00322의 '149~155ms'는 'v1-1-2에서 가중치만 미리 업로드'한 변경 내용의 결과 범위로 기록되어 있으나, 문단에서는 이를 배칭(멀티 스트림) 및 memcpy 호출 횟수 감소와 같은 문장 안에서 함께 서술하여, 서로 다른 최적화 기법/조건의 결과를 하나의 연속된 개선 흐름으로 오인하게 할 수 있다. 각 근거의 조건(v1-1-2, 가중치만 미리 업로드 vs 배칭/멀티 스트림 vs memcpy 호출 횟수 비교)이 분리되어 있지 않다.",
+        "evidence_ids": [
+          "E00322",
+          "E00216",
+          "E00339"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p8-0",
+        "failure_owner": "writer",
+        "quote": "배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 다만 이 결과는 기존 데이터셋이 준비된 실험 환경에서의 관측이며, 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. memcpy 호출 횟수는 66개에서 56개로 줄었고, v1-1-2에서는 가중치만 미리 업로드할 수 있게 하여 149~155ms 범위가 기록되었다. [근거:E00216,E00339,E00322]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p8",
+        "reason": "E00339의 memcpy 호출 횟수 감소(66→56)는 '호출 횟수 비교 기록'이며 각 호출의 시간이나 총 실행 시간과의 관계는 별도 문맥이 필요하다고 명시되어 있으나, 문단에서는 배칭의 시간 단축(25분→8분)과 인접하게 배치하여 호출 횟수 감소가 시간 단축과 직접 연결된 것처럼 읽힐 여지가 있다.",
+        "evidence_ids": [
+          "E00339",
+          "E00216"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p8-0",
+        "failure_owner": "none",
+        "quote": "배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 다만 이 결과는 기존 데이터셋이 준비된 실험 환경에서의 관측이며, 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. memcpy 호출 횟수는 66개에서 56개로 줄었고, v1-1-2에서는 가중치만 미리 업로드할 수 있게 하여 149~155ms 범위가 기록되었다. [근거:E00216,E00339,E00322]",
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00130의 limits에 따르면 현재 페이지는 변경 내용과 단일 실행 결과만 기록하며 반복 측정 통계나 다른 조건과의 정량 비교는 포함하지 않는다. 본문은 'alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합'이라는 구체적 통합 수치를 서술했으나, 이는 E00130의 conditions에 포함된 항목이지만 단일 실행 결과/변경 내용 범위를 넘어서는 정량적 통합 결과로 읽힐 수 있어 limits와 충돌한다.",
+        "evidence_ids": [
+          "E00130"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00133의 limits는 '성능의 최고점이 올랐는지는 불확실함'으로 명시되어 있다. 본문은 bias 메모리 풀 관리 변경을 다른 최적화들과 함께 나열하며 마치 성능 개선 흐름의 일부로 결합·기여하는 것처럼 서술하고 있어, 성능 향상 여부를 불확실하다고 한 근거의 한계를 넘어선 확장으로 볼 수 있다.",
+        "evidence_ids": [
+          "E00133"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00137의 limits는 기존 방식의 복사 발생 구조에 대한 설명만 포함하며 개선 전 정량 성능 수치는 포함하지 않는다고 명시되어 있다. 본문은 E00137의 기존 방식 설명(GPU→CPU→GPU→CPU 복사)을 그대로 사용했으나, 이어서 E00138의 개선 내용과 결합해 '복사를 최소화했다'는 개선 효과 서술로 연결하고 있어, 기존 방식 설명만 담은 근거의 범위를 개선 효과 서술로 확대한 문제가 있다.",
+        "evidence_ids": [
+          "E00137"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00138의 limits는 개선 방향과 복사 최소화 목적만 포함하며 개선 후 정량 성능 수치는 포함하지 않는다고 명시되어 있다. 본문은 'affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다'고 서술해 개선 방향과 목적을 넘어서 실제 복사 최소화 결과를 단정하는 표현으로 읽힐 수 있어 limits와 충돌한다.",
+        "evidence_ids": [
+          "E00138"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00146과 E00147의 limits는 최적화 방향과 단일 실행 결과만 기록하며 반복 측정 통계나 다른 조건과의 정량 비교는 포함하지 않는다고 명시되어 있다. 본문은 두 최적화의 방향 설명뿐 아니라 'H2D 복사를 제거', 'PCIe 통신 오버헤드를 줄였다'처럼 결과/효과 단정 표현으로 서술해, 단일 실행 결과·방향만 담은 근거의 한계를 넘어선다.",
+        "evidence_ids": [
+          "E00146",
+          "E00147"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "근거 E00174의 limits는 코드 구조와 분기 조건만 기록하며 실제 호출 횟수나 성능 수치는 포함하지 않는다고 명시되어 있고, OCR/파싱 한계로 증가 연산의 정확한 구문이 완전히 복원되지 않았을 수 있다는 한계도 함께 명시되어 있다. 본문은 'Ht_count 또는 f_count를 증가시킨다'고 단정적으로 서술해, 증가 연산 구문이 완전히 복원되지 않았을 수 있다는 근거의 한계를 반영하지 않았다.",
+        "evidence_ids": [
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p11-0",
+        "failure_owner": "writer",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "E00106의 limits에 명시된 대로 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았는데도, 본문은 '이전 27ms 수준보다 느려진 결과'라고 단정적으로 서술했다. 이는 근거가 허용하는 불확실성 범위를 넘어 비교 해석을 실측 결과처럼 승격시킨 표현이다.",
+        "evidence_ids": [
+          "E00106"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p12-0",
+        "failure_owner": "writer",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "E00114와 E00117은 현재 측정 기준 유지 및 공식 결과 유지·별도 비교 방안에 대한 판단·제안 기록인데, 본문은 이를 '현재 주 측정에서는 ~ 유지하는 판단이 제시되었고, 공식 결과는 ~ 유지하며 ~ 비교하는 방안이 정리되었다'처럼 수행된 측정 결과나 확정된 방법처럼 서술했다. 계획·제안·판단 기록을 실행 결과로 바꾸지 말아야 한다는 지침에 어긋난다.",
+        "evidence_ids": [
+          "E00114",
+          "E00117"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p12-0",
+        "failure_owner": "writer",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "E00115는 cuSPARSE pipeline 미완성 상태와 descriptor/buffer 처리 비용 추가에 대한 설명 기록이며 정량 분리 측정 결과는 제시되지 않았는데도, 본문은 이를 사실적 구조 설명처럼 사용했다. 근거의 limits가 허용하는 범위를 넘어 정량적 비용 구조를 단정적으로 서술한 것은 아니다 하더라도, 설명 기록의 성격을 측정·구조 사실로 혼동할 여지가 있다.",
+        "evidence_ids": [
+          "E00115"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p12-0",
+        "failure_owner": "writer",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "E00148과 E00149는 단일 실행 결과이며 반복 측정 기반 통계나 조건별 비교 해석이 제시되지 않았다는 limits가 있음에도, 본문은 두 근거를 함께 묶어 '13.939000 ms'와 '13ms 후반 거의 14ms 정도'를 나란히 서술해 반복·범위 관측을 실측 결과처럼 보이게 했다. 단일 실행 결과의 불확실성을 충분히 반영하지 못했다.",
+        "evidence_ids": [
+          "E00148",
+          "E00149"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p12-0",
+        "failure_owner": "writer",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "E00150은 fp32 단정밀도 연산 변경 시도 사실과 별도 고찰 참조만 기록하며 실제 변경 결과나 정량 성능 수치는 포함하지 않는다는 limits가 있는데도, 본문은 'fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다'라고 서술해, 실제 변경 결과가 존재하는 것처럼 읽힐 여지가 있다. 근거가 포함하지 않는 실제 변경 결과를 암시하지 않도록 표현을 제한해야 한다.",
+        "evidence_ids": [
+          "E00150"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-methods_p12-0",
+        "failure_owner": "writer",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p1",
+        "reason": "근거 ID가 29개로 과도하게 나열되어 있으며, 문단 내 서술과 개별 근거의 대응 관계가 읽기 어렵다. 핵심 근거만 남기고 나머지는 근거 목록 또는 부록으로 분리하는 편이 낫다.",
+        "evidence_ids": [
+          "E00105",
+          "E00135",
+          "E00136",
+          "E00231",
+          "E00257",
+          "E00261",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "비교 구성은 only_GPU와 hybrid로 나뉜다. only_GPU는 함수별 구현을 GPU 커널로 옮기고, hybrid는 일부 연산을 CPU for문으로 유지한다. 두 구성은 GPU 메모리 풀 구조에서도 차이가 있으며, matmul은 두 구성 모두 cuBLAS와 메모리 풀을 사용해 동일하게 처리된다. 이러한 차이는 연구 일지에서 확인된 범위로 정리된다. [근거:E00105,E00135,E00136,E00231,E00257,E00261,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p8",
+        "reason": "배칭 관련 서술에서 멀티 스트림 3배 향상(25분→8분)과 memcpy 66→56, v1-1-2 가중치 업로드 149~155ms가 한 문단에 함께 묶여 있어, 각 관측의 조건과 근거가 혼동될 수 있다. 조건별로 분리하거나 근거 ID를 명확히 구분해야 한다.",
+        "evidence_ids": [
+          "E00216",
+          "E00339",
+          "E00322"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "배칭은 싱글 스트림이 아닌 멀티 스트림을 사용해 데이터를 여러 개 묶어 넣는 방식으로, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 빨라져 25분에서 8분으로 단축되었다. 다만 이 결과는 기존 데이터셋이 준비된 실험 환경에서의 관측이며, 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. memcpy 호출 횟수는 66개에서 56개로 줄었고, v1-1-2에서는 가중치만 미리 업로드할 수 있게 하여 149~155ms 범위가 기록되었다. [근거:E00216,E00339,E00322]",
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p11",
+        "reason": "결합 방식 서술이 길어 alpha/beta 전달 삭제, 레이어별 GPU 버퍼 직접 사용, D2D 복사 통합, backward_bound_gpu 개선, 입력 버퍼 재사용, 초기화 최적화, bias 메모리 풀 관리 등 여러 변경이 한 문단에 섞여 있다. 변경 단위별로 문단을 나누거나 근거 ID를 분리해 대응 관계를 분명히 해야 한다.",
+        "evidence_ids": [
+          "E00174",
+          "E00130",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00133"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "결합 방식은 실행 경로와 데이터 전달 구조에서 드러난다. 실행 코드는 eps_list에 대한 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과를 수행한 뒤, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. forward와 backward 사이의 alpha, beta 전달은 메모리 풀에 올려 전달 과정을 삭제했고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 forward에서 GPU에 저장한 뒤 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. 또한 alpha/beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합했고, backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 복사가 발생하던 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화했다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. bias도 메모리 풀에서 관리하도록 변경되었다. [근거:E00174,E00130,E00137,E00138,E00146,E00147,E00133]",
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "severity": "warning",
+        "paragraph_id": "methods_p12",
+        "reason": "cuSPARSE 27.107400ms, dense 24ms, backward 메모리 복사 제거 후 13.939000ms, 출력 차원 16, fp32 변경 시도 등 여러 수치·조건이 한 문단에 함께 제시되어, 각 수치의 측정 조건과 근거가 혼동될 수 있다. 조건별로 분리하거나 근거 ID를 명확히 구분해야 한다.",
+        "evidence_ids": [
+          "E00106",
+          "E00114",
+          "E00115",
+          "E00117",
+          "E00148",
+          "E00149",
+          "E00150"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "최적화 적용 결과는 단일 실행 기준으로 기록되었다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이는 이전 27ms 수준보다 느려진 결과로 기록되었다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 판단이 제시되었고, 공식 결과는 24 ms dense baseline으로 유지하며 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방안이 정리되었다. network_forward()는 전체 타이머에 포함되지만 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다는 점이 함께 기록되었다. Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었고, 출력 차원은 16이며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 실제 변경 결과는 별도 고찰로 언급되었다. [근거:E00106,E00114,E00115,E00117,E00148,E00149,E00150]",
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "part": "p0",
+        "paragraph_id": "methods_p11",
+        "evidence_ids": [
+          "E00130",
+          "E00133",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00174"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "part": "p0",
+        "paragraph_id": "methods_p12",
+        "evidence_ids": [
+          "E00106",
+          "E00114",
+          "E00115",
+          "E00117",
+          "E00148",
+          "E00149",
+          "E00150"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "part": "p0",
+        "paragraph_id": "methods_p14",
+        "evidence_ids": [
+          "E00183",
+          "E00184",
+          "E00213",
+          "E00214"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 2.3 구성 요소의 역할과 결합 방식: 본문 6049자 / 목표 1200자 / 허용 상한 1500자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "methods: 절 전체 본문 6049자가 공통 상한 6000자를 넘습니다. 절 전체에서 중복·실행 이력·표의 수치 재열거를 줄이고 소절·핵심 조건·반례는 보존하세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "organization",
+        "validation_code": "composition_layout",
+        "reason": "methods/p0: 표 source_table_0008에 근거 인용으로 연결된 문단이 0개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "flow",
+        "validation_code": "composition_layout",
+        "reason": "methods/p0: 가장 긴 문단이 847자로 공통 문단 목표 600자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      },
+      {
+        "section_id": "methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "style",
+        "validation_code": "composition_style",
+        "reason": "methods/p0: 기록자·자료 중심 표현 ['연구 일지에서 확인']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-methods-p2"
+      }
+    ],
+    "content_status": "needs_attention",
+    "content_approved": false
+  }
+}

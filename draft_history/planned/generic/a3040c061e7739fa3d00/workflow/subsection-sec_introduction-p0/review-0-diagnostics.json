@@ -1,0 +1,3030 @@
+{
+  "stage": "subsection-sec_introduction-p0",
+  "approved": false,
+  "items": [
+    {
+      "item_id": "intro_purpose",
+      "description": "연구 대상 영역(CROWN 신경망 검증)의 실용적 중요성과 문제 발생 맥락을 서술한다. CPU 환경에서 CROWN 검증이 느리고, 신경망 검증팀이 오프라인 환경에서만 제한적으로 빠른 상황을 배경으로 삼는다. 실시간 환경에서의 대규모 연산 충족 가능성을 확인하려는 문제의식을 정리한다.",
+      "section_id": "sec_introduction",
+      "verdict": "met",
+      "model_verdict": "met",
+      "planned_evidence_count": 6,
+      "reviewed_evidence_count": 4,
+      "missing_body_count": 0,
+      "missing_section_count": 0,
+      "unused_candidate_count": 2,
+      "unselected_cited_count": 0,
+      "failure_owner": null,
+      "missing_review_count": 0,
+      "paragraph_ids": [
+        "sec_introduction_p1",
+        "sec_introduction_p5"
+      ],
+      "evidence": [
+        {
+          "id": "E00348",
+          "statement": "CUDA로 구현한 이유로, CUDA 프로그래밍 역량을 가진 사람이라는 점과 안테나 신경망 검증 알고리즘을 하드웨어에 구현하여 실시간 검증에 관심이 있으며, 하드웨어에 구현(실시간 검증)할 수 있는 여지가 있다는 논문의 뒷받침 논문으로 작성 가능하다는 점이 기록되었다.",
+          "limits": "이 내용은 CUDA 구현 이유·목적에 대한 기록이며, 실제 실시간 검증 구현 결과나 논문 작성 결과는 포함하지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 44,
+              "element_id": "p44:e296",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 44,
+              "element_id": "p44:e297",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00101",
+          "statement": "실시간성을 확인하려면 마이크로초 ~ 수 밀리초(ms) 내로 제한해야 한다고 기록되었다.",
+          "limits": "이 진술은 실시간성 목표 범위에 대한 기록자의 판단이며, 실제 달성 여부나 측정 근거는 이 요소만으로 제시되지 않았다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 25,
+              "element_id": "p25:e178",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00294",
+          "statement": "No-Pin은 평소에는 CPU 캐시빨로 살짝 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 끼어들면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없으며(1ms 무선 통신 데드라인 파괴), Pinned Memory는 매번 정직하게 DMA 셋업 비용(1~2μs)을 치르기 때문에 평균 시간은 살짝 손해를 보지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 절대적인 안정성(결정론적 성능)을 보장한다.",
+          "limits": "이 내용은 No-Pin과 Pinned Memory의 동작 특성과 안정성 비교 설명이며, 실제 측정 결과나 정량 수치는 별도 요소에서 다룬다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 78,
+              "element_id": "p78:e617",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 80,
+              "element_id": "p80:img0:e9",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00296",
+          "statement": "Pageable 메모리는 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다.",
+          "limits": "이 내용은 Pageable 메모리와 Pinned Memory의 지연 특성 비교 및 실시간 무선 안테나 선택 시스템에서의 Pinned Memory 도입 필요성에 대한 결론 설명이며, 실제 측정 결과나 정량 수치는 별도 요소에서 다룬다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 78,
+              "element_id": "p78:e619",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 80,
+              "element_id": "p80:img0:e10",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "U209b56cf1c8267aea36d",
+          "statement": "사용자 제공 설명: 현재 cpu는 CROWN 검증에 대해 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황인데, 실시간 환경에서의 대규모 연산을 CUDA로 구현, 최적화함으로써 네트워크 환경을 따라잡을 수 있는가? 그걸 보는거지 , recheck 해도 안나올거야, 원문에는 없어 내 말을 들어",
+          "limits": "사용자가 이 질문에 한해 현재 정보로 진행하도록 임시 승인한 설명이다. PDF 대조·독립 검증 완료를 뜻하지 않는다. 설명 밖의 세부 기준·수치·실험·입증된 원인을 만들지 않는다.\n문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다.",
+          "support": "user_accepted",
+          "writing_role": "context_only",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "user_accepted": true,
+          "provisional_decision_id": "209b56cf1c8267aea36d",
+          "sources": [
+            {
+              "page": 0,
+              "element_id": "user:209b56cf1c8267aea36d",
+              "origin": "user_addendum"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "U9ff240a30b03c6835449",
+          "statement": "사용자 제공 설명: 음.. 내가 아까 말했던 기존 연구라 하면 CROWN을 CPU환경에서만 실행해봤다, 그래서 실시간 환경에서 이런 대규모 연산을 충족할 수 있는가에 대한 연구가 이번연구야\n\n그리고 이건 원문에 없어(연구일지에 없다고) 이부분은 너가 내 추가 정보를 참고해서 써야지\n",
+          "limits": "사용자가 이 질문에 한해 현재 정보로 진행하도록 임시 승인한 설명이다. PDF 대조·독립 검증 완료를 뜻하지 않는다. 설명 밖의 세부 기준·수치·실험·입증된 원인을 만들지 않는다.\n문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다.",
+          "support": "user_accepted",
+          "writing_role": "context_only",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "user_accepted": true,
+          "provisional_decision_id": "9ff240a30b03c6835449",
+          "sources": [
+            {
+              "page": 0,
+              "element_id": "user:9ff240a30b03c6835449",
+              "origin": "user_addendum"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        }
+      ]
+    },
+    {
+      "item_id": "intro_gap",
+      "description": "기존 연구가 충분히 다루지 못한 지점과 본 연구의 초점을 짧게 정리한다. 기존 CROWN 실행이 CPU 환경에 머물렀다는 점과, 실시간 환경에서의 대규모 연산 충족 여부를 CUDA 구현·최적화로 확인하려는 초점을 반영한다.",
+      "section_id": "sec_introduction",
+      "verdict": "met",
+      "model_verdict": "met",
+      "planned_evidence_count": 2,
+      "reviewed_evidence_count": 2,
+      "missing_body_count": 0,
+      "missing_section_count": 0,
+      "unused_candidate_count": 0,
+      "unselected_cited_count": 0,
+      "failure_owner": null,
+      "missing_review_count": 0,
+      "paragraph_ids": [
+        "sec_introduction_p2",
+        "sec_introduction_p1"
+      ],
+      "evidence": [
+        {
+          "id": "U9ff240a30b03c6835449",
+          "statement": "사용자 제공 설명: 음.. 내가 아까 말했던 기존 연구라 하면 CROWN을 CPU환경에서만 실행해봤다, 그래서 실시간 환경에서 이런 대규모 연산을 충족할 수 있는가에 대한 연구가 이번연구야\n\n그리고 이건 원문에 없어(연구일지에 없다고) 이부분은 너가 내 추가 정보를 참고해서 써야지\n",
+          "limits": "사용자가 이 질문에 한해 현재 정보로 진행하도록 임시 승인한 설명이다. PDF 대조·독립 검증 완료를 뜻하지 않는다. 설명 밖의 세부 기준·수치·실험·입증된 원인을 만들지 않는다.\n문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다.",
+          "support": "user_accepted",
+          "writing_role": "context_only",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "user_accepted": true,
+          "provisional_decision_id": "9ff240a30b03c6835449",
+          "sources": [
+            {
+              "page": 0,
+              "element_id": "user:9ff240a30b03c6835449",
+              "origin": "user_addendum"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00348",
+          "statement": "CUDA로 구현한 이유로, CUDA 프로그래밍 역량을 가진 사람이라는 점과 안테나 신경망 검증 알고리즘을 하드웨어에 구현하여 실시간 검증에 관심이 있으며, 하드웨어에 구현(실시간 검증)할 수 있는 여지가 있다는 논문의 뒷받침 논문으로 작성 가능하다는 점이 기록되었다.",
+          "limits": "이 내용은 CUDA 구현 이유·목적에 대한 기록이며, 실제 실시간 검증 구현 결과나 논문 작성 결과는 포함하지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 44,
+              "element_id": "p44:e296",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 44,
+              "element_id": "p44:e297",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        }
+      ]
+    },
+    {
+      "item_id": "intro_goal",
+      "description": "연구의 주요 목표와 기여를 한 문장으로 요약한다. CUDA로 CROWN 검증 연산을 구현·최적화하여 실시간 환경에서의 연산 부담을 줄이는 방향을 확인하는 것이 목표이며, 구체적 수치·입증된 성과 대신 연구 일지의 진행 범위와 해석 한계를 함께 명시한다.",
+      "section_id": "sec_introduction",
+      "verdict": "met",
+      "model_verdict": "met",
+      "planned_evidence_count": 4,
+      "reviewed_evidence_count": 4,
+      "missing_body_count": 0,
+      "missing_section_count": 0,
+      "unused_candidate_count": 0,
+      "unselected_cited_count": 0,
+      "failure_owner": null,
+      "missing_review_count": 0,
+      "paragraph_ids": [
+        "sec_introduction_p3",
+        "sec_introduction_p1"
+      ],
+      "evidence": [
+        {
+          "id": "U209b56cf1c8267aea36d",
+          "statement": "사용자 제공 설명: 현재 cpu는 CROWN 검증에 대해 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황인데, 실시간 환경에서의 대규모 연산을 CUDA로 구현, 최적화함으로써 네트워크 환경을 따라잡을 수 있는가? 그걸 보는거지 , recheck 해도 안나올거야, 원문에는 없어 내 말을 들어",
+          "limits": "사용자가 이 질문에 한해 현재 정보로 진행하도록 임시 승인한 설명이다. PDF 대조·독립 검증 완료를 뜻하지 않는다. 설명 밖의 세부 기준·수치·실험·입증된 원인을 만들지 않는다.\n문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다.",
+          "support": "user_accepted",
+          "writing_role": "context_only",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "user_accepted": true,
+          "provisional_decision_id": "209b56cf1c8267aea36d",
+          "sources": [
+            {
+              "page": 0,
+              "element_id": "user:209b56cf1c8267aea36d",
+              "origin": "user_addendum"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00027",
+          "statement": "GPU OPTIMIZED 모드(cuBLAS + Pool)에서 CROWN Verification 실행 결과 Elapsed time이 229.691800 ms로 기록되었다.",
+          "limits": "이 수치는 GPU OPTIMIZED 모드의 단일 실행 결과이며, CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 5,
+              "element_id": "p5:e43",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 5,
+              "element_id": "p5:review:e0",
+              "origin": "enhanced_numeric_ocr_review"
+            },
+            {
+              "page": 6,
+              "element_id": "p6:e48",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00029",
+          "statement": "GPU OPTIMIZED 모드 적용 후 실행 시간이 229.691ms로 약 100ms 줄었지만 여전히 CPU보다 느리다고 기록되었다.",
+          "limits": "이 비교 판단은 기록자의 정성적 평가이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 5,
+              "element_id": "p5:e46",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 5,
+              "element_id": "p5:review:e3",
+              "origin": "enhanced_numeric_ocr_review"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00030",
+          "statement": "GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 만들어보았다.",
+          "limits": "이 내용은 후속 시도 동기와 방향 기록이며, 하이브리드 프로그램의 실제 구현 완료·측정 결과는 현재 페이지에 없다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 5,
+              "element_id": "p5:e47",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 5,
+              "element_id": "p5:review:e4",
+              "origin": "enhanced_numeric_ocr_review"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        }
+      ]
+    },
+    {
+      "item_id": "intro_compare_issue",
+      "description": "비교 수행 시 발생하는 어려움과 공정 비교를 위해 필요한 구분·조건을 정리한다. cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않다는 점, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않아 공정 비교를 위한 통제 조건으로 확정하기 어렵다는 점을 한계로 남긴다. 발표자료·슬라이드 구성·대본 작성 피드백처럼 연구 비교 조건을 직접 말하지 않는 근거는 제외한다.",
+      "section_id": "sec_introduction",
+      "verdict": "met",
+      "model_verdict": "met",
+      "planned_evidence_count": 31,
+      "reviewed_evidence_count": 4,
+      "missing_body_count": 0,
+      "missing_section_count": 0,
+      "unused_candidate_count": 27,
+      "unselected_cited_count": 0,
+      "failure_owner": null,
+      "missing_review_count": 0,
+      "paragraph_ids": [
+        "sec_introduction_p2"
+      ],
+      "evidence": [
+        {
+          "id": "Hefd7e87bb735_6",
+          "statement": "비교 시 발생하는 어려움으로는 신경망 크기가 매우 작아 cuBlas·cuSparse 도입 시 오버헤드가 생기고 결과가 나빠지는 점, 네트워크_forward가 아직 GPU 파이프라인이 아니어서 최적화가 안 된 점, CUDA Context 생성 및 런타임 오버헤드로 프로파일러 VRAM 사용량이 코드 계산값보다 작게 보이는 점이 있다.",
+          "limits": "원문에 직접 기술된 내용만 반영함.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 30,
+              "element_id": "p30:e204",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 30,
+              "element_id": "p30:e205",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 30,
+              "element_id": "p30:e206",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 31,
+              "element_id": "p31:e208",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 31,
+              "element_id": "p31:e209",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 23,
+              "element_id": "p23:e157",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 23,
+              "element_id": "p23:e158",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_10",
+          "statement": "Backward_bound_gpu에서 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 보내는 GPU→CPU→GPU→CPU 불필요한 복사가 발생하여, 측정/비교 시 실제 연산 성능보다 복사 오버헤드가 결과에 섞일 수 있다.",
+          "limits": "원문 p41:e276–e277에 기술된 복사 경로 및 문제 인식",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 41,
+              "element_id": "p41:e276",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 41,
+              "element_id": "p41:e277",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_11",
+          "statement": "forward 호출 시 forward의 중간 결과를 CPU(메모리)에 복사(memcpy)하는지 여부를 플래그로 제어하지 않으면 memcpy가 현저히 늘어나 비교 조건이 달라진다.",
+          "limits": "원문 p36:e241–e242에 기술된 플래그 도입 및 memcpy 감소 효과",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 36,
+              "element_id": "p36:e241",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 36,
+              "element_id": "p36:e242",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_13",
+          "statement": "Nsight System의 kernel 비중 증가나 메모리 비중 감소가 반드시 최적화 성공을 의미하지 않으며, CPU-GPU 메모리 병목은 그대로인데 커널 실행 시간이 잘못된 커널 작성으로 늘어나도 kernel 비중이 증가할 수 있어, 단순 지표 비교만으로는 공정 평가가 어렵다.",
+          "limits": "원문 p44:e301–e302, p45:e303, p45:e307에 기술된 지표 해석상의 주의",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 44,
+              "element_id": "p44:e301",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 44,
+              "element_id": "p44:e302",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 45,
+              "element_id": "p45:e303",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 45,
+              "element_id": "p45:e307",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_14",
+          "statement": "Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄이는 조건이 비교 시 복사/초기화 비용 차이를 줄이는 데 관련된다.",
+          "limits": "원문 p43:e287–e288에 기술된 재사용 및 GPU 직접 생성 최적화",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 43,
+              "element_id": "p43:e287",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 43,
+              "element_id": "p43:e288",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_15",
+          "statement": "memcpy 호출 횟수 변화(예: 109→94, 66→56 등)는 측정 시점/구성에 따라 비교 지표로 쓰이지만, 복사 제거 여부나 플래그 설정에 따라 횟수가 달라지므로 공정 비교를 위해 해당 조건을 명시해야 한다.",
+          "limits": "원문 p36:e239, p40:e274에 기술된 memcpy 호출 횟수 변화",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 36,
+              "element_id": "p36:e239",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 40,
+              "element_id": "p40:e274",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_17",
+          "statement": "cudaMemcpy 호출 횟수는 forward와 backward에서 동일하게 6번이었으나, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 더 많이 잡혀 전체 실행 시간 차이의 원인이 되었다.",
+          "limits": "원문 p47:e336, p47:e337",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 47,
+              "element_id": "p47:e336",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 47,
+              "element_id": "p47:e337",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 46,
+              "element_id": "p46:e323",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 46,
+              "element_id": "p46:e324",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 46,
+              "element_id": "p46:e325",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 46,
+              "element_id": "p46:e326",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 46,
+              "element_id": "p46:e327",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_18",
+          "statement": "CROWN 결과를 담는 구조체(ForwardBoundResult, BackwardBoundResult)를 반복문 바깥 main 함수 scope에서 선언해 두고 switch 내부에서 값을 담으면 값에 의한 복사가 발생하여, 92만 번 반복 시 구조체 복사 오버헤드가 커져 성능이 저하되었다.",
+          "limits": "원문 p49:e349, p49:e350, p50:e355",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 49,
+              "element_id": "p49:e349",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 49,
+              "element_id": "p49:e350",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 50,
+              "element_id": "p50:e351",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 50,
+              "element_id": "p50:e352",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 50,
+              "element_id": "p50:e353",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 50,
+              "element_id": "p50:e354",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 50,
+              "element_id": "p50:e355",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 50,
+              "element_id": "p50:e357",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_19",
+          "statement": "실행 인자(command line argument)로 forward/backward를 선택하도록 하고 switch문을 사용하는 방식으로 변경했을 때, 기존 번거롭게 backward만 돌리던 실행 결과(1560.37s) 대비 실행 시간이 증가(2164s)하여 약 600초(10분) 느려지는 현상이 발생하였다.",
+          "limits": "원문 p48:e342, p48:e343, p48:e344, p49:e345",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 48,
+              "element_id": "p48:e342",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 48,
+              "element_id": "p48:e343",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 48,
+              "element_id": "p48:e344",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 49,
+              "element_id": "p49:e345",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_20",
+          "statement": "실행 인자 유무, switch 사용 여부, 구조체 복사 제거 여부에 따라 동일 조건처럼 보이는 실행에서도 total elapsed 시간이 1342.47s, 1460.60s, 1560.37s, 1561.72s, 1564.18s, 1636s, 2187s 등으로 크게 변동하여, 실행 조건/코드 구조 차이가 공정 비교를 저해하는 요소로 작용하였다.",
+          "limits": "원문 p51:e360~p51:e372, p52:e374~p52:e377",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 51,
+              "element_id": "p51:e360",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e361",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e362",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e363",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e364",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e365",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e366",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e367",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e368",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e369",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e370",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e371",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 51,
+              "element_id": "p51:e372",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 52,
+              "element_id": "p52:e373",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 52,
+              "element_id": "p52:e374",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 52,
+              "element_id": "p52:e375",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 52,
+              "element_id": "p52:e376",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 52,
+              "element_id": "p52:e377",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_34",
+          "statement": "cudaHostRegister, HostAlloc, No Pinning 세 가지 메모리 방식을 측정 비교한 결과, no Pinning이 가장 빠르게 측정되었다.",
+          "limits": "측정 조건(클록 고정 여부 등)이 명시되지 않은 초기 비교 결과임.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 73,
+              "element_id": "p73:e573",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 73,
+              "element_id": "p73:e575",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 73,
+              "element_id": "p73:e576",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 74,
+              "element_id": "p74:e582",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_35",
+          "statement": "cudaHostRegister가 No Pinning보다 느리게 측정된 이유로, 입력 크기가 1KB로 매우 작아 전송 방식 차이가 미미하고, GPU 연산 시간이 전체 지연의 85% 이상을 차지하여 전송 방식 영향이 작다는 점이 제시되었다.",
+          "limits": "이는 측정 결과에 대한 해석/설명이며, 공정 비교를 위한 통제 조건으로 직접 명시된 것은 아님.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 73,
+              "element_id": "p73:e578",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 73,
+              "element_id": "p73:e579",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 73,
+              "element_id": "p73:e580",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_36",
+          "statement": "클록 변동으로 인한 비교 왜곡 가능성을 인지하고 GPU 클록을 고정하여 재측정하려는 시도가 있었다.",
+          "limits": "클록 고정 후 재측정 결과가 이 원문에 직접 제시되어 있지 않음.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 74,
+              "element_id": "p74:e584",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 74,
+              "element_id": "p74:e585",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e587",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e588",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_37",
+          "statement": "초기 비교에서 싱글 스트림, 배치 사이즈 1024, python autolirpa_topk_robustness.py 실행 방식 등 측정/실행 조건이 언급되었다.",
+          "limits": "이것들이 공정 비교를 위한 명시적 통제 조건으로 정리된 것은 아님.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 66,
+              "element_id": "p66:e531",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 66,
+              "element_id": "p66:e532",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 68,
+              "element_id": "p68:e543",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_39",
+          "statement": "Pinned Memory가 더 느린 이유는 PCIe DMA 엔진 호출 시 DMA 디스크립터 생성 및 하드웨어 큐 제출 오버헤드가 호출 1회당 약 1.0~1.5μs(또는 1~2μs) 발생하기 때문이며, No-Pin은 CPU L1/L2 캐시를 이용한 내부 스테이징 버퍼 복사로 0.02~0.05μs(20~50ns)면 끝나기 때문이다.",
+          "limits": "p77:e602, p77:e603, p79:e621",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 77,
+              "element_id": "p77:e602",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e603",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 79,
+              "element_id": "p79:e621",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_40",
+          "statement": "클록 고정까지 수행했음에도 No-Pin이 더 빠르게 측정되어, 측정 오류가 아니라 초소형 데이터(1KB)의 역설로 해석되었다.",
+          "limits": "p76:e594, p77:e596",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 76,
+              "element_id": "p76:e594",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e596",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_41",
+          "statement": "공정 비교를 저해하는 요소로는 데이터 크기에 따른 DMA 셋업 오버헤드 대 CPU 캐시 복사 이득의 역전, OS 페이징/백그라운드 작업 개입에 따른 지연 스파이크, cudaMemcpyAsync 호출 방식(매 루프 개별 호출) 등이 있다.",
+          "limits": "p77:e600, p77:e602, p78:e616, p78:e617, p79:e621",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 77,
+              "element_id": "p77:e600",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e602",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 78,
+              "element_id": "p78:e616",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 78,
+              "element_id": "p78:e617",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 79,
+              "element_id": "p79:e621",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_43",
+          "statement": "cudaHostRegister/Pinned Memory와 No-Pinning 비교는 여러 번 측정 결과가 일관되지 않았으며, pinned 적용 버전의 cudaMemcpyAsync가 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확정하기 어렵다는 한계가 기록되었다.",
+          "limits": "p81:e624, p81:e628",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 81,
+              "element_id": "p81:e624",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 81,
+              "element_id": "p81:e628",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_49",
+          "statement": "cudaHostRegister를 사용하여 데이터셋 호스트 메모리를 pinned memory로 승격시켜 GPU가 CPU 메모리에 직접 접근하도록 함.",
+          "limits": "cudaHostRegister(dataset.data(), (size_t)N * sizeof(Vector), cudaHostRegisterDefault) 호출. N>0일 때만 수행. 실패 시 cudaHostRegister skipped 메시지 출력.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "implementation_code",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 60,
+              "element_id": "p60:enh:e0",
+              "origin": "enhanced_page_image"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_53",
+          "statement": "v1-1에서 벡터연산 3가지를 CPU로 돌렸을 때 300ms가 나왔으나, 메모리 풀과 cuBLAS 예열 없이 CPU로 함수를 돌리면 결국 v0 결과와 같아져 정확한 비교를 할 수 없다고 판단했다.",
+          "limits": "v1-1의 CPU 전환 실험과 v0 대비 비교 불가능성에 대한 개발자 판단이며, 독립된 측정 조건 통제나 통계적 검증 결과는 아니다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 10,
+              "element_id": "p10:review:e7",
+              "origin": "enhanced_numeric_ocr_review"
+            },
+            {
+              "page": 10,
+              "element_id": "p10:review:e8",
+              "origin": "enhanced_numeric_ocr_review"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_54",
+          "statement": "메모리 풀 + warmup 조합으로 거의 200ms 단축되었으며, memcpy 병목을 잡아야 CPU보다 빨라질 수 있다고 보았다.",
+          "limits": "단축 폭과 병목 판단은 개발자 관찰이며, 측정 반복·조건 통제·통계 처리는 명시되지 않았다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 19,
+              "element_id": "p19:review:e1",
+              "origin": "enhanced_numeric_ocr_review"
+            },
+            {
+              "page": 19,
+              "element_id": "p19:review:e3",
+              "origin": "enhanced_numeric_ocr_review"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_55",
+          "statement": "신경망 크기가 매우 작고, cuBlas·cuSparse 동작 방식에서 오버헤드가 발생했으며 이 또한 신경망이 작기 때문이라고 분석했다.",
+          "limits": "원인 분석은 개발자 해석이며, 오버헤드 정량화나 통제된 비교 실험 결과는 제시되지 않았다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 31,
+              "element_id": "p31:review:e1",
+              "origin": "enhanced_numeric_ocr_review"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_56",
+          "statement": "가중치를 미리 GPU에 업로드해 memcpy를 줄이려 했으나, my_lirpa_mempool_preload_on_gpu.cu와 비교해 성능 차이가 거의 없었고 500회 누적에서도 5~10ms 정도 우세에 그쳐 큰 의미를 못 미친다고 판단했다.",
+          "limits": "사전 업로드 효과는 두 구현 간 비교와 500회 누적 관찰에 기반하며, 측정 조건 통제나 통계적 유의성은 명시되지 않았다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 14,
+              "element_id": "p14:review:e6",
+              "origin": "enhanced_numeric_ocr_review"
+            },
+            {
+              "page": 14,
+              "element_id": "p14:review:e7",
+              "origin": "enhanced_numeric_ocr_review"
+            },
+            {
+              "page": 14,
+              "element_id": "p14:review:e8",
+              "origin": "enhanced_numeric_ocr_review"
+            },
+            {
+              "page": 14,
+              "element_id": "p14:review:e9",
+              "origin": "enhanced_numeric_ocr_review"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_57",
+          "statement": "영벡터 만들기를 다시 GPU로 해보니 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 판단했다.",
+          "limits": "GPU/CPU 간 작은 차이는 개발자 관찰이며, 반복 측정·조건 통제·통계 처리는 제시되지 않았다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 19,
+              "element_id": "p19:review:e9",
+              "origin": "enhanced_numeric_ocr_review"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_60",
+          "statement": "원문에는 배치 사이즈 1024, 싱글 스트림 추정, CUDA 장치(device cuda) 사용 등 실행 조건이 일부 언급되어 있다.",
+          "limits": "python autolirpa_topk_robustness.py --data-path ... --device cuda --batch-size 1024 실행과 '싱글 스트림인듯'이라는 관찰이 적혀 있다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 66,
+              "element_id": "p66:pdf:b1",
+              "origin": "native_pdf_text"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_61",
+          "statement": "원문에는 커널 런치 오버헤드, 2차원 블록/tid 기반 평면 계산, 3차원(멀티 샘플) 처리 및 tensor 코어 활용 가능성 등 비교 맥락에 영향을 줄 수 있는 요소가 서술되어 있다.",
+          "limits": "상대방과 달리 입력데이터에 대한 커널 런치를 1번으로 줄여 커널 런치 오버헤드가 상대적으로 없다는 설명, 현재 2차원 커널이라 fp32 코어로만 수행 중이며 z축 추가 시 3차원 처리가 가능하다는 관찰이 적혀 있다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 68,
+              "element_id": "p68:pdf:b1",
+              "origin": "native_pdf_text"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_62",
+          "statement": "원문에는 warmup 수행, 평균 기반 측정, cudaGraph 적용 버전 등 측정 방식과 버전 구분이 일부 기록되어 있다.",
+          "limits": "warmup 코드 주석(network_forward, lirpa_forward_bound_impl 등), '평균으로 측정을 해봤다'는 캡션, cudaGraph만 적용된 버전 heading, sparse.py와 CUDA의 평균 bound 계산 시간 비교 표가 포함되어 있다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "measurement_log",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 55,
+              "element_id": "p55:img0:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 55,
+              "element_id": "p55:img1:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 56,
+              "element_id": "p56:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 56,
+              "element_id": "p56:img0:e3",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 58,
+              "element_id": "p58:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 58,
+              "element_id": "p58:img1:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 62,
+              "element_id": "p62:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 62,
+              "element_id": "p62:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_63",
+          "statement": "cudaHostRegister, cudaHostAlloc(h_x0 복사), No Pinning(Pageable) 3가지 메모리 방식을 backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산 조건으로 비교했으며, 전체 실행 시간·추론 누적 시간·바운드 누적 시간·단일 샘플 평균 지연시간·중위값(P50)·95% 꼬리 지연(P95)·지터(표준편차)·순수 GPU 커널 시간·초당 처리량을 측정했다.",
+          "limits": "p73:img0:e1, p73:img0:e2",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 73,
+              "element_id": "p73:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 73,
+              "element_id": "p73:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_65",
+          "statement": "평균/총 시간만 보면 No-Pin이 더 빨라 보이지만, 지터(표준편차)와 최대 지연시간(WCET)에서는 Pinned가 더 안정적이며(No-Pin 최대 8.80~11.6 ms, 지터 118.94 μs vs Pinned 최대 1.64 ms, 지터 47.28 μs), 이는 OS 페이징·백그라운드 작업·드라이버 버퍼 락 경합이 No-Pin에서 간헐적 지연을 유발하기 때문이다.",
+          "limits": "p80:img0:e7, p80:img0:e8, p80:img0:e9",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 80,
+              "element_id": "p80:img0:e7",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 80,
+              "element_id": "p80:img0:e8",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 80,
+              "element_id": "p80:img0:e9",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_66",
+          "statement": "공정한 측정을 위해 GPU 클록 상태를 확인하고(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1) 및 그래픽 클록 고정(sudo nvidia-smi -lgc 1410)을 통해 클록 저하·스로틀링을 통제하며, 스로틀링 원인(온도·전력·API 간헐적 지연)과 해결(냉각 개선·전력 제한 확인·백그라운드 작업 확인)을 구분한다.",
+          "limits": "p75:img0:e1, p75:img0:e3, p75:img0:e4, p75:img0:e5, p75:img0:e7",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 75,
+              "element_id": "p75:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e3",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e4",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e5",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e7",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "Hefd7e87bb735_67",
+          "statement": "cudaHostRegister와 cudaHostAlloc(hostAlloc)은 cudaStreamSynchronize(323μs / 322μs), cudaMemcpyAsync(5.188μs / 5.351μs), memcpy 복사 시간(1.117μs / 1.142μs) 수준에서 유사하게 측정되고, noPinning은 cudaStreamSynchronize 314μs, cudaMemcpyAsync 4.932μs, memcpy 복사 시간 340ns로 측정되어, 평균값(n=920000) 기준으로 각 방식의 동기화·복사 비용 차이가 나타난다.",
+          "limits": "p81:img0:e1",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 81,
+              "element_id": "p81:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        }
+      ]
+    },
+    {
+      "item_id": "intro_condition",
+      "description": "실험 조건 또는 구성(입력 자료의 규모·구성, 구분 기준 등)을 정의한다. 신경망 크기(256-491-491-16), 배치 사이즈 1, 실행 방식(CROWN의 3가지 방법: forward, forward+backward, backward_only), 데이터셋과 eps_list가 기존 신경망 검증팀이 사용하던 인풋이라는 점을 반영한다.",
+      "section_id": "sec_introduction",
+      "verdict": "met",
+      "model_verdict": "met",
+      "planned_evidence_count": 18,
+      "reviewed_evidence_count": 9,
+      "missing_body_count": 0,
+      "missing_section_count": 0,
+      "unused_candidate_count": 9,
+      "unselected_cited_count": 0,
+      "failure_owner": null,
+      "missing_review_count": 0,
+      "paragraph_ids": [
+        "sec_introduction_p3",
+        "sec_introduction_p6"
+      ],
+      "evidence": [
+        {
+          "id": "E00011",
+          "statement": "최광훈 안테나 선택 신경망은 Fully Connected 구조이며, Fully Layer 1, Fully Layer 2, Fully Layer 3(output)으로 구성되고, 입력 벡터 길이는 NR × Ng = 256이다.",
+          "limits": "이 내용은 교수 메시지에서 인용한 신경망 구조 설명이며, 실제 구현·검증 결과와 동일하다고 확정하는 기록은 아니다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 2,
+              "element_id": "p2:e28",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00012",
+          "statement": "입력 N(0)=256개(16x16), 출력 N(3)=16개, 히든 계층은 2개이며 N(1)=491, N(2)=491이다.",
+          "limits": "이 내용은 교수 메시지에서 확인된 구조 설명이며, 실제 구현·측정 결과로 확정된 수치는 아니다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 2,
+              "element_id": "p2:e28",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00013",
+          "statement": "crown 알고리즘의 입력으로 테스트 데이터 1개와 eps=10^-6을 사용해 crown 알고리즘을 돌려 16개 출력을 뽑는 것을 1차 목표로 제시했다.",
+          "limits": "이 내용은 1차 목표 제시 기록이며, 실제 crown 실행 결과나 정확도 수치는 현재 페이지에 없다.\n문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다.",
+          "support": "supported",
+          "writing_role": "context_only",
+          "claim_status": "planned",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 2,
+              "element_id": "p2:e28",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 3,
+              "element_id": "p3:e35",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00027",
+          "statement": "GPU OPTIMIZED 모드(cuBLAS + Pool)에서 CROWN Verification 실행 결과 Elapsed time이 229.691800 ms로 기록되었다.",
+          "limits": "이 수치는 GPU OPTIMIZED 모드의 단일 실행 결과이며, CPU 버전과의 비교 해석이나 반복 측정 통계는 현재 페이지에 없다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 5,
+              "element_id": "p5:e43",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 5,
+              "element_id": "p5:review:e0",
+              "origin": "enhanced_numeric_ocr_review"
+            },
+            {
+              "page": 6,
+              "element_id": "p6:e48",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00029",
+          "statement": "GPU OPTIMIZED 모드 적용 후 실행 시간이 229.691ms로 약 100ms 줄었지만 여전히 CPU보다 느리다고 기록되었다.",
+          "limits": "이 비교 판단은 기록자의 정성적 평가이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 5,
+              "element_id": "p5:e46",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 5,
+              "element_id": "p5:review:e3",
+              "origin": "enhanced_numeric_ocr_review"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00030",
+          "statement": "GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul(행렬곱)만 GPU로 실행하는 하이브리드 프로그램을 만들어보았다.",
+          "limits": "이 내용은 후속 시도 동기와 방향 기록이며, 하이브리드 프로그램의 실제 구현 완료·측정 결과는 현재 페이지에 없다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 5,
+              "element_id": "p5:e47",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 5,
+              "element_id": "p5:review:e4",
+              "origin": "enhanced_numeric_ocr_review"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00277",
+          "statement": "cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이이다.",
+          "limits": "현재 페이지는 figure 캡션에 기록된 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 74,
+              "element_id": "p74:e582",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e586",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e587",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e588",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e589",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e3",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e4",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e5",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e6",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e7",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 76,
+              "element_id": "p76:e591",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 76,
+              "element_id": "p76:e593",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 76,
+              "element_id": "p76:e594",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e595",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 79,
+              "element_id": "p79:e621",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 80,
+              "element_id": "p80:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00278",
+          "statement": "Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고(예상대로 DMA 효과), Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다.",
+          "limits": "현재 페이지는 figure 캡션에 기록된 단계별 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 74,
+              "element_id": "p74:e582",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e586",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e587",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e588",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e589",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e3",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e4",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e5",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e6",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e7",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 76,
+              "element_id": "p76:e591",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 76,
+              "element_id": "p76:e593",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 76,
+              "element_id": "p76:e594",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e595",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 80,
+              "element_id": "p80:img0:e8",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00279",
+          "statement": "cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해, 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었다.",
+          "limits": "현재 페이지는 figure 캡션에 기록된 원인 제시 문장만 포함하며, 3가지 이유의 구체적 내용은 이 요소만으로는 제시되지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 74,
+              "element_id": "p74:e582",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e586",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e587",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e588",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e589",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e3",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e4",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e5",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e6",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e7",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 76,
+              "element_id": "p76:e594",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e595",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 80,
+              "element_id": "p80:img0:e11",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00280",
+          "statement": "추론(Infer) 단계에서 시간이 느려졌으며, 이에 대해 기록자가 '일단 추론에서 좀 시간이 느려지긴 했다..'라고 기록했다.",
+          "limits": "현재 페이지는 heading 텍스트에 기록된 정성적 관찰만 포함하며, 정량 수치나 원인 분석은 이 요소만으로는 제시되지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "observed",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 74,
+              "element_id": "p74:e583",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e586",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e587",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e588",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e589",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e3",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e4",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e5",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e6",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e7",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 76,
+              "element_id": "p76:e592",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e595",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 80,
+              "element_id": "p80:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00281",
+          "statement": "GPU 클록을 고정하고 다시 실험해보기로 했으며, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했다.",
+          "limits": "현재 페이지는 figure 캡션에 기록된 실험 재시도 방향과 코드 구조만 포함하며, 실제 클록 고정 후 측정 결과는 이 요소만으로는 제시되지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 74,
+              "element_id": "p74:e584",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 74,
+              "element_id": "p74:e585",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e586",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e587",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e588",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e589",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e3",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e4",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e5",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e6",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e7",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e595",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00282",
+          "statement": "클록을 2800Mhz로 고정하고 돌린 결과(기존 HostRegister)",
+          "limits": "현재 페이지는 클록 고정 실험 재시도 사실과 조건만 포함하며, 실제 측정 결과 수치는 이 요소만으로는 제시되지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 75,
+              "element_id": "p75:e586",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e587",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e588",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e589",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e3",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e4",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e5",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e6",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e7",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e595",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00283",
+          "statement": "cuda 강의 19장의 GPU 클록 고정을 참고했다.",
+          "limits": "현재 페이지는 참고 출처만 포함하며, 실제 적용 결과나 측정 수치는 이 요소만으로는 제시되지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 75,
+              "element_id": "p75:e586",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e587",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e588",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e589",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e3",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e4",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e5",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e6",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e7",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e595",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00284",
+          "statement": "현재 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행한다.",
+          "limits": "현재 페이지는 figure 캡션에 기록된 명령어 예시만 포함하며, 실제 실행 결과나 고정 후 측정 수치는 이 요소만으로는 제시되지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 75,
+              "element_id": "p75:e586",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e587",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e588",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e589",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e3",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e4",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e5",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e6",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e7",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e595",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00286",
+          "statement": "측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용한다.",
+          "limits": "현재 페이지는 figure 캡션에 기록된 측정 환경 설정 코드만 포함하며, 실제 적용 결과나 측정 수치는 이 요소만으로는 제시되지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 75,
+              "element_id": "p75:e586",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e587",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e588",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:e589",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e0",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e1",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e2",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e3",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e4",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e5",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e6",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 75,
+              "element_id": "p75:img0:e7",
+              "origin": "pdf_image_gap_ocr"
+            },
+            {
+              "page": 77,
+              "element_id": "p77:e595",
+              "origin": "standard_parse"
+            }
+          ],
+          "cited_in_selected_paragraphs": false,
+          "cited_anywhere_in_section": false,
+          "listed_by_reviewer": false,
+          "unused_candidate": true,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "E00333",
+          "statement": "6번째 세미나 이후 할 일로 대학원 AI 프로그래밍 논문 영상 재확인, 6번 세미나 3번 슬라이드에 RAM 추가(해결), 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 기록되었다.",
+          "limits": "현재 페이지는 세미나 이후 할 일 목록과 코드·문제 관련 메모만 포함하며, 실제 구현 완료·측정 결과·발표 결과는 포함하지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 37,
+              "element_id": "p37:e247",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e248",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e249",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e250",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e251",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e252",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e253",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e254",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e255",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e256",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:pdf:b7",
+              "origin": "native_pdf_text"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "U531b24e3633dee74c4f7",
+          "statement": "사용자 제공 설명: 256 - 491 -491 -16 크기의 신경망 / 입력 데이터셋이나, eps_list는 기존 신경망 팀이 사용하던 인풋을 사용했다.\n\n평가 대상은 CROWN을 구현한 C++ 프로그램을 대상으로 진행했고\nGPU 클록 고정은 연구 일지에서 봤듯이 나중에 고정된 사항이고, warm up은 초기에 되었고..\n\n일단 잘 모르겠어",
+          "limits": "사용자가 이 질문에 한해 현재 정보로 진행하도록 임시 승인한 설명이다. PDF 대조·독립 검증 완료를 뜻하지 않는다. 설명 밖의 세부 기준·수치·실험·입증된 원인을 만들지 않는다.\n문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다.",
+          "support": "user_accepted",
+          "writing_role": "context_only",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "user_accepted": true,
+          "provisional_decision_id": "531b24e3633dee74c4f7",
+          "sources": [
+            {
+              "page": 0,
+              "element_id": "user:531b24e3633dee74c4f7",
+              "origin": "user_addendum"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        },
+        {
+          "id": "U8602da87af586b3567f6",
+          "statement": "사용자 제공 설명: 신경망 크기, 배치 사이즈는 1 , 실행 방식은 CROWN의 3가지 방법 forward, forward+backward, backward_only , 데이터셋은 기존 신경망 검증팀의 구현과 시간을 비교하기 위함이므로 신경망 검증팀이 사용하던 데이터셋과 eps_list\n\n이것 말고는 전부 최적화 과정에서 적용했다가 안했다가 하는 부분이네",
+          "limits": "사용자가 이 질문에 한해 현재 정보로 진행하도록 임시 승인한 설명이다. PDF 대조·독립 검증 완료를 뜻하지 않는다. 설명 밖의 세부 기준·수치·실험·입증된 원인을 만들지 않는다.\n문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다.",
+          "support": "user_accepted",
+          "writing_role": "context_only",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "user_accepted": true,
+          "provisional_decision_id": "8602da87af586b3567f6",
+          "sources": [
+            {
+              "page": 0,
+              "element_id": "user:8602da87af586b3567f6",
+              "origin": "user_addendum"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        }
+      ]
+    },
+    {
+      "item_id": "intro_accuracy",
+      "description": "정확도 지표의 성격을 정리한다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과·비율이 얼마나 차이 나는지이며, 모두 동일했다는 사용자 설명을 반영한다.",
+      "section_id": "sec_introduction",
+      "verdict": "met",
+      "model_verdict": "met",
+      "planned_evidence_count": 1,
+      "reviewed_evidence_count": 1,
+      "missing_body_count": 0,
+      "missing_section_count": 0,
+      "unused_candidate_count": 0,
+      "unselected_cited_count": 0,
+      "failure_owner": null,
+      "missing_review_count": 0,
+      "paragraph_ids": [
+        "sec_introduction_p6"
+      ],
+      "evidence": [
+        {
+          "id": "U3e01c50082e40f98631d",
+          "statement": "사용자 제공 설명: 정확도 지표는 기존 신경망 검증팀의 프로그램과 얼마나 검증 결과, 비율이 차이나는지인데, 모두 동일했어\n\n",
+          "limits": "사용자가 이 질문에 한해 현재 정보로 진행하도록 임시 승인한 설명이다. PDF 대조·독립 검증 완료를 뜻하지 않는다. 설명 밖의 세부 기준·수치·실험·입증된 원인을 만들지 않는다.\n문맥 근거 전용: 계획·질문·가설·해석·AI 조언의 성격을 유지하며 관측 결과로 쓰지 않는다.",
+          "support": "user_accepted",
+          "writing_role": "context_only",
+          "claim_status": "interpretation",
+          "source_origin": "research_note",
+          "user_accepted": true,
+          "provisional_decision_id": "3e01c50082e40f98631d",
+          "sources": [
+            {
+              "page": 0,
+              "element_id": "user:3e01c50082e40f98631d",
+              "origin": "user_addendum"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": false,
+          "missing_body": false,
+          "missing_review": false
+        }
+      ]
+    },
+    {
+      "item_id": "intro_structure",
+      "description": "논문 구성 안내를 짧게 제시한다.",
+      "section_id": "sec_introduction",
+      "verdict": "met",
+      "model_verdict": "met",
+      "planned_evidence_count": 0,
+      "reviewed_evidence_count": 1,
+      "missing_body_count": 0,
+      "missing_section_count": 0,
+      "unused_candidate_count": 0,
+      "unselected_cited_count": 0,
+      "failure_owner": null,
+      "missing_review_count": 0,
+      "paragraph_ids": [
+        "sec_introduction_p4",
+        "sec_introduction_p7"
+      ],
+      "evidence": [
+        {
+          "id": "E00333",
+          "statement": "6번째 세미나 이후 할 일로 대학원 AI 프로그래밍 논문 영상 재확인, 6번 세미나 3번 슬라이드에 RAM 추가(해결), 외부 라이브러리 cuBlas·cuSparse 도입 보류, backward_only 대신 forward+backward 진행 유지, localrobustness_fwd_bwd.py 코드 검토, CROWN range 정렬 문제 해답 확인, 학부 연구생 논문 작성 검토, Nsight Compute로 CUDA core 점유율 50% 목표 분석이 기록되었다.",
+          "limits": "현재 페이지는 세미나 이후 할 일 목록과 코드·문제 관련 메모만 포함하며, 실제 구현 완료·측정 결과·발표 결과는 포함하지 않는다.",
+          "support": "supported",
+          "writing_role": "research_fact",
+          "claim_status": "documented_method",
+          "source_origin": "research_note",
+          "user_accepted": false,
+          "provisional_decision_id": null,
+          "sources": [
+            {
+              "page": 37,
+              "element_id": "p37:e247",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e248",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e249",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e250",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e251",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e252",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e253",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e254",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e255",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:e256",
+              "origin": "standard_parse"
+            },
+            {
+              "page": 37,
+              "element_id": "p37:pdf:b7",
+              "origin": "native_pdf_text"
+            }
+          ],
+          "cited_in_selected_paragraphs": true,
+          "cited_anywhere_in_section": true,
+          "listed_by_reviewer": true,
+          "unused_candidate": false,
+          "outside_item_candidates": true,
+          "missing_body": false,
+          "missing_review": false
+        }
+      ]
+    }
+  ],
+  "content_status": null,
+  "content_approved": null,
+  "content_completion": null,
+  "paragraphs": {
+    "sec_introduction_p1": {
+      "section_id": "sec_introduction",
+      "text": "CROWN 신경망 검증은 완전연결 구조의 안테나 선택 신경망에 대해 입력 섭동 범위 내 출력 경계를 계산하는 방법으로, 실시간 무선 환경에서 검증 결과를 빠르게 확보해야 하는 실용적 요구를 갖는다. 그러나 기존 CROWN 검증 실행은 CPU 환경에 머물러 있었고, 신경망 검증팀도 오프라인 환경에서만 제한적으로 빠른 성능을 보이는 상황이었다. 이에 따라 실시간 환경에서 대규모 연산을 충족할 수 있는지, CUDA 구현과 최적화를 통해 네트워크 환경의 요구 수준에 접근할 수 있는지가 연구의 문제의식으로 제시된다. 실시간성 확보를 위해서는 마이크로초에서 수 밀리초 수준으로 지연을 제한해야 한다는 관점이 함께 언급된다. [근거:E00348,E00101,U209b56cf1c8267aea36d,U9ff240a30b03c6835449]"
+    },
+    "sec_introduction_p2": {
+      "section_id": "sec_introduction",
+      "text": "기존 CROWN 실행이 CPU 환경에 국한되어 있었다는 점과, 실시간 환경에서의 대규모 연산 충족 여부를 CUDA 구현과 최적화로 확인하려는 점이 본 연구의 초점이다. 다만 cudaHostRegister와 No Pinning 비교, GPU 클록 고정 후 재측정 결과, cudaHostRegister와 No Pinning 간 반복 측정 통계는 원문에 직접 제시되어 있지 않아, 공정 비교를 위한 통제 조건으로 확정하기 어렵다는 한계가 남는다. 또한 클록·Persistence mode 등 측정 조건 역시 원문에 직접 명시된 범위로 한정되며, 발표자료나 슬라이드 구성·대본 작성 피드백처럼 연구 비교 조건을 직접 말하지 않는 근거는 제외한다. [근거:Hefd7e87bb735_34,Hefd7e87bb735_36,Hefd7e87bb735_43,Hefd7e87bb735_66]"
+    },
+    "sec_introduction_p3": {
+      "section_id": "sec_introduction",
+      "text": "본 연구의 목표는 CUDA로 CROWN 검증 연산을 구현·최적화하여 실시간 환경에서의 연산 부담을 줄이는 방향을 확인하는 것이다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 사이즈는 1로 설정된다. 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only를 사용하고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용한다. 다만 구체적 수치나 입증된 성과 대신, 연구 일지의 진행 범위와 해석 한계를 함께 명시한다. [근거:E00027,E00029,E00030,E00011,E00012,E00013]"
+    },
+    "sec_introduction_p4": {
+      "section_id": "sec_introduction",
+      "text": "본 논문은 연구 배경과 문제 제기를 시작으로, CUDA 기반 CROWN 검증의 구현과 최적화 과정, 비교 수행 시 발생하는 어려움과 측정 조건의 한계, 그리고 실험 구성과 결과를 순차적으로 서술한다. [근거:E00027,E00029,E00030]"
+    },
+    "sec_introduction_p5": {
+      "section_id": "sec_introduction",
+      "text": "신경망 검증은 안전이 중요한 시스템에서 예측의 강건성을 보장하는 핵심 절차이나, 기존 CROWN 검증은 주로 CPU 환경에서 수행되어 대규모 연산을 실시간으로 처리하기 어려웠다. 특히 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 성능을 보였기 때문에, 실시간 환경에서 대규모 연산을 CUDA로 구현하고 최적화하여 네트워크 환경의 요구를 충족할 수 있는지가 중요한 과제로 제기되었다. 본 연구는 이러한 배경에서 CROWN 검증의 CUDA 기반 실시간 가속과 최적화 과정을 다룬다. [근거:U531b24e3633dee74c4f7,U8602da87af586b3567f6,U3e01c50082e40f98631d]"
+    },
+    "sec_introduction_p6": {
+      "section_id": "sec_introduction",
+      "text": "실험은 256-491-491-16 크기의 신경망을 대상으로 진행되었으며, 배치 사이즈는 1로 설정하였다. 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only를 고려하였고, 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 입력을 그대로 사용하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 확인된 바와 같이 이후에 적용된 사항이고, warm up은 초기에 수행되었다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 정의되었으며, 확인 결과 모두 동일하였다. [근거:E00333,U531b24e3633dee74c4f7,U8602da87af586b3567f6,U3e01c50082e40f98631d]"
+    },
+    "sec_introduction_p7": {
+      "section_id": "sec_introduction",
+      "text": "본 논문은 다음과 같이 구성된다. 먼저 연구 배경과 문제 제기, 기존 CPU 중심 CROWN 검증의 한계를 제시하고, 이어서 CUDA 포팅 및 최적화 과정, 실험 조건과 측정 결과를 설명한 뒤, 마지막으로 한계와 결론을 정리한다. [근거:E00333]"
+    }
+  },
+  "issues": [
+    {
+      "section_id": "sec_introduction",
+      "severity": "warning",
+      "paragraph_id": "sec_introduction_p2",
+      "reason": "cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않다는 점, GPU 클록 고정 후 재측정 결과나 반복 측정 통계가 원문에 직접 제시되지 않아 공정 비교를 위한 통제 조건으로 확정하기 어렵다는 한계는 올바르게 반영되었으나, 이 문단이 '원문에 직접 명시된 범위로 한정된다'는 표현을 통해 원문 존재 범위를 단정하는 어조를 남겨, 실제 원문 미제시 한계를 재확인하는 표현으로 정리하는 편이 더 정확하다.",
+      "evidence_ids": [
+        "Hefd7e87bb735_34",
+        "Hefd7e87bb735_36",
+        "Hefd7e87bb735_43",
+        "Hefd7e87bb735_66"
+      ],
+      "failure_owner": "none",
+      "quote": "기존 CROWN 실행이 CPU 환경에 국한되어 있었다는 점과, 실시간 환경에서의 대규모 연산 충족 여부를 CUDA 구현과 최적화로 확인하려는 점이 본 연구의 초점이다. 다만 cudaHostRegister와 No Pinning 비교, GPU 클록 고정 후 재측정 결과, cudaHostRegister와 No Pinning 간 반복 측정 통계는 원문에 직접 제시되어 있지 않아, 공정 비교를 위한 통제 조건으로 확정하기 어렵다는 한계가 남는다. 또한 클록·Persistence mode 등 측정 조건 역시 원문에 직접 명시된 범위로 한정되며, 발표자료나 슬라이드 구성·대본 작성 피드백처럼 연구 비교 조건을 직접 말하지 않는 근거는 제외한다. [근거:Hefd7e87bb735_34,Hefd7e87bb735_36,Hefd7e87bb735_43,Hefd7e87bb735_66]"
+    },
+    {
+      "section_id": "sec_introduction",
+      "severity": "warning",
+      "paragraph_id": "sec_introduction_p3",
+      "reason": "목표 서술에서 '구체적 수치나 입증된 성과 대신 연구 일지의 진행 범위와 해석 한계를 함께 명시한다'는 표현은 적절하지만, E00027·E00029·E00030의 관측 결과(Elapsed time 229.6918ms, 약 100ms 감소, CPU보다 느림, 하이브리드 시도)를 목표 문장에 직접 연결해 성과처럼 읽힐 여지가 있어, 목표·진행 범위·해석 한계의 구분을 더 분명히 하는 것이 좋다.",
+      "evidence_ids": [
+        "E00027",
+        "E00029",
+        "E00030"
+      ],
+      "failure_owner": "none",
+      "quote": "본 연구의 목표는 CUDA로 CROWN 검증 연산을 구현·최적화하여 실시간 환경에서의 연산 부담을 줄이는 방향을 확인하는 것이다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 사이즈는 1로 설정된다. 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only를 사용하고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용한다. 다만 구체적 수치나 입증된 성과 대신, 연구 일지의 진행 범위와 해석 한계를 함께 명시한다. [근거:E00027,E00029,E00030,E00011,E00012,E00013]"
+    },
+    {
+      "section_id": "sec_introduction",
+      "severity": "warning",
+      "paragraph_id": "sec_introduction_p6",
+      "reason": "실험 조건·실행 방식·데이터셋·정확도 지표를 한 문단에 함께 정리해 가독성은 좋으나, GPU 클록 고정이 '이후에 적용된 사항'이라는 서술이 E00281·E00282의 계획·시도 성격과 완전히 동일하게 '적용 완료'로 읽힐 수 있어, 계획/시도 단계와 적용/측정 단계의 구분을 조금 더 명시하면 정확성이 높아진다.",
+      "evidence_ids": [
+        "E00333",
+        "U531b24e3633dee74c4f7",
+        "U8602da87af586b3567f6",
+        "U3e01c50082e40f98631d"
+      ],
+      "failure_owner": "none",
+      "quote": "실험은 256-491-491-16 크기의 신경망을 대상으로 진행되었으며, 배치 사이즈는 1로 설정하였다. 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only를 고려하였고, 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 입력을 그대로 사용하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정은 연구 일지에서 확인된 바와 같이 이후에 적용된 사항이고, warm up은 초기에 수행되었다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 정의되었으며, 확인 결과 모두 동일하였다. [근거:E00333,U531b24e3633dee74c4f7,U8602da87af586b3567f6,U3e01c50082e40f98631d]"
+    },
+    {
+      "section_id": "sec_introduction",
+      "paragraph_id": "none",
+      "part": "p0",
+      "severity": "error",
+      "evidence_ids": [],
+      "quote": "",
+      "review_stage": "composition",
+      "failure_owner": "writer",
+      "category": "style",
+      "validation_code": "composition_style",
+      "reason": "sec_introduction/p0: 기록자·자료 중심 표현 ['연구 일지에서 확인']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요."
+    }
+  ]
+}

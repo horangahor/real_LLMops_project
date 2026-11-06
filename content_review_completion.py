@@ -4,6 +4,40 @@ import copy
 
 POLICY = "content-warning-v1"
 MAX_REVISIONS = 2
+REVIEW_LINK_POLICY = "review-link-completion-v1"
+
+
+def incomplete_review_links(report):
+    return {c["item_id"] for c in report.get("checks", [])
+            if c.get("failure_owner") == "reviewer" and c.get("model_verdict") == "met"
+            and c.get("verdict") == "missing"}
+
+
+def finish_review_links(report, completion=None):
+    """Defer only validated but incomplete selection metadata, never invalid IDs."""
+    if completion is None:
+        return report
+    pending = incomplete_review_links(report)
+    ids = completion.get("item_ids")
+    attempts = completion.get("attempts")
+    if (completion.get("policy") != REVIEW_LINK_POLICY or completion.get("status") != "needs_attention"
+            or not isinstance(ids, list) or not ids or any(not isinstance(key, str) for key in ids)
+            or len(ids) != len(set(ids)) or set(ids) != pending
+            or type(attempts) is not int or attempts not in (0, 1)
+            or completion.get("reason") != ("input_budget" if attempts == 0 else "selection_incomplete")):
+        raise ValueError("검토 연결 보완 완료 기록이 잘못됐습니다.")
+    result = copy.deepcopy(report)
+    for issue in result["issues"]:
+        if (issue.get("failure_owner") == "reviewer" and issue.get("validation_code") == "required_content"
+                and issue.get("item_id") in pending and issue["severity"] == "error"):
+            issue.update(severity="warning", original_severity="error", deferred=True,
+                         validation_code="review_link_incomplete", review_status="incomplete")
+    for check in result["checks"]:
+        if check["item_id"] in pending:
+            check["review_status"] = "incomplete"
+    result["review_link_completion"] = copy.deepcopy(completion)
+    result["approved"] = not any(i["severity"] == "error" for i in result["issues"])
+    return result
 
 
 def reconcile_generation_warnings(warnings, sections, packets):
@@ -13,6 +47,12 @@ def reconcile_generation_warnings(warnings, sections, packets):
     result = {}
     for warning in warnings:
         sid, part = warning["section_id"], warning["part"]
+        if warning.get("validation_code") == "paragraph_revision_deferred":
+            if (sid not in packets or part not in sections[sid]["parts"] or warning.get("repair_attempts") not in (0, 1)
+                    or not set(warning["evidence_ids"]) <= set(allowed_ids(packets[sid], part))):
+                raise ValueError("문단 교체 보류 경고의 장·소절·근거 범위가 잘못됐습니다.")
+            result[sid, part, warning["paragraph_id"]] = copy.deepcopy(warning)
+            continue
         if (warning.get("validation_code") != "fragment_missing_evidence"
                 or warning.get("repair_attempts") != 1 or sid not in packets
                 or part not in sections[sid]["parts"]

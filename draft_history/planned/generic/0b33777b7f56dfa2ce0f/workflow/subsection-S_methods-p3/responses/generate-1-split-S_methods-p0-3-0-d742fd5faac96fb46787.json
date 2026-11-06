@@ -1,0 +1,44 @@
+{
+  "request_fingerprint": "d742fd5faac96fb46787828e66293b97345089d3493ec0f464b9aa8d93f5612b",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "측정 구간은 추론·bound·검증을 분리하여 타임스탬프를 누적하는 방식으로 구성하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16), 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only), 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 입력을 그대로 사용하였다. GPU 클록 고정과 warmup은 이후 단계에서 적용된 사항이다.",
+          "evidence_ids": [
+            "E00036"
+          ]
+        },
+        {
+          "text": "버전별 구성은 v0부터 v4까지 단계적으로 변화하였다. v0은 단독 CPU 처리로 96ms였고, v1은 모든 병렬처리 함수를 커널 함수로 바꾸어 355ms가 되었다. v2는 벡터 연산을 다시 CPU로 처리하고 메모리 풀과 cuBlas를 도입하여 229ms가 되었으며, v3는 CPU·GPU 하이브리드로 풀 구조체를 축소하여 200ms가 되었다.",
+          "evidence_ids": [
+            "E00036"
+          ]
+        },
+        {
+          "text": "이후 최적화 과정에서 forward 함수의 DTOH memcpy를 극단적으로 제거한 결과 CROWN Verification 실행 시간이 64.716000 ms로 기록되었다. alpha/beta 메모리 풀 적용 후에는 21.018800 ms가 기록되었고, 21.0ms 정도 나온다는 정성적 관측도 함께 제시되었다. bias도 메모리 풀에서 관리하도록 변경되었으며, Backward 메모리 복사 제거 및 초기화 최적화 적용 후에는 13.939000 ms가 기록되었고 13ms 후반 거의 14ms 정도로 관측되었다.",
+          "evidence_ids": [
+            "E00083",
+            "E00131",
+            "E00132",
+            "E00133",
+            "E00148",
+            "E00149"
+          ]
+        },
+        {
+          "text": "Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, default 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 최소화하였다. 또한 backward_bound_gpu에서 affine_min/max까지 실행되도록 개선하여 GPU → CPU 메모리 복사를 최소화하였고, backward_bound_gpu에서 사용하는 affine 중복 계산을 삭제하여 커널 2개 함수가 줄어들었으며, backward에서 사용하는 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu가 만들어졌다. fp32에 단정밀도 연산으로 바꿔보기도 했으나 이 부분은 fp32에 대한 고찰에 있다고 기록되었다.",
+          "evidence_ids": [
+            "E00146",
+            "E00147",
+            "E00137",
+            "E00138",
+            "E00122",
+            "E00124",
+            "E00150"
+          ]
+        }
+      ]
+    }
+  }
+}

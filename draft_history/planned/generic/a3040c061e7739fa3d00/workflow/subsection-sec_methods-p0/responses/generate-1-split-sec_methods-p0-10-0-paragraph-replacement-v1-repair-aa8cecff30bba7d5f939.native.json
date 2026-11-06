@@ -1,0 +1,33 @@
+{
+  "id": "aa99fb62-2712-45a3-984c-d9a4840d3474",
+  "object": "chat.completion",
+  "created": 1793980914,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": {\"evidence_ids\": [\"E00105\", \"E00106\", \"E00174\", \"E00202\", \"E00257\", \"E00261\", \"E00262\", \"E00263\"], \"text\": \"평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기 256-491-491-16, 배치 사이즈 1, 실행 방식은 forward·forward+backward·backward_only로 구분하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 수행하였다. cuSparse 도입 시도에서는 W, W_pos, W_neg를 CSR 형식으로 변환하고 cuSPARSE handle·descriptor를 유지한 뒤 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하였으나, 기존 matmul은 유지되었다. 이 spMV만 적용한 결과 실행 시간은 27.107400 ms로 기록되어 이전 27ms 수준보다 느려졌다. 실행 코드는 eps_list 이중 루프에서 network_forward로 정방향 통과 후, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정(certify_topk) 결과에 따라 Ht_count 또는 f_count를 증가시킨다. 초기화 이후 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 방법 C(3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 차기 로드맵이다.\"}}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 19400,
+    "completion_tokens": 502,
+    "total_tokens": 19902,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

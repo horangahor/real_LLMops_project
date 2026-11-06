@@ -10,7 +10,6 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import paper_structure as analysis
-import paper_draft_agent as paper
 from structure_profiles import (
     PROFILE_EXAMPLE, load_profiles, parse_profile_response, save_profiles, validate_profile, writing_guide,
 )
@@ -75,15 +74,6 @@ class StructureProfileTests(unittest.TestCase):
             path = Path(folder) / 'old.json'
             path.write_text(json.dumps({'paper_structure_profile': 'STYLE_MARKER'}), encoding='utf-8')
             self.assertIn('STYLE_MARKER', writing_guide({'profiles': load_profiles(path)}, '4'))
-
-    def test_section_writer_receives_selected_guide_instead_of_raw_profile(self):
-        with patch.object(paper, 'call_solar', return_value='method body') as call:
-            paper.SectionWriter('key').write('4', {}, {'profiles': [sample_profile()]}, {})
-        prompt = call.call_args.args[1]
-        self.assertIn('전체 구성', prompt)
-        self.assertNotIn('CONCLUSION_ONLY', prompt)
-        self.assertNotIn('95.8%', prompt)
-        self.assertNotIn('Jetson', prompt)
 
     def test_invalid_result_does_not_replace_existing_profiles(self):
         with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as folder:

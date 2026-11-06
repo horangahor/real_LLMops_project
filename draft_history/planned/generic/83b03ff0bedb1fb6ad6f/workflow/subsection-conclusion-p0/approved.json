@@ -1,0 +1,638 @@
+{
+  "sha256": "dfbd7c11742e166486436e541621d8d452f2d568761801dfa25a850362868b2f",
+  "value": {
+    "input_fingerprint": "cee1b54b09c22d47266d7ca0fd6febfc79e340a69e4d53afa31cef891a575d0b",
+    "sections": {
+      "conclusion": {
+        "parts": {
+          "p0": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]\n\n주요 정량 결과는 최적화 단계별 실행 시간 단축과 메모리 전송 방식의 지연 특성 차이로 나타난다. 메모리 풀과 warm-up 조합만으로 거의 200ms가 단축되었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 이후 커널 퓨전과 커널 호출 감소, FP64에서 FP32로의 변경 등이 추가로 적용되었다. 메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으나, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 전송 직후 동기화가 일어나는 구간에서 역전되었다. 다만 figure 캡션의 비교 표는 Bound와 Infer 두 단계만 제시하고 있어 두 단계 합산이 전체 시간과 정확히 일치하지는 않는다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 이는 전체 실행 시간 대비 약 11초 차이와 조건이 다른 비교이며, 최대 지연은 No-Pin이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소하였다. [근거:E00071,E00083,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300]\n\n실용적 기여는 CROWN 검증을 CPU 중심 오프라인 환경에서만 다루던 상황에서, CUDA 기반 최적화를 통해 실시간 환경의 대규모 연산에 접근하려는 시도에 있다. 특히 작은 데이터를 매 루프마다 전송하는 환경에서는 Pinned Memory가 매번 DMA 셋업 비용(약 1.0~1.5μs)을 치르는 대신 OS 페이징 간섭을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 제공하므로, 실시간 무선 안테나 선택 시스템처럼 지연 스파이크가 치명적인 맥락에서 의미가 있다. 반면 평균 시간만 보면 No-Pin이 더 빠를 수 있어, 총 시간과 실시간성 사이의 trade-off를 함께 봐야 한다. 향후 방향으로는 방법 A(Multi-Stream 배칭)의 3.2배 가속(25분→8분)과 SM 포화로 인한 7~8분 한계선을 넘어, CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched와 텐서 코어를 100% 활용하는 방법 C로 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 경로가 제시되었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 않았고, v2 적용 방안이나 방법 C의 목표 수치는 현재 실제 적용·평가 결과로 뒷받침되지 않는다. [근거:E00030,E00033,E00073,E00261,E00262,E00263,E00294,E00296,E00314,E00321]"
+        }
+      }
+    },
+    "raw_review": {
+      "checks": [
+        {
+          "item_id": "conc_1",
+          "verdict": "met",
+          "paragraph_ids": [
+            "conclusion_p1"
+          ],
+          "evidence_ids": [
+            "E00030",
+            "E00033",
+            "E00073",
+            "E00071",
+            "E00083",
+            "E00118",
+            "E00143",
+            "E00212",
+            "E00261",
+            "E00262",
+            "E00263",
+            "E00277",
+            "E00278",
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00296",
+            "E00297",
+            "E00299",
+            "E00300",
+            "E00314",
+            "E00321"
+          ]
+        }
+      ],
+      "reference_checks": [
+        {
+          "section_id": "conclusion",
+          "reference_id": "ref1_conclusion",
+          "verdict": "not_visible",
+          "paragraph_ids": [
+            "conclusion_p1",
+            "conclusion_p2",
+            "conclusion_p3"
+          ],
+          "reason": "ref1_conclusion의 '제안 프레임워크의 핵심 설계' 필수 항목은 conclusion_p1에서 핵심 설계 요소와 결합 방식, 해결하려는 문제를 정리하며 충족된다. 다만 ref1_conclusion의 '문제 정의와 제안 방법을 짧게 재진술한다'는 흐름은 결론 절의 성격상 이미 앞선 절에서 다루어져, 결론에서는 핵심 설계·결과·기여를 짧게 묶는 방식으로 대체되었다. 이는 ref1_conclusion의 not_to_transfer 항목(특정 수치·모델명·문헌·표/그림 번호 등)을 옮기지 않고 본 연구의 CUDA 최적화 결과 중심으로 서술한 점과 부합한다."
+        },
+        {
+          "section_id": "conclusion",
+          "reference_id": "ref2_conclusion",
+          "verdict": "not_visible",
+          "paragraph_ids": [
+            "conclusion_p1",
+            "conclusion_p2",
+            "conclusion_p3"
+          ],
+          "reason": "ref2_conclusion의 '구성 요소의 변경 효과와 전체 처리 과정의 변경 효과를 구분해야 하는 이유' 필수 항목은 conclusion_p2와 conclusion_p3에서 메모리 전송 방식 비교(Bound/Infer 단계 역전, 평균 시간 vs 실시간성 trade-off)와 최적화 단계별 실행 시간 단축을 함께 서술하며 부분적으로 반영된다. 그러나 ref2_conclusion이 요구하는 '수준별 핵심 발견을 순서대로 정리'하고 '순위 변화, 추가 이득, 정확도 보존 여부를 함께 언급'하는 흐름은 본 연구 초안에서 구성 요소별 효과 분리(ablation)가 부재하다는 한계(E00314, E00321 관련)와 맞물려 완전히 충족되지 않는다. 또한 ref2_conclusion의 not_to_transfer 항목(특정 실험 구성 명칭, 하드웨어/벤더 도구명, 구체적 성능 수치, 표·그림 번호 등)은 옮기지 않았으나, 본 초안은 구성 요소 변경 효과와 전체 처리 효과를 명확히 분리한 수준별 발견 구조로 정리하지는 않았다."
+        }
+      ],
+      "issues": [
+        {
+          "section_id": "conclusion",
+          "severity": "warning",
+          "paragraph_id": "conclusion_p1",
+          "reason": "핵심 설계 요소와 결합 방식, 해결하려는 문제를 정리하라는 conc_1은 충족되나, ref2_conclusion이 요구하는 '구성 요소 변경 효과와 전체 처리 과정 변경 효과의 구분 이유'를 결론에서 명시적으로 서술하지는 않는다. 이는 conclusion_p3에서 ablation study 부재 한계를 짧게 언급하는 수준에 그치며, 수준별 발견 구조로 정리되지 않는다.",
+          "evidence_ids": [
+            "E00314",
+            "E00321"
+          ],
+          "failure_owner": "none"
+        }
+      ],
+      "review_policy": "approved-facts-v1",
+      "review_selection_bindings": []
+    },
+    "reviews": [
+      {
+        "checks": [
+          {
+            "item_id": "conc_1",
+            "verdict": "met",
+            "paragraph_ids": [
+              "conclusion_p1"
+            ],
+            "evidence_ids": [
+              "E00030",
+              "E00033",
+              "E00073",
+              "E00071",
+              "E00083",
+              "E00118",
+              "E00143",
+              "E00212",
+              "E00261",
+              "E00262",
+              "E00263",
+              "E00277",
+              "E00278",
+              "E00292",
+              "E00293",
+              "E00294",
+              "E00296",
+              "E00297",
+              "E00299",
+              "E00300",
+              "E00314",
+              "E00321"
+            ],
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+            "paragraph_quotes": [
+              "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]"
+            ],
+            "guideline_ids": [
+              "ref1_conclusion_required_1",
+              "ref2_conclusion_required_1"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": []
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "conclusion",
+            "reference_id": "ref1_conclusion",
+            "verdict": "not_visible",
+            "paragraph_ids": [
+              "conclusion_p1",
+              "conclusion_p2",
+              "conclusion_p3"
+            ],
+            "reason": "참조 가이드는 제안 프레임워크의 핵심 설계를 요구하나, 본 결론 초안은 연구 노트 기반 최적화 과정 서술로 구성되어 있어 해당 가이드의 핵심 설계 서술 기준을 직접 충족하는지 판단할 수 없다.",
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+            "paragraph_quotes": [
+              "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+              "주요 정량 결과는 최적화 단계별 실행 시간 단축과 메모리 전송 방식의 지연 특성 차이로 나타난다. 메모리 풀과 warm-up 조합만으로 거의 200ms가 단축되었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 이후 커널 퓨전과 커널 호출 감소, FP64에서 FP32로의 변경 등이 추가로 적용되었다. 메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으나, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 전송 직후 동기화가 일어나는 구간에서 역전되었다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연은 No-Pin이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소하였다. [근거:E00071,E00083,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300]",
+              "실용적 기여는 CROWN 검증을 CPU 중심 오프라인 환경에서만 다루던 상황에서, CUDA 기반 최적화를 통해 실시간 환경의 대규모 연산에 접근하려는 시도에 있다. 특히 작은 데이터를 매 루프마다 전송하는 환경에서는 Pinned Memory가 매번 DMA 셋업 비용(약 1.0~1.5μs)을 치르는 대신 OS 페이징 간섭을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 제공하므로, 실시간 무선 안테나 선택 시스템처럼 지연 스파이크가 치명적인 맥락에서 의미가 있다. 반면 평균 시간만 보면 No-Pin이 더 빠를 수 있어, 총 시간과 실시간성 사이의 trade-off를 함께 봐야 한다. 향후 방향으로는 방법 A(Multi-Stream 배칭)의 3.2배 가속(25분→8분)과 SM 포화로 인한 7~8분 한계선을 넘어, CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched와 텐서 코어를 100% 활용하는 방법 C로 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 경로가 제시되었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 않았고, v2 적용 방안이나 방법 C의 목표 수치는 현재 실제 적용·평가 결과로 뒷받침되지 않는다. [근거:E00030,E00033,E00073,E00261,E00262,E00263,E00294,E00296,E00314,E00321]"
+            ]
+          },
+          {
+            "section_id": "conclusion",
+            "reference_id": "ref2_conclusion",
+            "verdict": "not_visible",
+            "paragraph_ids": [
+              "conclusion_p1",
+              "conclusion_p2",
+              "conclusion_p3"
+            ],
+            "reason": "참조 가이드는 구성 요소 변경 효과와 전체 처리 과정 변경 효과를 구분해야 하는 이유를 요구하나, 본 결론 초안은 해당 구분의 이유를 명시적으로 서술하지 않아 기준을 직접 충족하는지 판단할 수 없다.",
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+            "paragraph_quotes": [
+              "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+              "주요 정량 결과는 최적화 단계별 실행 시간 단축과 메모리 전송 방식의 지연 특성 차이로 나타난다. 메모리 풀과 warm-up 조합만으로 거의 200ms가 단축되었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 이후 커널 퓨전과 커널 호출 감소, FP64에서 FP32로의 변경 등이 추가로 적용되었다. 메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으나, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 전송 직후 동기화가 일어나는 구간에서 역전되었다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연은 No-Pin이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소하였다. [근거:E00071,E00083,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300]",
+              "실용적 기여는 CROWN 검증을 CPU 중심 오프라인 환경에서만 다루던 상황에서, CUDA 기반 최적화를 통해 실시간 환경의 대규모 연산에 접근하려는 시도에 있다. 특히 작은 데이터를 매 루프마다 전송하는 환경에서는 Pinned Memory가 매번 DMA 셋업 비용(약 1.0~1.5μs)을 치르는 대신 OS 페이징 간섭을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 제공하므로, 실시간 무선 안테나 선택 시스템처럼 지연 스파이크가 치명적인 맥락에서 의미가 있다. 반면 평균 시간만 보면 No-Pin이 더 빠를 수 있어, 총 시간과 실시간성 사이의 trade-off를 함께 봐야 한다. 향후 방향으로는 방법 A(Multi-Stream 배칭)의 3.2배 가속(25분→8분)과 SM 포화로 인한 7~8분 한계선을 넘어, CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched와 텐서 코어를 100% 활용하는 방법 C로 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 경로가 제시되었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 않았고, v2 적용 방안이나 방법 C의 목표 수치는 현재 실제 적용·평가 결과로 뒷받침되지 않는다. [근거:E00030,E00033,E00073,E00261,E00262,E00263,E00294,E00296,E00314,E00321]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "conclusion",
+            "severity": "error",
+            "paragraph_id": "conclusion_p3",
+            "reason": "E00262와 E00263은 writing_role이 context_only이며 claim_status가 planned로, 실제 관측 결과가 아니라 계획·목표 서술이다. 결론 초안에서 '방법 C로 30초~1분대 진입을 목표로 하는 경로가 제시되었다'는 서술은 이 한계를 유지한 채 사용했으므로, 관측 결과로 오인되지 않도록 서술 범위를 더 명확히 제한해야 한다. 현재 서술은 '제시되었다' 수준으로 표현되어 있으나, 문맥상 목표·계획임을 더 분명히 하지 않으면 독자가 실측·검증된 성과로 읽을 여지가 있다.",
+            "evidence_ids": [
+              "E00262",
+              "E00263"
+            ],
+            "failure_owner": "writer",
+            "quote": "실용적 기여는 CROWN 검증을 CPU 중심 오프라인 환경에서만 다루던 상황에서, CUDA 기반 최적화를 통해 실시간 환경의 대규모 연산에 접근하려는 시도에 있다. 특히 작은 데이터를 매 루프마다 전송하는 환경에서는 Pinned Memory가 매번 DMA 셋업 비용(약 1.0~1.5μs)을 치르는 대신 OS 페이징 간섭을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 제공하므로, 실시간 무선 안테나 선택 시스템처럼 지연 스파이크가 치명적인 맥락에서 의미가 있다. 반면 평균 시간만 보면 No-Pin이 더 빠를 수 있어, 총 시간과 실시간성 사이의 trade-off를 함께 봐야 한다. 향후 방향으로는 방법 A(Multi-Stream 배칭)의 3.2배 가속(25분→8분)과 SM 포화로 인한 7~8분 한계선을 넘어, CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched와 텐서 코어를 100% 활용하는 방법 C로 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 경로가 제시되었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 않았고, v2 적용 방안이나 방법 C의 목표 수치는 현재 실제 적용·평가 결과로 뒷받침되지 않는다. [근거:E00030,E00033,E00073,E00261,E00262,E00263,E00294,E00296,E00314,E00321]"
+          },
+          {
+            "section_id": "conclusion",
+            "severity": "error",
+            "paragraph_id": "conclusion_p3",
+            "reason": "E00261은 writing_role이 research_fact이고 claim_status가 observed이나, evidence_limitations에 '약 4배는 8분 대비 2분 미만의 근사 비교로 정밀 배율 측정값은 아니며 반복 측정 통계는 포함하지 않는다'고 명시되어 있다. 결론 초안에서 '3.2배 가속(25분→8분)'과 함께 '약 4배 빠르다'는 표현을 병기하면, 서로 다른 근사 비교와 배율이 혼용되어 정량 비교의 정밀성·한계가 흐려질 수 있다. 두 비교의 근거와 근사 성격을 구분해 서술해야 한다.",
+            "evidence_ids": [
+              "E00261"
+            ],
+            "failure_owner": "writer",
+            "quote": "실용적 기여는 CROWN 검증을 CPU 중심 오프라인 환경에서만 다루던 상황에서, CUDA 기반 최적화를 통해 실시간 환경의 대규모 연산에 접근하려는 시도에 있다. 특히 작은 데이터를 매 루프마다 전송하는 환경에서는 Pinned Memory가 매번 DMA 셋업 비용(약 1.0~1.5μs)을 치르는 대신 OS 페이징 간섭을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 제공하므로, 실시간 무선 안테나 선택 시스템처럼 지연 스파이크가 치명적인 맥락에서 의미가 있다. 반면 평균 시간만 보면 No-Pin이 더 빠를 수 있어, 총 시간과 실시간성 사이의 trade-off를 함께 봐야 한다. 향후 방향으로는 방법 A(Multi-Stream 배칭)의 3.2배 가속(25분→8분)과 SM 포화로 인한 7~8분 한계선을 넘어, CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched와 텐서 코어를 100% 활용하는 방법 C로 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 경로가 제시되었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 않았고, v2 적용 방안이나 방법 C의 목표 수치는 현재 실제 적용·평가 결과로 뒷받침되지 않는다. [근거:E00030,E00033,E00073,E00261,E00262,E00263,E00294,E00296,E00314,E00321]"
+          },
+          {
+            "section_id": "conclusion",
+            "severity": "error",
+            "paragraph_id": "conclusion_p2",
+            "reason": "E00278의 Bound+Infer 합산(658.80+127.18=785.98s)이 전체 787.88s와 약 1.9s 차이가 나며, 이는 figure 캡션의 비교 표가 Bound/Infer 두 단계만 제시하고 certify 단계 등 미분해 오버헤드가 존재하기 때문으로 해석된다. 결론 초안은 Bound와 Infer 수치만 인용하고 이 불일치를 언급하지 않아, 독자가 단계별 합이 전체와 정확히 일치한다고 오해할 수 있다. 수치 인용 시 이 차이의 존재를 함께 밝혀야 한다.",
+            "evidence_ids": [
+              "E00278"
+            ],
+            "failure_owner": "writer",
+            "quote": "주요 정량 결과는 최적화 단계별 실행 시간 단축과 메모리 전송 방식의 지연 특성 차이로 나타난다. 메모리 풀과 warm-up 조합만으로 거의 200ms가 단축되었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 이후 커널 퓨전과 커널 호출 감소, FP64에서 FP32로의 변경 등이 추가로 적용되었다. 메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으나, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 전송 직후 동기화가 일어나는 구간에서 역전되었다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연은 No-Pin이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소하였다. [근거:E00071,E00083,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300]"
+          },
+          {
+            "section_id": "conclusion",
+            "severity": "error",
+            "paragraph_id": "conclusion_p2",
+            "reason": "E00292는 '평균 속도에서는 No-Pin이 13초 빨랐지만'이라는 서술과 함께 measurements에 13초 차이를 기록하고 있으나, evidence_limitations에 '구체적 테스트 조건(데이터 크기, 반복 횟수, 전체 실행 시간 대비 맥락) 미기재'가 명시되어 있다. 결론 초안은 이 13초 차이를 다른 측정 조건(E00277의 787.88초 대 776.70초, 약 11초 차이)과 구분해 설명하지 않아, 서로 다른 비교의 수치·조건이 혼동될 수 있다. 두 비교의 조건과 성격을 구분해 서술해야 한다.",
+            "evidence_ids": [
+              "E00292"
+            ],
+            "failure_owner": "writer",
+            "quote": "주요 정량 결과는 최적화 단계별 실행 시간 단축과 메모리 전송 방식의 지연 특성 차이로 나타난다. 메모리 풀과 warm-up 조합만으로 거의 200ms가 단축되었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 이후 커널 퓨전과 커널 호출 감소, FP64에서 FP32로의 변경 등이 추가로 적용되었다. 메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으나, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 전송 직후 동기화가 일어나는 구간에서 역전되었다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연은 No-Pin이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소하였다. [근거:E00071,E00083,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300]"
+          },
+          {
+            "section_id": "conclusion",
+            "severity": "error",
+            "paragraph_id": "conclusion_p1",
+            "reason": "E00262와 E00263은 writing_role이 context_only이며 claim_status가 planned로, 실제 구현·평가 결과가 아니라 로드맵상 목표·방식 서술이다. 결론 초안의 핵심 설계 요소 서술에 '방법 C로 ... 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다'처럼 포함했으나, 이는 설계 요소라기보다 향후 목표·계획에 가깝다. 설계 요소와 계획·목표를 같은 층위로 묶어 서술하면 실제 구현된 설계 범위와 향후 목표 범위가 혼동될 수 있으므로, 구분해서 서술해야 한다.",
+            "evidence_ids": [
+              "E00262",
+              "E00263"
+            ],
+            "failure_owner": "writer",
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]"
+          },
+          {
+            "section_id": "conclusion",
+            "severity": "error",
+            "paragraph_id": "conclusion_p1",
+            "reason": "E00321은 'pinned memory 입력층은 제거했다'는 구성 변경 사실만 기록하며, 변경 후 성능·정확도 결과는 이 요소만으로 제시되지 않는다는 limits가 명시되어 있다. 결론 초안은 이를 핵심 설계 요소 목록에 포함했으나, 이 변경이 성능·정확도에 어떤 영향을 주는지는 이 근거만으로 뒷받침되지 않는다. 구성 변경 사실만 서술하고 효과·결과를 함께 주장하지 않도록 범위를 제한해야 한다.",
+            "evidence_ids": [
+              "E00321"
+            ],
+            "failure_owner": "writer",
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]"
+          },
+          {
+            "section_id": "conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 5.1 핵심 설계 요소와 결합 방식: 본문 1802자 / 목표 1429자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 0,
+          "not_visible": 2,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "conc_1",
+            "verdict": "met",
+            "paragraph_ids": [
+              "conclusion_p1",
+              "conclusion_p2",
+              "conclusion_p3"
+            ],
+            "evidence_ids": [
+              "E00030",
+              "E00033",
+              "E00073",
+              "E00071",
+              "E00083",
+              "E00118",
+              "E00143",
+              "E00212",
+              "E00261",
+              "E00262",
+              "E00263",
+              "E00277",
+              "E00278",
+              "E00292",
+              "E00293",
+              "E00294",
+              "E00296",
+              "E00297",
+              "E00299",
+              "E00300",
+              "E00314",
+              "E00321"
+            ],
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+            "paragraph_quotes": [
+              "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+              "주요 정량 결과는 최적화 단계별 실행 시간 단축과 메모리 전송 방식의 지연 특성 차이로 나타난다. 메모리 풀과 warm-up 조합만으로 거의 200ms가 단축되었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 이후 커널 퓨전과 커널 호출 감소, FP64에서 FP32로의 변경 등이 추가로 적용되었다. 메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으나, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 전송 직후 동기화가 일어나는 구간에서 역전되었다. 다만 figure 캡션의 비교 표는 Bound와 Infer 두 단계만 제시하고 있어 두 단계 합산이 전체 시간과 정확히 일치하지는 않는다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 이는 전체 실행 시간 대비 약 11초 차이와 조건이 다른 비교이며, 최대 지연은 No-Pin이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소하였다. [근거:E00071,E00083,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300]",
+              "실용적 기여는 CROWN 검증을 CPU 중심 오프라인 환경에서만 다루던 상황에서, CUDA 기반 최적화를 통해 실시간 환경의 대규모 연산에 접근하려는 시도에 있다. 특히 작은 데이터를 매 루프마다 전송하는 환경에서는 Pinned Memory가 매번 DMA 셋업 비용(약 1.0~1.5μs)을 치르는 대신 OS 페이징 간섭을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 제공하므로, 실시간 무선 안테나 선택 시스템처럼 지연 스파이크가 치명적인 맥락에서 의미가 있다. 반면 평균 시간만 보면 No-Pin이 더 빠를 수 있어, 총 시간과 실시간성 사이의 trade-off를 함께 봐야 한다. 향후 방향으로는 방법 A(Multi-Stream 배칭)의 3.2배 가속(25분→8분)과 SM 포화로 인한 7~8분 한계선을 넘어, CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched와 텐서 코어를 100% 활용하는 방법 C로 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 경로가 제시되었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 않았고, v2 적용 방안이나 방법 C의 목표 수치는 현재 실제 적용·평가 결과로 뒷받침되지 않는다. [근거:E00030,E00033,E00073,E00261,E00262,E00263,E00294,E00296,E00314,E00321]"
+            ],
+            "guideline_ids": [
+              "ref1_conclusion_required_1",
+              "ref2_conclusion_required_1"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": []
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "conclusion",
+            "reference_id": "ref1_conclusion",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "conclusion_p1",
+              "conclusion_p2",
+              "conclusion_p3"
+            ],
+            "reason": "핵심 설계 요소(메모리 풀, cuBLAS 예열, 가중치 사전 업로드, DTOH memcpy 제거, 커널 퓨전, cudaGraph, 싱글 스트림 Batched GEMM·텐서 코어, pinned memory 입력층 제거)와 결합 방식, 해결하려는 문제(GPU OPTIMIZED 이후에도 CPU보다 느렸던 문제·memcpy 병목)를 서술하여 '제안 프레임워크의 핵심 설계' 항목을 대체로 충족한다. 다만 ref1_conclusion의 '문제 정의와 제안 방법을 짧게 재진술' 및 '현장 적용과 후속 연구 방향 제시' 흐름 중 일부는 연구 일지 기록 범위를 넘어 사용자 임시 승인(U209b56cf1c8267aea36d, U9ff240a30b03c6835449)에 의존해 서술되어 있어, 원문 실측·독립 검증으로 완전히 뒷받침되지는 않는다.",
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+            "paragraph_quotes": [
+              "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+              "주요 정량 결과는 최적화 단계별 실행 시간 단축과 메모리 전송 방식의 지연 특성 차이로 나타난다. 메모리 풀과 warm-up 조합만으로 거의 200ms가 단축되었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 이후 커널 퓨전과 커널 호출 감소, FP64에서 FP32로의 변경 등이 추가로 적용되었다. 메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으나, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 전송 직후 동기화가 일어나는 구간에서 역전되었다. 다만 figure 캡션의 비교 표는 Bound와 Infer 두 단계만 제시하고 있어 두 단계 합산이 전체 시간과 정확히 일치하지는 않는다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 이는 전체 실행 시간 대비 약 11초 차이와 조건이 다른 비교이며, 최대 지연은 No-Pin이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소하였다. [근거:E00071,E00083,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300]",
+              "실용적 기여는 CROWN 검증을 CPU 중심 오프라인 환경에서만 다루던 상황에서, CUDA 기반 최적화를 통해 실시간 환경의 대규모 연산에 접근하려는 시도에 있다. 특히 작은 데이터를 매 루프마다 전송하는 환경에서는 Pinned Memory가 매번 DMA 셋업 비용(약 1.0~1.5μs)을 치르는 대신 OS 페이징 간섭을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 제공하므로, 실시간 무선 안테나 선택 시스템처럼 지연 스파이크가 치명적인 맥락에서 의미가 있다. 반면 평균 시간만 보면 No-Pin이 더 빠를 수 있어, 총 시간과 실시간성 사이의 trade-off를 함께 봐야 한다. 향후 방향으로는 방법 A(Multi-Stream 배칭)의 3.2배 가속(25분→8분)과 SM 포화로 인한 7~8분 한계선을 넘어, CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched와 텐서 코어를 100% 활용하는 방법 C로 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 경로가 제시되었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 않았고, v2 적용 방안이나 방법 C의 목표 수치는 현재 실제 적용·평가 결과로 뒷받침되지 않는다. [근거:E00030,E00033,E00073,E00261,E00262,E00263,E00294,E00296,E00314,E00321]"
+            ]
+          },
+          {
+            "section_id": "conclusion",
+            "reference_id": "ref2_conclusion",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "conclusion_p1",
+              "conclusion_p2",
+              "conclusion_p3"
+            ],
+            "reason": "구성 요소 변경 효과(메모리 풀+warm-up 약 200ms 단축, DTOH memcpy 제거 후 64.716ms, 커널 퓨전·커널 호출 감소, FP64→FP32 등)와 전체 처리 과정 변경 효과(메모리 방식별 전체 시간·Bound/Infer 역전, 평균 속도·최대 지연·지터·WCET 차이, 방법 A 3.2배 가속과 7~8분 한계선, 방법 C 목표)를 구분해 서술하여 '구성 요소 변경 효과와 전체 처리 과정 변경 효과를 구분해야 하는 이유' 항목을 대체로 충족한다. 다만 ref2_conclusion의 '순위 변화·추가 이득·정확도 보존 여부'나 '비교 시 고려해야 할 요소 종합' 중 일부는 연구 일지에 직접 기록된 근거보다 사용자 임시 승인(U5d2b168fab4a92747ee6 등)과 해석 서술에 기대고 있어, 원문 실측만으로 완전히 충족되지는 않는다.",
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+            "paragraph_quotes": [
+              "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+              "주요 정량 결과는 최적화 단계별 실행 시간 단축과 메모리 전송 방식의 지연 특성 차이로 나타난다. 메모리 풀과 warm-up 조합만으로 거의 200ms가 단축되었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 이후 커널 퓨전과 커널 호출 감소, FP64에서 FP32로의 변경 등이 추가로 적용되었다. 메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으나, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 전송 직후 동기화가 일어나는 구간에서 역전되었다. 다만 figure 캡션의 비교 표는 Bound와 Infer 두 단계만 제시하고 있어 두 단계 합산이 전체 시간과 정확히 일치하지는 않는다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 이는 전체 실행 시간 대비 약 11초 차이와 조건이 다른 비교이며, 최대 지연은 No-Pin이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소하였다. [근거:E00071,E00083,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300]",
+              "실용적 기여는 CROWN 검증을 CPU 중심 오프라인 환경에서만 다루던 상황에서, CUDA 기반 최적화를 통해 실시간 환경의 대규모 연산에 접근하려는 시도에 있다. 특히 작은 데이터를 매 루프마다 전송하는 환경에서는 Pinned Memory가 매번 DMA 셋업 비용(약 1.0~1.5μs)을 치르는 대신 OS 페이징 간섭을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 제공하므로, 실시간 무선 안테나 선택 시스템처럼 지연 스파이크가 치명적인 맥락에서 의미가 있다. 반면 평균 시간만 보면 No-Pin이 더 빠를 수 있어, 총 시간과 실시간성 사이의 trade-off를 함께 봐야 한다. 향후 방향으로는 방법 A(Multi-Stream 배칭)의 3.2배 가속(25분→8분)과 SM 포화로 인한 7~8분 한계선을 넘어, CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched와 텐서 코어를 100% 활용하는 방법 C로 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 경로가 제시되었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 않았고, v2 적용 방안이나 방법 C의 목표 수치는 현재 실제 적용·평가 결과로 뒷받침되지 않는다. [근거:E00030,E00033,E00073,E00261,E00262,E00263,E00294,E00296,E00314,E00321]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "conclusion",
+            "severity": "warning",
+            "paragraph_id": "conclusion_p1",
+            "reason": "핵심 설계 요소 결합 방식과 해결하려는 문제(GPU OPTIMIZED 이후에도 CPU보다 느렸던 문제, memcpy 병목)를 서술했으나, 방법 C의 3D 텐서 연산화·텐서 코어 100% 활용과 pinned memory 입력층 제거는 실제 구현·평가 결과가 아니라 계획·구성 변경 사실임을 명시해, 관측 결과와 계획/해석의 성격 구분을 유지하고 있다.",
+            "evidence_ids": [
+              "E00030",
+              "E00033",
+              "E00073",
+              "E00071",
+              "E00083",
+              "E00118",
+              "E00143",
+              "E00212",
+              "E00261",
+              "E00262",
+              "E00263",
+              "E00277",
+              "E00278",
+              "E00292",
+              "E00293",
+              "E00294",
+              "E00296",
+              "E00297",
+              "E00299",
+              "E00300",
+              "E00314",
+              "E00321"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]"
+          },
+          {
+            "section_id": "conclusion",
+            "severity": "warning",
+            "paragraph_id": "conclusion_p2",
+            "reason": "주요 정량 결과(메모리 풀+warm-up 약 200ms 단축, DTOH memcpy 제거 후 64.716ms, cudaHostRegister vs No Pinning 전체 787.88s vs 776.70s, Bound 658.80s vs 663.17s, Infer 127.18s vs 111.92s, 평균 속도 No-Pin 약 13초 빠름, 최대 지연 No-Pin 8.8~11.6ms vs Pinned 1.64ms, 지터 118.94μs vs 47.28μs)를 figure 캡션 기록 범위 내에서 서술하고, Bound+Infer 합산과 전체 시간 불일치와 평균 속도 비교 조건 차이도 함께 밝혀 해석 한계를 유지하고 있다.",
+            "evidence_ids": [
+              "E00071",
+              "E00083",
+              "E00277",
+              "E00278",
+              "E00292",
+              "E00293",
+              "E00294",
+              "E00296",
+              "E00297",
+              "E00299",
+              "E00300"
+            ],
+            "failure_owner": "none",
+            "quote": "주요 정량 결과는 최적화 단계별 실행 시간 단축과 메모리 전송 방식의 지연 특성 차이로 나타난다. 메모리 풀과 warm-up 조합만으로 거의 200ms가 단축되었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 이후 커널 퓨전과 커널 호출 감소, FP64에서 FP32로의 변경 등이 추가로 적용되었다. 메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으나, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 전송 직후 동기화가 일어나는 구간에서 역전되었다. 다만 figure 캡션의 비교 표는 Bound와 Infer 두 단계만 제시하고 있어 두 단계 합산이 전체 시간과 정확히 일치하지는 않는다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 이는 전체 실행 시간 대비 약 11초 차이와 조건이 다른 비교이며, 최대 지연은 No-Pin이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소하였다. [근거:E00071,E00083,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300]"
+          },
+          {
+            "section_id": "conclusion",
+            "severity": "warning",
+            "paragraph_id": "conclusion_p3",
+            "reason": "실용적 기여와 향후 방향(실시간 환경 대규모 연산 접근, Pinned Memory의 결정론적 안정성, 총 시간 vs 실시간성 trade-off, 방법 A 3.2배 가속과 7~8분 한계선, 방법 C 30초~1분대 목표)을 서술하되, 방법 C 목표와 v2 적용 방안은 실제 적용·평가 결과로 뒷받침되지 않음을 명시하고, ablation study 부재 한계도 함께 밝혀 계획/관측 구분을 유지하고 있다.",
+            "evidence_ids": [
+              "E00030",
+              "E00033",
+              "E00073",
+              "E00261",
+              "E00262",
+              "E00263",
+              "E00294",
+              "E00296",
+              "E00314",
+              "E00321"
+            ],
+            "failure_owner": "none",
+            "quote": "실용적 기여는 CROWN 검증을 CPU 중심 오프라인 환경에서만 다루던 상황에서, CUDA 기반 최적화를 통해 실시간 환경의 대규모 연산에 접근하려는 시도에 있다. 특히 작은 데이터를 매 루프마다 전송하는 환경에서는 Pinned Memory가 매번 DMA 셋업 비용(약 1.0~1.5μs)을 치르는 대신 OS 페이징 간섭을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 제공하므로, 실시간 무선 안테나 선택 시스템처럼 지연 스파이크가 치명적인 맥락에서 의미가 있다. 반면 평균 시간만 보면 No-Pin이 더 빠를 수 있어, 총 시간과 실시간성 사이의 trade-off를 함께 봐야 한다. 향후 방향으로는 방법 A(Multi-Stream 배칭)의 3.2배 가속(25분→8분)과 SM 포화로 인한 7~8분 한계선을 넘어, CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched와 텐서 코어를 100% 활용하는 방법 C로 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 경로가 제시되었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 않았고, v2 적용 방안이나 방법 C의 목표 수치는 현재 실제 적용·평가 결과로 뒷받침되지 않는다. [근거:E00030,E00033,E00073,E00261,E00262,E00263,E00294,E00296,E00314,E00321]"
+          },
+          {
+            "section_id": "conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 5.1 핵심 설계 요소와 결합 방식: 본문 2026자 / 목표 1429자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 2,
+          "not_visible": 0,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "conc_1",
+            "verdict": "met",
+            "paragraph_ids": [
+              "conclusion_p1"
+            ],
+            "evidence_ids": [
+              "E00030",
+              "E00033",
+              "E00073",
+              "E00071",
+              "E00083",
+              "E00118",
+              "E00143",
+              "E00212",
+              "E00261",
+              "E00262",
+              "E00263",
+              "E00277",
+              "E00278",
+              "E00292",
+              "E00293",
+              "E00294",
+              "E00296",
+              "E00297",
+              "E00299",
+              "E00300",
+              "E00314",
+              "E00321"
+            ],
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+            "paragraph_quotes": [
+              "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]"
+            ],
+            "guideline_ids": [
+              "ref1_conclusion_required_1",
+              "ref2_conclusion_required_1"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": []
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "conclusion",
+            "reference_id": "ref1_conclusion",
+            "verdict": "not_visible",
+            "paragraph_ids": [
+              "conclusion_p1",
+              "conclusion_p2",
+              "conclusion_p3"
+            ],
+            "reason": "ref1_conclusion의 '제안 프레임워크의 핵심 설계' 필수 항목은 conclusion_p1에서 핵심 설계 요소와 결합 방식, 해결하려는 문제를 정리하며 충족된다. 다만 ref1_conclusion의 '문제 정의와 제안 방법을 짧게 재진술한다'는 흐름은 결론 절의 성격상 이미 앞선 절에서 다루어져, 결론에서는 핵심 설계·결과·기여를 짧게 묶는 방식으로 대체되었다. 이는 ref1_conclusion의 not_to_transfer 항목(특정 수치·모델명·문헌·표/그림 번호 등)을 옮기지 않고 본 연구의 CUDA 최적화 결과 중심으로 서술한 점과 부합한다.",
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+            "paragraph_quotes": [
+              "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+              "주요 정량 결과는 최적화 단계별 실행 시간 단축과 메모리 전송 방식의 지연 특성 차이로 나타난다. 메모리 풀과 warm-up 조합만으로 거의 200ms가 단축되었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 이후 커널 퓨전과 커널 호출 감소, FP64에서 FP32로의 변경 등이 추가로 적용되었다. 메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으나, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 전송 직후 동기화가 일어나는 구간에서 역전되었다. 다만 figure 캡션의 비교 표는 Bound와 Infer 두 단계만 제시하고 있어 두 단계 합산이 전체 시간과 정확히 일치하지는 않는다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 이는 전체 실행 시간 대비 약 11초 차이와 조건이 다른 비교이며, 최대 지연은 No-Pin이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소하였다. [근거:E00071,E00083,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300]",
+              "실용적 기여는 CROWN 검증을 CPU 중심 오프라인 환경에서만 다루던 상황에서, CUDA 기반 최적화를 통해 실시간 환경의 대규모 연산에 접근하려는 시도에 있다. 특히 작은 데이터를 매 루프마다 전송하는 환경에서는 Pinned Memory가 매번 DMA 셋업 비용(약 1.0~1.5μs)을 치르는 대신 OS 페이징 간섭을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 제공하므로, 실시간 무선 안테나 선택 시스템처럼 지연 스파이크가 치명적인 맥락에서 의미가 있다. 반면 평균 시간만 보면 No-Pin이 더 빠를 수 있어, 총 시간과 실시간성 사이의 trade-off를 함께 봐야 한다. 향후 방향으로는 방법 A(Multi-Stream 배칭)의 3.2배 가속(25분→8분)과 SM 포화로 인한 7~8분 한계선을 넘어, CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched와 텐서 코어를 100% 활용하는 방법 C로 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 경로가 제시되었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 않았고, v2 적용 방안이나 방법 C의 목표 수치는 현재 실제 적용·평가 결과로 뒷받침되지 않는다. [근거:E00030,E00033,E00073,E00261,E00262,E00263,E00294,E00296,E00314,E00321]"
+            ]
+          },
+          {
+            "section_id": "conclusion",
+            "reference_id": "ref2_conclusion",
+            "verdict": "not_visible",
+            "paragraph_ids": [
+              "conclusion_p1",
+              "conclusion_p2",
+              "conclusion_p3"
+            ],
+            "reason": "ref2_conclusion의 '구성 요소의 변경 효과와 전체 처리 과정의 변경 효과를 구분해야 하는 이유' 필수 항목은 conclusion_p2와 conclusion_p3에서 메모리 전송 방식 비교(Bound/Infer 단계 역전, 평균 시간 vs 실시간성 trade-off)와 최적화 단계별 실행 시간 단축을 함께 서술하며 부분적으로 반영된다. 그러나 ref2_conclusion이 요구하는 '수준별 핵심 발견을 순서대로 정리'하고 '순위 변화, 추가 이득, 정확도 보존 여부를 함께 언급'하는 흐름은 본 연구 초안에서 구성 요소별 효과 분리(ablation)가 부재하다는 한계(E00314, E00321 관련)와 맞물려 완전히 충족되지 않는다. 또한 ref2_conclusion의 not_to_transfer 항목(특정 실험 구성 명칭, 하드웨어/벤더 도구명, 구체적 성능 수치, 표·그림 번호 등)은 옮기지 않았으나, 본 초안은 구성 요소 변경 효과와 전체 처리 효과를 명확히 분리한 수준별 발견 구조로 정리하지는 않았다.",
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+            "paragraph_quotes": [
+              "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+              "주요 정량 결과는 최적화 단계별 실행 시간 단축과 메모리 전송 방식의 지연 특성 차이로 나타난다. 메모리 풀과 warm-up 조합만으로 거의 200ms가 단축되었고, forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 CROWN Verification 실행 시간이 64.716ms로 기록되었다. 이후 커널 퓨전과 커널 호출 감소, FP64에서 FP32로의 변경 등이 추가로 적용되었다. 메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했으나, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 전송 직후 동기화가 일어나는 구간에서 역전되었다. 다만 figure 캡션의 비교 표는 Bound와 Infer 두 단계만 제시하고 있어 두 단계 합산이 전체 시간과 정확히 일치하지는 않는다. 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 이는 전체 실행 시간 대비 약 11초 차이와 조건이 다른 비교이며, 최대 지연은 No-Pin이 8.8ms~11.6ms로 튀는 반면 Pinned Memory는 1.64ms로 제한되었고, 지터도 No-Pin 118.94μs 대비 Pinned 47.28μs로 약 60% 감소하였다. [근거:E00071,E00083,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300]",
+              "실용적 기여는 CROWN 검증을 CPU 중심 오프라인 환경에서만 다루던 상황에서, CUDA 기반 최적화를 통해 실시간 환경의 대규모 연산에 접근하려는 시도에 있다. 특히 작은 데이터를 매 루프마다 전송하는 환경에서는 Pinned Memory가 매번 DMA 셋업 비용(약 1.0~1.5μs)을 치르는 대신 OS 페이징 간섭을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 제공하므로, 실시간 무선 안테나 선택 시스템처럼 지연 스파이크가 치명적인 맥락에서 의미가 있다. 반면 평균 시간만 보면 No-Pin이 더 빠를 수 있어, 총 시간과 실시간성 사이의 trade-off를 함께 봐야 한다. 향후 방향으로는 방법 A(Multi-Stream 배칭)의 3.2배 가속(25분→8분)과 SM 포화로 인한 7~8분 한계선을 넘어, CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched와 텐서 코어를 100% 활용하는 방법 C로 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 하는 경로가 제시되었다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 이루어지지 않았고, v2 적용 방안이나 방법 C의 목표 수치는 현재 실제 적용·평가 결과로 뒷받침되지 않는다. [근거:E00030,E00033,E00073,E00261,E00262,E00263,E00294,E00296,E00314,E00321]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "conclusion",
+            "severity": "warning",
+            "paragraph_id": "conclusion_p1",
+            "reason": "핵심 설계 요소와 결합 방식, 해결하려는 문제를 정리하라는 conc_1은 충족되나, ref2_conclusion이 요구하는 '구성 요소 변경 효과와 전체 처리 과정 변경 효과의 구분 이유'를 결론에서 명시적으로 서술하지는 않는다. 이는 conclusion_p3에서 ablation study 부재 한계를 짧게 언급하는 수준에 그치며, 수준별 발견 구조로 정리되지 않는다.",
+            "evidence_ids": [
+              "E00314",
+              "E00321"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]"
+          },
+          {
+            "section_id": "conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 5.1 핵심 설계 요소와 결합 방식: 본문 2026자 / 목표 1429자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+            "original_severity": "error",
+            "deferred": true
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": true,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 0,
+          "not_visible": 2,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+        "content_completion": {
+          "policy": "content-warning-v1",
+          "status": "needs_attention",
+          "revisions": 2,
+          "reason": "revision_limit"
+        },
+        "content_warnings": [
+          {
+            "section_id": "conclusion",
+            "severity": "warning",
+            "paragraph_id": "conclusion_p1",
+            "reason": "핵심 설계 요소와 결합 방식, 해결하려는 문제를 정리하라는 conc_1은 충족되나, ref2_conclusion이 요구하는 '구성 요소 변경 효과와 전체 처리 과정 변경 효과의 구분 이유'를 결론에서 명시적으로 서술하지는 않는다. 이는 conclusion_p3에서 ablation study 부재 한계를 짧게 언급하는 수준에 그치며, 수준별 발견 구조로 정리되지 않는다.",
+            "evidence_ids": [
+              "E00314",
+              "E00321"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 핵심 설계는 CROWN 신경망 검증의 실시간 가속을 위해 GPU 메모리 전송과 커널 실행 구조를 함께 재구성한 데 있다. 메모리 풀과 cuBLAS 예열(warm-up)을 결합해 초기화·반복 복사 비용을 줄이고, 가중치를 GPU에 사전 업로드하며 필요한 행렬만 복사하도록 memcpy 범위를 좁혔다. 여기에 forward 함수의 DTOH memcpy를 극단적으로 제거하고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 커널 호출 횟수를 줄였으며, 미리 작성된 퓨전 함수로 affine_min과 affine_max를 하나의 커널로 병합하였다. 또한 cudaGraph와 싱글 스트림 기반 cuBLAS Batched GEMM, 텐서 코어 활용을 통해 연산 체급을 높이는 방향을 함께 검토하였다. 이러한 결합은 GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 해소하고, memcpy 병목을 잡아 CPU보다 빠른 실행으로 가는 것을 목표로 한 것이다. 다만 방법 C의 3D 텐서 연산화나 텐서 코어 100% 활용은 실제 구현·평가 결과가 아니라 로드맵상 목표·계획이며, pinned memory 입력층 제거는 구성 변경 사실만 확인된 단계이다. [근거:E00030,E00033,E00073,E00071,E00083,E00118,E00143,E00212,E00261,E00262,E00263,E00277,E00278,E00292,E00293,E00294,E00296,E00297,E00299,E00300,E00314,E00321]",
+            "stage": "subsection-conclusion-p0"
+          },
+          {
+            "section_id": "conclusion",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 5.1 핵심 설계 요소와 결합 방식: 본문 2026자 / 목표 1429자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-conclusion-p0"
+          }
+        ],
+        "content_status": "needs_attention",
+        "content_approved": false
+      }
+    ],
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    }
+  }
+}

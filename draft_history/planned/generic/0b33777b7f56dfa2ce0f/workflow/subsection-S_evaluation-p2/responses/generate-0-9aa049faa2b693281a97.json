@@ -1,0 +1,52 @@
+{
+  "request_fingerprint": "9aa049faa2b693281a97c7b176ba18afeb95426fbe6b58df3a87ae08d8e410d2",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "메모리 방식 비교는 cudaHostRegister, cudaHostAlloc, No Pinning 세 조건을 backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산 조건에서 수행했다. 전체 실행 시간은 cudaHostRegister 787.88초, cudaHostAlloc 796.52초, No Pinning 776.70초로, cudaHostRegister와 No Pinning의 차이는 약 1.4%(약 11초)이며 1회당 약 12μs 수준의 미세한 차이였다. 단계별 누적 시간에서는 Bound 단계(전체 85%)에서 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다.",
+          "evidence_ids": [
+            "E00277",
+            "E00278",
+            "Hefd7e87bb735_63"
+          ]
+        },
+        {
+          "text": "평균 처리 속도만 보면 No-Pin이 약 13초 빨랐으나, 실시간성 관점에서는 다른 양상이 나타났다. No-Pin의 최대 지연은 8.8ms~11.6ms 범위로 크고 지터는 118.94μs였던 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47.28μs로 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소했다. 이는 No-Pin이 평소 CPU 캐시 복사로 빠르지만 OS 페이징 정리나 백그라운드 작업 개입 시 지연 스파이크가 발생할 수 있고, Pinned Memory는 매번 DMA 셋업 비용(약 1~2μs)을 치르는 대신 OS 페이징을 차단하여 결정론적 안정성을 확보하기 때문으로 해석되었다. 다만 평균 속도에서 No-Pin이 더 빠르게 측정된 결과는 측정 조건상 cudaMemcpyAsync가 매 루프마다 개별 호출되어 작은 데이터(약 1KB) 전송에서 DMA 셋업 오버헤드가 누적된 점과도 연결되며, 이러한 평균 속도와 실시간 안정성의 불일치는 본 측정의 해석 범위로 명시된다.",
+          "evidence_ids": [
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00295",
+            "E00296",
+            "E00297",
+            "E00299",
+            "E00300",
+            "E00301",
+            "E00303",
+            "E00304",
+            "E00305",
+            "E00306",
+            "E00307",
+            "E00308",
+            "E00309",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_65",
+            "Hefd7e87bb735_67",
+            "H85ca0e507c4e_76"
+          ]
+        },
+        {
+          "text": "평균값(n=920000) 기준 호출 단위 측정에서 cuda stream synchronize는 hostRegister 323μs, hostAlloc 322μs, noPinning 314μs였고, cudaMemcpyAsync는 hostRegister 5.188μs, hostAlloc 5.351μs, noPinning 4.932μs였으며, memcpy 복사 시간은 hostRegister 1.117μs, hostAlloc 1.142μs, noPinning 340ns로 나타났다. 1회 전송 오버헤드는 No-Pin이 약 0.03μs, Pinned가 약 1.50μs였고, 920,000회 누적 오버헤드는 No-Pin 약 0.03초, Pinned 약 1.38초로 집계되었다. cudaHostRegister와 cudaHostAlloc은 이 지표들에서 유사하게 측정되었으나, 여러 번 측정 과정에서 cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느리게 바뀌어 2copy에서 1copy로 변경한 효과가 크지 않았다고 기록되었고, 마지막 측정에서는 nopinned가 더 빠르게 나와 확신할 수 없게 되었다는 관찰도 함께 제시되었다.",
+          "evidence_ids": [
+            "E00309",
+            "E00304",
+            "E00306",
+            "E00297",
+            "Hefd7e87bb735_67"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "request_fingerprint": "0cce3877fba259c25b03b507e5822719519b14f3705c1d6144cb36d5c4400be3",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 크기는 1로 고정하였다. 실행 방식은 CROWN의 세 가지 방법(forward, forward+backward, backward_only)을 모두 포함하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이고, warm up은 초기에 이루어졌다. 정확도 지표는 기존 신경망 검증팀 프로그램과 검증 결과·비율이 얼마나 차이 나는지로 보았으며, 결과는 모두 동일하였다. [근거:E00322,E00320]",
+          "evidence_ids": [
+            "E00322",
+            "E00320"
+          ]
+        },
+        {
+          "text": "구성 요소는 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 하이브리드 연산 배치, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cuda graph 등으로 나뉜다. 메모리 풀은 할당·해제 반복을 줄이기 위한 장치이고, cuBLAS는 matvec·matmul을 기존 자체 계산 대신 수행하도록 도입된다. 가중치는 pre_upload_weights_to_gpu로 각 레이어의 W를 cudaMalloc 후 cudaMemcpy2D로 GPU에 올려 d_W에 저장해 두고, 벡터 연산 등 일부는 CPU로 처리하는 하이브리드 구성을 시도한다. 커널 퓨전은 backward_bound_gpu()를 시작으로 affine 중복 계산 삭제, new_(upper, lower)_p의 std::swap 포인터 스와핑, backward_matmul_pair_gpu의 2개 행렬곱 커널 통합, build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등으로 진행되며, 1개 커널 호출로 줄일 수 있는 함수를 계속 퓨전하는 방향이 기록되었다. alpha/beta GPU 버퍼, pinned memory, cuda graph는 각각 버퍼 배치, 호스트 메모리 접근, 반복 실행 경로 고정과 관련된 요소로 언급된다. 방법 B와 방법 C는 1024 배칭에서 속도가 빨라진 사례를 확인한 뒤 그 구현을 어떻게 따라갈지 검토하는 과정에서 등장한 개념·구도로, 실제 구현 결과라기보다 확인·탐색 맥락에서 다루어진다. [근거:E00231,E00232,E00311,E00313,E00320,E00322,E00339,E00054,E00323,E00324,E00042,E00123,E00129]",
+          "evidence_ids": [
+            "E00231",
+            "E00232",
+            "E00311",
+            "E00313",
+            "E00320",
+            "E00322",
+            "E00339",
+            "E00054",
+            "E00323",
+            "E00324",
+            "E00042",
+            "E00123",
+            "E00129"
+          ]
+        },
+        {
+          "text": "비교를 위한 구성과 조건은 CPU ONLY, GPU OPTIMIZED(cuBLAS+Pool), HYBRID(matmul=GPU, rest=CPU), HYBRID V2, mempool+warmup, cuda graph 적용 버전 등으로 구분된다. 각 구성은 통제하는 범위가 다르며, 예를 들어 mempool+warmup은 할당·해제 반복과 초기 실행 안정화 여부를, cuda graph 적용 버전은 반복 실행 경로 고정 여부를 분리해 보는 데 사용된다. v1-1-1-1은 메모리풀에 cuBLAS를 도입하고 matvec·matmul을 기존 자체 계산 대신 cuBLAS로 수행하도록 한 버전이며, 파일은 my_lirpa_mempool_cuBlas.cu이다. v1-1-2에서는 가중치만 미리 업로드할 수 있게 변경하였으며, 그 결과는 149~155ms 범위로 기록되었다. memcpy 호출 횟수는 66개에서 56개로 감소한 것으로 비교되었다. [근거:E00231,E00232,E00311,E00313,E00320,E00322,E00339,E00054,E00323,E00324,E00042,E00123,E00129]",
+          "evidence_ids": [
+            "E00231",
+            "E00232",
+            "E00311",
+            "E00313",
+            "E00320",
+            "E00322",
+            "E00339",
+            "E00054",
+            "E00323",
+            "E00324",
+            "E00042",
+            "E00123",
+            "E00129"
+          ]
+        },
+        {
+          "text": "측정은 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch 횟수만 세었으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하였다. 커널 퓨전과 backward_only에서 메모리 복사 커널 제거 결과, bound 기준으로 Forward method=0 27→18회(9회 감소), Backward method=1 전체 46→31회(15회 감소), Backward-only method=2 전체 45→33회(12회 감소)가 되었다. graph mode=1에서 샘플 1개 전체 기준으로는 Forward 33→24회(9회 감소), Backward 52→37회(15회 감소), Backward-only 51→39회(12회 감소)로 줄었으며, 추론 커널은 그대로였고 graph mode=1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회로 유지되었다. 실행 시간은 1138s에서 758s로 감소한 것으로 기록되었다. [근거:E00311,E00313,H85ca0e507c4e_85,E00320]",
+          "evidence_ids": [
+            "E00311",
+            "E00313",
+            "H85ca0e507c4e_85",
+            "E00320"
+          ]
+        },
+        {
+          "text": "플랫폼과 소프트웨어 스택은 CUDA Toolkit, nvcc, cuBLAS, cuSparse, Nsight System/Compute 등을 사용하는 환경으로 정리된다. GPU 메모리 주소를 저장할 포인터 배열을 FullyConnectedNetwork 구조체에 미리 만들어 두며, 이 배열의 크기는 MAX_LAYERS를 기준으로 하므로 신경망이 작으면 공간이 낭비될 수 있다. double보다 float가 접근 속도가 더 빠르다고 알려져 있으나, 행렬·벡터 구조체 등이 전부 double을 기준으로 하므로 float 포인터를 쓰려면 전체 구조를 바꿔야 한다. [근거:E00054,E00323,E00324]",
+          "evidence_ids": [
+            "E00054",
+            "E00323",
+            "E00324"
+          ]
+        },
+        {
+          "text": "방법론의 재현을 위해 필요한 세부 정보의 충분성은 제한적이다. 전체 코드·구현물의 완전한 제공 여부, 환경·의존성 명세의 재현 가능 수준, 반복 측정 통계 및 조건별 분리 측정의 충분성, 데이터셋·모델 로드 절차의 재현 가능 세부 정보, 미해결·계획 항목의 재현 영향 명시 측면에서 제한이 있다. backward_bound_gpu에서 new_(upper, lower)_p를 복사하지 않고 std::swap으로 포인터 스와핑한 변경, 그리고 계속해서 1개 커널 호출로 줄일 수 있는 커널 함수에 대해 커널 퓨전을 모두 진행한 방향은 기록되었으나, 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계로 남는다. [근거:E00042,E00123,E00129]",
+          "evidence_ids": [
+            "E00042",
+            "E00123",
+            "E00129"
+          ]
+        }
+      ]
+    }
+  }
+}

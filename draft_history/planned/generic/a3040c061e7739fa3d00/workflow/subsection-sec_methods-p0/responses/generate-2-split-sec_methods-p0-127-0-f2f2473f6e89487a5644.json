@@ -1,0 +1,40 @@
+{
+  "request_fingerprint": "f2f2473f6e89487a5644a6e95c8e22b10cc7214c4aab5957d134c6dabcbdf2f9",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "본 연구의 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 크기는 1로 설정하였다. 실행 방식은 CROWN의 세 가지 방법(forward, forward+backward, backward_only)을 모두 포함하였고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. GPU 클록 고정은 연구 후반에 적용된 사항이며, warm up은 초기에 이루어졌다. 이러한 조건은 기존 신경망 검증팀의 구현과 실행 시간을 비교하기 위한 것으로, 최적화 과정에서 적용 여부를 바꾼 구성 요소들을 분리하여 평가하기 위한 기반이 된다.",
+          "evidence_ids": [
+            "E00311",
+            "E00313",
+            "E00320"
+          ]
+        },
+        {
+          "text": "구성 요소의 역할과 결합 방식은 다음과 같이 정리된다. 메모리 풀은 할당·해제를 반복하지 않도록 하여 커널 호출 전후의 메모리 관리 비용을 줄이는 역할을 한다. cuBLAS는 행렬곱 연산을 GPU에서 처리하는 데 사용되며, 가중치는 GPU에 사전 업로드되어 매 실행마다 다시 전송하지 않도록 한다. 벡터 연산은 CPU로 처리하는 하이브리드 구성을 채택하였고, 커널 퓨전은 여러 작은 커널을 하나로 합쳐 launch 횟수를 줄이는 데 사용된다. alpha/beta GPU 버퍼, pinned memory, cuda graph는 각각 연산 중간 값의 저장, 호스트-디바이스 간 전송 효율, 실행 경로의 재현성 및 launch 오버헤드 감소와 관련된다. 방법 B는 3차원 배칭 커널을 직접 작성하는 접근이고, 방법 C는 행렬곱만 cuBLAS로 교체하는 하이브리드 구성으로, 두 방법은 최적화 과정에서 개념적으로 검토된 구도이다.",
+          "evidence_ids": [
+            "E00311",
+            "E00313",
+            "H85ca0e507c4e_85"
+          ]
+        },
+        {
+          "text": "커널 퓨전과 backward_only에서의 메모리 복사 커널 제거는 bound 내 CUDA kernel launch 횟수를 줄이는 데 직접적으로 기여하였다. 측정은 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch 횟수만 세었으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하였다. 그 결과 bound 기준으로 Forward method=0은 27회에서 18회로 9회 감소, Backward method=1 전체는 46회에서 31회로 15회 감소, Backward-only method=2 전체는 45회에서 33회로 12회 감소하였다. graph mode=1에서 샘플 1개 전체 기준으로는 Forward 33→24회(9회 감소), Backward 52→37회(15회 감소), Backward-only 51→39회(12회 감소)로 줄었으며, 추론 커널은 그대로였고 graph mode=1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회로 유지되었다.",
+          "evidence_ids": [
+            "E00311",
+            "E00313",
+            "H85ca0e507c4e_85"
+          ]
+        },
+        {
+          "text": "실행 시간 감소는 1138s에서 758s로 기록된 것으로 정리된다. 다만 이 값은 실행 시간 감소 요약 기록이며, 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다. 또한 각 최적화 기법을 체계적으로 분리하여 ablation study를 수행하지 못한 점은 본 방법의 한계로 남는다.",
+          "evidence_ids": [
+            "E00320",
+            "E00313"
+          ]
+        }
+      ]
+    }
+  }
+}

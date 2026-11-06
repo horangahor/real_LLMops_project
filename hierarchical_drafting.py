@@ -2,6 +2,7 @@
 
 import copy
 import json
+import re
 from pathlib import Path
 
 from document_parse import write_json
@@ -12,7 +13,7 @@ from bounded_review import review_bounded, SIMPLE_REVIEW
 from draft_prose import render_parts
 from draft_diagnostics import save_review_diagnostics, review_diagnostics
 from content_review_completion import (POLICY as CONTENT_POLICY, MAX_REVISIONS,
-                                      finish_content_review, reconcile_generation_warnings)
+                                      finish_content_review, finish_review_links, reconcile_generation_warnings)
 from editorial_review import POLICY as EDITORIAL_POLICY, checked_editorial_review, finish_editorial, review_editorial
 from editorial_revision import REVISION_POLICY, edit_editorial, revise_editorial, revision_changes
 
@@ -51,6 +52,7 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
         clean_part, compose_parts, validate_body, index_paragraphs, review_schema)
     from paper_context import part_context
     from writing_length import POLICY as LENGTH_POLICY, narrative_chars
+    from writing_policy import composition_issues, COMPOSITION_CODES
 
     folder = Path(folder)
     stages = []
@@ -65,9 +67,20 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                       for parts in contexts["subsections"].values() for child in parts.values()
                       if child.get("writing_budget")),
                   "subsections": copy.deepcopy(length_rows),
+                  "allocated_target_chars": sum(row["target_chars"] for row in length_rows),
                   "over_target_count": sum(row["over_target"] for row in length_rows)}
         if final:
             report["actual_final_chars"] = sum(row["final_chars"] for row in length_rows)
+            maximum = contexts.get("composition_policy", {}).get("max_section_chars", 0)
+            report["sections"] = [{"section_id": sid,
+                "final_chars": sum(row["final_chars"] for row in length_rows if row["section_id"] == sid),
+                "max_chars": maximum} for sid in dict.fromkeys(row["section_id"] for row in length_rows)]
+            ratio = contexts.get("composition_policy", {}).get("length_tolerance_ratio", 1.25)
+            report["length_tolerance_ratio"] = ratio
+            report["composition_status"] = "needs_shortening" if (
+                report["actual_final_chars"] > report["paper_target_chars"] * ratio or any(
+                    row["final_chars"] > row["target_chars"] * ratio for row in length_rows)
+                or any(row["max_chars"] and row["final_chars"] > row["max_chars"] for row in report["sections"])) else "within_tolerance"
         write_json(folder / "writing-length-report.json", report)
         return report
 
@@ -150,12 +163,21 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
 
         def review_candidate(value, bodies, attempt, pending_issues=None):
             if level != "subsection":
+                if pending_issues is not None:
+                    pending_issues = [i for i in pending_issues if i.get("validation_code") not in COMPOSITION_CODES]
                 return review_editorial(engine, root, f"review-{attempt}", level, review_plan, bodies, children_reviews, pending_issues)
             paragraphs = index_paragraphs(bodies)
             return review_bounded(engine, root, f"review-{attempt}", SIMPLE_REVIEW + "\n" + REVIEW_FOCUS[level],
                 {"research": local_research, "plan": review_plan, "draft_paragraphs": paragraphs,
                  "reference_guides": local_catalog, "workflow_stage": level},
                 review_schema(review_plan, paragraphs), review_plan, bodies)
+
+        def composition_review(report, value):
+            report = copy.deepcopy(report)
+            report["issues"] = [i for i in report["issues"] if i.get("validation_code") not in COMPOSITION_CODES]
+            report["issues"].extend(composition_issues(value, packets, level))
+            report["approved"] = not any(i["severity"] == "error" for i in report["issues"])
+            return report
 
         def record(report, bodies):
             warnings = report.get("content_warnings", []) if level == "subsection" else [
@@ -219,17 +241,21 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                     value, bodies = normalize(payload["sections"], packets)
                     if level == "subsection":
                         report = checked_review(payload["raw_review"], review_plan, bodies)
+                        report = finish_review_links(report, payload.get("review_link_completion"))
                         generation_warnings = reconcile_generation_warnings(payload.get("generation_warnings", []), value, packets)
                         report["issues"].extend(copy.deepcopy(generation_warnings))
+                        report = composition_review(report, value)
                         report = finish_content_review(report, name, payload.get("content_completion"))
                     elif payload["raw_review"].get("review_policy") == EDITORIAL_POLICY:
                         report = checked_editorial_review(payload["raw_review"], review_plan, bodies, children_reviews)
+                        report = composition_review(report, value)
                         report = finish_editorial(report, name, payload.get("editorial_completion"))
                         attach_preservation_warnings(report, payload.get("editorial_preservation_warnings", []))
                     else:
                         # An old mixed review must not be used as an editorial
                         # verdict, but the already-written body is reusable.
                         raw, report = review_candidate(value, bodies, "policy-migration")
+                        report = composition_review(report, value)
                         report = finish_editorial(report, name, None)
                         write_json(root / "checkpoint-history" / f"approved-{saved['sha256']}.json", saved)
                         payload = {**payload, "raw_review": raw, "reviews": payload["reviews"] + [report]}
@@ -344,6 +370,7 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                 raw_review, report = review_candidate(value, bodies, attempt, feedback["review"]["issues"] if editing else None)
             if level == "subsection":
                 report["issues"].extend(copy.deepcopy(generation_warnings))
+            report = composition_review(report, value)
             completion = None
             unresolved = [i["reason"] for i in report["issues"]
                           if i["severity"] == "error" and i.get("failure_owner") == "reviewer"]
@@ -372,6 +399,8 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                            "raw_review": raw_review, "reviews": reviews}
                 if completion is not None:
                     payload["content_completion" if level == "subsection" else "editorial_completion"] = completion
+                if report.get("review_link_completion"):
+                    payload["review_link_completion"] = copy.deepcopy(report["review_link_completion"])
                 if generation_warnings:
                     payload["generation_warnings"] = generation_warnings
                 if preservation_warnings:
@@ -404,7 +433,7 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
         children, child_reviews = {}, {}
         for key, child_packet in contexts["subsections"][sid].items():
             value, _, child_review, _ = stage(f"subsection-{sid}-{key}", "subsection", {sid: child_packet},
-                scoped_plan(child_packet["section_plan"]), WRITER + "\n" + LEAF,
+                scoped_plan(child_packet["section_plan"]), WRITER + "\n" + LEAF + child_packet.get("writing_guidance", ""),
                 child_packet, single=True)
             children[key] = value[sid]["parts"]["p0"]
             child_reviews[key] = child_review
@@ -426,8 +455,16 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
         {"research": scoped_research(packets), "plan": plan, "sections": assembled,
          "section_packets": packets, "reference_guides": catalog}, children_reviews=section_reviews)
     for row in length_rows:
-        row["final_chars"] = narrative_chars(value[row["section_id"]]["parts"][row["part"]])
+        body = value[row["section_id"]]["parts"][row["part"]]
+        row["final_chars"] = narrative_chars(body)
+        paragraphs = re.split(r"\n\s*\n", body.strip())
+        row["paragraph_count"] = len(paragraphs)
+        row["max_paragraph_chars"] = max(map(narrative_chars, paragraphs), default=0)
         row["over_target"] = row["final_chars"] > row["target_chars"]
+    remaining = composition_issues(value, packets, "paper")
+    report["composition_quality"] = {"status": "needs_editing" if remaining else "within_checked_rules",
+        "checks": ["narrator_style"],
+        "issues": [{**copy.deepcopy(i), "severity": "warning", "original_severity": "error"} for i in remaining]}
     return {"sections": bodies, "drafts": drafts, "review": report,
             "review_history": history, "review_warnings": warning_summary(),
             "writing_length": length_report(final=True),

@@ -28,6 +28,7 @@ def editorial_schema(plan, paragraphs):
 
 def checked_editorial_review(raw, plan, bodies, children):
     from planned_paper import index_paragraphs
+    from review_response import reference_metrics
     paragraphs = index_paragraphs(bodies)
     section_ids = {s["id"] for s in plan["sections"] if s["status"] == "write"}
     if (not isinstance(raw, dict) or set(raw) not in ({"issues"}, {"issues", "review_policy"})
@@ -55,7 +56,9 @@ def checked_editorial_review(raw, plan, bodies, children):
         for check in report.get("reference_checks", []):
             key = check["section_id"], check["reference_id"]
             old = refs.get(key)
-            if old is None or ref_order[check["verdict"]] > ref_order[old["verdict"]]:
+            rank = 3 if check.get("review_status") == "incomplete" else ref_order[check["verdict"]]
+            old_rank = 3 if old and old.get("review_status") == "incomplete" else ref_order[old["verdict"]] if old else -1
+            if rank > old_rank:
                 refs[key] = {**copy.deepcopy(check), "inherited": True}
     supported = {i["id"] for s in plan["sections"] for i in s["required_items"]
                  if i["evidence_ids"] or checks.get(i["id"], {}).get("evidence_ids")}
@@ -72,9 +75,7 @@ def checked_editorial_review(raw, plan, bodies, children):
         "editorial_warnings": warnings, "editorial_status": "needs_revision" if any(i["severity"] == "error" for i in issues) else "reviewed",
         "required_content_coverage": {"met": met, "total": total, "value": met / total if total else None,
                                       "scope": "inherited_subsection_reviews", "rechecked": False},
-        "reference_application": {"applied": sum(c["verdict"] == "applied" for c in refs),
-            "partial": sum(c["verdict"] == "partial" for c in refs), "not_visible": sum(c["verdict"] == "not_visible" for c in refs),
-            "total": len(refs), "scope": "inherited_subsection_reviews", "rechecked": False},
+        "reference_application": {**reference_metrics(refs), "scope": "inherited_subsection_reviews", "rechecked": False},
         "assessment": "Editorial quality only; content/reference judgments are inherited from child reviews."}
 
 

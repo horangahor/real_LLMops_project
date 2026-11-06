@@ -1,0 +1,1274 @@
+[
+  {
+    "checks": [
+      {
+        "item_id": "eval_item_3",
+        "verdict": "missing",
+        "paragraph_ids": [
+          "evaluation_p1",
+          "evaluation_p2",
+          "evaluation_p3",
+          "evaluation_p4",
+          "evaluation_p5",
+          "evaluation_p6",
+          "evaluation_p7"
+        ],
+        "evidence_ids": [
+          "E00029",
+          "E00030",
+          "E00045",
+          "E00065",
+          "E00066",
+          "E00070",
+          "E00073",
+          "E00077",
+          "E00111",
+          "E00115",
+          "E00116",
+          "E00120",
+          "E00125",
+          "E00167",
+          "E00270",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00303",
+          "E00304",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00330"
+        ],
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, 여전히 CPU보다 느리다고 기록되었다. 이 비교는 기록자의 정성적 평가이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 이후 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+        "paragraph_quotes": [
+          "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, 여전히 CPU보다 느리다고 기록되었다. 이 비교는 기록자의 정성적 평가이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 이후 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+          "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]",
+          "cuSparse spMV 적용 결과는 느려져 spMM 도입까지 검토하기로 했으며, spMM 적용 후에는 거의 40ms 수준으로 회귀하여 문제가 있다고 기록되었다. 이 회귀는 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었다. [근거:E00111,E00115,E00116,E00330]",
+          "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. [근거:E00120,E00125]",
+          "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+          "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다고 분석되었다. 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라 고정 setup 비용이 줄었다고 생각했으나, 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 이에 따라 pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. 또한 추론 종료까지의 동기화 시간이 pinned 미적용 버전이 가장 빠르며, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었다. backward_only가 왜 제일 빠른지에 대한 질문도 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]",
+          "영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00077,E00073,E00065]"
+        ],
+        "guideline_ids": [
+          "ref1_evaluation_required_3"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296"
+        ],
+        "model_verdict": "met",
+        "missing_review_evidence_ids": [],
+        "missing_body_evidence_ids": [
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296"
+        ],
+        "missing_section_evidence_ids": [
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296"
+        ],
+        "unselected_cited_evidence_ids": [],
+        "failure_owner": "writer",
+        "validation_note": "검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다."
+      },
+      {
+        "item_id": "eval_item_4",
+        "verdict": "needs_check",
+        "paragraph_ids": [
+          "evaluation_p1",
+          "evaluation_p2",
+          "evaluation_p3",
+          "evaluation_p4",
+          "evaluation_p5",
+          "evaluation_p6",
+          "evaluation_p7"
+        ],
+        "evidence_ids": [],
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, 여전히 CPU보다 느리다고 기록되었다. 이 비교는 기록자의 정성적 평가이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 이후 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+        "paragraph_quotes": [
+          "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, 여전히 CPU보다 느리다고 기록되었다. 이 비교는 기록자의 정성적 평가이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 이후 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+          "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]",
+          "cuSparse spMV 적용 결과는 느려져 spMM 도입까지 검토하기로 했으며, spMM 적용 후에는 거의 40ms 수준으로 회귀하여 문제가 있다고 기록되었다. 이 회귀는 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었다. [근거:E00111,E00115,E00116,E00330]",
+          "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. [근거:E00120,E00125]",
+          "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+          "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다고 분석되었다. 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라 고정 setup 비용이 줄었다고 생각했으나, 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 이에 따라 pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. 또한 추론 종료까지의 동기화 시간이 pinned 미적용 버전이 가장 빠르며, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었다. backward_only가 왜 제일 빠른지에 대한 질문도 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]",
+          "영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00077,E00073,E00065]"
+        ],
+        "guideline_ids": [],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [],
+        "validation_note": "원문 근거가 배정되지 않은 항목의 충족 판정을 확인 필요로 낮췄습니다. 충족률 분모·분자에서 제외합니다."
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "evaluation",
+        "reference_id": "ref1_evaluation",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "evaluation_p1",
+          "evaluation_p2",
+          "evaluation_p3",
+          "evaluation_p4",
+          "evaluation_p5",
+          "evaluation_p6",
+          "evaluation_p7"
+        ],
+        "reason": "오류 양상과 실패 사례 해석(ref1_evaluation_required_3)은 연구 일지에서 확인된 범위로 제시되었으나, 제안 설계와 변형 방법별 정량 성능 비교(ref1_evaluation_required_1), 계산 비용과 배포 가능성 논의(ref1_evaluation_required_2), 비교 대상 기준 방법과의 비교(ref1_evaluation_required_5), 관련 연구와의 교차 비교(ref1_evaluation_required_6), 제거 실험을 통한 구성 요소 기여도 분석(ref1_evaluation_required_7)은 연구 일지에 직접 근거가 충분하지 않아 충족되지 않았다.",
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, 여전히 CPU보다 느리다고 기록되었다. 이 비교는 기록자의 정성적 평가이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 이후 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+        "paragraph_quotes": [
+          "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, 여전히 CPU보다 느리다고 기록되었다. 이 비교는 기록자의 정성적 평가이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 이후 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+          "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]",
+          "cuSparse spMV 적용 결과는 느려져 spMM 도입까지 검토하기로 했으며, spMM 적용 후에는 거의 40ms 수준으로 회귀하여 문제가 있다고 기록되었다. 이 회귀는 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었다. [근거:E00111,E00115,E00116,E00330]",
+          "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. [근거:E00120,E00125]",
+          "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+          "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다고 분석되었다. 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라 고정 setup 비용이 줄었다고 생각했으나, 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 이에 따라 pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. 또한 추론 종료까지의 동기화 시간이 pinned 미적용 버전이 가장 빠르며, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었다. backward_only가 왜 제일 빠른지에 대한 질문도 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]",
+          "영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00077,E00073,E00065]"
+        ]
+      },
+      {
+        "section_id": "evaluation",
+        "reference_id": "ref2_evaluation",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "evaluation_p1",
+          "evaluation_p2",
+          "evaluation_p3",
+          "evaluation_p4",
+          "evaluation_p5",
+          "evaluation_p6",
+          "evaluation_p7"
+        ],
+        "reason": "연구 질문별 답 요약(ref2_evaluation_required_1)과 런타임 호출 지연 시간 결과 표(ref2_evaluation_required_4)는 사용자가 따로 정리한 표가 없다고 임시 승인한 범위로 짧게 반영되었고, 정량 결과 표나 연구 질문별 답 요약이 이 절에서 직접 제시되지 않아 완전히 충족되지 않았다.",
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, 여전히 CPU보다 느리다고 기록되었다. 이 비교는 기록자의 정성적 평가이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 이후 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+        "paragraph_quotes": [
+          "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, 여전히 CPU보다 느리다고 기록되었다. 이 비교는 기록자의 정성적 평가이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 이후 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+          "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]",
+          "cuSparse spMV 적용 결과는 느려져 spMM 도입까지 검토하기로 했으며, spMM 적용 후에는 거의 40ms 수준으로 회귀하여 문제가 있다고 기록되었다. 이 회귀는 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었다. [근거:E00111,E00115,E00116,E00330]",
+          "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. [근거:E00120,E00125]",
+          "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+          "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다고 분석되었다. 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라 고정 setup 비용이 줄었다고 생각했으나, 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 이에 따라 pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. 또한 추론 종료까지의 동기화 시간이 pinned 미적용 버전이 가장 빠르며, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었다. backward_only가 왜 제일 빠른지에 대한 질문도 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]",
+          "영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00077,E00073,E00065]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p5",
+        "reason": "cudaHostRegister와 No Pinning의 전체 실행 시간 차이(787.88초 대 776.70초, 약 1.4%, 약 11초) 및 Bound/Infer 단계별 수치(658.80초/663.17초, 127.18초/111.92초, 4.37초/15.26초)는 figure 캡션(p74:e582)에 기록된 값이며, 동일 문서의 다른 실행 결과(p75:e589: 798.78s, p76:e591: 806.54s, p76:e593: 790.64s)는 별도 실행의 값으로 본 사실의 수치와 직접 동일하지 않다. 본문은 이 차이를 명확히 구분하지 않고 하나의 비교 결과로 서술하고 있어, 수치의 출처·조건 범위를 혼동할 여지가 있다.",
+        "evidence_ids": [
+          "E00277",
+          "E00278"
+        ],
+        "failure_owner": "writer",
+        "quote": "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p5",
+        "reason": "cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해 '컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다'고 기록되었으나, 구체적 내용은 이 요소만으로 제시되지 않는다. 본문은 이를 사실처럼 서술하면서도 근거의 한계를 함께 명시하지 않아, 근거 범위를 넘는 주장으로 읽힐 수 있다.",
+        "evidence_ids": [
+          "E00279"
+        ],
+        "failure_owner": "writer",
+        "quote": "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p6",
+        "reason": "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느리게 측정되어 '2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다'고 분석되었으나, 이는 측정 결과가 일관되지 않아 확신할 수 없다는 기록자의 정성적 판단이다. 본문은 이를 단정적 분석처럼 서술하고 있어 근거의 불확실성을 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00304",
+          "E00306"
+        ],
+        "failure_owner": "writer",
+        "quote": "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다고 분석되었다. 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라 고정 setup 비용이 줄었다고 생각했으나, 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 이에 따라 pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. 또한 추론 종료까지의 동기화 시간이 pinned 미적용 버전이 가장 빠르며, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었다. backward_only가 왜 제일 빠른지에 대한 질문도 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p6",
+        "reason": "추론 종료까지의 동기화 시간이 pinned 미적용 버전이 가장 빠르며 'H2D 복사 시간의 영향일 수 있다'고 해석되었으나, 이는 확정적 인과 분리가 아닌 해석이다. 본문은 이를 관측 결과처럼 서술하고 있어 해석·관측의 구분이 흐려졌다.",
+        "evidence_ids": [
+          "E00303"
+        ],
+        "failure_owner": "writer",
+        "quote": "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다고 분석되었다. 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라 고정 setup 비용이 줄었다고 생각했으나, 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 이에 따라 pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. 또한 추론 종료까지의 동기화 시간이 pinned 미적용 버전이 가장 빠르며, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었다. backward_only가 왜 제일 빠른지에 대한 질문도 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p7",
+        "reason": "HYBRID V2가 CPU보다 느리게 나온 이유를 CPU 캐시 때문으로 추정하고 '1번만 돌리는 실험이 필요하다'고 판단한 내용은 기록자의 정성적 해석·계획 메모이며, p17:e131에는 'HYBRID V2가 CPU보다 느리다'는 명시적 비교 문장이 없고 p17:e130의 실행 결과를 보고 원인을 추측한 맥락이다. 본문은 이를 관측된 비교 결과처럼 서술하고 있어 근거 범위를 넘는다.",
+        "evidence_ids": [
+          "E00065"
+        ],
+        "failure_owner": "writer",
+        "quote": "영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00077,E00073,E00065]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p3",
+        "reason": "spMM 적용 후 '거의 40ms로 회귀'했다는 표현은 p30:enh:e0의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 본문은 이를 명확한 회귀 결과로 서술하고 있어 근거의 표현 수준·정량 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00111"
+        ],
+        "failure_owner": "writer",
+        "quote": "cuSparse spMV 적용 결과는 느려져 spMM 도입까지 검토하기로 했으며, spMM 적용 후에는 거의 40ms 수준으로 회귀하여 문제가 있다고 기록되었다. 이 회귀는 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었다. [근거:E00111,E00115,E00116,E00330]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p3",
+        "reason": "모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황이라는 서술은 기록자의 원인 해석이며, setup/launch 비용과 계산 이득의 정량 분리 측정은 현재 페이지에 제시되지 않았다. 본문은 이를 확인된 원인처럼 서술하고 있어 해석·관측의 구분이 흐려졌다.",
+        "evidence_ids": [
+          "E00116"
+        ],
+        "failure_owner": "writer",
+        "quote": "cuSparse spMV 적용 결과는 느려져 spMM 도입까지 검토하기로 했으며, spMM 적용 후에는 거의 40ms 수준으로 회귀하여 문제가 있다고 기록되었다. 이 회귀는 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었다. [근거:E00111,E00115,E00116,E00330]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p3",
+        "reason": "신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생했다는 원인 분석 정리는 기록자의 정리이며, 정량적 원인 분리 측정 결과는 현재 페이지에 제시되지 않았다. 본문은 이를 확정된 원인 분석처럼 서술하고 있어 근거의 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00330"
+        ],
+        "failure_owner": "writer",
+        "quote": "cuSparse spMV 적용 결과는 느려져 spMM 도입까지 검토하기로 했으며, spMM 적용 후에는 거의 40ms 수준으로 회귀하여 문제가 있다고 기록되었다. 이 회귀는 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었다. [근거:E00111,E00115,E00116,E00330]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p2",
+        "reason": "메모리풀 warm up이 각 버전에서 약 50ms 정도 단축시키는 효과가 있다고 기록되었으나, 이는 1회 시도 기준의 정성적 관찰이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. 본문은 이를 확인된 효과로 서술하고 있어 근거의 표현 수준·정량 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00070"
+        ],
+        "failure_owner": "writer",
+        "quote": "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p2",
+        "reason": "cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다고 기록되었으나, 이는 기록자의 정성적 판단이며 cuBLAS 적용 여부에 따른 정량 비교 수치는 현재 페이지에 없다. 본문은 이를 확인된 판단으로 서술하고 있어 근거의 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00066"
+        ],
+        "failure_owner": "writer",
+        "quote": "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p1",
+        "reason": "GPU OPTIMIZED 모드 적용 후 실행 시간이 약 229.691ms로 약 100ms 줄었으나 여전히 CPU보다 느리다는 비교는 기록자의 정성적 평가이며, CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 없다. 본문은 이를 사실적 비교처럼 서술하고 있어 근거의 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00029"
+        ],
+        "failure_owner": "writer",
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, 여전히 CPU보다 느리다고 기록되었다. 이 비교는 기록자의 정성적 평가이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 이후 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p1",
+        "reason": "matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했다는 서술은 후속 시도 동기와 방향 기록이며, 하이브리드 프로그램의 실제 구현 완료·측정 결과는 현재 페이지에 없다. 본문은 이를 시도 사실처럼 서술하고 있어 근거의 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00030"
+        ],
+        "failure_owner": "writer",
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, 여전히 CPU보다 느리다고 기록되었다. 이 비교는 기록자의 정성적 평가이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 이후 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p1",
+        "reason": "bias까지 GPU에 미리 업로드하는 시도를 했으나 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다는 서술은 기록자의 정성적 판단이며, bias 업로드 여부에 따른 정량적 비교 수치는 현재 페이지에 없다. 본문은 이를 확인된 판단으로 서술하고 있어 근거의 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00045"
+        ],
+        "failure_owner": "writer",
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, 여전히 CPU보다 느리다고 기록되었다. 이 비교는 기록자의 정성적 평가이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 페이지에 제시되지 않았다. 이후 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p4",
+        "reason": "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었으나, 이는 정성적 관측·판단 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. 본문은 이를 확인된 효과로 서술하고 있어 근거의 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00120",
+          "E00125"
+        ],
+        "failure_owner": "writer",
+        "quote": "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. [근거:E00120,E00125]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p5",
+        "reason": "40000번 루프에서 forward가 backward보다 느려진 점과 단일 테스트에서 forward/backward 3배 차이가 나지만 92만개 데이터에서는 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다는 서술은 관측된 현상과 미해결 상태 기록이며, 원인 분석이나 해결 방안은 제시되지 않았다. 본문은 이를 서술하면서 근거의 한계(미해결 상태, 원인 미제시)를 함께 명시하지 않았다.",
+        "evidence_ids": [
+          "E00167"
+        ],
+        "failure_owner": "writer",
+        "quote": "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p5",
+        "reason": "cudaHostRegister가 No Pinning보다 전체 실행 시간이 느리게 측정된 점과 Bound 단계에서 더 빠르고 Infer 단계에서 역전되었다는 서술은 figure 캡션에 기록된 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다. 본문은 이를 서술하면서 근거의 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00277",
+          "E00278"
+        ],
+        "failure_owner": "writer",
+        "quote": "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p6",
+        "reason": "pinned memory가 더 느린 이유 분석을 이 정도로 마무리하기로 했으며 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다는 서술은 분석 중단 결정과 그 이유에 대한 기록자의 판단이며, 정량적 결론이나 추가 검증 결과는 제시되지 않았다. 본문은 이를 서술하면서 근거의 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00307"
+        ],
+        "failure_owner": "writer",
+        "quote": "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다고 분석되었다. 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라 고정 setup 비용이 줄었다고 생각했으나, 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 이에 따라 pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. 또한 추론 종료까지의 동기화 시간이 pinned 미적용 버전이 가장 빠르며, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었다. backward_only가 왜 제일 빠른지에 대한 질문도 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p6",
+        "reason": "backward_only가 왜 제일 빠른지에 대한 질문이 제기되었으나 이 페이지에서 답변은 완료되지 않았다는 서술은 질문 제기 사실만 기록되어 있으며, 이 페이지에서 답변이 완료되지 않았다. 본문은 이를 서술하면서 근거의 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00308"
+        ],
+        "failure_owner": "writer",
+        "quote": "cudaMemcpyAsync 호출 시간에서 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 것이 크게 효과를 보지 못했다고 분석되었다. 여러 번 측정 결과 pinned 적용 버전의 cudaMemcpyAsync가 더 빨라 고정 setup 비용이 줄었다고 생각했으나, 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. 이에 따라 pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. 또한 추론 종료까지의 동기화 시간이 pinned 미적용 버전이 가장 빠르며, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었다. backward_only가 왜 제일 빠른지에 대한 질문도 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p7",
+        "reason": "영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다는 서술은 기록자의 정성적 판단이며, GPU/CPU 간 정량 비교의 반복 측정 통계는 현재 페이지에 제시되지 않았다. 본문은 이를 확인된 판단으로 서술하고 있어 근거의 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00077"
+        ],
+        "failure_owner": "writer",
+        "quote": "영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00077,E00073,E00065]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "paragraph_id": "evaluation_p7",
+        "reason": "현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다는 서술은 기록자의 문제 인식·판단이며, memcpy 병목의 정량적 측정이나 원인 분리 실험 결과는 현재 페이지에 제시되지 않았다. 본문은 이를 확인된 판단으로 서술하고 있어 근거의 한계를 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00073"
+        ],
+        "failure_owner": "writer",
+        "quote": "영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00077,E00073,E00065]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "quote": "",
+        "reason": "필수 내용 eval_item_3: missing. 검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다. 누락 근거=E00293,E00294,E00295,E00296",
+        "evidence_ids": [
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296"
+        ],
+        "validation_code": "required_content",
+        "item_id": "eval_item_3",
+        "review_stage": "required_evidence_validation",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "evaluation",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "error",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 3.3 오류·실패 양상과 해석: 본문 2237자 / 목표 1200자 / 허용 상한 1500자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요."
+      },
+      {
+        "section_id": "evaluation",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "error",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "style",
+        "validation_code": "composition_style",
+        "reason": "evaluation/p0: 기록자·자료 중심 표현 ['현재 페이지에 제시']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요."
+      }
+    ],
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [],
+    "response_normalizations": [],
+    "approved": false,
+    "required_content_coverage": {
+      "met": 0,
+      "total": 1,
+      "value": 0.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 2,
+      "not_visible": 0,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+  },
+  {
+    "checks": [
+      {
+        "item_id": "eval_item_3",
+        "verdict": "missing",
+        "paragraph_ids": [
+          "evaluation_p1",
+          "evaluation_p2",
+          "evaluation_p3",
+          "evaluation_p4",
+          "evaluation_p5",
+          "evaluation_p6",
+          "evaluation_p7",
+          "evaluation_p8",
+          "evaluation_p9",
+          "evaluation_p10"
+        ],
+        "evidence_ids": [
+          "E00029",
+          "E00030",
+          "E00045",
+          "E00065",
+          "E00066",
+          "E00070",
+          "E00073",
+          "E00077",
+          "E00111",
+          "E00115",
+          "E00116",
+          "E00120",
+          "E00125",
+          "E00167",
+          "E00270",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00303",
+          "E00304",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00330"
+        ],
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+        "paragraph_quotes": [
+          "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+          "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]",
+          "spMM 도입 후 실행 시간이 약 40ms 수준으로 회귀한 것으로 기록되었다. 이 표현은 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었으나, 정량적 원인 분리 측정 결과는 제시되지 않았다. [근거:E00111,E00116,E00330]",
+          "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. [근거:E00120,E00125]",
+          "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+          "cudaMemcpyAsync 호출 시간은 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 효과가 크지 않았다고 보았으나, 측정 결과가 일관되지 않아 확신할 수 없는 정성적 판단으로 남았다. 추론 종료까지의 동기화 시간은 pinned 미적용 버전이 가장 빨랐고, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었으나 확정적 인과 분리는 아니다. pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. backward_only가 왜 제일 빠른지에 대한 질문은 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]",
+          "HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. 영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00065,E00073,E00077]",
+          "메모리 전송 방식 비교에서 No-Pin(일반 메모리)은 평균 처리 속도가 Pinned Memory보다 약 13초 빨랐으나, 이는 CPU 캐시 복사 이득에 의한 것으로 해석된다. 반면 Pinned Memory는 DMA 셋업 오버헤드로 인해 평균 속도가 약간 느렸다. 최대 지연은 No-Pin이 8.8~11.6ms 범위로 치명적 수준을 보였고, Pinned Memory는 1.64ms로 극히 안정적이었다. 지터 역시 No-Pin이 118μs로 불안정했고 Pinned Memory는 47μs로 안정적이었다. [근거:E00293]",
+          "이러한 차이는 동작 특성에서도 설명된다. No-Pin은 평소 CPU 캐시 효과로 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없으며, 이는 1ms 무선 통신 데드라인을 파괴할 수 있다. Pinned Memory는 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00294]",
+          "다만 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다. 그럼에도 Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00295,E00296]"
+        ],
+        "guideline_ids": [
+          "ref1_evaluation_required_3"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [
+          "E00115"
+        ],
+        "model_verdict": "met",
+        "missing_review_evidence_ids": [],
+        "missing_body_evidence_ids": [
+          "E00115"
+        ],
+        "missing_section_evidence_ids": [
+          "E00115"
+        ],
+        "unselected_cited_evidence_ids": [],
+        "failure_owner": "writer",
+        "validation_note": "검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다."
+      },
+      {
+        "item_id": "eval_item_4",
+        "verdict": "needs_check",
+        "paragraph_ids": [],
+        "evidence_ids": [],
+        "quote": "",
+        "paragraph_quotes": [],
+        "guideline_ids": [],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [],
+        "validation_note": "원문 근거가 배정되지 않은 항목의 충족 판정을 확인 필요로 낮췄습니다. 충족률 분모·분자에서 제외합니다."
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "evaluation",
+        "reference_id": "ref1_evaluation",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "evaluation_p1",
+          "evaluation_p2",
+          "evaluation_p3",
+          "evaluation_p4",
+          "evaluation_p5",
+          "evaluation_p6",
+          "evaluation_p7",
+          "evaluation_p8",
+          "evaluation_p9",
+          "evaluation_p10"
+        ],
+        "reason": "오류 양상과 실패 사례 해석(ref1_evaluation_required_3)은 eval_item_3을 통해 연구 일지에서 확인된 범위로 제시되어 충족된다. 그러나 제안 설계와 변형 방법별 정량 성능 비교(ref1_evaluation_required_1), 계산 비용과 배포 가능성 논의(ref1_evaluation_required_2), 비교 대상 기준 방법과의 비교(ref1_evaluation_required_5), 관련 연구와의 교차 비교(ref1_evaluation_required_6), 제거 실험을 통한 구성 요소 기여도 분석(ref1_evaluation_required_7)은 연구 일지의 정성적 관측·해석 중심 기록만으로는 충족되지 않는다. 특히 체계적인 제거 실험(ablation study)이 수행되지 않았고, 관련 연구 문헌 근거도 충분하지 않아 해당 항목은 이 절에서 직접 답할 수 없다.",
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+        "paragraph_quotes": [
+          "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+          "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]",
+          "spMM 도입 후 실행 시간이 약 40ms 수준으로 회귀한 것으로 기록되었다. 이 표현은 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었으나, 정량적 원인 분리 측정 결과는 제시되지 않았다. [근거:E00111,E00116,E00330]",
+          "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. [근거:E00120,E00125]",
+          "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+          "cudaMemcpyAsync 호출 시간은 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 효과가 크지 않았다고 보았으나, 측정 결과가 일관되지 않아 확신할 수 없는 정성적 판단으로 남았다. 추론 종료까지의 동기화 시간은 pinned 미적용 버전이 가장 빨랐고, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었으나 확정적 인과 분리는 아니다. pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. backward_only가 왜 제일 빠른지에 대한 질문은 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]",
+          "HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. 영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00065,E00073,E00077]",
+          "메모리 전송 방식 비교에서 No-Pin(일반 메모리)은 평균 처리 속도가 Pinned Memory보다 약 13초 빨랐으나, 이는 CPU 캐시 복사 이득에 의한 것으로 해석된다. 반면 Pinned Memory는 DMA 셋업 오버헤드로 인해 평균 속도가 약간 느렸다. 최대 지연은 No-Pin이 8.8~11.6ms 범위로 치명적 수준을 보였고, Pinned Memory는 1.64ms로 극히 안정적이었다. 지터 역시 No-Pin이 118μs로 불안정했고 Pinned Memory는 47μs로 안정적이었다. [근거:E00293]",
+          "이러한 차이는 동작 특성에서도 설명된다. No-Pin은 평소 CPU 캐시 효과로 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없으며, 이는 1ms 무선 통신 데드라인을 파괴할 수 있다. Pinned Memory는 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00294]",
+          "다만 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다. 그럼에도 Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00295,E00296]"
+        ]
+      },
+      {
+        "section_id": "evaluation",
+        "reference_id": "ref2_evaluation",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "evaluation_p1",
+          "evaluation_p2",
+          "evaluation_p3",
+          "evaluation_p4",
+          "evaluation_p5",
+          "evaluation_p6",
+          "evaluation_p7",
+          "evaluation_p8",
+          "evaluation_p9",
+          "evaluation_p10"
+        ],
+        "reason": "연구 질문별 답 요약과 지연 시간 결과 표(ref2_evaluation_required_1, ref2_evaluation_required_4)는 사용자가 따로 정리한 표도 없다고 임시 승인한 범위 안에서, 연구 일지에서 확인된 정성적 관측과 일부 실측값(예: 38.580600ms, 787.88s/776.70s 등)을 짧게 반영하는 수준으로만 제시되었다. 그러나 연구 질문별로 질문과 답을 명시적으로 요약하는 구조, 그리고 런타임 호출 지연 시간 결과 표 자체는 이 초안에 포함되지 않아 해당 필수 내용은 완전히 충족되지 않는다.",
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+        "paragraph_quotes": [
+          "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+          "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]",
+          "spMM 도입 후 실행 시간이 약 40ms 수준으로 회귀한 것으로 기록되었다. 이 표현은 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었으나, 정량적 원인 분리 측정 결과는 제시되지 않았다. [근거:E00111,E00116,E00330]",
+          "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. [근거:E00120,E00125]",
+          "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+          "cudaMemcpyAsync 호출 시간은 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 효과가 크지 않았다고 보았으나, 측정 결과가 일관되지 않아 확신할 수 없는 정성적 판단으로 남았다. 추론 종료까지의 동기화 시간은 pinned 미적용 버전이 가장 빨랐고, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었으나 확정적 인과 분리는 아니다. pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. backward_only가 왜 제일 빠른지에 대한 질문은 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]",
+          "HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. 영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00065,E00073,E00077]",
+          "메모리 전송 방식 비교에서 No-Pin(일반 메모리)은 평균 처리 속도가 Pinned Memory보다 약 13초 빨랐으나, 이는 CPU 캐시 복사 이득에 의한 것으로 해석된다. 반면 Pinned Memory는 DMA 셋업 오버헤드로 인해 평균 속도가 약간 느렸다. 최대 지연은 No-Pin이 8.8~11.6ms 범위로 치명적 수준을 보였고, Pinned Memory는 1.64ms로 극히 안정적이었다. 지터 역시 No-Pin이 118μs로 불안정했고 Pinned Memory는 47μs로 안정적이었다. [근거:E00293]",
+          "이러한 차이는 동작 특성에서도 설명된다. No-Pin은 평소 CPU 캐시 효과로 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없으며, 이는 1ms 무선 통신 데드라인을 파괴할 수 있다. Pinned Memory는 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00294]",
+          "다만 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다. 그럼에도 Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00295,E00296]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p5",
+        "reason": "cudaHostRegister와 No Pinning의 전체 실행 시간 차이(787.88초 대 776.70초, 약 1.4%, 약 11초)와 Bound/Infer 단계별 역전(658.80초 vs 663.17초, 127.18초 vs 111.92초)을 연구 일지의 figure 캡션 기록 범위로 제시한 점은 적절하다. 다만 이 비교는 기록자가 확인한 특정 실행 결과이며, 동일 문서의 다른 실행 결과(p75:e589: 798.78s, p76:e591: 806.54s, p76:e593: 790.64s 등)와는 별도 실행 값으로 구분된다는 점이 본문에서 명시되지 않았다. 또한 Bound+Infer 합산(658.80+127.18=785.98s)이 전체 787.88s와 약 1.9초 차이가 나는 이유도 certify 단계 등 미분해 오버헤어로 추정될 뿐 확정적으로 설명되지 않았다. 이 부분은 연구 일지의 기록 범위를 벗어나지 않으나, 독자가 단일 확정 비교로 오해하지 않도록 한계를 짧게 명시할 필요가 있다.",
+        "evidence_ids": [
+          "E00277",
+          "E00278"
+        ],
+        "failure_owner": "none",
+        "quote": "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p3",
+        "reason": "spMM 적용 후 실행 시간이 약 40ms로 회귀했다는 서술을 p30의 실측값 38.580600ms를 반올림한 정성적 표현으로 명시한 점은 적절하다. 그러나 이 문단과 evaluation_p1~p2에서 GPU OPTIMIZED, cuBLAS, spMM, 커널 퓨전, backward_matmul_pair_gpu 등 여러 최적화 시도가 짧은 시계열로 나열되며, 각 관측의 측정 조건(반복 횟수, warmup 여부, 루프 수, 그래프 적용 상태 등)이 서로 섞여 있다. 연구 일지의 기록 범위를 벗어나지 않더라도, 독자가 각 수치를 동일 조건 비교로 읽지 않도록 조건 차이를 문단 단위에서 더 분명히 분리할 필요가 있다.",
+        "evidence_ids": [
+          "E00070",
+          "E00111",
+          "E00120",
+          "E00125"
+        ],
+        "failure_owner": "none",
+        "quote": "spMM 도입 후 실행 시간이 약 40ms 수준으로 회귀한 것으로 기록되었다. 이 표현은 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었으나, 정량적 원인 분리 측정 결과는 제시되지 않았다. [근거:E00111,E00116,E00330]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p8",
+        "reason": "No-Pin과 Pinned Memory의 평균 처리 속도 차이(약 13초), 최대 지연(8.8~11.6ms vs 1.64ms), 지터(118μs vs 47μs)를 표(p78:e616)의 기록 범위로 제시한 점은 적절하다. 다만 이 표의 수치들은 원문에 제시되었으나 측정 방법론, 샘플 수, 통계 처리 방식, 신뢰구간 등 실험 설계 상세가 제시되지 않았고, p80:img0:e8의 표에서는 지터가 118.94μs/47.28μs로 더 정밀하게 제시되어 p78:e616의 반올림 값(118μs/47μs)과 정밀도 차이가 있다. 이 차이는 연구 일지의 기록 범위를 벗어나지 않지만, 표 수치의 정밀도·출처 차이를 독자가 혼동하지 않도록 짧게 명시할 필요가 있다.",
+        "evidence_ids": [
+          "E00293"
+        ],
+        "failure_owner": "none",
+        "quote": "메모리 전송 방식 비교에서 No-Pin(일반 메모리)은 평균 처리 속도가 Pinned Memory보다 약 13초 빨랐으나, 이는 CPU 캐시 복사 이득에 의한 것으로 해석된다. 반면 Pinned Memory는 DMA 셋업 오버헤드로 인해 평균 속도가 약간 느렸다. 최대 지연은 No-Pin이 8.8~11.6ms 범위로 치명적 수준을 보였고, Pinned Memory는 1.64ms로 극히 안정적이었다. 지터 역시 No-Pin이 118μs로 불안정했고 Pinned Memory는 47μs로 안정적이었다. [근거:E00293]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p9",
+        "reason": "No-Pin의 최대 11.6ms 스파이크, Pinned Memory의 DMA 셋업 비용(1~2μs), Pinned Memory의 1.64ms 최대 지연 보장, 1ms 무선 통신 데드라인 파괴 가능성 등을 동작 특성 설명으로 제시한 점은 연구 일지의 기록 범위를 반영한다. 그러나 윈도우 OS 가상 메모리 정리/백그라운드 작업 개입 시 11.6ms 스파이크 발생이라는 주장의 구체적 재현 조건(OS 버전, 작업 부하, 측정 방법), DMA 셋업 비용 1~2μs와 1.64ms 보장 주장의 측정 조건 및 반복 측정 통계, 1ms 무선 통신 데드라인 파괴 주장의 구체적 시스템 맥락(통신 프로토콜, 데드라인 설정 근거)이 원문에 직접 제시되지 않았다. 이 문단은 기록자의 설명·해석 성격이 강하므로, 정량적 재현 조건이 제시되지 않았다는 한계를 명시할 필요가 있다.",
+        "evidence_ids": [
+          "E00294"
+        ],
+        "failure_owner": "none",
+        "quote": "이러한 차이는 동작 특성에서도 설명된다. No-Pin은 평소 CPU 캐시 효과로 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없으며, 이는 1ms 무선 통신 데드라인을 파괴할 수 있다. Pinned Memory는 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00294]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p10",
+        "reason": "단일 채널 벡터(1KB) 환경에서 Pinned Memory의 평균 전송 속도가 Pageable 대비 약 1.4% 낮게 측정될 수 있다는 서술과, Pageable의 최대 11.6ms 스파이크, Pinned Memory의 WCET 1.64ms 제한, 지터 60% 이상 안정화, 실시간 무선 안테나 선택 시스템에서 Pinned Memory 도입 필수성 결론을 제시한 점은 연구 일지의 기록 범위를 반영한다. 그러나 1.4% 수치의 구체적 측정 조건(테스트 환경, 데이터 전송 크기, 반복 횟수, 측정 도구)이 제시되지 않았고, '측정될 수 있다'는 표현이 특정 조건에서의 가능성인지 일반적 경향인지 모호하며, 지터 60% 이상 안정화 주장의 계산 근거도 이 요소만으로 확인되지 않는다. 이 문단 역시 설명·결론 성격이 강하므로, 정량적 측정 조건이 제시되지 않았다는 한계를 명시할 필요가 있다.",
+        "evidence_ids": [
+          "E00295",
+          "E00296"
+        ],
+        "failure_owner": "none",
+        "quote": "다만 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다. 그럼에도 Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00295,E00296]"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "error",
+        "quote": "",
+        "reason": "필수 내용 eval_item_3: missing. 검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다. 누락 근거=E00115",
+        "evidence_ids": [
+          "E00115"
+        ],
+        "validation_code": "required_content",
+        "item_id": "eval_item_3",
+        "review_stage": "required_evidence_validation",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "evaluation",
+        "part": "p0",
+        "paragraph_id": "evaluation_p2",
+        "evidence_ids": [
+          "E00066",
+          "E00070"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "evaluation",
+        "part": "p0",
+        "paragraph_id": "evaluation_p4",
+        "evidence_ids": [
+          "E00120",
+          "E00125"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "evaluation",
+        "part": "p0",
+        "paragraph_id": "evaluation_p5",
+        "evidence_ids": [
+          "E00167",
+          "E00270",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "evaluation",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "error",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 3.3 오류·실패 양상과 해석: 본문 2958자 / 목표 1200자 / 허용 상한 1500자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요."
+      }
+    ],
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [
+      {
+        "item_id": "eval_item_3",
+        "added_paragraph_ids": [
+          "evaluation_p8",
+          "evaluation_p9",
+          "evaluation_p10"
+        ]
+      }
+    ],
+    "response_normalizations": [],
+    "approved": false,
+    "required_content_coverage": {
+      "met": 0,
+      "total": 1,
+      "value": 0.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 2,
+      "not_visible": 0,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+  },
+  {
+    "checks": [
+      {
+        "item_id": "eval_item_3",
+        "verdict": "met",
+        "paragraph_ids": [
+          "evaluation_p1",
+          "evaluation_p2",
+          "evaluation_p3",
+          "evaluation_p4",
+          "evaluation_p5",
+          "evaluation_p6",
+          "evaluation_p7",
+          "evaluation_p11",
+          "evaluation_p8",
+          "evaluation_p9",
+          "evaluation_p10"
+        ],
+        "evidence_ids": [
+          "E00029",
+          "E00030",
+          "E00045",
+          "E00065",
+          "E00066",
+          "E00070",
+          "E00073",
+          "E00077",
+          "E00111",
+          "E00115",
+          "E00116",
+          "E00120",
+          "E00125",
+          "E00167",
+          "E00270",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00303",
+          "E00304",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00330"
+        ],
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+        "paragraph_quotes": [
+          "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+          "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]",
+          "spMM 도입 후 실행 시간이 약 40ms 수준으로 회귀한 것으로 기록되었다. 이 표현은 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었으나, 정량적 원인 분리 측정 결과는 제시되지 않았다. [근거:E00111,E00116,E00330]",
+          "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. [근거:E00120,E00125]",
+          "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+          "cudaMemcpyAsync 호출 시간은 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 효과가 크지 않았다고 보았으나, 측정 결과가 일관되지 않아 확신할 수 없는 정성적 판단으로 남았다. 추론 종료까지의 동기화 시간은 pinned 미적용 버전이 가장 빨랐고, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었으나 확정적 인과 분리는 아니다. pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. backward_only가 왜 제일 빠른지에 대한 질문은 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]",
+          "HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. 영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00065,E00073,E00077]",
+          "GPU OPTIMIZED 모드 이후에도 CPU보다 느려, matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했다. cuBLAS 도입 후 결과가 나빠졌고, cuSparse spMV 적용 결과도 느려져 spMM 도입까지 검토하기로 했다. spMM 적용 후 거의 40ms로 회귀했으며, 40000번 루프에서 forward가 backward보다 느려졌다. cudaHostRegister는 No Pinning보다 느리게 측정되었고, pinned 적용 버전의 cudaMemcpyAsync가 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다. 이 기록은 파이프라인 상태와 오버헤드 구조에 대한 설명이며, 정량 분리 측정 결과는 제시되지 않았다. [근거:E00115]",
+          "메모리 전송 방식 비교에서 No-Pin(일반 메모리)은 평균 처리 속도가 Pinned Memory보다 약 13초 빨랐으나, 이는 CPU 캐시 복사 이득에 의한 것으로 해석된다. 반면 Pinned Memory는 DMA 셋업 오버헤드로 인해 평균 속도가 약간 느렸다. 최대 지연은 No-Pin이 8.8~11.6ms 범위로 치명적 수준을 보였고, Pinned Memory는 1.64ms로 극히 안정적이었다. 지터 역시 No-Pin이 118μs로 불안정했고 Pinned Memory는 47μs로 안정적이었다. [근거:E00293]",
+          "이러한 차이는 동작 특성에서도 설명된다. No-Pin은 평소 CPU 캐시 효과로 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없으며, 이는 1ms 무선 통신 데드라인을 파괴할 수 있다. Pinned Memory는 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00294]",
+          "다만 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다. 그럼에도 Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00295,E00296]"
+        ],
+        "guideline_ids": [
+          "ref1_evaluation_required_3"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": []
+      },
+      {
+        "item_id": "eval_item_4",
+        "verdict": "needs_check",
+        "paragraph_ids": [],
+        "evidence_ids": [],
+        "quote": "",
+        "paragraph_quotes": [],
+        "guideline_ids": [],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [],
+        "validation_note": "원문 근거가 배정되지 않은 항목의 충족 판정을 확인 필요로 낮췄습니다. 충족률 분모·분자에서 제외합니다."
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "evaluation",
+        "reference_id": "ref1_evaluation",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "evaluation_p1",
+          "evaluation_p2",
+          "evaluation_p3",
+          "evaluation_p4",
+          "evaluation_p5",
+          "evaluation_p6",
+          "evaluation_p7",
+          "evaluation_p8",
+          "evaluation_p9",
+          "evaluation_p10",
+          "evaluation_p11"
+        ],
+        "reason": "오류 양상과 실패 사례 해석(ref1_evaluation_required_3)은 eval_item_3의 서술로 충족된다. 그러나 제안 설계와 변형 방법별 정량 성능 비교(ref1_evaluation_required_1), 계산 비용과 배포 가능성 논의(ref1_evaluation_required_2), 비교 대상 기준 방법과의 비교(ref1_evaluation_required_5), 관련 연구와의 교차 비교(ref1_evaluation_required_6), 제거 실험을 통한 구성 요소 기여도 분석(ref1_evaluation_required_7)은 연구 일지 기반 기록의 범위와 사용자 지시에 따라 이 절에서 직접 충족되지 않는다.",
+        "quote": "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+        "paragraph_quotes": [
+          "GPU OPTIMIZED 모드 적용 후 실행 시간은 약 229.691ms로 이전 대비 약 100ms 줄었으나, CPU보다 느리다는 평가가 기록되었다. 이 비교는 정성적 판단이며 CPU 버전의 정확한 수치나 반복 측정 기반 통계는 현재 자료에 제시되지 않았다. 이후 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도했으나, 실제 구현 완료와 측정 결과는 확인되지 않았다. bias까지 GPU에 미리 업로드하는 시도도 있었지만, bias는 약 4KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선 의미가 크지 않은 것으로 판단되었다. [근거:E00029,E00030,E00045]",
+          "cuBLAS 도입 후에는 오히려 더 느려지는 모습이 관측되었고, 메모리풀 warm up은 각 버전에서 약 50ms 정도 단축시키는 효과가 있는 것으로 기록되었다. 다만 이 관측은 1회 시도 기준이며 warmup 효과의 정량적 분리 측정이나 반복 측정 통계는 제시되지 않았다. cuBLAS도 큰 영향을 주지 못하는 것으로 판단되었다. [근거:E00070,E00066]",
+          "spMM 도입 후 실행 시간이 약 40ms 수준으로 회귀한 것으로 기록되었다. 이 표현은 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었으나, 정량적 원인 분리 측정 결과는 제시되지 않았다. [근거:E00111,E00116,E00330]",
+          "커널 퓨전 적용 후 lirpa_forward_bound 함수에서 22ms 초반까지 나오는 경우가 있었고, backward_matmul_pair_gpu 적용 후에는 22ms가 보이는 비율이 늘고 최저점 28ms도 잘 보이지 않게 되어 체감상 효과가 있는 것으로 기록되었다. 이 관측은 정성적 기록이며 반복 측정 통계나 조건별 분리 측정은 제시되지 않았다. [근거:E00120,E00125]",
+          "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+          "cudaMemcpyAsync 호출 시간은 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 효과가 크지 않았다고 보았으나, 측정 결과가 일관되지 않아 확신할 수 없는 정성적 판단으로 남았다. 추론 종료까지의 동기화 시간은 pinned 미적용 버전이 가장 빨랐고, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었으나 확정적 인과 분리는 아니다. pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. backward_only가 왜 제일 빠른지에 대한 질문은 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]",
+          "HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. 영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00065,E00073,E00077]",
+          "메모리 전송 방식 비교에서 No-Pin(일반 메모리)은 평균 처리 속도가 Pinned Memory보다 약 13초 빨랐으나, 이는 CPU 캐시 복사 이득에 의한 것으로 해석된다. 반면 Pinned Memory는 DMA 셋업 오버헤드로 인해 평균 속도가 약간 느렸다. 최대 지연은 No-Pin이 8.8~11.6ms 범위로 치명적 수준을 보였고, Pinned Memory는 1.64ms로 극히 안정적이었다. 지터 역시 No-Pin이 118μs로 불안정했고 Pinned Memory는 47μs로 안정적이었다. [근거:E00293]",
+          "이러한 차이는 동작 특성에서도 설명된다. No-Pin은 평소 CPU 캐시 효과로 빠르지만, 윈도우 OS가 가상 메모리를 정리하거나 백그라운드 작업이 개입하면 최대 11.6ms까지 튀는 대형 스파이크를 피할 수 없으며, 이는 1ms 무선 통신 데드라인을 파괴할 수 있다. Pinned Memory는 매번 1~2μs의 DMA 셋업 비용을 치르지만 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다. [근거:E00294]",
+          "다만 단일 채널 벡터(1KB)와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다. 그럼에도 Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발하는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00295,E00296]",
+          "GPU OPTIMIZED 모드 이후에도 CPU보다 느려, matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했다. cuBLAS 도입 후 결과가 나빠졌고, cuSparse spMV 적용 결과도 느려져 spMM 도입까지 검토하기로 했다. spMM 적용 후 거의 40ms로 회귀했으며, 40000번 루프에서 forward가 backward보다 느려졌다. cudaHostRegister는 No Pinning보다 느리게 측정되었고, pinned 적용 버전의 cudaMemcpyAsync가 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다. 이 기록은 파이프라인 상태와 오버헤드 구조에 대한 설명이며, 정량 분리 측정 결과는 제시되지 않았다. [근거:E00115]"
+        ]
+      },
+      {
+        "section_id": "evaluation",
+        "reference_id": "ref2_evaluation",
+        "verdict": "not_visible",
+        "paragraph_ids": [],
+        "reason": "이 절의 초안은 연구 질문별 답 요약과 런타임 호출 지연 시간 결과 표(ref2_evaluation_required_1, ref2_evaluation_required_4)를 제시하지 않는다. 해당 내용은 원문에 직접 제시되지 않거나 사용자 지시에 따라 제외·제한되어, ref2_evaluation의 필수 내용이 이 절에서 확인되지 않는다.",
+        "quote": "",
+        "paragraph_quotes": []
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p11",
+        "reason": "evaluation_p11은 E00115만 인용했으나, 문단에는 E00029·E00030·E00066·E00111·E00167·E00277·E00278·E00279·E00280·E00304·E00306·E00307·E00308 등 다른 근거의 서술 내용도 함께 포함되어 있다. 실제 사용한 주장의 근거 연결이 불완전하며, 인용되지 않은 근거를 본문에 사용한 오류가 있다.",
+        "evidence_ids": [
+          "E00115"
+        ],
+        "failure_owner": "writer",
+        "quote": "GPU OPTIMIZED 모드 이후에도 CPU보다 느려, matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했다. cuBLAS 도입 후 결과가 나빠졌고, cuSparse spMV 적용 결과도 느려져 spMM 도입까지 검토하기로 했다. spMM 적용 후 거의 40ms로 회귀했으며, 40000번 루프에서 forward가 backward보다 느려졌다. cudaHostRegister는 No Pinning보다 느리게 측정되었고, pinned 적용 버전의 cudaMemcpyAsync가 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다. 이 기록은 파이프라인 상태와 오버헤드 구조에 대한 설명이며, 정량 분리 측정 결과는 제시되지 않았다. [근거:E00115]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p5",
+        "reason": "evaluation_p5는 E00167, E00270, E00277, E00278, E00279, E00280을 인용했으나, 문단에는 E00065의 'HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다'는 내용이 포함되어 있다. 이 내용은 E00065의 관찰·해석에 해당하므로, 실제 사용한 주장의 근거 연결이 잘못되었다.",
+        "evidence_ids": [
+          "E00167",
+          "E00270",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280"
+        ],
+        "failure_owner": "writer",
+        "quote": "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p7",
+        "reason": "evaluation_p7은 E00065, E00073, E00077을 인용했으나, 문단에는 E00065의 'HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다'는 내용이 포함되어 있다. 이 내용은 E00065의 관찰·해석에 해당하므로, 실제 사용한 주장의 근거 연결이 잘못되었다.",
+        "evidence_ids": [
+          "E00065",
+          "E00073",
+          "E00077"
+        ],
+        "failure_owner": "writer",
+        "quote": "HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. 영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00065,E00073,E00077]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p6",
+        "reason": "evaluation_p6은 E00303, E00304, E00306, E00307, E00308을 인용했으나, 문단에는 E00303의 '추론 종료까지의 동기화 시간은 pinned 미적용 버전이 가장 빨랐고, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었으나 확정적 인과 분리는 아니다'라는 내용이 포함되어 있다. E00303은 문맥 근거 전용(context_only)으로 분류된 해석·가설 성격의 기록이므로, 이를 관측 결과로 서술한 것은 근거 사용 오류이다.",
+        "evidence_ids": [
+          "E00303"
+        ],
+        "failure_owner": "writer",
+        "quote": "cudaMemcpyAsync 호출 시간은 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 효과가 크지 않았다고 보았으나, 측정 결과가 일관되지 않아 확신할 수 없는 정성적 판단으로 남았다. 추론 종료까지의 동기화 시간은 pinned 미적용 버전이 가장 빨랐고, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었으나 확정적 인과 분리는 아니다. pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. backward_only가 왜 제일 빠른지에 대한 질문은 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p3",
+        "reason": "evaluation_p3은 E00111, E00116, E00330을 인용했으나, 문단에는 E00116의 '모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다'는 내용이 포함되어 있다. E00116은 문맥 근거 전용(context_only)으로 분류된 기록자의 원인 해석이므로, 이를 관측 결과로 서술한 것은 근거 사용 오류이다.",
+        "evidence_ids": [
+          "E00111",
+          "E00116",
+          "E00330"
+        ],
+        "failure_owner": "writer",
+        "quote": "spMM 도입 후 실행 시간이 약 40ms 수준으로 회귀한 것으로 기록되었다. 이 표현은 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었으나, 정량적 원인 분리 측정 결과는 제시되지 않았다. [근거:E00111,E00116,E00330]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p5",
+        "reason": "evaluation_p5는 E00279를 인용했으나, 문단에는 E00279의 'cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해, 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었다'는 내용 중 '3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다'는 서술이 포함되어 있다. E00279의 evidence_limitations에 따르면 3가지 이유의 구체적 내용은 이 요소만으로는 제시되지 않으며, 본 문단은 그 한계를 정확히 반영하고 있으므로 근거 연결 자체는 틀리지 않으나, 문단이 E00279의 한계를 적절히 고지하고 있는지 확인이 필요하다. 현재 문단은 이를 적절히 반영하고 있어 이 부분은 오류로 보지 않는다.",
+        "evidence_ids": [
+          "E00279"
+        ],
+        "failure_owner": "writer",
+        "quote": "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "evaluation",
+        "part": "p0",
+        "paragraph_id": "evaluation_p2",
+        "evidence_ids": [
+          "E00066",
+          "E00070"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "evaluation",
+        "part": "p0",
+        "paragraph_id": "evaluation_p4",
+        "evidence_ids": [
+          "E00120",
+          "E00125"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "evaluation",
+        "part": "p0",
+        "paragraph_id": "evaluation_p5",
+        "evidence_ids": [
+          "E00167",
+          "E00270",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "evaluation",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 3.3 오류·실패 양상과 해석: 본문 3453자 / 목표 1200자 / 허용 상한 1500자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      }
+    ],
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [
+      {
+        "item_id": "eval_item_3",
+        "added_paragraph_ids": [
+          "evaluation_p8",
+          "evaluation_p9",
+          "evaluation_p10"
+        ]
+      }
+    ],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 1,
+      "total": 1,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 1,
+      "not_visible": 1,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    },
+    "content_warnings": [
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p11",
+        "reason": "evaluation_p11은 E00115만 인용했으나, 문단에는 E00029·E00030·E00066·E00111·E00167·E00277·E00278·E00279·E00280·E00304·E00306·E00307·E00308 등 다른 근거의 서술 내용도 함께 포함되어 있다. 실제 사용한 주장의 근거 연결이 불완전하며, 인용되지 않은 근거를 본문에 사용한 오류가 있다.",
+        "evidence_ids": [
+          "E00115"
+        ],
+        "failure_owner": "writer",
+        "quote": "GPU OPTIMIZED 모드 이후에도 CPU보다 느려, matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했다. cuBLAS 도입 후 결과가 나빠졌고, cuSparse spMV 적용 결과도 느려져 spMM 도입까지 검토하기로 했다. spMM 적용 후 거의 40ms로 회귀했으며, 40000번 루프에서 forward가 backward보다 느려졌다. cudaHostRegister는 No Pinning보다 느리게 측정되었고, pinned 적용 버전의 cudaMemcpyAsync가 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 되었다. network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다. 이 기록은 파이프라인 상태와 오버헤드 구조에 대한 설명이며, 정량 분리 측정 결과는 제시되지 않았다. [근거:E00115]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-evaluation-p2"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p5",
+        "reason": "evaluation_p5는 E00167, E00270, E00277, E00278, E00279, E00280을 인용했으나, 문단에는 E00065의 'HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다'는 내용이 포함되어 있다. 이 내용은 E00065의 관찰·해석에 해당하므로, 실제 사용한 주장의 근거 연결이 잘못되었다.",
+        "evidence_ids": [
+          "E00167",
+          "E00270",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280"
+        ],
+        "failure_owner": "writer",
+        "quote": "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-evaluation-p2"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p7",
+        "reason": "evaluation_p7은 E00065, E00073, E00077을 인용했으나, 문단에는 E00065의 'HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다'는 내용이 포함되어 있다. 이 내용은 E00065의 관찰·해석에 해당하므로, 실제 사용한 주장의 근거 연결이 잘못되었다.",
+        "evidence_ids": [
+          "E00065",
+          "E00073",
+          "E00077"
+        ],
+        "failure_owner": "writer",
+        "quote": "HYBRID V2가 CPU보다 느리게 나온 이유는 CPU 캐시 때문으로 추정되었고, 1번만 돌리는 실험이 필요하다고 판단되었다. 현재 가장 중요한 병목은 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 인식되었다. 영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 다만 이 해석들은 기록자의 정성적 판단이며 정량 검증이나 반복 측정 결과는 제시되지 않았다. [근거:E00065,E00073,E00077]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-evaluation-p2"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p6",
+        "reason": "evaluation_p6은 E00303, E00304, E00306, E00307, E00308을 인용했으나, 문단에는 E00303의 '추론 종료까지의 동기화 시간은 pinned 미적용 버전이 가장 빨랐고, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었으나 확정적 인과 분리는 아니다'라는 내용이 포함되어 있다. E00303은 문맥 근거 전용(context_only)으로 분류된 해석·가설 성격의 기록이므로, 이를 관측 결과로 서술한 것은 근거 사용 오류이다.",
+        "evidence_ids": [
+          "E00303"
+        ],
+        "failure_owner": "writer",
+        "quote": "cudaMemcpyAsync 호출 시간은 pinned 적용 버전이 빠르거나 느리게 측정되어, 2copy에서 1copy로 바꾼 효과가 크지 않았다고 보았으나, 측정 결과가 일관되지 않아 확신할 수 없는 정성적 판단으로 남았다. 추론 종료까지의 동기화 시간은 pinned 미적용 버전이 가장 빨랐고, 이는 H2D 복사 시간의 영향일 수 있다고 해석되었으나 확정적 인과 분리는 아니다. pinned memory가 더 느린 이유 분석은 이 정도로 마무리하기로 했으며, 이를 분석하는 연구가 아니고 너무 깊게 들어가면 다른 작업도 못할 것 같다고 기록되었다. backward_only가 왜 제일 빠른지에 대한 질문은 제기되었으나 이 페이지에서 답변은 완료되지 않았다. [근거:E00303,E00304,E00306,E00307,E00308]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-evaluation-p2"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p3",
+        "reason": "evaluation_p3은 E00111, E00116, E00330을 인용했으나, 문단에는 E00116의 '모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다'는 내용이 포함되어 있다. E00116은 문맥 근거 전용(context_only)으로 분류된 기록자의 원인 해석이므로, 이를 관측 결과로 서술한 것은 근거 사용 오류이다.",
+        "evidence_ids": [
+          "E00111",
+          "E00116",
+          "E00330"
+        ],
+        "failure_owner": "writer",
+        "quote": "spMM 도입 후 실행 시간이 약 40ms 수준으로 회귀한 것으로 기록되었다. 이 표현은 p30의 실측값 38.580600ms를 반올림한 정성적 표현이며, 정량 비교 기준이나 반복 측정 통계는 제시되지 않았다. 모델과 layer 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크고, SpMM 적용 후 오버헤드가 계산 이득보다 큰 상황으로 해석되었다. 신경망 크기가 매우 작고 cuBLAS/cuSparse 동작 방식에서 오버헤드가 발생한 점도 원인 분석으로 정리되었으나, 정량적 원인 분리 측정 결과는 제시되지 않았다. [근거:E00111,E00116,E00330]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-evaluation-p2"
+      },
+      {
+        "section_id": "evaluation",
+        "severity": "warning",
+        "paragraph_id": "evaluation_p5",
+        "reason": "evaluation_p5는 E00279를 인용했으나, 문단에는 E00279의 'cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해, 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었다'는 내용 중 '3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다'는 서술이 포함되어 있다. E00279의 evidence_limitations에 따르면 3가지 이유의 구체적 내용은 이 요소만으로는 제시되지 않으며, 본 문단은 그 한계를 정확히 반영하고 있으므로 근거 연결 자체는 틀리지 않으나, 문단이 E00279의 한계를 적절히 고지하고 있는지 확인이 필요하다. 현재 문단은 이를 적절히 반영하고 있어 이 부분은 오류로 보지 않는다.",
+        "evidence_ids": [
+          "E00279"
+        ],
+        "failure_owner": "writer",
+        "quote": "40000번 루프에서 forward가 backward보다 느려진 점이 확인되었고, 단일 테스트에서는 forward와 backward 간 3배 차이가 나지만 92만개 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 아직 해결되지 않았다. cudaHostRegister는 No Pinning보다 전체 실행 시간이 느리게 측정되었으며, 전체 시간 차이는 787.88초 대 776.70초로 약 1.4%, 약 11초였고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 역전되었다. 이 역전 원인에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었으나 구체적 내용은 이 요소만으로 제시되지 않았다. [근거:E00167,E00270,E00277,E00278,E00279,E00280]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-evaluation-p2"
+      },
+      {
+        "section_id": "evaluation",
+        "part": "p0",
+        "paragraph_id": "evaluation_p2",
+        "evidence_ids": [
+          "E00066",
+          "E00070"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-evaluation-p2"
+      },
+      {
+        "section_id": "evaluation",
+        "part": "p0",
+        "paragraph_id": "evaluation_p4",
+        "evidence_ids": [
+          "E00120",
+          "E00125"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-evaluation-p2"
+      },
+      {
+        "section_id": "evaluation",
+        "part": "p0",
+        "paragraph_id": "evaluation_p5",
+        "evidence_ids": [
+          "E00167",
+          "E00270",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-evaluation-p2"
+      },
+      {
+        "section_id": "evaluation",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 3.3 오류·실패 양상과 해석: 본문 3453자 / 목표 1200자 / 허용 상한 1500자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-evaluation-p2"
+      }
+    ],
+    "content_status": "needs_attention",
+    "content_approved": false
+  }
+]

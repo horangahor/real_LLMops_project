@@ -36,7 +36,7 @@ class WritingLengthTests(unittest.TestCase):
         self.assertEqual(apportion(5, [1, 1, 1]), [2, 2, 1])
         self.assertEqual(apportion(3, []), [])
 
-    def test_role_and_structure_allocate_same_budget_to_child_and_editor(self):
+    def test_role_and_structure_allocate_budget_to_each_child_context(self):
         value = plan(placeholder=True)
         contexts = build_contexts(value, research(), {})
         before = copy.deepcopy(contexts)
@@ -120,7 +120,8 @@ class WritingLengthTests(unittest.TestCase):
             engine.run(research(), writing_target_chars=20000)
             self.assertEqual(sum("reference_shapes" in p for _, _, p in client.events), 1)
             editors = [p for _, _, p in client.events if p.get("operation") == "editorial_assembly"]
-            self.assertTrue(any(p.get("writing_targets") for p in editors))
+            self.assertTrue(editors)
+            self.assertFalse(any("writing_targets" in p for p in editors))
 
     def test_excess_is_recorded_without_truncating_body_or_rejecting_draft(self):
         with TemporaryDirectory() as tmp:

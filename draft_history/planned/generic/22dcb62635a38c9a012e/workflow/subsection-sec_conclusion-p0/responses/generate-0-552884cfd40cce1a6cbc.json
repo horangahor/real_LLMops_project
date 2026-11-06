@@ -1,0 +1,54 @@
+{
+  "request_fingerprint": "552884cfd40cce1a6cbc62d381d36aa1ca5adbe32905674b629555b77f3ed2fe",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "CUDA 기반 CROWN 검증 최적화에서는 GPU 포팅 이후 메모리 전송과 커널 호출 구조를 함께 조정하는 방향으로 구성 요소를 결합했다. 초기에는 GPU OPTIMIZED 모드에서도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 방식을 시도했고, 이후 v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방식이 정리되었다. 실행 과정에서 가장 중요한 병목은 memcpy로 인식되었으며, 메모리 풀과 warm up 조합만으로 거의 200ms가 단축되는 효과가 관측되었다.",
+          "evidence_ids": [
+            "E00030",
+            "E00033",
+            "E00073",
+            "E00071"
+          ]
+        },
+        {
+          "text": "이후 forward 함수에서 DTOH memcpy를 극단적으로 제거해 CROWN Verification 실행 시간이 64.716ms로 기록되었고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 성능을 개선했다. 미리 작성해둔 퓨전 함수를 사용해 affine_min과 affine_max를 하나의 커널로 병합하는 커널 퓨전이 완료되었으며, 지금까지 수행한 최적화로 제로 memcpy, 커널 자체 실행 횟수 감소, 커널 퓨전, 커널 graph, GPU SM 구조를 고려한 FP64→FP32 및 double→float 변경이 진행되었다.",
+          "evidence_ids": [
+            "E00083",
+            "E00118",
+            "E00143",
+            "E00212"
+          ]
+        },
+        {
+          "text": "메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다.",
+          "evidence_ids": [
+            "E00277",
+            "E00278"
+          ]
+        },
+        {
+          "text": "평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 실시간성 관점에서는 No-Pin의 최대 지연이 8.8ms~11.6ms로 치명적이고 지터가 118μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 훨씬 안정적이었다. 이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하는 반면, No-Pin은 CPU L1/L2 캐시를 이용한 내부 복사로 약 0.02~0.05μs에 끝나기 때문이다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다.",
+          "evidence_ids": [
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00297",
+            "E00301",
+            "E00321"
+          ]
+        },
+        {
+          "text": "전체 처리 과정 변경 효과로는 antenna_lirpa가 싱글 스트림으로 동작하면서도 cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다는 점이 확인되었다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나 스트림 수의 한계(SM 포화)로 7~8분이 한계선이며, 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 한다. 커널 감소의 구체적 내용은 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회이며, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다.",
+          "evidence_ids": [
+            "E00261",
+            "E00263",
+            "E00262",
+            "E00314"
+          ]
+        }
+      ]
+    }
+  }
+}

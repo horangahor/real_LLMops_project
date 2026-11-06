@@ -1,0 +1,28 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00073",
+          "E00071",
+          "E00083",
+          "E00118",
+          "E00212",
+          "E00261",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00296",
+          "E00299",
+          "E00301",
+          "E00314"
+        ],
+        "text": "본 연구는 CROWN 신경망 검증을 CUDA 기반으로 포팅하고, 메모리 풀·warm up·결과 벡터 memcpy 제거·커널 퓨전·alpha/beta 및 bias의 메모리 풀 관리·forward D2H 복사 최적화 등을 순차적으로 적용해 실행 시간을 단축하는 과정을 다룬다. 현재 가장 중요한 병목은 memcpy이며, 이를 해결해야 CPU보다 빨라질 수 있다고 보았다. 메모리 풀과 warm up 조합은 매우 효과적이며 두 요소만으로 거의 200ms 단축된다고 기록되었다. forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤 CROWN Verification 실행 시간이 64.716 ms로 관측되었다. lirpa_forward_bound 사용 함수들의 커널 퓨전, GPU SM 구조를 고려한 FP64→FP32·double→float 변경도 진행되었다. antenna_lirpa는 싱글 스트림으로 동작하지만 cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나 스트림 수 한계(SM 포화)로 7~8분이 한계선이다. cudaHostRegister와 No Pinning의 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이이며, Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 역전되었다. 평균 속도에서는 No-Pin이 13초 빨랐지만 실시간성에서는 치명적인 약점이 있었다. 표에 따르면 평균 처리 속도는 No-Pin이 약 13초 빠르고 Pinned는 약간 느리며, 최대 지연은 No-Pin이 8.8~11.6 ms, Pinned가 1.64 ms, 지터는 No-Pin이 118 μs, Pinned가 47 μs로 제시되었다. No-Pin은 평소 CPU 캐시로 빠르지만 OS 가상 메모리 정리나 백그라운드 작업이 끼어들면 최대 11.6 ms까지 튀는 스파이크를 피할 수 없고, Pinned는 매번 DMA 셋업 비용(1~2 μs)을 치르지만 OS 페이징을 차단해 어떤 상황에서도 1.64 ms를 넘지 않는 안정성을 보장한다고 설명되었다. Pageable 메모리는 OS 페이징 간섭으로 최대 11.6 ms의 지연 스파이크를 유발하는 반면 Pinned Memory는 WCET를 1.64 ms로 제한하고 지터를 60% 이상 안정화하므로 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이라는 결론이 제시되었다. 1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned는 매번 하드웨어 DMA 셋업 오버헤드가 호출 1회당 약 1.0~1.5 μs 발생하고, No-Pin은 CPU L1/L2 캐시 복사로 약 0.02~0.05 μs에 끝나 DMA 셋업보다 30~50배 빠르다는 해석이 제시되었다. 총 시간만 보면 No-Pin이 더 빨라 보이지만 지터와 WCET를 보면 Pinned가 유리하며, No-Pin의 최대 지연은 8.80~11.6 ms, 지터는 118.94 μs, Pinned의 최대 지연은 1.64 ms, 지터는 47.28 μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다. No-Pin은 평소 CPU 캐시로 빠르다가 OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 터지는 순간 지연시간이 11 ms까지 튀고, Pinned는 매번 1.5 μs의 하드웨어 통행료를 내는 대신 OS 페이징 간섭을 100% 차단해 1.64 ms 안쪽으로 엄격하게 보장된다는 해석이 제시되었다. 사용자 직관대로 1KB의 작은 데이터를 보내면서 매 루프마다 개별 하드웨어 DMA 셋업을 부르는 오버헤드 때문에 Pinned가 No-Pin보다 총 소요 시간이 더 길게 나왔다는 기록자의 결론이 제시되었다. 커널 감소 내역으로는 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소가 기록되었다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계로 지적되었다."
+      }
+    }
+  },
+  "reason": "교체 문단이 허용 분량 600자를 넘었습니다."
+}

@@ -1,0 +1,71 @@
+{
+  "request_fingerprint": "b326dfd95b38500705c7713990da82370f2c356b479d5cfd35cf9824af518f54",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 구조는 256-491-491-16 크기이고 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용했다. 실행 방식은 CROWN의 세 가지 방법(forward, forward+backward, backward_only)을 대상으로 하며, 배치 사이즈는 1로 두었다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이고, warm up은 초기에 수행되었다.",
+          "evidence_ids": [
+            "U531b24e3633dee74c4f7",
+            "E00095"
+          ]
+        },
+        {
+          "text": "실행 플랫폼과 소프트웨어 환경은 CUDA 툴킷과 nvcc(NVIDIA C Compiler)를 기반으로 하며, CUDA 동작이 필요한 코드만 커널로 바꾸어 컴파일하는 방식으로 진행되었다. CUDA 버전은 13.3(V13.3.73)이다. 컴파일 옵션에는 -lcublas를 사용했으며, -l은 라이브러리 링크 옵션이고 cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이다. my_lirpa_op.cu에서 cublasDgemm() 함수를 사용하기 때문에 이 라이브러리를 연결해야 하며, CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되어 별도 설치는 필요하지 않다.",
+          "evidence_ids": [
+            "E00001",
+            "E00024",
+            "E00025",
+            "E00026",
+            "E00034"
+          ]
+        },
+        {
+          "text": "cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이며, cuBlas와 cuSparse 같은 라이브러리는 미리 컴파일된 소스코드 덩어리로 소스코드가 없어 한 번에 컴파일할 수 없다. v1-1-1-1은 메모리풀에 cuBlas를 도입하고 matvec, matmul을 기존 자체 계산이 아닌 cuBlas를 활용하도록 한 버전으로, 파일은 my_lirpa_mempool_cuBlas.cu이다. cuSparse 도입 시도에서는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고 cuSPARSE handle 및 CSR descriptor를 유지한 뒤 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체했으며, 기존 matmul은 아직 유지되었다.",
+          "evidence_ids": [
+            "E00034",
+            "E00054",
+            "E00104",
+            "E00105"
+          ]
+        },
+        {
+          "text": "CUDA 커널 인자는 포인터(배열)와 스칼라(단일 숫자/열거형)로 구분된다. 포인터는 cudaMalloc·cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라는 CPU 메모리 값을 커널 실행 시 Parameter Bank/Constant Memory에 함께 실어 보낼 수 있다. 포인터 변수는 크기가 커서 CPU가 커널 매개변수 주머니에 값을 직접 넣어줄 수 없으므로 memcpy로 올려야 하고, 4~8바이트 수준의 값만 CPU가 직접 참조해 보낼 수 있다.",
+          "evidence_ids": [
+            "E00135",
+            "E00136"
+          ]
+        },
+        {
+          "text": "현재 구성은 pinned Memory 추가, cudaEvent 제어, 필요한 만큼 계산해서 D2H memcpy, certify topk 자료구조 스택화를 포함한다. 그래프와 비교할 때 단일 스트림 입력 복사 최적화를 논의하자는 관점이 제시되었다. 10주차 세미나 이후에는 backward_only CUDA 구현(커널 구현 완료, 최적화 적용 여부 탐색중), cudaGraph 원리 학습, auto lirpa 모델 소통(repo 수령, 데이터셋·모델 동일 확인), 미팅 일정, 배칭+다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 기록되었다. auto lirpa repo는 https://github.com/horangahor/antenna_auto_lirpa에서 받아 실행해보기로 했다.",
+          "evidence_ids": [
+            "E00230",
+            "E00231",
+            "E00233",
+            "E00235"
+          ]
+        },
+        {
+          "text": "pinned memory 성능 측정을 위해 pinned memory 미적용, my_lirpa에 있는 입력 공간 하나(HostAlloc), 지금 하는 방식(HostRegister) 세 가지를 측정하려고 계획했다. cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이이다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다.",
+          "evidence_ids": [
+            "E00276",
+            "E00277",
+            "E00278"
+          ]
+        },
+        {
+          "text": "cudaHostRegister가 No Pinning보다 더 느리게 측정된 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 매우 명확하고 흥미로운 3가지 기술적 이유가 있다고 기록되었으며, 추론(Infer) 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남았다. GPU 클록을 고정하고 다시 실험하기로 했으며, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했다. CUDA 강의 19장의 GPU 클록 고정을 참고했고, 클록을 2800MHz로 고정하고 돌린 결과(기존 HostRegister)를 확인했다. 현재 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행한다. 측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용한다.",
+          "evidence_ids": [
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286"
+          ]
+        }
+      ]
+    }
+  }
+}

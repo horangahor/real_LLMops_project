@@ -1,0 +1,50 @@
+{
+  "request_fingerprint": "7bae201c973cfe96f993198521d988cb4207110421d55d1e501e42b1ae39d7f6",
+  "value": {
+    "sections": {
+      "sec_limitations": {
+        "parts": {
+          "p2": {
+            "sec_limitations_p28_s1": {
+              "action": "replace",
+              "text": "커널 퓨전 적용 후 22.342900 ms가 기록되었고 22 ms 초반까지 나오는 경우가 관측되었으며, alpha/beta 메모리 풀 적용 후 21.0 ms 정도가 보고되었으나, 이는 정성적 요약이거나 단일 실행값에 가깝다. 각 forward·backward를 20번씩 측정해 평균과 분산을 산출할 계획이 기록되었지만, 실제 통계 수치는 이 자료에 제시되지 않았다.",
+              "join_previous": false
+            },
+            "sec_limitations_p29_s1": {
+              "action": "replace",
+              "text": "측정 조건도 원문에 직접 명시되지 않은 부분이 있다. cudaHostRegister가 No Pinning보다 느리게 측정된 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨의 3가지 기술적 이유가 있다고 기록되었으나, 구체적 이유는 이 요소만으로 제시되지 않는다. GPU 클록 고정과 Persistence mode 설정은 이후 단계에서 다루어졌으며, cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 처음부터 함께 통제되었는지는 분명하지 않다.",
+              "join_previous": false
+            },
+            "sec_limitations_p30_s1": {
+              "action": "replace",
+              "text": "pinned 적용 여부에 따라 cudaMemcpyAsync 결과가 일관되지 않아 확정하기 어렵다는 판단이 남는다. 현재 가장 중요한 병목이 memcpy이며 이를 해결해야 CPU보다 빨라질 수 있다고 보았고, GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도하였다. 다만 하이브리드 프로그램의 실제 구현 완료와 측정 결과는 이 자료에 제시되지 않는다.",
+              "join_previous": false
+            },
+            "sec_limitations_p31_s1": {
+              "action": "replace",
+              "text": "실시간성을 확인하려면 마이크로초에서 수 밀리초(ms) 내로 제한해야 한다고 기록되었으나, 실제 달성 여부나 측정 근거는 이 요소만으로 제시되지 않는다. 따라서 관측된 실행 시간은 해당 조건에서 얻은 결과로 해석해야 하며, 모든 환경의 보장 상한이나 검증된 절대 성능으로 일반화하기는 어렵다.",
+              "join_previous": false
+            }
+          },
+          "p3": {
+            "sec_limitations_p33_s1": {
+              "action": "replace",
+              "text": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다.",
+              "join_previous": false
+            },
+            "sec_limitations_p34_s1": {
+              "action": "replace",
+              "text": "GPU OPTIMIZED 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 방식 같은 분리 구성을 검토할 수 있다. 또한 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 행렬만 복사하는 방안처럼 측정 전에 누적되던 초기화·복사 비용을 줄이는 접근을 다시 점검할 필요가 있다. 실행 코드에서는 추론, bound 계산, 검증 단계 종료 시마다 시간을 기록하도록 바꾸었고, 각 forward와 backward를 20번씩 측정해 평균과 분산을 정리할 예정이므로, 단계 분리 측정과 반복 통계 확보가 후속 검토의 출발점이 된다.",
+              "join_previous": false
+            },
+            "sec_limitations_p35_s1": {
+              "action": "replace",
+              "text": "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다.",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

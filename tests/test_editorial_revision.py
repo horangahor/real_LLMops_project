@@ -163,8 +163,9 @@ class EditorialRevisionTests(unittest.TestCase):
             self.assertEqual(packet["previous_findings"][0]["paragraph_id"], "s1_p3")
             self.assertEqual(set(packet["draft_paragraphs"]), {"s1_p1"})
             # A new category is a malformed recheck, never a reason to rewrite.
-            return {"issues": [{"section_id": "s1", "paragraph_id": "s1_p1", "category": "style",
-                "severity": "error", "reason": "새로운 취향 지적"}]} if len(seen) == 1 else {"issues": []}
+            from review_test_support import editorial_review_reply
+            return editorial_review_reply(packet, [{"section_id": "s1", "paragraph_id": "s1_p1", "category": "style",
+                "severity": "error", "reason": "새로운 취향 지적"}] if len(seen) == 1 else [])
         with TemporaryDirectory() as tmp:
             _, result = review_editorial(PlannedPaper(tmp, client), Path(tmp), "recheck", "section", value, bodies, {}, report["issues"])
         self.assertTrue(result["approved"])

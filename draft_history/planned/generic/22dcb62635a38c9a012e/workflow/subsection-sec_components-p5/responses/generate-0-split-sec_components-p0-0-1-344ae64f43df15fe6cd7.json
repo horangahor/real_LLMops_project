@@ -1,0 +1,26 @@
+{
+  "request_fingerprint": "344ae64f43df15fe6cd772aa382a3dc021b0bd9bc1d5dff7f331e4fe517405a8",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "CUDA 그래프는 커널 런치 비용을 줄이기 위해 cudaGraph로 추론과 bound를 캡처하는 방식으로 적용되었다. 추론과 bound를 따로 캡처했을 때 기준으로 약 400초 정도 시간이 줄어든 것으로 관측되었다. 이후 커밋 이전 버전(graph만 적용한 버전)을 다시 실행해본 결과 해당 버전이 더 빠른 것으로 관측되었다. 평균으로 측정했을 때 cudaGraph만 적용된 버전과 비교 대상 버전을 비교하면 forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하며 특히 infer_s에서 약 20초 차이가 난다. backward에서는 total 시간이 비슷하며, 그 이유는 infer에서 깎아먹은 약 20초를 bound에서 graph보다 약 20초 빨리 수행하고 있기 때문이다.",
+          "evidence_ids": [
+            "E00215",
+            "E00223",
+            "E00227",
+            "E00228"
+          ]
+        },
+        {
+          "text": "실행 구조 변경 측면에서 graph mode=1에서는 샘플당 cudaGraphLaunch가 infer 1회, bound 1회로 총 2회로 유지되었다. memcpy 호출 횟수는 66개에서 56개로 감소하였다. pinned memory 입력층은 제거하되 Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. 이러한 구성 변경을 포함한 실행 시간 감소가 1138s에서 758s로 기록되었다.",
+          "evidence_ids": [
+            "E00321",
+            "E00339",
+            "E00320"
+          ]
+        }
+      ]
+    }
+  }
+}

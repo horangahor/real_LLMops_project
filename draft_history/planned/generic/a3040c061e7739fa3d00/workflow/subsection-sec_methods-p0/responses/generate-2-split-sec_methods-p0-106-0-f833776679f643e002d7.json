@@ -1,0 +1,38 @@
+{
+  "request_fingerprint": "f833776679f643e002d79e50749d3bfa7fb9be177538a352b9c0ced3dcc64668",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "비교 구성은 CPU ONLY, GPU OPTIMIZED(cuBLAS+Pool), HYBRID(matmul=GPU, rest=CPU), HYBRID V2, mempool+warmup, cuda graph 적용 버전 등으로 정리되며, 각 조건이 통제하는 범위를 함께 명시한다. 다만 현재 근거는 cudaHostRegister와 No Pinning 간 전체 실행 시간(787.88초 대 776.70초, 약 1.4%)과 Bound·Infer 단계별 차이, GPU 클록 고정 시도, Persistence mode 설정 등 특정 비교 조건만 직접 뒷받침하며, 위 비교 구성 목록 전체를 동일 수준으로 특정하지는 않는다.",
+          "evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286"
+          ]
+        },
+        {
+          "text": "cudaHostRegister와 No Pinning의 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려져 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다.",
+          "evidence_ids": [
+            "E00277",
+            "E00278"
+          ]
+        },
+        {
+          "text": "측정 환경 설정으로는 GPU 클록 고정 재시도, ScopedGpuClockLock 구조체를 통한 클록 자동 잠금·해제, CUDA 강의 19장 참고, 현재 클록 확인(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1), 그래픽 클록 잠금(sudo nvidia-smi -lgc 1410) 등이 기록되었다. 다만 GPU 클록 고정 후 실제 측정 결과나 반복 측정 통계는 현재 근거만으로 충분히 제시되지 않는다.",
+          "evidence_ids": [
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286"
+          ]
+        }
+      ]
+    }
+  }
+}

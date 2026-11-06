@@ -123,7 +123,7 @@ def object_schema(properties):
 STRINGS = {"type": "array", "items": {"type": "string"}}
 
 
-def plan_schema(research=None, catalog=None):
+def plan_schema(research=None, catalog=None, *, derive_chapter_evidence=False):
     def choices(values):
         return {"type": "array", "items": {"type": "string", "enum": values}} if values else {"type": "null"}
     evidence = choices([f["id"] for f in research["facts"]]) if research else STRINGS
@@ -138,7 +138,14 @@ def plan_schema(research=None, catalog=None):
         "status": {"type": "string", "enum": ["write", "placeholder"]},
         "subsections": STRINGS, "evidence_ids": evidence, "reference_ids": references,
         "table_ids": tables, "depends_on": STRINGS, "reference_adaptation": {"type": "string"},
+        "table_placements": {"type": "array", "items": object_schema({
+            "table_id": {"type": "string", "enum": [t["id"] for t in research["tables"]]} if research and research["tables"] else {"type": "string"},
+            "subsection_index": {"type": "integer", "minimum": 0}, "reason": {"type": "string"},
+            "caption": {"type": "string"}})},
         "required_items": {"type": "array", "items": item}})
+    if derive_chapter_evidence:
+        section["properties"].pop("evidence_ids")
+        section["required"].remove("evidence_ids")
     return object_schema({"title": {"type": "string"}, "rationale": {"type": "string"},
                           "sections": {"type": "array", "items": section},
                           "generation_order": STRINGS, "unresolved": STRINGS})
@@ -159,11 +166,13 @@ def bind_plan_evidence(plan, research, profile=None):
     bindings = []
     labels = []
     normalizations = copy.deepcopy(result.get("evidence_id_normalizations", []))
+    guideline_normalizations = copy.deepcopy(result.get("guideline_id_normalizations", []))
+    table_normalizations = copy.deepcopy(result.get("table_placement_normalizations", []))
 
-    def deduplicate_evidence(owner, section_id, item_id=None):
-        values = owner.get("evidence_ids")
+    def deduplicate_ids(owner, section_id, item_id=None, field="evidence_ids"):
+        values = owner.get(field)
         if not isinstance(values, list) or any(not isinstance(v, str) or not v.strip() for v in values):
-            raise ValueError(f"장 계획의 evidence_ids 목록이 잘못됐습니다. 장={section_id}, 항목={item_id}")
+            raise ValueError(f"장 계획의 {field} 목록이 잘못됐습니다. 장={section_id}, 항목={item_id}")
         seen, unique, removed = set(), [], []
         for identifier in values:
             if identifier in seen:
@@ -172,19 +181,30 @@ def bind_plan_evidence(plan, research, profile=None):
                 seen.add(identifier)
                 unique.append(identifier)
         if removed:
-            owner["evidence_ids"] = unique
-            normalizations.append({"section_id": section_id, "item_id": item_id,
-                                   "removed_duplicate_ids": removed})
+            owner[field] = unique
+            audit = normalizations if field == "evidence_ids" else guideline_normalizations
+            audit.append({"section_id": section_id, "item_id": item_id, "removed_duplicate_ids": removed})
 
     for section in result["sections"]:
-        deduplicate_evidence(section, section["id"])
+        deduplicate_ids(section, section["id"])
         for item in section["required_items"]:
-            deduplicate_evidence(item, section["id"], item.get("id"))
+            deduplicate_ids(item, section["id"], item.get("id"))
             if item.get("guideline_ids") is None:
                 item["guideline_ids"] = []
+            deduplicate_ids(item, section["id"], item.get("id"), "guideline_ids")
         for field in ("table_ids", "reference_ids"):
             if section.get(field) is None:
                 section[field] = []
+        if isinstance(section.get("table_placements"), list) and isinstance(section["table_ids"], list):
+            retained = []
+            for row in section["table_placements"]:
+                table_id = row.get("table_id") if isinstance(row, dict) else None
+                if isinstance(table_id, str) and table_id in tables and table_id not in section["table_ids"]:
+                    table_normalizations.append({"section_id": section["id"], "table_id": table_id,
+                        "reason": "placement_for_unselected_table", "removed_placement": copy.deepcopy(row)})
+                else:
+                    retained.append(row)
+            section["table_placements"] = retained
         for field in ("title", "subsections"):
             values = [section[field]] if field == "title" else section[field]
             cleaned = [re.sub(r"^(?:제\s*)?\d+(?:\.\d+)*(?:\s*장|[.)])?\s+", "", value).strip() for value in values]
@@ -203,6 +223,9 @@ def bind_plan_evidence(plan, research, profile=None):
             bindings.append({"section_id": section["id"], "added_from_explicit_requirements": additions})
     result["evidence_binding"] = bindings
     result["evidence_id_normalizations"] = normalizations
+    result["guideline_id_normalizations"] = guideline_normalizations
+    if table_normalizations:
+        result["table_placement_normalizations"] = table_normalizations
     result["label_normalizations"] = labels
     result["omitted_empty_related_work"] = omitted
     return result
@@ -212,8 +235,16 @@ def validate_plan(plan, research, catalog, profile, allow_table_overlap=False):
     if not isinstance(plan, dict) or not isinstance(plan.get("title"), str) or not plan["title"].strip() or "\n" in plan["title"]:
         raise ValueError("작성 계획의 제목이 필요합니다.")
     sections = plan.get("sections")
-    if not isinstance(sections, list) or not 2 <= len(sections) <= profile["constraints"]["max_sections"]:
-        raise ValueError("작성 계획의 장 개수가 허용 범위를 벗어났습니다.")
+    if not isinstance(sections, list):
+        raise ValueError(f"작성 계획의 sections는 장 객체 배열이어야 합니다. 실제 형식={type(sections).__name__}")
+    maximum = profile["constraints"]["max_sections"]
+    if not 2 <= len(sections) <= maximum:
+        ids = {s.get("id") for s in sections if isinstance(s, dict) and isinstance(s.get("id"), str)}
+        order = plan.get("generation_order", [])
+        absent = [key for key in order if isinstance(key, str) and key not in ids] if isinstance(order, list) else []
+        raise ValueError(f"작성 계획의 장 개수가 허용 범위를 벗어났습니다. 실제={len(sections)}개, 허용=2~{maximum}개. "
+                         f"작성 순서에만 있고 장 객체가 없는 ID={absent}. "
+                         "sections에 모든 장 객체를 반환하고 소절 제목 목록과 장별 required_items를 구분하세요.")
     facts = {f["id"] for f in research["facts"]}
     tables = {t["id"]: t for t in research["tables"]}
     section_ids, item_ids, used_tables = set(), set(), set()
@@ -252,6 +283,28 @@ def validate_plan(plan, research, catalog, profile, allow_table_overlap=False):
             if not set(tables[key]["evidence_ids"]) <= set(section["evidence_ids"]):
                 raise ValueError("표의 근거가 해당 장에 없습니다.")
         used_tables.update(section["table_ids"])
+        if "table_placements" in section:
+            placements = section["table_placements"]
+            if not isinstance(placements, list):
+                raise ValueError("표의 소절 배치 목록이 잘못됐습니다.")
+            placed = []
+            for row in placements:
+                if (not isinstance(row, dict) or not {"table_id", "subsection_index", "reason"} <= set(row)
+                        or set(row) - {"table_id", "subsection_index", "reason", "caption"}):
+                    raise ValueError(f"표 배치 항목의 필드가 잘못됐습니다. 장={identifier}, 배치={row!r}")
+                scope = f"장={identifier}, 표={row['table_id']!r}"
+                if row["table_id"] not in section["table_ids"]:
+                    raise ValueError(f"선택한 표 목록에 없는 배치 항목입니다. {scope}")
+                if type(row["subsection_index"]) is not int or not 0 <= row["subsection_index"] < max(1, len(section["subsections"])):
+                    raise ValueError(f"선택한 표의 소절 위치가 잘못됐습니다. {scope}, "
+                                     f"위치={row['subsection_index']!r}, 허용=0~{max(1, len(section['subsections'])) - 1}")
+                if not isinstance(row["reason"], str) or not row["reason"].strip():
+                    raise ValueError(f"선택한 표의 선택 사유가 비어 있거나 문자열이 아닙니다. {scope}")
+                if "caption" in row and (not isinstance(row["caption"], str) or not row["caption"].strip() or "\n" in row["caption"]):
+                    raise ValueError("본문 표의 학술 제목은 비어 있지 않은 한 줄이어야 합니다.")
+                placed.append(row["table_id"])
+            if len(placed) != len(set(placed)) or set(placed) != set(section["table_ids"]):
+                raise ValueError("선택한 표의 소절 배치가 누락됐거나 중복됩니다.")
         if section["status"] == "placeholder":
             if section["role"] != "related_work" or any(section[key] for key in ("evidence_ids", "table_ids", "required_items", "depends_on", "subsections")):
                 raise ValueError("빈 관련 연구 장에 본문 작성 항목을 넣을 수 없습니다.")
@@ -269,9 +322,15 @@ def validate_plan(plan, research, catalog, profile, allow_table_overlap=False):
             guideline_ids = item.get("guideline_ids", [])
             allowed_guidelines = {criterion["id"] for reference_id in section["reference_ids"]
                                   for criterion in catalog[reference_id].get("criteria", [])}
-            if (not isinstance(guideline_ids, list) or any(not isinstance(v, str) for v in guideline_ids)
-                    or len(guideline_ids) != len(set(guideline_ids)) or not set(guideline_ids) <= allowed_guidelines):
-                raise ValueError("필수 내용의 작성 기준이 해당 장의 골든 가이드에 없습니다.")
+            if not isinstance(guideline_ids, list) or any(not isinstance(v, str) for v in guideline_ids):
+                raise ValueError(f"필수 내용의 작성 기준 ID 목록이 잘못됐습니다. 장={identifier}, 항목={key}")
+            duplicates = list(dict.fromkeys(v for index, v in enumerate(guideline_ids) if v in guideline_ids[:index]))
+            if duplicates:
+                raise ValueError(f"필수 내용의 작성 기준 ID가 중복됩니다. 장={identifier}, 항목={key}, 중복={duplicates}")
+            invalid = sorted(set(guideline_ids) - allowed_guidelines)
+            if invalid:
+                raise ValueError(f"필수 내용의 작성 기준이 해당 장의 골든 가이드에 없습니다. "
+                                 f"장={identifier}, 항목={key}, 잘못된 ID={invalid}, 연결 가이드={section['reference_ids']}")
             item_ids.add(key)
         indices = [item.get("subsection_index") for item in section.get("required_items", [])]
         if any(index is not None for index in indices):

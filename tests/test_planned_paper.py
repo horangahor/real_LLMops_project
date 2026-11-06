@@ -46,8 +46,9 @@ class FakeClient:
             from review_test_support import editorial_reply
             return editorial_reply(packet)
         if packet.get("operation") == "editorial_review":
-            return {"issues": [{"section_id": packet["outline"][0]["id"], "paragraph_id": "none", "category": "flow",
-                                "severity": "error", "reason": "검토 미통과 시험"}] if self.reject else []}
+            from review_test_support import editorial_review_reply
+            return editorial_review_reply(packet, [{"section_id": packet["outline"][0]["id"], "paragraph_id": "none", "category": "flow",
+                                "severity": "error", "reason": "검토 미통과 시험"}] if self.reject else [])
         if "findings" in properties:
             raise AssertionError("Retired source-review agent must not be called")
         if "generation_order" in properties:
@@ -158,8 +159,7 @@ class PlannedPaperTests(unittest.TestCase):
             for name in ("research_evidence.json", "Results & Discussion.json"):
                 (root / name).write_text("THIS MUST NOT BE READ", encoding="utf-8")
             engine = PlannedPaper(root)
-            with patch.object(engine, "extract_evidence", return_value={"research": research()}) as extract, \
-                    patch("paper_quality.prepare_research_evidence", side_effect=AssertionError("manual profile")):
+            with patch.object(engine, "extract_evidence", return_value={"research": research()}) as extract:
                 result = engine.load_research(profile)
             extract.assert_called_once_with(source)
             self.assertEqual(result, research())
@@ -413,7 +413,7 @@ class PlannedPaperTests(unittest.TestCase):
         value = plan()
         value["sections"][1]["table_ids"] = ["t1"]
         validate_plan(value, data, {}, project_profile("generic"))
-        draft = render_paper(value, {s["id"]: "본문 [근거:F1]" for s in value["sections"]}, data)
+        draft = render_paper(value, {s["id"]: "본문 [근거:F1,F2]" for s in value["sections"]}, data)
         self.assertIn("표 2-1", draft)
         self.assertIn("| B | 12 |", draft)
 
@@ -524,8 +524,6 @@ class PlannedPaperTests(unittest.TestCase):
             engine.base_dir = root
             fake = FakeClient(plan())
             with patch("planned_paper.request_json", side_effect=lambda system, packet, schema, path, *args, **kwargs: fake(system, packet, schema, path)), \
-                    patch.object(gateway, "load_extracted_results", side_effect=AssertionError("CUDA-only loader called")), \
-                    patch("paper_quality.prepare_research_evidence", side_effect=AssertionError("CUDA evidence applied")), \
                     patch("planned_paper.PlannedPaper.extract_evidence", return_value={"research": research()}) as extract:
                 result = engine.run_pipeline(research_pdf_path=source, structure_json_path=style,
                                              project_id="generic", plan_only=True, writing_target_chars=20000)

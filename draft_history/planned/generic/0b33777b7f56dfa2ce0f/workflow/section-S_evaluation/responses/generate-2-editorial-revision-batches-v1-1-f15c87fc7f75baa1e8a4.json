@@ -1,0 +1,135 @@
+{
+  "request_fingerprint": "f15c87fc7f75baa1e8a4a7e99f64b2a25c99bd786a1ef88ff2c4ced479fcd389",
+  "value": {
+    "sections": {
+      "S_evaluation": {
+        "parts": {
+          "p1": {
+            "S_evaluation_p27_s1": {
+              "action": "replace",
+              "text": "구성 요소 변경은 memcpy 호출 횟수 감소, 커널 실행 횟수 감소, 자료형 변경(FP64→FP32)의 세 축이 함께 진행되었다. 커널 실행 횟수 감소는 커널 퓨전과 cudaGraph를 통해 추진되었으며, cudaGraph는 한 번의 CROWN 계산 안에 수십 번 호출되는 커널을 하나의 호출로 압축해 호출 오버헤드를 줄이는 방식으로 검토되었다. 다만 cudaGraph는 커널 자체 최적화가 끝난 뒤에 고려할 수 있는 스냅샷 기반 기능이라는 점이 함께 언급되었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p28_s1": {
+              "action": "replace",
+              "text": "커널 퓨전은 backward_bound_gpu()에 먼저 적용되었고, CROWN Verification 실행에서 23ms 후반대까지의 시간이 관측되었다. 컴퓨터 사정에 따라 26ms까지 올라가는 경우도 있었으나, 핵심은 23ms 정도가 보인다는 점으로 기록되었다. 이후 memcpy 호출 횟수는 66개에서 56개로 줄었고, memcpy를 10번에서 6번으로 줄인 결과와 그래프 적용 결과까지 확보되었다. 그래프를 적용한 버전은 787.8832초로 세 가지 방법 중 가장 빠르다고 관측되었으며, 비교값으로 avg 기준 forward 1029초, forward+backward 1138초가 함께 언급되었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p29_s1": {
+              "action": "replace",
+              "text": "커널 호출 횟수 감소는 추론 커널을 그대로 둔 상태에서 graph mode 1, 샘플 1개 전체 기준으로 Forward 33회에서 24회(9회 감소), Backward 52회에서 37회(15회 감소), Backward-only 51회에서 39회(12회 감소)로 나타났다. 구체적 내역은 Forward에서 lower/upper matmul, lower/upper bias matvec, matrix scaling + vector affine이 각각 2회에서 1회로 줄어 method 0 기준 레이어당 8회에서 5회로 감소했고, Backward에서는 split_pos_neg + bias accumulation이 2회에서 1회로 줄고 레이어당 backward 단계가 5회에서 4회로 줄었다. method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. 다만 graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회로 유지되어 이번 작업에서 graph launch 횟수 자체를 줄이지는 않았다.",
+              "join_previous": false
+            },
+            "S_evaluation_p30_s1": {
+              "action": "replace",
+              "text": "커널 호출 횟수 감소는 실행 모드별로 다르게 나타났다. forward에서는 무거운 커널 연산의 호출 횟수가 9회 줄었고, backward에서는 forward 부분이 12회(9+3), 실제 backward 부분은 3회 줄었다. backward_only는 45회에서 33회로 줄어 감소율이 26.7%로 가장 낮았으며, 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄어든 경우라 커널 비용도 다르다고 정리되었다. 이와 관련해 커널 횟수가 더 많이 줄면 시간도 더 줄어야 하지 않는지, 왜 forward가 가장 많이 줄었는지에 대한 의문이 함께 남아 있다.",
+              "join_previous": false
+            },
+            "S_evaluation_p31_s1": {
+              "action": "replace",
+              "text": "개별 변경의 효과를 완전히 분리하기는 어려웠다. cudaEvent 추가가 지연 증가의 원인일 가능성이 제기되어 시스템 인자를 넣어 제어해보는 중이었고, CPU에서 필요한 만큼만 계산하는 부분이 지연 증가의 주요 후보로 좁혀졌다. memcpy에서는 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 바꿨으나, CPU 계산 오버헤드가 더 커진 것 같아 시간이 늘었다. infer 크기 계산 주석 처리나 certify의 heap 재변경 여부 같은 추가 최적화 후보도 검토되었으나, 각 변경의 효과를 체계적으로 분리한 ablation은 이루어지지 않았다. 단일 테스트에서는 forward와 backward 간 시간에서 3배 차이가 나지만, 92만 개의 데이터를 돌리면 1분 정도 차이로 비슷해지는 현상이 관측되었고, 이 문제는 아직 해결되지 않았다.",
+              "join_previous": false
+            },
+            "S_evaluation_p32_s1": {
+              "action": "replace",
+              "text": "메모리 풀 사전 할당과 warmup은 실행 시간을 줄이는 데 뚜렷한 효과를 보였으나, cuBlas 사용 및 warmup과의 정량적 차이는 분리되지 않았다. mempool에서 ensure_pool()로 미리 메모리를 확보하는 것은 큰 영향을 주었지만, cuBlas를 쓰고 warmup하는 경우와 비슷한 수준으로 기록되었다. 단일 시도에서는 cuBlas가 더 느리게 보였고, warmup은 각 버전에서 약 50ms 정도 단축하는 효과가 있는 것으로 관찰되었다. make_zero_matrix와 make_zero_vector는 다시 CPU 실행으로 회귀되었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p33_s1": {
+              "action": "replace",
+              "text": "CUDA 커널 인자는 포인터와 스칼라로 구분된다. 포인터는 cudaMalloc과 cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라는 CPU 메모리 값을 커널 실행 시 Parameter Bank나 Constant Memory에 함께 실어 보낼 수 있다. 포인터 변수는 크기가 커서 CPU가 커널 매개변수에 직접 넣어줄 수 없으므로 memcpy로 올려야 하며, 4~8바이트 수준의 값만 CPU가 직접 참조해 보낼 수 있다.",
+              "join_previous": false
+            },
+            "S_evaluation_p34_s1": {
+              "action": "replace",
+              "text": "backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행해 최종 결과를 얻는 방식이었고, affine_min/max도 GPU에서 계산되어 GPU→CPU→GPU→CPU의 불필요한 복사가 발생하였다. 이후 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다.",
+              "join_previous": false
+            },
+            "S_evaluation_p35_s1": {
+              "action": "replace",
+              "text": "추가 최적화 부분이 발견되었고, GPU 안에서 최종 정답 계산을 위해 affine_min_gpu와 affine_max_gpu 커널이 사용되었다. 이 부분은 커널 퓨전 가능성이 제기되었으며, 미리 작성해둔 퓨전 함수를 사용해 affine_min과 affine_max를 하나의 커널로 병합하는 커널 퓨전이 완료되었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p36_s1": {
+              "action": "replace",
+              "text": "40000번 루프에서는 backward보다 forward가 느린 현상이 확인되었고, 원인은 중간 레이어 결과를 저장하느냐를 결정하는 플래그에 있었다. forward_bound_impl의 플래그를 true로 두면 중간 결과가 복사되며, 이 플래그는 forward에서 중간 계산 결과, final_affine, 최종 결과 복사를 제어하는 역할을 하였다. 단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 넘지 않았으나, 40000번 루프 반복 시에는 D2H 복사 오버헤드가 backward 대비 forward 계산의 이득을 초과하여 forward가 더 느려지는 현상이 관측되었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p37_s1": {
+              "action": "replace",
+              "text": "복사 제어를 위해 forward의 플래그를 3개로 늘려 중간 결과(layer_bound 복사용), final_affine 복사용, 최종 결과 복사용으로 분리하였고, backward의 플래그도 layer_bound와 affine_bound 복사 제어용으로 각각 2개로 분리하였다. forward 최종 계산의 D2H 복사 과정에서 비효율적인 부분이 있어 정확한 테스트를 위해 최적화가 진행되었고, 이를 통해 backward보다 forward가 느린 문제는 해결된 것으로 기록되었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p38_s1": {
+              "action": "replace",
+              "text": "단일 테스트 결과로 비교하면 다중 데이터셋 테스트 시 forward와 backward 간 3배 차이가 예상되었으나 실제 관측에서는 그 차이가 나타나지 않아 Nsight System 분석을 사용하기로 하였다. 단일 데이터 기준 memcpy 호출 횟수는 forward와 backward 각각 6번으로 확인되었고, Forward와 Backward의 cudaMemcpy 호출 횟수는 동일하였다. 그럼에도 Forward 전체 실행 시간은 약 64초, Backward 전체 실행 시간은 약 98초로, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 많이 잡히는 점이 눈에 띄었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p39_s1": {
+              "action": "replace",
+              "text": "초기에는 입력 데이터 ±eps, 가중치, bias, upper bound 결과, lower bound 결과를 포함해 총 6개의 복사 대상이 있다고 보았으나, 가중치와 bias는 nvtx 촬영 전에 한 번에 올라간다는 점을 고려해 입력 데이터 ±eps, upper bound, lower bound 결과 총 4회만 복사하면 된다고 재검토되었다. 한편 CROWN에서는 입력 데이터 ±eps와 upper/lower bound를 포함해 총 6개의 복사 대상이 있다고 정리되기도 하였다.",
+              "join_previous": false
+            },
+            "S_evaluation_p40_s1": {
+              "action": "replace",
+              "text": "커맨드라인 실행 인자를 받아 forward 또는 backward를 실행하도록 코드를 변경한 뒤에는 실행 결과가 2164초로 기존 backward 실행 결과 1560초보다 느려졌다. backward 계산 시간이 확인되었고, topk 속도는 빨라져 향후 제외 가능성이 있다고 기록되었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p41_s1": {
+              "action": "replace",
+              "text": "현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 현재 구현은 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 이 비교는 버전별 실행 시간이나 구성 요소 변경 효과와 직접 연결되지 않으므로, 절의 흐름상 별도 방향 제시로 정리된다.",
+              "join_previous": false
+            },
+            "S_evaluation_p42_s1": {
+              "action": "replace",
+              "text": "antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 현재 구현과 antenna_lirpa의 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된다고 해석되었다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 방향은 앞선 측정 결과와 한계를 바탕으로 한 향후 과제로 제시된다.",
+              "join_previous": false
+            },
+            "S_evaluation_p43_s1": {
+              "action": "replace",
+              "text": "backward_only가 아직 graph로 만들지 않았더라도 boun 평균이 약 2.5배 정도로 관측되어 많이 느리다고 기록되었으며, 그 이유로 final_affine까지 복사(true) 때문에 한 번의 bound 계산에서 10번 일어나기 때문이라고 추정되었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p44_s1": {
+              "action": "replace",
+              "text": "커널 횟수 측정은 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch 횟수만 세었으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하였다. 코드 변경 과정에서 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않았다. 또한 switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다.",
+              "join_previous": false
+            }
+          },
+          "p2": {
+            "S_evaluation_p46_s1": {
+              "action": "replace",
+              "text": "메모리 방식 비교는 cudaHostRegister, cudaHostAlloc, No Pinning 세 조건을 backward_only(method=2), CUDA Graph Separate(graph_mode=1), 총 920,000회 연산 조건에서 수행했다. 전체 실행 시간은 cudaHostRegister 787.88초, cudaHostAlloc 796.52초, No Pinning 776.70초로, cudaHostRegister와 No Pinning의 차이는 약 1.4%(약 11초)이며 1회당 약 12μs 수준의 미세한 차이였다. 단계별 누적 시간에서는 Bound 단계(전체 85%)에서 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. Bound와 Infer의 합산(785.98초)은 전체 787.88초와 약 1.9초 차이가 나며, 이는 certify 단계 등 분해되지 않은 오버헤드로 추정된다.",
+              "join_previous": false
+            },
+            "S_evaluation_p47_s1": {
+              "action": "replace",
+              "text": "평균 처리 속도에서는 No-Pin이 약 13초 빨랐으나, 실시간성 관점에서는 Pinned Memory가 더 유리했다. No-Pin의 최대 지연은 8.8ms~11.6ms로 치명적이었고 지터는 118μs로 불안정했으며, Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 훨씬 안정적이었다. 이는 평균 속도만 보면 No-Pin이 빠를 수 있으나, 실시간 안정성에서는 Pinned가 유리할 수 있다는 해석과 측정 결과 불일치를 함께 보여준다.",
+              "join_previous": false
+            },
+            "S_evaluation_p48_s1": {
+              "action": "replace",
+              "text": "더 정밀한 측정에서도 유사한 경향이 확인되었다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs였고, Pinned는 최대 지연시간 1.64ms, 지터 47.28μs로 Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소했다. 총 시간(평균 시간)만 보면 No-Pin이 더 빨라 보이지만, 지터와 최악 실행 시간(WCET)을 보면 Pinned가 유리하다.",
+              "join_previous": false
+            },
+            "S_evaluation_p49_s1": {
+              "action": "replace",
+              "text": "이러한 차이는 전송 데이터 크기와 DMA 셋업 오버헤드의 관계에서 비롯된다. 1KB의 작은 데이터를 매 루프마다 전송할 때 Pinned Memory는 매번 하드웨어 DMA 셋업(Descriptor 생성 및 큐 제출)을 새로 수행하여 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin은 CPU의 L1/L2 캐시를 이용한 내부 즉시 복사로 약 0.02~0.05μs에 복사가 끝나 DMA 셋업보다 30~50배 빠르다. 1회 전송 오버헤드는 No-Pin ~0.03μs, Pinned ~1.50μs이며, 920,000회 누적 오버헤드는 No-Pin ~0.03초, Pinned ~1.38초로 나타났다.",
+              "join_previous": false
+            },
+            "S_evaluation_p50_s1": {
+              "action": "replace",
+              "text": "OS 페이징·백그라운드 작업·드라이버 버퍼 락 경합이 No-Pin에서 간헐적 지연을 유발하며, Pinned는 이러한 간섭을 차단하여 최대 지연을 1.64ms로 제한한다. 평균/총 시간만 보면 No-Pin이 더 빨라 보이지만, 지터와 WCET 관점에서는 Pinned가 더 안정적이다.",
+              "join_previous": false
+            },
+            "S_evaluation_p51_s1": {
+              "action": "replace",
+              "text": "단계별 누적 시간을 보면 Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 이 차이는 1KB급 초소형 데이터에서 DMA 셋업 오버헤드가 CPU 캐시 복사 이득보다 커지고, OS 페이징·백그라운드 작업 개입 시 No-Pin에서 지연 스파이크가 발생하기 때문으로 해석된다. 다만 현재 기록은 figure 캡션에 제시된 단계별 수치와 해석만 포함하며 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다.",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

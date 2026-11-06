@@ -1,0 +1,135 @@
+{
+  "request_fingerprint": "48c3ee00b09cbad193d7a4ff2ae31e2c771dc6d8a7bf697cad393e4fae7d6e24",
+  "value": {
+    "sections": {
+      "S_evaluation": {
+        "parts": {
+          "p0": {
+            "S_evaluation_p2_s1": {
+              "action": "replace",
+              "text": "CROWN 검증의 CUDA 포팅은 CPU 단독 처리(v0, 96ms)에서 시작해 모든 병렬 처리 함수를 GPU 커널로 옮긴 v1(355ms)에서 오히려 느려졌고, 이후 벡터 연산을 CPU로 되돌리고 메모리 풀과 cuBLAS를 도입한 v2(229ms), CPU·GPU 하이브리드 구성으로 전환한 v3(200ms) 순으로 실행 시간이 조정되었다. GPU OPTIMIZED 모드(cuBLAS + Pool) 적용 뒤에는 약 229.7ms로 약 100ms 줄었으나 여전히 CPU보다 느렸고, 이에 행렬곱만 GPU로 실행하는 하이브리드 프로그램을 시도하는 방향으로 이어졌다. HYBRID 모드(matmul=GPU, rest=CPU)에서는 약 201.7ms로 조금 줄었지만 여전히 CPU보다 느렸으며, HYBRID V2에서 약 85.8ms로 처음 CPU보다 빨라졌다. 이후 가중치 사전 업로드(PRELOAD ON GPU)를 적용한 MEMPOOL + Weights PRELOAD ON GPU 모드에서는 약 149.8ms, 149~155ms 범위가 관측되었고, mempool + warmup 조합에서는 약 152.9ms, mempool + cuBlas + warmup 조합에서는 약 175.0ms가 기록되었다. forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 약 64.7ms로 크게 줄었고, lirpa_forward_bound 함수 커널 퓨전 적용 후에는 약 22.3ms, 22ms 초반까지 나오는 경우가 관측되었다. alpha/beta 메모리 풀 적용 후에는 약 21.0ms가 관측되었으며, mempool + warmup 기준으로 약 15.8ms, 커널 퓨전 완료 후에는 약 15.8ms까지 낮아져 15ms 후반까지 결과가 나오는 수준이 되었다. 다만 위 수치는 대부분 단일 실행 또는 요약값 중심으로 기록되었고, 반복 측정 통계가 제한적이라는 점은 해석에 함께 남겨두어야 한다.",
+              "join_previous": false
+            },
+            "S_evaluation_p3_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p4_s1": {
+              "action": "replace",
+              "text": "cudaGraph만 적용된 버전과 비교 대상을 평균으로 측정한 결과에서는 forward 전체(추론, bound, 검증)에서 graph 단일 적용이 우수했고, 특히 infer_s에서 약 20초 차이가 났다. 다만 비교 대상 버전의 구체적 정체는 텍스트상 명시적으로 분리되지 않는다.",
+              "join_previous": false
+            },
+            "S_evaluation_p5_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p6_s1": {
+              "action": "replace",
+              "text": "버전별 실행 시간은 v0 CPU 96ms, v1 355ms, v2 229ms, v3 200ms로 변화했으며, 이후 mempool과 warmup, cudaGraph 적용 등 추가 구성이 이어졌다. 이 절의 수치는 단일 실행과 요약값 중심으로 제시되며, 반복 측정 통계는 제한적이다. backward에서는 total 시간이 비슷하게 나타났는데, 이는 infer에서 줄어든 약 20초를 bound에서 graph보다 약 20초 빨리 수행하면서 상쇄된 것으로 해석되었다. 다만 이 해석은 backward total 시간 유사성과 원인 해석에 해당하며, 정량 분리 측정이나 반복 측정 통계는 포함하지 않는다.",
+              "join_previous": false
+            },
+            "S_evaluation_p7_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p8_s1": {
+              "action": "replace",
+              "text": "메모리 방식 비교에서 cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)였으며, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려, 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. 이 역전 현상에 대해 추론 단계에서 시간이 느려졌다고 기록되었고, cudaHostRegister가 더 느리게 측정된 이유로 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었다. 측정 일관성을 높이기 위해 GPU 클록을 고정하고 다시 실험하기로 했으며, 이를 위해 RAII 방식의 ScopedGpuClockLock 구조체를 작성하였다. 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 함께 기록되었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p9_s1": {
+              "action": "replace",
+              "text": "평균 시간만으로는 No-Pin(일반 RAM)이 더 빠르게 보일 수 있으나, 지터(Jitter)와 최악 실행 시간(WCET) 관점에서는 Pinned(cudaHostRegister)가 유리하다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터(표준편차)는 118.94μs이며, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로, Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소한다.",
+              "join_previous": false
+            },
+            "S_evaluation_p10_s1": {
+              "action": "replace",
+              "text": "작은 데이터를 매 루프마다 cudaMemcpyAsync로 개별 전송할 때, Pinned Memory는 DMA 디스크립터 생성 및 큐 제출 오버헤드(약 1.0~1.5μs/회)가 발생하는 반면, No-Pin은 CPU의 L1/L2 캐시를 이용한 내부 복사로 약 0.02~0.05μs에 처리되어 DMA 셋업보다 30~50배 빠르다.",
+              "join_previous": false
+            },
+            "S_evaluation_p11_s1": {
+              "action": "replace",
+              "text": "infer 단계에서 40,000번 반복하며 cudaStreamSynchronize 대기와 드라이버 동기화 비용이 맞물려 Pinned 쪽이 총 루프 시간에서 약 13초 느려지는 결과가 나타났다. 이러한 차이는 전송 데이터 크기와 호출 방식에 따라 설명된다.",
+              "join_previous": false
+            },
+            "S_evaluation_p12_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p13_s1": {
+              "action": "replace",
+              "text": "메모리 방식 비교에서는 No-Pin(일반 메모리)과 Pinned Memory의 동작 특성이 대비된다. No-Pin은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS의 가상 메모리 정리나 백그라운드 작업 개입 시 최대 11.6ms까지 지연 스파이크가 발생할 수 있어 1ms 무선 통신 데드라인을 파괴할 가능성이 있다. Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다.",
+              "join_previous": false
+            },
+            "S_evaluation_p14_s1": {
+              "action": "replace",
+              "text": "메모리 방식 비교에서는 초소형 실시간 데이터 환경에서 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 낮게 측정될 수 있다. 반면 Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있고, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하며 지터를 60% 이상 안정화한다.",
+              "join_previous": false
+            },
+            "S_evaluation_p15_s1": {
+              "action": "replace",
+              "text": "이러한 지연 특성 차이로 인해 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필요하다고 판단된다.",
+              "join_previous": false
+            },
+            "S_evaluation_p16_s1": {
+              "action": "replace",
+              "text": "이 절은 CROWN 검증을 CPU 환경에서만 실행해 온 기존 상황에서 출발하여, 실시간 환경의 대규모 연산을 CUDA로 구현·최적화하는 과정에서 버전별 실행 시간이 어떻게 변화했는지를 정리한다. 다만 이 배경은 연구일지에 명시되지 않은 추가 정보로, 정량 비교나 실험 결과로 승격하지 않고 맥락 설명으로만 사용한다. 실행 시간 변화는 단일 실행과 요약값 중심으로 제시되며, 반복 측정 통계가 제한적이라는 점을 함께 명시한다.",
+              "join_previous": false
+            },
+            "S_evaluation_p17_s1": {
+              "action": "delete",
+              "text": "",
+              "join_previous": false
+            },
+            "S_evaluation_p18_s1": {
+              "action": "replace",
+              "text": "메모리 방식 비교에서는 No-Pin과 Pinned Memory의 동작 특성이 서로 다르게 나타난다. No-Pin은 평소 CPU 캐시 효과로 다소 빠를 수 있으나, 윈도우 OS의 가상 메모리 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 지연 스파이크가 발생할 수 있다. 이 수준은 1ms 무선 통신 데드라인을 파괴할 가능성이 있어 실시간 환경에서 불안정하다. 반면 Pinned Memory는 매번 DMA 셋업 비용 1~2μs를 부담하여 평균 시간은 다소 손해를 볼 수 있지만, OS 페이징을 차단하여 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장한다.",
+              "join_previous": false
+            },
+            "S_evaluation_p19_s1": {
+              "action": "replace",
+              "text": "단일 채널 벡터 1KB와 같은 초소형 실시간 데이터 환경에서는 PCIe DMA 셋업 오버헤드로 인해 Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 낮게 측정될 수 있다. 그럼에도 Pageable 메모리는 OS 페이징 간섭으로 최대 11.6ms의 치명적 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하므로, 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다.",
+              "join_previous": false
+            }
+          },
+          "p1": {
+            "S_evaluation_p21_s1": {
+              "action": "replace",
+              "text": "구성 요소 변경은 여러 층위에서 동시에 이루어져 개별 효과의 분리가 완전하지 않았다. GPU OPTIMIZED 모드에서도 CPU보다 느려 행렬곱만 GPU로 실행하는 하이브리드 프로그램이 시도되었고, HYBRID 모드(matmul=GPU, rest=CPU)의 단일 실행에서 Elapsed time은 201.670100 ms로 기록되었다. 이후 HYBRID V2 모드에서는 85.785300 ms로 줄어들어 CPU보다 빨라졌다는 평가가 함께 남았다. 메모리 풀과 가중치 사전 업로드(PRELOAD ON GPU)를 함께 적용한 모드에서는 149.820400 ms가 관측되었고, 기록자가 요약한 범위로는 149~155 ms 수준도 함께 언급되었다. 다만 이 50 ms 가량의 감소는 가중치 활용 효과라기보다 CUDA 컨텍스트 초기화 웜업 효과로 해석되었으며, 사전 업로드가 타이머 시작 전에 cudaMalloc과 cudaMemcpy를 호출하면서 컨텍스트 초기화, 클럭 부스팅, JIT 컴파일 비용이 측정 구간 밖으로 빠져나간 것으로 설명되었다. bias까지 GPU에 미리 업로드하는 시도는 bias가 약 4 KB 수준의 벡터여서 CPU 연산 부담이 크지 않아 성능 개선에 큰 의미를 주지 못하는 것으로 판단되었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p22_s1": {
+              "action": "replace",
+              "text": "메모리 풀과 warm up 조합은 두 요소만으로 약 200ms를 단축하는 효과를 보였으며, 이후 CPU 대비 속도 개선을 위해 추가로 약 50ms가 더 필요하다는 판단이 이어졌다. 이 과정에서 가장 중요한 병목으로 memcpy가 지목되었고, 이를 해결해야 CPU보다 빨라질 수 있다는 인식이 형성되었다. 다만 preload 버전에서 관찰된 약 50ms의 단축은 가중치 활용 자체보다 pre_upload_weights_to_gpu가 의도치 않게 CUDA 컨텍스트 초기화 웜업 역할을 하면서 초기화 비용을 측정 구간 밖으로 밀어낸 결과로 해석되었다. mempool 버전에서는 ensure_pool() 이후 첫 cudaMalloc이 측정 구간 안에 포함되어 초기화 비용이 함께 측정되는 반면, preload 버전은 초기화가 타이머 밖에서 일어나 비교가 공정하지 않을 수 있다. first_try에서 warmup_cublas()를 명시적으로 둔 것도 같은 이유로 CUDA 초기화·웜업 비용을 측정 구간 밖으로 분리하려는 목적이었다고 설명되었다. 이러한 해석은 기록자의 메커니즘 설명이며, 초기화 비용을 분리해 측정한 정량 결과는 현재 자료에 제시되지 않았다.",
+              "join_previous": false
+            },
+            "S_evaluation_p23_s1": {
+              "action": "replace",
+              "text": "메모리 풀과 warm up을 함께 적용한 CROWN Verification의 단일 실행 시간은 128.894800ms로 기록되었다. 이후 make_zero_matrix와 make_zero_vector를 CPU 실행으로 되돌리자 약 22~25ms가 줄었고, 결과 저장용 벡터에 대한 불필요한 memcpy를 제거하자 약 10ms가 추가로 단축되었다. 반대로 영벡터 생성을 다시 GPU로 시도했을 때는 약 3~5ms가 늘어나 CPU로 유지하는 편이 낫다는 판단이 내려졌다. 이러한 함수 단위의 GPU·CPU 선택 변경은 작은 연산의 오버헤드 차이가 전체 시간에 제한적으로 영향을 준다는 관찰과 연결된다. 다만 각 변경의 효과는 단일 실행 관측에 기반하며, 반복 측정 통계나 다른 조건과의 분리 비교는 이 단계에서 제시되지 않았다.",
+              "join_previous": false
+            },
+            "S_evaluation_p24_s1": {
+              "action": "replace",
+              "text": "가중치와 positive_part·negative_part를 거친 가중치를 GPU 메모리에 미리 올려두면 matmul·matvec에서 memcpy가 절반으로 줄고, forward 진행 시마다 양수·음수부 가중치를 다시 계산할 필요가 없어진다는 설계 의도가 정리되었다. 이후 동기화 코드 제거, cuBlas 도입 시도, cuSparse의 spMV 적용 등 여러 변경이 이어졌으나, cuBlas는 오히려 결과가 좋지 않았고 cuSparse 기반 spMV도 느려져 spMM 도입 검토로 이어졌다. 이 시기에는 커널 호출 횟수 감소와 메모리 전달 방식 변경이 함께 진행되었기 때문에, 개별 변경의 효과를 완전히 분리하기 어렵다는 한계가 있었다.",
+              "join_previous": false
+            },
+            "S_evaluation_p25_s1": {
+              "action": "replace",
+              "text": "lirpa_forward_bound에서 사용하는 함수들을 중심으로 커널 퓨전을 진행하였고, backward_bound_gpu의 affine 중복 계산 삭제로 커널 2개 함수가 줄어들었으며, new_(upper, lower)_p는 std::swap을 이용해 포인터 스와핑하도록 변경되었다. backward의 행렬곱 커널 2개는 backward_matmul_pair_gpu로 통합되었고, build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu의 커널 퓨전도 함께 적용되었다. 이러한 변경을 5번까지 적용했을 때 최고 성능이 나왔다고 기록되었다. backward_matmul_pair_gpu 적용 후에는 22ms 구간이 보이는 비율이 늘고 최저점 28ms가 잘 보이지 않게 되어 체감상 효과가 있다고 판단되었으나, 이는 정성적 관측에 해당한다. 이후 forward-backward 간 전달되는 alpha·beta 값을 메모리 풀에 올려 전달 과정을 삭제하고, 레이어별 alpha·beta GPU 버퍼를 메모리 풀에 추가하여 backward가 host의 ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경되었다. 이와 함께 alpha·beta 저장용 D2D 복사 4회를 cache_relaxation_layer_gpu 1회로 통합하고, bias도 메모리 풀에서 관리하도록 바뀌었다. bias 관리 변경의 경우 성능 최고점이 올랐는지는 불확실하다고 명시되었다. 개별 효과의 분리가 완전하지 않고 여러 변경이 동시에 적용된 점이 한계로 남는다.",
+              "join_previous": false
+            },
+            "S_evaluation_p26_s1": {
+              "action": "replace",
+              "text": "커널 퓨전 완료 후 실행 시간은 15.751000 ms로, 이전 15.828400 ms 대비 약 0.2 ms 정도 하한선이 낮아진 것으로 관측되었다. 실제 차이는 0.0774 ms 수준이지만, 출처 자체가 느슨한 근사로 기록한 표현이므로 이 관측은 정성적 비교로 다루어야 한다. 이후 Backward 메모리 복사 제거 및 초기화 최적화가 적용되어 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용해 H2D 복사를 제거하고, 기본 초기 상태(단위행렬·영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄이는 방향이 취해졌다. 이 적용 후 CROWN Verification 실행 시간은 13.939000 ms로 기록되었으며, 13 ms 후반에서 거의 14 ms 정도로 관측되었다. 이 단계에서도 fp32 단정밀도 연산으로의 변경 시도가 있었으나, 그 결과는 별도의 고찰로 넘겨졌다.",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

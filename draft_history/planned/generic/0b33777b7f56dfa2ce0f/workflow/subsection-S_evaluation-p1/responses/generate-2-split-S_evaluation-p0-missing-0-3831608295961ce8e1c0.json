@@ -1,0 +1,118 @@
+{
+  "request_fingerprint": "3831608295961ce8e1c0fec0e3b8d5bc6566d4deffbfb413676541d75789324d",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "메모리 풀 사전 할당과 warmup은 실행 시간을 줄이는 데 뚜렷한 효과를 보였으나, cuBlas 사용 및 warmup과의 정량적 차이는 분리되지 않았다. mempool에서 ensure_pool()로 미리 메모리를 확보하는 것은 큰 영향을 주었지만, cuBlas를 쓰고 warmup하는 경우와 비슷한 수준으로 기록되었다. 단일 시도에서는 cuBlas가 더 느리게 보였고, warmup은 각 버전에서 약 50ms 정도 단축하는 효과가 있는 것으로 관찰되었다. make_zero_matrix와 make_zero_vector는 다시 CPU 실행으로 회귀되었다.",
+          "evidence_ids": [
+            "E00066",
+            "E00067",
+            "E00070",
+            "E00074"
+          ]
+        },
+        {
+          "text": "mempool, warmup, 결과 벡터 memcpy 제거를 함께 적용한 뒤 CROWN Verification 출력은 16개 차원에 대해 Lower Bound, Upper Bound, Normal Pred(y) 값을 출력하였다. 예를 들어 0번 출력은 0.081772 / 0.082159 / 0.081966, 1번은 0.273538 / 0.273823 / 0.273680, 2번은 0.102147 / 0.102482 / 0.102314, 3번은 0.114244 / 0.114541 / 0.114393, 4번은 2.670552 / 2.670843 / 2.670697, 5번은 1.846574 / 1.846872 / 1.846723, 6번은 -1.714750 / -1.714490 / -1.714620, 7번은 -1.880139 / -1.879695 / -1.879916, 8번은 0.706986 / 0.707275 / 0.707131, 9번은 -2.612086 / -2.611722 / -2.611904, 10번은 0.003713 / 0.003976 / 0.003845, 11번은 1.310476 / 1.310817 / 1.310646, 12번은 2.049539 / 2.049839 / 2.049689, 13번은 -1.025923 / -1.025597 / -1.025760, 14번은 1.082576 / 1.082852 / 1.082714, 15번은 -3.404772 / -3.404355 / -3.404563으로 표시되었다. 이 결과는 단일 실행 기록이며, 다른 조건과의 수치 동일성이나 정확도 해석은 이 요소만으로 제시되지 않는다.",
+          "evidence_ids": [
+            "E00081"
+          ]
+        },
+        {
+          "text": "CUDA 커널 인자는 포인터와 스칼라로 구분된다. 포인터는 cudaMalloc과 cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라는 CPU 메모리 값을 커널 실행 시 Parameter Bank나 Constant Memory에 함께 실어 보낼 수 있다. 포인터 변수는 크기가 커서 CPU가 커널 매개변수에 직접 넣어줄 수 없으므로 memcpy로 올려야 하며, 4~8바이트 수준의 값만 CPU가 직접 참조해 보낼 수 있다.",
+          "evidence_ids": [
+            "E00135",
+            "E00136"
+          ]
+        },
+        {
+          "text": "backward_bound_gpu에서는 기존에 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행해 최종 결과를 얻는 방식이었고, affine_min/max도 GPU에서 계산되어 GPU→CPU→GPU→CPU의 불필요한 복사가 발생하였다. 이후 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다.",
+          "evidence_ids": [
+            "E00137",
+            "E00138"
+          ]
+        },
+        {
+          "text": "추가 최적화 부분이 발견되었고, GPU 안에서 최종 정답 계산을 위해 affine_min_gpu와 affine_max_gpu 커널이 사용되었다. 이 부분은 커널 퓨전 가능성이 제기되었으며, 미리 작성해둔 퓨전 함수를 사용해 affine_min과 affine_max를 하나의 커널로 병합하는 커널 퓨전이 완료되었다.",
+          "evidence_ids": [
+            "E00141",
+            "E00142",
+            "E00143"
+          ]
+        },
+        {
+          "text": "40000번 루프에서는 backward보다 forward가 느린 현상이 확인되었고, 원인은 중간 레이어 결과를 저장하느냐를 결정하는 플래그에 있었다. forward_bound_impl의 플래그를 true로 두면 중간 결과가 복사되며, 이 플래그는 forward에서 중간 계산 결과, final_affine, 최종 결과 복사를 제어하는 역할을 하였다. 단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 넘지 않았으나, 40000번 루프 반복 시에는 D2H 복사 오버헤드가 backward 대비 forward 계산의 이득을 초과하여 forward가 더 느려지는 현상이 관측되었다.",
+          "evidence_ids": [
+            "E00151",
+            "E00152",
+            "E00153",
+            "E00154"
+          ]
+        },
+        {
+          "text": "복사 제어를 위해 forward의 플래그를 3개로 늘려 중간 결과(layer_bound 복사용), final_affine 복사용, 최종 결과 복사용으로 분리하였고, backward의 플래그도 layer_bound와 affine_bound 복사 제어용으로 각각 2개로 분리하였다. forward 최종 계산의 D2H 복사 과정에서 비효율적인 부분이 있어 정확한 테스트를 위해 최적화가 진행되었고, 이를 통해 backward보다 forward가 느린 문제는 해결된 것으로 기록되었다.",
+          "evidence_ids": [
+            "E00155",
+            "E00156",
+            "E00157",
+            "E00158"
+          ]
+        },
+        {
+          "text": "단일 테스트 결과로 비교하면 다중 데이터셋 테스트 시 forward와 backward 간 3배 차이가 expected되었으나 실제 관측에서는 그 차이가 나타나지 않아 Nsight System 분석을 사용하기로 하였다. 단일 데이터 기준 memcpy 호출 횟수는 forward와 backward 각각 6번으로 확인되었고, Forward와 Backward의 cudaMemcpy 호출 횟수는 동일하였다. 그럼에도 Forward 전체 실행 시간은 약 64s, Backward 전체 실행 시간은 약 98s로, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 많이 잡히는 점이 눈에 띄었다.",
+          "evidence_ids": [
+            "E00159",
+            "E00160",
+            "E00165",
+            "E00166"
+          ]
+        },
+        {
+          "text": "초기에는 입력 데이터 ±eps, 가중치, bias, upper bound 결과, lower bound 결과를 포함해 총 6개의 복사 대상이 있다고 생각했으나, 가중치와 bias는 nvtx 촬영 전에 한 번에 올라간다는 점을 고려해 입력 데이터 ±eps, upper bound, lower bound 결과 총 4회만 복사하면 된다고 재검토하였다. 한편 CROWN에서는 입력 데이터 ±eps와 upper/lower bound를 포함해 총 6개의 복사 대상이 있다고 정리되기도 하였다.",
+          "evidence_ids": [
+            "E00161",
+            "E00162"
+          ]
+        },
+        {
+          "text": "중간 작업으로 커맨드라인 실행 인자를 받아 forward 또는 backward를 실행하도록 코드를 변경했으며, 이 변경 후 실행 결과가 2164s로 기존 backward 실행 결과 1560s보다 느려졌다. backward 계산 시간이 확인되었고, topk 속도는 빨라져 향후 제외 가능성이 있다고 기록되었다.",
+          "evidence_ids": [
+            "E00172",
+            "E00201",
+            "E00224"
+          ]
+        },
+        {
+          "text": "현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 현재 작성자는 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다.",
+          "evidence_ids": [
+            "E00257",
+            "E00260"
+          ]
+        },
+        {
+          "text": "antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 현재 구현과 antenna_lirpa의 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된다고 해석되었다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다.",
+          "evidence_ids": [
+            "E00259",
+            "E00261",
+            "E00262",
+            "E00263"
+          ]
+        },
+        {
+          "text": "backward_only가 아직 graph로 만들지 않았더라도 boun 평균이 약 2.5배 정도로 관측되어 많이 느리다고 기록되었으며, 그 이유로 final_affine까지 복사(true) 때문에 한 번의 bound 계산에서 10번 일어나기 때문이라고 추정하였다.",
+          "evidence_ids": [
+            "E00270"
+          ]
+        },
+        {
+          "text": "커널 횟수 측정은 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch 횟수만 세었으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하였다. 코드 변경 과정에서 switch 문 안에서 구조체를 선언과 동시에 만들어지도록 변경해 보았으며, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않았다. 또한 switch 문 안에서 case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생하여, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 주었다.",
+          "evidence_ids": [
+            "E00311",
+            "E00353",
+            "E00354"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "sections": {
+    "sec_conclusion": {
+      "parts": {
+        "p0": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]\n\n메모리 전송 측면에서는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다. 초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나, 최악 지연과 지터 안정성 측면에서는 더 유리하므로 실시간성 관점에서는 Pinned Memory 도입이 중요하다. [근거:E00296]\n\nmemcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]"
+      }
+    }
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "ri_conc_3",
+        "verdict": "met",
+        "paragraph_ids": [
+          "sec_conclusion_p1",
+          "sec_conclusion_p2",
+          "sec_conclusion_p3"
+        ],
+        "evidence_ids": [
+          "E00211",
+          "E00296",
+          "E00262"
+        ],
+        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
+        "paragraph_quotes": [
+          "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
+          "메모리 전송 측면에서는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다. 초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나, 최악 지연과 지터 안정성 측면에서는 더 유리하므로 실시간성 관점에서는 Pinned Memory 도입이 중요하다. [근거:E00296]",
+          "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]"
+        ],
+        "guideline_ids": [
+          "ref1_conclusion_required_3",
+          "ref2_conclusion_required_4"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": []
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "sec_conclusion",
+        "reference_id": "ref1_conclusion",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "sec_conclusion_p1",
+          "sec_conclusion_p2",
+          "sec_conclusion_p3"
+        ],
+        "reason": "결론의 실용적 기여와 향후 방향 정리는 반영되었으나, 연구 문제의 실용적 중요성·기존 방법의 한계를 먼저 제시하는 맥락 재진술과 핵심 성능·비교 우위 요약이 원문에서 충분히 뒷받침되지 않아 ref1_conclusion의 paragraph_flow를 완전히 충족하지 못한다.",
+        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
+        "paragraph_quotes": [
+          "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
+          "메모리 전송 측면에서는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다. 초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나, 최악 지연과 지터 안정성 측면에서는 더 유리하므로 실시간성 관점에서는 Pinned Memory 도입이 중요하다. [근거:E00296]",
+          "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]"
+        ]
+      },
+      {
+        "section_id": "sec_conclusion",
+        "reference_id": "ref2_conclusion",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "sec_conclusion_p1",
+          "sec_conclusion_p2",
+          "sec_conclusion_p3"
+        ],
+        "reason": "향후 작업 방향 정리는 반영되었으나, 연구 범위와 접근 방식의 한 문장 재진술, 수준별 핵심 발견의 순서 정리, 순위 변화·추가 이득·정확도 보존 여부, 비교 시 고려 요소 종합이 원문에서 직접 뒷받침되지 않아 ref2_conclusion의 paragraph_flow를 완전히 충족하지 못한다.",
+        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
+        "paragraph_quotes": [
+          "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
+          "메모리 전송 측면에서는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다. 초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나, 최악 지연과 지터 안정성 측면에서는 더 유리하므로 실시간성 관점에서는 Pinned Memory 도입이 중요하다. [근거:E00296]",
+          "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "sec_conclusion",
+        "severity": "warning",
+        "paragraph_id": "sec_conclusion_p1",
+        "reason": "배칭 구현으로 속도가 빨라지는 관측과 실시간 환경 제약 인식, 별도 분기 보관은 E00211에 근거해 반영되었으나, '단일 샘플 커널을 유지하는 멀티스트림 배칭'이라는 표현은 원문에 직접 확인되지 않는 서술이 섞여 있다.",
+        "evidence_ids": [
+          "E00211"
+        ],
+        "failure_owner": "none",
+        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "severity": "warning",
+        "paragraph_id": "sec_conclusion_p2",
+        "reason": "Pageable 메모리의 최대 11.6ms 지연 스파이크, Pinned Memory의 WCET 1.64ms, 지터 60% 이상 안정화는 E00296에 근거해 반영되었으나, '초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나'라는 비교 서술은 E00296의 원문 범위를 벗어나며, 해당 평균 속도 불리함의 직접 근거가 이 절에서 확인되지 않는다.",
+        "evidence_ids": [
+          "E00296"
+        ],
+        "failure_owner": "none",
+        "quote": "메모리 전송 측면에서는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다. 초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나, 최악 지연과 지터 안정성 측면에서는 더 유리하므로 실시간성 관점에서는 Pinned Memory 도입이 중요하다. [근거:E00296]"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "severity": "warning",
+        "paragraph_id": "sec_conclusion_p3",
+        "reason": "memcpy 병목 해소 판단, 향후 학습·측정 계획, 3D 텐서 레이아웃 변환과 cublasSgemmBatched 호출, 텐서 코어 100% 활용, 30초~1분대 진입 목표, 전체 40,000개 규모 등은 E00262·E00296·E00211에 근거해 계획·제안 성격으로 정리되었으나, 'global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습, FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정' 등 세부 항목 다수는 원문에 직접 기록된 범위를 넘어 계획·제안 항목을 확장 서술한 것으로 보인다.",
+        "evidence_ids": [
+          "E00262",
+          "E00296",
+          "E00211"
+        ],
+        "failure_owner": "none",
+        "quote": "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "severity": "warning",
+        "paragraph_id": "sec_conclusion_p3",
+        "reason": "E00262는 p68 figure 캡션의 로드맵상 목표·방식이며 실제 구현·평가 결과가 아니고, 30초~1분대 진입은 목표치이지 실측값이 아니며 전체 40,000개 규모에서의 실현 여부는 검증되지 않았다는 한계가 있다. 이 한계 표기가 결론 본문에서 충분히 드러나지 않는다.",
+        "evidence_ids": [
+          "E00262"
+        ],
+        "failure_owner": "none",
+        "quote": "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]"
+      }
+    ],
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 1,
+      "total": 1,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 2,
+      "not_visible": 0,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+    "content_warnings": [
+      {
+        "section_id": "sec_conclusion",
+        "severity": "warning",
+        "paragraph_id": "sec_conclusion_p1",
+        "reason": "배칭 구현으로 속도가 빨라지는 관측과 실시간 환경 제약 인식, 별도 분기 보관은 E00211에 근거해 반영되었으나, '단일 샘플 커널을 유지하는 멀티스트림 배칭'이라는 표현은 원문에 직접 확인되지 않는 서술이 섞여 있다.",
+        "evidence_ids": [
+          "E00211"
+        ],
+        "failure_owner": "none",
+        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
+        "stage": "subsection-sec_conclusion-p2"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "severity": "warning",
+        "paragraph_id": "sec_conclusion_p2",
+        "reason": "Pageable 메모리의 최대 11.6ms 지연 스파이크, Pinned Memory의 WCET 1.64ms, 지터 60% 이상 안정화는 E00296에 근거해 반영되었으나, '초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나'라는 비교 서술은 E00296의 원문 범위를 벗어나며, 해당 평균 속도 불리함의 직접 근거가 이 절에서 확인되지 않는다.",
+        "evidence_ids": [
+          "E00296"
+        ],
+        "failure_owner": "none",
+        "quote": "메모리 전송 측면에서는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다. 초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나, 최악 지연과 지터 안정성 측면에서는 더 유리하므로 실시간성 관점에서는 Pinned Memory 도입이 중요하다. [근거:E00296]",
+        "stage": "subsection-sec_conclusion-p2"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "severity": "warning",
+        "paragraph_id": "sec_conclusion_p3",
+        "reason": "memcpy 병목 해소 판단, 향후 학습·측정 계획, 3D 텐서 레이아웃 변환과 cublasSgemmBatched 호출, 텐서 코어 100% 활용, 30초~1분대 진입 목표, 전체 40,000개 규모 등은 E00262·E00296·E00211에 근거해 계획·제안 성격으로 정리되었으나, 'global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습, FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정' 등 세부 항목 다수는 원문에 직접 기록된 범위를 넘어 계획·제안 항목을 확장 서술한 것으로 보인다.",
+        "evidence_ids": [
+          "E00262",
+          "E00296",
+          "E00211"
+        ],
+        "failure_owner": "none",
+        "quote": "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]",
+        "stage": "subsection-sec_conclusion-p2"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "severity": "warning",
+        "paragraph_id": "sec_conclusion_p3",
+        "reason": "E00262는 p68 figure 캡션의 로드맵상 목표·방식이며 실제 구현·평가 결과가 아니고, 30초~1분대 진입은 목표치이지 실측값이 아니며 전체 40,000개 규모에서의 실현 여부는 검증되지 않았다는 한계가 있다. 이 한계 표기가 결론 본문에서 충분히 드러나지 않는다.",
+        "evidence_ids": [
+          "E00262"
+        ],
+        "failure_owner": "none",
+        "quote": "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]",
+        "stage": "subsection-sec_conclusion-p2"
+      }
+    ],
+    "content_status": "needs_attention",
+    "content_approved": false
+  }
+}

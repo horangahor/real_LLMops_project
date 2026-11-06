@@ -1,0 +1,63 @@
+{
+  "request_fingerprint": "f15e3278528938e13534911d17cd60e17c608fc9dff05ebe37cc562af95aa122",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "전체 처리 과정을 비교할 때 여러 요소가 동시에 바뀌어 개별 요소의 효과를 분리하기 어려웠다. GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했고, mempool + warmup + 결과 벡터 memcpy 제거 적용 후 실행 시간이 약 10ms 추가로 단축되었다. make_zero_matrix·make_zero_vector를 CPU로 회귀한 결과 22~25ms 정도 줄어들었으며, 영벡터 만들기를 다시 GPU로 해봤으나 3~5ms 정도 늘어나 CPU로 두는 것이 좋을 것이라고 판단했다. cudaHostRegister가 No Pinning보다 느리게 측정된 점, pinned 적용 버전의 cudaMemcpyAsync가 더 빨랐다가 마지막 측정에서 nopinned가 더 빠르게 나와 확신할 수 없게 된 점, 40000번 루프에서 forward가 backward보다 느려진 점 등이 관측되었다. backward_bound_gpu에서는 affine 중복 계산 삭제·포인터 스와핑·행렬곱 커널 통합·커널 퓨전을 적용했고, forward-backward 간 alpha/beta 값을 메모리 풀에 올려 전달 과정을 삭제했으며, bias도 메모리 풀에서 관리하도록 변경했고, forward 최종 계산의 D2H 복사 과정에서 비효율적인 부분을 최적화했다.",
+          "evidence_ids": [
+            "E00155",
+            "E00156",
+            "E00157",
+            "E00158",
+            "E00159",
+            "E00160",
+            "E00161",
+            "E00162",
+            "E00165",
+            "E00166",
+            "E00167",
+            "E00172",
+            "E00201",
+            "E00259",
+            "E00318",
+            "E00319",
+            "E00330"
+          ]
+        },
+        {
+          "text": "호스트·플랫폼·실행 환경의 차이로 인해 절대 수치 해석에 제약이 있다. cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않으며, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계가 원문에 직접 제시되지 않아 공정 비교를 위한 통제 조건으로 확정하기 어렵다. Pinned Memory는 데이터가 충분히 클 때 빠르다는 전제 조건이 있으며 1,028 Byte(1 KB) 수준에서는 No-Pin(일반 메모리)이 더 빠를 수 있다. No-Pin은 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발하는 반면 Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화한다.",
+          "evidence_ids": [
+            "Hefd7e87bb735_6",
+            "Hefd7e87bb735_10",
+            "Hefd7e87bb735_11",
+            "Hefd7e87bb735_13",
+            "Hefd7e87bb735_14",
+            "Hefd7e87bb735_15",
+            "Hefd7e87bb735_17",
+            "Hefd7e87bb735_18",
+            "Hefd7e87bb735_19",
+            "Hefd7e87bb735_20",
+            "Hefd7e87bb735_34",
+            "Hefd7e87bb735_35",
+            "Hefd7e87bb735_36",
+            "Hefd7e87bb735_37",
+            "Hefd7e87bb735_39",
+            "Hefd7e87bb735_40",
+            "Hefd7e87bb735_41",
+            "Hefd7e87bb735_43",
+            "Hefd7e87bb735_49",
+            "Hefd7e87bb735_53",
+            "Hefd7e87bb735_54",
+            "Hefd7e87bb735_55",
+            "Hefd7e87bb735_56",
+            "Hefd7e87bb735_57",
+            "Hefd7e87bb735_60",
+            "Hefd7e87bb735_61",
+            "Hefd7e87bb735_62"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,846 @@
+{
+  "sha256": "e65cf9220a396abbfa62dd8f5c3de8aaecebec878a344fe71a3f2b1a774bed7b",
+  "value": {
+    "input_fingerprint": "5ffb78aa92e0717ae6fdce959ebb43e122e2a7ef72c234eb19d667eecf3b1d85",
+    "sections": {
+      "sec_limitations": {
+        "parts": {
+          "p0": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]\n\nGPU OPTIMIZED 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 방식 같은 분리 구성을 검토할 수 있다. 또한 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 행렬만 복사하는 방안처럼 측정 전에 누적되던 초기화·복사 비용을 줄이는 접근을 다시 점검할 필요가 있다. 실행 코드에서는 추론, bound 계산, 검증 단계 종료 시마다 시간을 기록하도록 바꾸었고, 각 forward와 backward를 20번씩 측정해 평균과 분산을 정리할 예정이므로, 단계 분리 측정과 반복 통계 확보가 후속 검토의 출발점이 된다. [근거:E00030,E00033,E00187,E00189]\n\n향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+        }
+      }
+    },
+    "raw_review": {
+      "checks": [
+        {
+          "item_id": "ri_lim_4",
+          "verdict": "met",
+          "paragraph_ids": [
+            "sec_limitations_p3"
+          ],
+          "evidence_ids": [
+            "E00073",
+            "E00071",
+            "E00333",
+            "E00331"
+          ]
+        }
+      ],
+      "reference_checks": [
+        {
+          "section_id": "sec_limitations",
+          "reference_id": "ref1_limitations",
+          "verdict": "partial",
+          "paragraph_ids": [
+            "sec_limitations_p1",
+            "sec_limitations_p2",
+            "sec_limitations_p3"
+          ],
+          "reason": "향후 연구 초점(ref1_limitations_required_3)은 sec_limitations_p3에서 계획·제안 항목으로 정리되었으나, ref1_limitations의 paragraph_flow가 요구하는 '전체 성과의 유효 범위 인정 → 데이터 다양성·도메인 이동 문제 지적 → 경량화·하드웨어 활용 개선 가능성 제시 → 향후 과제를 데이터/효율/일반화/배포로 정리'하는 구조는 이 절에 반영되지 않았다. 본 절은 연구 노트 기반 한계·향후 방향만 서술하고 있어 ref1_limitations의 서술 흐름과 필수 내용 중 일부가 충족되지 않았다."
+        },
+        {
+          "section_id": "sec_limitations",
+          "reference_id": "ref2_limitations",
+          "verdict": "partial",
+          "paragraph_ids": [
+            "sec_limitations_p1",
+            "sec_limitations_p2",
+            "sec_limitations_p3"
+          ],
+          "reason": "sec_limitations_p1에서 실험 범위·조건, 동시 변경에 따른 개별 효과 분리 제약, 반복 측정 통계 부족, 결과 해석 범위 제한을 밝혀 ref2_limitations의 paragraph_flow 일부(실험 범위와 조건, 동시 변경 제약, 결과 적용 범위 제한)는 반영되었다. 그러나 ref2_limitations가 요구하는 '기준선과 전용 가속기 수준 구성에서 제한한 최적화 사유', '호스트 차이와 절대값 해석의 제약', '전력·에너지 효율 평가 제외와 해석상 공백'은 이 절에 직접 드러나지 않아 필수 서술 일부가 충족되지 않았다."
+        }
+      ],
+      "issues": [
+        {
+          "section_id": "sec_limitations",
+          "severity": "warning",
+          "paragraph_id": "sec_limitations_p1",
+          "reason": "sec_limitations_p1은 연구 노트 기반 한계(실험 조건·일반화 제약, 동시 변경, 반복 측정 통계 부족, 해석 범위 제한)를 서술하고 있으나, ref2_limitations의 paragraph_flow에서 요구하는 호스트 차이·절대값 해석 제약, 전력·에너지 효율 평가 제외와 해석상 공백 등은 이 절에 직접 드러나지 않는다. ref2_limitations의 not_to_transfer는 특정 하드웨어·벤더·논문 고유 명칭과 수치를 옮기지 말라는 취지이므로, 이 절이 해당 항목을 포함하지 않는 것 자체는 문제가 아니다. 다만 ref2_limitations의 서술 흐름 중 일부가 누락되어 있어, 향후 검토 시 실험 범위·통제 조건·동시 변경 제약을 더 구체적으로 보강할 여지가 있다.",
+          "evidence_ids": [
+            "E00030",
+            "E00033",
+            "E00044",
+            "E00045",
+            "E00046",
+            "E00072",
+            "E00083",
+            "E00131",
+            "E00132",
+            "E00174",
+            "E00187",
+            "E00188",
+            "E00189",
+            "E00190",
+            "E00191",
+            "E00192",
+            "E00193",
+            "E00194",
+            "E00195",
+            "E00196",
+            "E00197",
+            "E00198",
+            "E00199",
+            "E00262",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00296"
+          ],
+          "failure_owner": "none"
+        },
+        {
+          "section_id": "sec_limitations",
+          "severity": "warning",
+          "paragraph_id": "sec_limitations_p3",
+          "reason": "sec_limitations_p3은 향후 검토 방향을 계획·제안 항목으로 정리하고 있으며, memcpy 병목 인식, 메모리 풀+warm up 조합의 관찰, cuBlas·cuSparse 도입 보류, forward+backward 유지, Nsight Compute 50% 목표 분석, CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 검토, 학부 연구생 논문 작성 검토, cuBlas/cuSparse 기본 형태 사용 및 변형 함수 검토 등 연구 노트에 기록된 내용을 반영하고 있다. 다만 이 항목은 계획·제안 성격이므로 실제 수행 결과나 측정 성과로 바꾸지 않도록 주의가 필요하며, 현재 서술은 그 점을 유지하고 있다. ref1_limitations의 paragraph_flow가 요구하는 '데이터 다양성·도메인 이동', '경량화·하드웨어 활용 개선 가능성', '향후 과제를 데이터/효율/일반화/배포로 정리'하는 구조는 이 절에 직접 반영되지 않았으므로, 향후 연구 초점 서술이 필요한 경우 보강이 필요하다.",
+          "evidence_ids": [
+            "E00073",
+            "E00071",
+            "E00333",
+            "E00331"
+          ],
+          "failure_owner": "none"
+        }
+      ],
+      "review_policy": "approved-facts-v1",
+      "review_selection_bindings": []
+    },
+    "reviews": [
+      {
+        "checks": [
+          {
+            "item_id": "ri_lim_4",
+            "verdict": "met",
+            "paragraph_ids": [
+              "sec_limitations_p3"
+            ],
+            "evidence_ids": [
+              "E00073",
+              "E00071",
+              "E00333",
+              "E00331"
+            ],
+            "quote": "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]",
+            "paragraph_quotes": [
+              "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+            ],
+            "guideline_ids": [
+              "ref1_limitations_required_3"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": []
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "sec_limitations",
+            "reference_id": "ref1_limitations",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_limitations_p1",
+              "sec_limitations_p2",
+              "sec_limitations_p3"
+            ],
+            "reason": "향후 검토 방향 정리는 충족되나, ref1_limitations의 '전체 성과의 유효 범위를 먼저 인정'·'데이터 다양성과 도메인 이동 문제'·'경량화와 하드웨어 활용 개선 가능성' 등 식물 스트레스·카메라·모델 성능 중심의 서술 틀은 본 CUDA 최적화 기록의 적용 범위와 맞지 않아 그대로 옮기지 않았다. 본 절은 연구 노트에서 확인된 적용 범위·최적화 동시 변경·반복 측정 통계의 한계를 중심으로 정리했다.",
+            "quote": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+            "paragraph_quotes": [
+              "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+              "향후 검토 방향으로는 GPU OPTIMIZED 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 방식 같은 분리 구성을 검토해 볼 수 있다. 또한 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 행렬만 복사하는 방안처럼 측정 전에 누적되던 초기화·복사 비용을 줄이는 접근을 다시 점검할 필요가 있다. 실행 코드 구조상 추론, bound 계산, 검증 단계를 나누어 시간을 기록하도록 바꾸었고, 각 forward와 backward를 20번씩 측정해 평균과 분산을 정리할 예정이므로, 단계 분리 측정과 반복 통계 확보가 후속 검토의 출발점이 된다. 이와 함께 global memory·SM 병목, Nsight Compute, shared memory, tile/tiling, cudaGraph 원리, FP32 변경 및 Nsight Compute 분석, backward_only가 왜 가장 빠른지, pinned memory 성능의 정확한 측정, Compute Throughput·Memory Throughput 정의 확인 등은 실제 수행 결과가 아니라 검토·학습 과제로 남겨 둔다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+              "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+            ]
+          },
+          {
+            "section_id": "sec_limitations",
+            "reference_id": "ref2_limitations",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_limitations_p1",
+              "sec_limitations_p2",
+              "sec_limitations_p3"
+            ],
+            "reason": "실험 범위·동시 변경 제약·반복 측정 통계 부족 등 결과 해석 범위를 제한하는 내용은 반영되었으나, ref2_limitations이 전제하는 호스트 차이·전력/에너지 효율 평가 제외·기준선/전용 가속기 수준 구성 등 특정 비교 틀은 본 기록에 직접 근거가 없어 그대로 서술하지 않았다. 해당 부분은 사용자 승인 범위와 원문 기록 범위 내에서만 제한적으로 반영했다.",
+            "quote": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+            "paragraph_quotes": [
+              "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+              "향후 검토 방향으로는 GPU OPTIMIZED 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 방식 같은 분리 구성을 검토해 볼 수 있다. 또한 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 행렬만 복사하는 방안처럼 측정 전에 누적되던 초기화·복사 비용을 줄이는 접근을 다시 점검할 필요가 있다. 실행 코드 구조상 추론, bound 계산, 검증 단계를 나누어 시간을 기록하도록 바꾸었고, 각 forward와 backward를 20번씩 측정해 평균과 분산을 정리할 예정이므로, 단계 분리 측정과 반복 통계 확보가 후속 검토의 출발점이 된다. 이와 함께 global memory·SM 병목, Nsight Compute, shared memory, tile/tiling, cudaGraph 원리, FP32 변경 및 Nsight Compute 분석, backward_only가 왜 가장 빠른지, pinned memory 성능의 정확한 측정, Compute Throughput·Memory Throughput 정의 확인 등은 실제 수행 결과가 아니라 검토·학습 과제로 남겨 둔다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+              "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "sec_limitations",
+            "severity": "error",
+            "paragraph_id": "sec_limitations_p1",
+            "reason": "sec_limitations_p1은 E00296(Pinned Memory의 WCET 1.64ms, 지터 60% 이상 안정화, Pageable 최대 11.6ms 스파이크, 실시간 무선 안테나 선택 시스템에서 Pinned 도입 필수)을 근거 목록에 포함했지만, 본문에는 이 수치·결론이 전혀 사용되지 않았다. 실제 사용된 주장은 E00030, E00033, E00044, E00045, E00046, E00072, E00083, E00131, E00132, E00174, E00187~E00199, E00262, E00277, E00278, E00279, E00280, E00281, E00282, E00283, E00284, E00286에 기반한 적용 범위·동시 변경·반복 측정 한계 서술이므로, E00296을 이 문단의 근거로 연결한 것은 잘못된 근거 연결이다.",
+            "evidence_ids": [
+              "E00296"
+            ],
+            "failure_owner": "writer",
+            "quote": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]"
+          },
+          {
+            "section_id": "sec_limitations",
+            "severity": "error",
+            "paragraph_id": "sec_limitations_p2",
+            "reason": "sec_limitations_p2도 E00296을 근거 목록에 포함했으나 본문에는 해당 Pinned/Paged 지연 수치·결론이 사용되지 않았다. 이 문단은 matmul만 GPU로 실행하는 하이브리드 검토, cuBLAS 예열·가중치 사전 업로드·필요한 행렬만 복사, 단계 분리 시간 기록과 forward/backward 20회 측정 계획, global memory·SM·Nsight Compute·shared memory·tile/tiling·cudaGraph·FP32·backward_only·Compute/Memory Throughput 정의 확인 등 계획·제안 항목을 정리한 것이므로, E00296을 근거로 연결한 것은 잘못된 근거 연결이다.",
+            "evidence_ids": [
+              "E00296"
+            ],
+            "failure_owner": "writer",
+            "quote": "향후 검토 방향으로는 GPU OPTIMIZED 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 방식 같은 분리 구성을 검토해 볼 수 있다. 또한 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 행렬만 복사하는 방안처럼 측정 전에 누적되던 초기화·복사 비용을 줄이는 접근을 다시 점검할 필요가 있다. 실행 코드 구조상 추론, bound 계산, 검증 단계를 나누어 시간을 기록하도록 바꾸었고, 각 forward와 backward를 20번씩 측정해 평균과 분산을 정리할 예정이므로, 단계 분리 측정과 반복 통계 확보가 후속 검토의 출발점이 된다. 이와 함께 global memory·SM 병목, Nsight Compute, shared memory, tile/tiling, cudaGraph 원리, FP32 변경 및 Nsight Compute 분석, backward_only가 왜 가장 빠른지, pinned memory 성능의 정확한 측정, Compute Throughput·Memory Throughput 정의 확인 등은 실제 수행 결과가 아니라 검토·학습 과제로 남겨 둔다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]"
+          },
+          {
+            "section_id": "sec_limitations",
+            "severity": "error",
+            "paragraph_id": "sec_limitations_p3",
+            "reason": "sec_limitations_p3은 E00296을 근거 목록에 포함했으나 본문에는 해당 Pinned/Paged 지연 수치·결론이 사용되지 않았다. 이 문단은 memcpy 병목 인식, 메모리 풀+warm up의 약 200ms 단축 관찰, cuBlas·cuSparse 도입 보류, forward+backward 유지, Nsight Compute CUDA core 점유율 50% 목표 분석, CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 검토, 학부 연구생 논문 작성 검토, cuBlas/cuSparse 기본 형태 사용 및 변형 함수·SM 분석·Nsight Compute 병행 검토 등 계획·제안 항목을 정리한 것이므로, E00296을 근거로 연결한 것은 잘못된 근거 연결이다.",
+            "evidence_ids": [
+              "E00296"
+            ],
+            "failure_owner": "writer",
+            "quote": "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+          },
+          {
+            "section_id": "sec_limitations",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 5.4 향후 검토 방향: 본문 1503자 / 목표 833자 / 허용 상한 1041자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 2,
+          "not_visible": 0,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "ri_lim_4",
+            "verdict": "met",
+            "paragraph_ids": [
+              "sec_limitations_p3"
+            ],
+            "evidence_ids": [
+              "E00073",
+              "E00071",
+              "E00333",
+              "E00331"
+            ],
+            "quote": "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]",
+            "paragraph_quotes": [
+              "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+            ],
+            "guideline_ids": [
+              "ref1_limitations_required_3"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": []
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "sec_limitations",
+            "reference_id": "ref1_limitations",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_limitations_p1",
+              "sec_limitations_p2",
+              "sec_limitations_p3"
+            ],
+            "reason": "적용 범위·일반화 제약·향후 연구 초점은 정리되었으나, ref1_limitations의 paragraph_flow 중 '데이터 다양성과 도메인 이동 문제' 및 '경량화와 하드웨어 활용 개선 가능성'을 연구 노트 근거로 직접 서술하지 않아 일부 흐름 항목이 충족되지 않았다.",
+            "quote": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+            "paragraph_quotes": [
+              "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+              "GPU OPTIMIZED 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 방식 같은 분리 구성을 검토할 수 있다. 또한 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 행렬만 복사하는 방안처럼 측정 전에 누적되던 초기화·복사 비용을 줄이는 접근을 다시 점검할 필요가 있다. 실행 코드에서는 추론, bound 계산, 검증 단계 종료 시마다 시간을 기록하도록 바꾸었고, 각 forward와 backward를 20번씩 측정해 평균과 분산을 정리할 예정이므로, 단계 분리 측정과 반복 통계 확보가 후속 검토의 출발점이 된다. [근거:E00030,E00033,E00187,E00189]",
+              "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+            ]
+          },
+          {
+            "section_id": "sec_limitations",
+            "reference_id": "ref2_limitations",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_limitations_p1",
+              "sec_limitations_p2",
+              "sec_limitations_p3"
+            ],
+            "reason": "실험 범위·동시 변경 제약·반복 측정 통계 부족은 서술되었으나, ref2_limitations가 요구하는 '호스트 차이와 절대값 해석의 제약', '전력·에너지 효율 평가 제외' 등 일부 항목은 연구 노트 근거로 직접 확인되지 않아 결과 해석 범위 제한이 부분적으로만 반영되었다.",
+            "quote": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+            "paragraph_quotes": [
+              "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+              "GPU OPTIMIZED 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 방식 같은 분리 구성을 검토할 수 있다. 또한 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 행렬만 복사하는 방안처럼 측정 전에 누적되던 초기화·복사 비용을 줄이는 접근을 다시 점검할 필요가 있다. 실행 코드에서는 추론, bound 계산, 검증 단계 종료 시마다 시간을 기록하도록 바꾸었고, 각 forward와 backward를 20번씩 측정해 평균과 분산을 정리할 예정이므로, 단계 분리 측정과 반복 통계 확보가 후속 검토의 출발점이 된다. [근거:E00030,E00033,E00187,E00189]",
+              "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "sec_limitations",
+            "severity": "warning",
+            "paragraph_id": "sec_limitations_p1",
+            "reason": "적용 범위·일반화 제약·반복 측정 통계 부족은 서술되었으나, 호스트 차이·절대값 해석 제약·전력/에너지 효율 평가 제외 등 ref2_limitations의 일부 한계 항목은 연구 노트 근거로 직접 확인되지 않아 결과 해석 범위 제한이 부분적으로만 반영되었다.",
+            "evidence_ids": [
+              "E00030",
+              "E00033",
+              "E00044",
+              "E00045",
+              "E00046",
+              "E00072",
+              "E00083",
+              "E00131",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00262",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00296"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]"
+          },
+          {
+            "section_id": "sec_limitations",
+            "severity": "warning",
+            "paragraph_id": "sec_limitations_p3",
+            "reason": "향후 검토 방향 항목 중 Nsight Compute, CUDA core 점유율 50% 목표, CROWN range 정렬 문제, localrobustness_fwd_bwd.py 검토, 학부 연구생 논문 작성 검토 등은 계획·제안 성격으로 서술되어 있으며, 실제 수행 결과나 측정 성과로 바꾸지 않도록 표현되어 있다. 다만 일부 항목은 연구 노트의 할 일 목록(E00333)에 근거해 있어, 계획·제안과 관측 결과의 구분이 유지되는지 확인이 필요하다.",
+            "evidence_ids": [
+              "E00073",
+              "E00071",
+              "E00333",
+              "E00331"
+            ],
+            "failure_owner": "none",
+            "quote": "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+          },
+          {
+            "section_id": "sec_limitations",
+            "part": "p0",
+            "paragraph_id": "sec_limitations_p1",
+            "evidence_ids": [
+              "E00030",
+              "E00033",
+              "E00044",
+              "E00045",
+              "E00046",
+              "E00072",
+              "E00083",
+              "E00131",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00262",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00296"
+            ],
+            "severity": "warning",
+            "original_severity": "error",
+            "deferred": true,
+            "validation_code": "paragraph_revision_deferred",
+            "review_stage": "generation_completion",
+            "failure_owner": "writer",
+            "repair_attempts": 1,
+            "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+          },
+          {
+            "section_id": "sec_limitations",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 5.4 향후 검토 방향: 본문 1248자 / 목표 833자 / 허용 상한 1041자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 2,
+          "not_visible": 0,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "ri_lim_4",
+            "verdict": "met",
+            "paragraph_ids": [
+              "sec_limitations_p3"
+            ],
+            "evidence_ids": [
+              "E00073",
+              "E00071",
+              "E00333",
+              "E00331"
+            ],
+            "quote": "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]",
+            "paragraph_quotes": [
+              "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+            ],
+            "guideline_ids": [
+              "ref1_limitations_required_3"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": []
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "sec_limitations",
+            "reference_id": "ref1_limitations",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_limitations_p1",
+              "sec_limitations_p2",
+              "sec_limitations_p3"
+            ],
+            "reason": "향후 연구 초점(ref1_limitations_required_3)은 sec_limitations_p3에서 계획·제안 항목으로 정리되었으나, ref1_limitations의 paragraph_flow가 요구하는 '전체 성과의 유효 범위 인정 → 데이터 다양성·도메인 이동 문제 지적 → 경량화·하드웨어 활용 개선 가능성 제시 → 향후 과제를 데이터/효율/일반화/배포로 정리'하는 구조는 이 절에 반영되지 않았다. 본 절은 연구 노트 기반 한계·향후 방향만 서술하고 있어 ref1_limitations의 서술 흐름과 필수 내용 중 일부가 충족되지 않았다.",
+            "quote": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+            "paragraph_quotes": [
+              "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+              "GPU OPTIMIZED 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 방식 같은 분리 구성을 검토할 수 있다. 또한 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 행렬만 복사하는 방안처럼 측정 전에 누적되던 초기화·복사 비용을 줄이는 접근을 다시 점검할 필요가 있다. 실행 코드에서는 추론, bound 계산, 검증 단계 종료 시마다 시간을 기록하도록 바꾸었고, 각 forward와 backward를 20번씩 측정해 평균과 분산을 정리할 예정이므로, 단계 분리 측정과 반복 통계 확보가 후속 검토의 출발점이 된다. [근거:E00030,E00033,E00187,E00189]",
+              "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+            ]
+          },
+          {
+            "section_id": "sec_limitations",
+            "reference_id": "ref2_limitations",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "sec_limitations_p1",
+              "sec_limitations_p2",
+              "sec_limitations_p3"
+            ],
+            "reason": "sec_limitations_p1에서 실험 범위·조건, 동시 변경에 따른 개별 효과 분리 제약, 반복 측정 통계 부족, 결과 해석 범위 제한을 밝혀 ref2_limitations의 paragraph_flow 일부(실험 범위와 조건, 동시 변경 제약, 결과 적용 범위 제한)는 반영되었다. 그러나 ref2_limitations가 요구하는 '기준선과 전용 가속기 수준 구성에서 제한한 최적화 사유', '호스트 차이와 절대값 해석의 제약', '전력·에너지 효율 평가 제외와 해석상 공백'은 이 절에 직접 드러나지 않아 필수 서술 일부가 충족되지 않았다.",
+            "quote": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+            "paragraph_quotes": [
+              "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+              "GPU OPTIMIZED 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 방식 같은 분리 구성을 검토할 수 있다. 또한 cuBLAS 예열, 가중치 GPU 사전 업로드, 필요한 행렬만 복사하는 방안처럼 측정 전에 누적되던 초기화·복사 비용을 줄이는 접근을 다시 점검할 필요가 있다. 실행 코드에서는 추론, bound 계산, 검증 단계 종료 시마다 시간을 기록하도록 바꾸었고, 각 forward와 backward를 20번씩 측정해 평균과 분산을 정리할 예정이므로, 단계 분리 측정과 반복 통계 확보가 후속 검토의 출발점이 된다. [근거:E00030,E00033,E00187,E00189]",
+              "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "sec_limitations",
+            "severity": "warning",
+            "paragraph_id": "sec_limitations_p1",
+            "reason": "sec_limitations_p1은 연구 노트 기반 한계(실험 조건·일반화 제약, 동시 변경, 반복 측정 통계 부족, 해석 범위 제한)를 서술하고 있으나, ref2_limitations의 paragraph_flow에서 요구하는 호스트 차이·절대값 해석 제약, 전력·에너지 효율 평가 제외와 해석상 공백 등은 이 절에 직접 드러나지 않는다. ref2_limitations의 not_to_transfer는 특정 하드웨어·벤더·논문 고유 명칭과 수치를 옮기지 말라는 취지이므로, 이 절이 해당 항목을 포함하지 않는 것 자체는 문제가 아니다. 다만 ref2_limitations의 서술 흐름 중 일부가 누락되어 있어, 향후 검토 시 실험 범위·통제 조건·동시 변경 제약을 더 구체적으로 보강할 여지가 있다.",
+            "evidence_ids": [
+              "E00030",
+              "E00033",
+              "E00044",
+              "E00045",
+              "E00046",
+              "E00072",
+              "E00083",
+              "E00131",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00262",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00296"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]"
+          },
+          {
+            "section_id": "sec_limitations",
+            "severity": "warning",
+            "paragraph_id": "sec_limitations_p3",
+            "reason": "sec_limitations_p3은 향후 검토 방향을 계획·제안 항목으로 정리하고 있으며, memcpy 병목 인식, 메모리 풀+warm up 조합의 관찰, cuBlas·cuSparse 도입 보류, forward+backward 유지, Nsight Compute 50% 목표 분석, CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 검토, 학부 연구생 논문 작성 검토, cuBlas/cuSparse 기본 형태 사용 및 변형 함수 검토 등 연구 노트에 기록된 내용을 반영하고 있다. 다만 이 항목은 계획·제안 성격이므로 실제 수행 결과나 측정 성과로 바꾸지 않도록 주의가 필요하며, 현재 서술은 그 점을 유지하고 있다. ref1_limitations의 paragraph_flow가 요구하는 '데이터 다양성·도메인 이동', '경량화·하드웨어 활용 개선 가능성', '향후 과제를 데이터/효율/일반화/배포로 정리'하는 구조는 이 절에 직접 반영되지 않았으므로, 향후 연구 초점 서술이 필요한 경우 보강이 필요하다.",
+            "evidence_ids": [
+              "E00073",
+              "E00071",
+              "E00333",
+              "E00331"
+            ],
+            "failure_owner": "none",
+            "quote": "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]"
+          },
+          {
+            "section_id": "sec_limitations",
+            "part": "p0",
+            "paragraph_id": "sec_limitations_p1",
+            "evidence_ids": [
+              "E00030",
+              "E00033",
+              "E00044",
+              "E00045",
+              "E00046",
+              "E00072",
+              "E00083",
+              "E00131",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00262",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00296"
+            ],
+            "severity": "warning",
+            "original_severity": "error",
+            "deferred": true,
+            "validation_code": "paragraph_revision_deferred",
+            "review_stage": "generation_completion",
+            "failure_owner": "writer",
+            "repair_attempts": 1,
+            "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+          },
+          {
+            "section_id": "sec_limitations",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 5.4 향후 검토 방향: 본문 1248자 / 목표 833자 / 허용 상한 1041자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+            "original_severity": "error",
+            "deferred": true
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": true,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 2,
+          "not_visible": 0,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+        "content_completion": {
+          "policy": "content-warning-v1",
+          "status": "needs_attention",
+          "revisions": 2,
+          "reason": "revision_limit"
+        },
+        "content_warnings": [
+          {
+            "section_id": "sec_limitations",
+            "severity": "warning",
+            "paragraph_id": "sec_limitations_p1",
+            "reason": "sec_limitations_p1은 연구 노트 기반 한계(실험 조건·일반화 제약, 동시 변경, 반복 측정 통계 부족, 해석 범위 제한)를 서술하고 있으나, ref2_limitations의 paragraph_flow에서 요구하는 호스트 차이·절대값 해석 제약, 전력·에너지 효율 평가 제외와 해석상 공백 등은 이 절에 직접 드러나지 않는다. ref2_limitations의 not_to_transfer는 특정 하드웨어·벤더·논문 고유 명칭과 수치를 옮기지 말라는 취지이므로, 이 절이 해당 항목을 포함하지 않는 것 자체는 문제가 아니다. 다만 ref2_limitations의 서술 흐름 중 일부가 누락되어 있어, 향후 검토 시 실험 범위·통제 조건·동시 변경 제약을 더 구체적으로 보강할 여지가 있다.",
+            "evidence_ids": [
+              "E00030",
+              "E00033",
+              "E00044",
+              "E00045",
+              "E00046",
+              "E00072",
+              "E00083",
+              "E00131",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00262",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00296"
+            ],
+            "failure_owner": "none",
+            "quote": "본 연구의 실행 시간 개선은 특정 CROWN 구현과 제한된 측정 조건에서 관측된 결과이므로, 다른 신경망 검증 환경이나 배치·네트워크 구성으로 바로 일반화하기는 어렵다. 최적화 과정에서 메모리 풀, 가중치 사전 업로드, memcpy 제거, CUDA 그래프 등 여러 기법을 함께 적용하거나 번갈아 적용했기 때문에, 각 기법의 개별 효과를 체계적으로 분리한 ablation 결과는 현재 기록에 없다. 또한 실행 시간 관측은 단일 실행이나 제한된 반복 측정 위주로 정리되어 있어, 조건별 평균·분산 같은 반복 측정 통계는 아직 충분히 정리되지 않았다. 따라서 관측된 속도 변화나 Pinned/Paged 메모리 간 차이는 해당 실험 조건에서의 결과로 해석해야 하며, 절대 성능이나 필수 도입 조건으로 단정할 수 없다. [근거:E00030,E00033,E00044,E00045,E00046,E00072,E00083,E00131,E00132,E00174,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00262,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00296]",
+            "stage": "subsection-sec_limitations-p3"
+          },
+          {
+            "section_id": "sec_limitations",
+            "severity": "warning",
+            "paragraph_id": "sec_limitations_p3",
+            "reason": "sec_limitations_p3은 향후 검토 방향을 계획·제안 항목으로 정리하고 있으며, memcpy 병목 인식, 메모리 풀+warm up 조합의 관찰, cuBlas·cuSparse 도입 보류, forward+backward 유지, Nsight Compute 50% 목표 분석, CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 검토, 학부 연구생 논문 작성 검토, cuBlas/cuSparse 기본 형태 사용 및 변형 함수 검토 등 연구 노트에 기록된 내용을 반영하고 있다. 다만 이 항목은 계획·제안 성격이므로 실제 수행 결과나 측정 성과로 바꾸지 않도록 주의가 필요하며, 현재 서술은 그 점을 유지하고 있다. ref1_limitations의 paragraph_flow가 요구하는 '데이터 다양성·도메인 이동', '경량화·하드웨어 활용 개선 가능성', '향후 과제를 데이터/효율/일반화/배포로 정리'하는 구조는 이 절에 직접 반영되지 않았으므로, 향후 연구 초점 서술이 필요한 경우 보강이 필요하다.",
+            "evidence_ids": [
+              "E00073",
+              "E00071",
+              "E00333",
+              "E00331"
+            ],
+            "failure_owner": "none",
+            "quote": "향후 검토 방향은 현재 최적화 과정에서 확인된 병목 인식과 미검토 항목을 중심으로 정리한다. memcpy 병목이 CPU보다 빠른 실행의 핵심 과제로 인식되었고, 메모리 풀과 warm up 조합은 두 요소만으로 거의 200ms 단축되는 효과가 관찰되었다. 외부 라이브러리 cuBlas·cuSparse 도입은 보류되었으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석과 CROWN range 정렬 문제 해답 확인, localrobustness_fwd_bwd.py 코드 검토, 학부 연구생 논문 작성 검토 등이 할 일로 기록되었다. cuBlas/cuSparse는 현재까지 기본 형태의 행렬곱 연산 함수만 사용되었고, 행렬곱 변형 함수가 많아 SM 내 분석과 함께 사용해야 하므로 Nsight Compute 분석 시 함께 진행하는 방안이 검토되었다. 이러한 항목들은 계획·제안 성격이며 실제 수행 결과나 측정 성과로 바꾸지 않는다. [근거:E00073,E00071,E00333,E00331]",
+            "stage": "subsection-sec_limitations-p3"
+          },
+          {
+            "section_id": "sec_limitations",
+            "part": "p0",
+            "paragraph_id": "sec_limitations_p1",
+            "evidence_ids": [
+              "E00030",
+              "E00033",
+              "E00044",
+              "E00045",
+              "E00046",
+              "E00072",
+              "E00083",
+              "E00131",
+              "E00132",
+              "E00174",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00197",
+              "E00198",
+              "E00199",
+              "E00262",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00296"
+            ],
+            "severity": "warning",
+            "original_severity": "error",
+            "deferred": true,
+            "validation_code": "paragraph_revision_deferred",
+            "review_stage": "generation_completion",
+            "failure_owner": "writer",
+            "repair_attempts": 1,
+            "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+            "stage": "subsection-sec_limitations-p3"
+          },
+          {
+            "section_id": "sec_limitations",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 5.4 향후 검토 방향: 본문 1248자 / 목표 833자 / 허용 상한 1041자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-sec_limitations-p3"
+          }
+        ],
+        "content_status": "needs_attention",
+        "content_approved": false
+      }
+    ],
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    },
+    "generation_warnings": [
+      {
+        "section_id": "sec_limitations",
+        "part": "p0",
+        "paragraph_id": "sec_limitations_p1",
+        "evidence_ids": [
+          "E00030",
+          "E00033",
+          "E00044",
+          "E00045",
+          "E00046",
+          "E00072",
+          "E00083",
+          "E00131",
+          "E00132",
+          "E00174",
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00262",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00296"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      }
+    ]
+  }
+}

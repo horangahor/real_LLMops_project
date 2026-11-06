@@ -5,7 +5,8 @@ from pathlib import Path
 
 from document_parse import write_json
 from paper_plan import object_schema
-from drafting_budget import NO_CACHE, SOURCE_PROTOCOL, cached_response, call_bounded, compact_packet
+from drafting_budget import (NO_CACHE, SOURCE_PROTOCOL, cached_response, call_bounded, compact_packet,
+                             request_bytes, request_limit)
 
 
 KEYED_REVIEW = """\n출력 형식: checks는 각 필수 item_id를 키로 하는 객체다.
@@ -118,6 +119,19 @@ def normalize_review_response(raw):
             else:
                 raise ValueError(f"검토 응답의 {field}에 같은 ID의 서로 다른 판정·근거가 있습니다: {key}")
         result[field] = unique
+        for row in unique:
+            ids = row.get("paragraph_ids")
+            if not isinstance(ids, list) or any(not isinstance(key, str) for key in ids):
+                continue
+            seen_ids, retained_ids = set(), []
+            for index, identifier in enumerate(ids):
+                if identifier in seen_ids:
+                    removed.append({"field": field, **{k: row[k] for k in key_fields},
+                                    "removed_paragraph_id": identifier, "removed_index": index})
+                else:
+                    seen_ids.add(identifier)
+                    retained_ids.append(identifier)
+            row["paragraph_ids"] = retained_ids
     result["response_normalizations"] = removed
     return result
 
@@ -128,6 +142,69 @@ def checked_review(raw, plan, bodies):
         raw = expand_keyed_review(raw, plan)
     normalized = normalize_review_response(raw)
     return validate_review(materialize_review(normalized, plan, index_paragraphs(bodies)), plan, bodies)
+
+
+def defer_unlinked_references(raw, plan, bodies):
+    """After one correction, retain unverified guide judgments as warnings.
+
+    Only empty selections are downgraded. Revalidate the entire report so this
+    cannot hide an unknown ID, another section's paragraph, or an invalid issue.
+    """
+    from planned_paper import fingerprint
+    result = expand_keyed_review(raw, plan) if isinstance(raw, dict) and isinstance(raw.get("checks"), dict) else copy.deepcopy(raw)
+    result = normalize_review_response(result)
+    changes = []
+    for check in result["reference_checks"]:
+        if check.get("verdict") not in ("applied", "partial") or check.get("paragraph_ids") != []:
+            continue
+        original = copy.deepcopy(check)
+        check.update(verdict="not_visible", model_verdict=original["verdict"], review_status="incomplete",
+                     validation_note="가이드 반영 판정의 실제 본문 연결을 보정 후에도 확인하지 못했습니다.")
+        result["issues"].append({"section_id": check["section_id"], "paragraph_id": "none", "quote": "",
+            "severity": "warning", "original_severity": "error", "deferred": True,
+            "evidence_ids": [], "failure_owner": "reviewer", "review_stage": "reference_application",
+            "validation_code": "reference_link_incomplete", "reference_id": check["reference_id"],
+            "review_status": "incomplete", "repair_attempts": 1,
+            "reason": f"참고 가이드 {check['reference_id']}: 원래 판정={original['verdict']}. "
+                      f"검토 응답 보정 1회 후에도 관련 문단이 선택되지 않아 반영 확인을 보류합니다. 원래 사유: {check['reason']}"})
+        changes.append({"section_id": check["section_id"], "reference_id": check["reference_id"],
+                        "original_check": original, "effective_verdict": "not_visible", "review_status": "incomplete"})
+    if not changes:
+        return None
+    report = checked_review(result, plan, bodies)
+    diagnostic = {"policy": "reference-link-completion-v1", "repair_attempts": 1,
+                  "body_fingerprint": fingerprint(bodies), "body_rewritten": False,
+                  "original_response_fingerprint": fingerprint(raw), "normalized_response_fingerprint": fingerprint(result),
+                  "changes": changes}
+    return result, report, diagnostic
+
+
+def reference_metrics(checks):
+    result = {verdict: sum(c["verdict"] == verdict and c.get("review_status") != "incomplete" for c in checks)
+              for verdict in ("applied", "partial", "not_visible")}
+    incomplete = sum(c.get("review_status") == "incomplete" for c in checks)
+    if incomplete:
+        result["incomplete"] = incomplete
+    return {**result, "total": len(checks)}
+
+
+def review_correction_packet(packet, plan, rejected, error):
+    return {**packet, "rejected_review": rejected, "validation_error": str(error),
+        "expected_item_ids": [item["id"] for s in plan["sections"] for item in s["required_items"]],
+        "required_reference_pairs": [{"section_id": s["id"], "reference_id": key}
+            for s in plan["sections"] if s["status"] == "write" for key in s["reference_ids"]]}
+
+
+def review_correction_system(system, packet):
+    return system + "\n" + (COVERAGE_CORRECTION if packet.get("coverage_policy") == "content-coverage-v2" else CORRECTION)
+
+
+def fits_review_request(system, packet, schema, plan):
+    """Budget the actual fixed-key schema, including bounded repair metadata."""
+    wire = correction_schema(schema, plan)
+    repair = review_correction_packet(packet, plan, {"response_preserved_on_disk": True}, "검토 응답의 ID·형식·본문 인용을 보정한다.")
+    return (request_bytes(system + KEYED_REVIEW, compact_packet(packet), wire) <= request_limit()
+            and request_bytes(review_correction_system(system, packet), compact_packet(repair), wire) <= request_limit())
 
 
 def review_with_repair(engine, folder, name, system, packet, schema, plan, bodies):
@@ -150,13 +227,36 @@ def review_with_repair(engine, folder, name, system, packet, schema, plan, bodie
             rejected = {"raw_response": raw, "validation_error": str(error)}
             write_json(folder / f"{name}-validation-{attempt}.json", rejected)
             if attempt:
+                try:
+                    deferred = defer_unlinked_references(raw, plan, bodies)
+                except (ValueError, KeyError, TypeError):
+                    deferred = None  # Other invalid fields still block the run.
+                if deferred is not None:
+                    normalized, report, diagnostic = deferred
+                    write_json(folder / f"{name}-reference-link-completion-v1.json", diagnostic)
+                    return normalized, report
                 raise ValueError(f"{name}: 검토 응답 보정 후에도 ID·근거·본문 인용 검증을 통과하지 못했습니다. "
                                  f"원인: {error} 후보 본문과 검토 응답은 {folder}에 보존했습니다.") from error
-            correction_packet = {**packet, "rejected_review": raw, "validation_error": str(error),
-                "expected_item_ids": [item["id"] for s in plan["sections"] for item in s["required_items"]],
-                "required_reference_pairs": [{"section_id": s["id"], "reference_id": key}
-                    for s in plan["sections"] if s["status"] == "write" for key in s["reference_ids"]]}
-            correction = COVERAGE_CORRECTION if packet.get("coverage_policy") == "content-coverage-v2" else CORRECTION
-            raw = call_bounded(engine, folder, name + "-correction-1", system + "\n" + correction,
-                              correction_packet, correction_schema(schema, plan),
+            correction_packet = review_correction_packet(packet, plan, raw, error)
+            correction_system = review_correction_system(system, packet)
+            wire = correction_schema(schema, plan)
+            cached = cached_response(engine, folder, name + "-correction-1", correction_system, correction_packet, wire)
+            if cached is not NO_CACHE:
+                raw = cached
+                continue
+            original_size = request_bytes(correction_system, compact_packet(correction_packet), wire)
+            if original_size > request_limit():
+                summary = {"response_preserved_on_disk": True, "response_type": type(raw).__name__}
+                if isinstance(raw, dict):
+                    summary["field_counts"] = {k: len(v) for k, v in raw.items() if k in ("checks", "reference_checks", "issues") and isinstance(v, (list, dict))}
+                correction_packet = review_correction_packet(packet, plan, summary, error)
+                correction_packet["repair_input_policy"] = "review-diagnostics-only-v1"
+                correction_packet["repair_instruction"] = "실패한 검토 응답 전체는 별도 보존했다. 현재 본문·계획·승인 범위와 validation_error로 전체 고정 칸을 다시 판정한다. 판정을 추측하거나 형식 보정을 위해 met으로 바꾸지 않는다."
+                write_json(folder / f"{name}-correction-input.json", {"policy": "review-diagnostics-only-v1",
+                    "original_input_bytes": original_size,
+                    "input_bytes": request_bytes(correction_system, compact_packet(correction_packet), wire),
+                    "limit_bytes": request_limit(), "original_response_path": str(folder / f"{name}-validation-0.json"),
+                    "original_packet_preserved": all(correction_packet[k] == v for k, v in packet.items())})
+            raw = call_bounded(engine, folder, name + "-correction-1", correction_system,
+                              correction_packet, wire,
                               source_protocol=packet.get("review_policy") != "approved-facts-v1")

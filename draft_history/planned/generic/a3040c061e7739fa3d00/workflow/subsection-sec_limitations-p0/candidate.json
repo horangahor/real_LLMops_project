@@ -1,0 +1,1740 @@
+{
+  "sections": {
+    "sec_limitations": {
+      "parts": {
+        "p0": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]\n\nGPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으며, v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 정리되었다. 배칭 시스템 구현으로 3배 빨라졌다는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, 별도 branch로 저장되었다. 이러한 관측은 체감 요약 수준이며 정량 측정 조건·반복 측정 통계는 현재 기록에 없다. [근거:E00030,E00033,E00203,E00211]\n\n본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 세 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 또한 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. [근거:E00216,E00217,E00245,E00246,E00247,E00249,E00250,E00251,E00252,E00253,E00254,E00255,E00256,E00257,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298]\n\n본 검증은 256-491-491-16 신경망과 배치 1, CROWN의 forward·forward+backward·backward_only 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list로 수행되어 결과의 적용 범위가 해당 설정에 한정된다. 평가 샘플 수 10만 개 제한과 실시간 대규모 연산 충족 여부를 확인하려는 초점 역시 일반화 제약으로 남는다. 향후 연구로는 방법 C 로드맵에 따라 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이는 p68 figure 캡션에 기록된 목표·방식이며 실제 구현·평가 결과는 아니다. [근거:E00262]\n\n현재 CPU 기반 CROWN 검증은 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황이다. 이번 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현·최적화하여 네트워크 환경을 따라잡을 수 있는지를 확인하는 데 목적이 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00226,E00256]\n\n본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]\n\nPinned 메모리와 No-Pin 비교에서는 평균 시간만으로 보면 No-Pin이 더 빠르게 보일 수 있으나, 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 더 유리했다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터는 118.94μs였고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로, Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소했다. 다만 1KB 수준의 작은 데이터를 매 루프마다 개별 DMA 셋업으로 전송하는 환경에서는 Pinned가 총 소요 시간에서 더 길게 나타나는 현상도 관측되어, 전송 크기와 반복 호출 구조가 결과에 영향을 줄 수 있음을 보여준다. [근거:E00299,E00300,E00301]\n\n본 연구의 검증 범위는 256-491-491-16 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 데이터셋·eps_list로 한정되며, CROWN의 forward, forward+backward, backward_only 실행 방식 중 forward+backward를 유지했다. 향후 과제로 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 배칭·다중 스트림과 실제 환경의 괴리 검토, 컴파일러 팀 모델 공유가 정리되었다. cuBlas·cuSparse 도입은 보류했고, CROWN range 정렬 문제는 localrobustness_fwd_bwd.py 코드를 참고해 알고리즘 완성을 목표로 했다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못해 한계로 남는다. [근거:E00333,E00233,E00334,U5d2b168fab4a92747ee6]"
+      }
+    }
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "limit_scope",
+        "verdict": "met",
+        "paragraph_ids": [
+          "sec_limitations_p1",
+          "sec_limitations_p3",
+          "sec_limitations_p5",
+          "sec_limitations_p6"
+        ],
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174",
+          "E00216",
+          "E00217",
+          "E00226",
+          "E00245",
+          "E00246",
+          "E00247",
+          "E00249",
+          "E00250",
+          "E00251",
+          "E00252",
+          "E00253",
+          "E00254",
+          "E00255",
+          "E00256",
+          "E00257",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00298",
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00303",
+          "E00304",
+          "E00305",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00309",
+          "E00333"
+        ],
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "paragraph_quotes": [
+          "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+          "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 세 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 또한 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. [근거:E00216,E00217,E00245,E00246,E00247,E00249,E00250,E00251,E00252,E00253,E00254,E00255,E00256,E00257,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298]",
+          "현재 CPU 기반 CROWN 검증은 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황이다. 이번 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현·최적화하여 네트워크 환경을 따라잡을 수 있는지를 확인하는 데 목적이 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00226,E00256]",
+          "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]"
+        ],
+        "guideline_ids": [
+          "ref1_limitations_required_1"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [
+          "E00045",
+          "E00068",
+          "E00069",
+          "E00070",
+          "E00072",
+          "E00081",
+          "E00083",
+          "E00096",
+          "E00105",
+          "E00106",
+          "E00107",
+          "E00119",
+          "E00120",
+          "E00131",
+          "E00132",
+          "E00139",
+          "E00140",
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00202",
+          "E00206",
+          "E00207",
+          "E00208"
+        ]
+      },
+      {
+        "item_id": "limit_future",
+        "verdict": "met",
+        "paragraph_ids": [
+          "sec_limitations_p4",
+          "sec_limitations_p8"
+        ],
+        "evidence_ids": [
+          "E00262",
+          "E00333",
+          "E00233",
+          "E00334",
+          "U5d2b168fab4a92747ee6"
+        ],
+        "quote": "본 검증은 256-491-491-16 신경망과 배치 1, CROWN의 forward·forward+backward·backward_only 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list로 수행되어 결과의 적용 범위가 해당 설정에 한정된다. 평가 샘플 수 10만 개 제한과 실시간 대규모 연산 충족 여부를 확인하려는 초점 역시 일반화 제약으로 남는다. 향후 연구로는 방법 C 로드맵에 따라 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이는 p68 figure 캡션에 기록된 목표·방식이며 실제 구현·평가 결과는 아니다. [근거:E00262]",
+        "paragraph_quotes": [
+          "본 검증은 256-491-491-16 신경망과 배치 1, CROWN의 forward·forward+backward·backward_only 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list로 수행되어 결과의 적용 범위가 해당 설정에 한정된다. 평가 샘플 수 10만 개 제한과 실시간 대규모 연산 충족 여부를 확인하려는 초점 역시 일반화 제약으로 남는다. 향후 연구로는 방법 C 로드맵에 따라 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이는 p68 figure 캡션에 기록된 목표·방식이며 실제 구현·평가 결과는 아니다. [근거:E00262]",
+          "본 연구의 검증 범위는 256-491-491-16 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 데이터셋·eps_list로 한정되며, CROWN의 forward, forward+backward, backward_only 실행 방식 중 forward+backward를 유지했다. 향후 과제로 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 배칭·다중 스트림과 실제 환경의 괴리 검토, 컴파일러 팀 모델 공유가 정리되었다. cuBlas·cuSparse 도입은 보류했고, CROWN range 정렬 문제는 localrobustness_fwd_bwd.py 코드를 참고해 알고리즘 완성을 목표로 했다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못해 한계로 남는다. [근거:E00333,E00233,E00334,U5d2b168fab4a92747ee6]"
+        ],
+        "guideline_ids": [
+          "ref1_limitations_required_3"
+        ],
+        "used_non_candidate_evidence_ids": [
+          "U5d2b168fab4a92747ee6"
+        ],
+        "unused_candidate_evidence_ids": [
+          "E00331",
+          "E00236",
+          "E00237",
+          "E00347",
+          "E00350",
+          "E00351"
+        ]
+      },
+      {
+        "item_id": "limit_ablation",
+        "verdict": "met",
+        "paragraph_ids": [
+          "sec_limitations_p5",
+          "sec_limitations_p8"
+        ],
+        "evidence_ids": [
+          "U5d2b168fab4a92747ee6"
+        ],
+        "quote": "현재 CPU 기반 CROWN 검증은 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황이다. 이번 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현·최적화하여 네트워크 환경을 따라잡을 수 있는지를 확인하는 데 목적이 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00226,E00256]",
+        "paragraph_quotes": [
+          "현재 CPU 기반 CROWN 검증은 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황이다. 이번 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현·최적화하여 네트워크 환경을 따라잡을 수 있는지를 확인하는 데 목적이 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00226,E00256]",
+          "본 연구의 검증 범위는 256-491-491-16 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 데이터셋·eps_list로 한정되며, CROWN의 forward, forward+backward, backward_only 실행 방식 중 forward+backward를 유지했다. 향후 과제로 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 배칭·다중 스트림과 실제 환경의 괴리 검토, 컴파일러 팀 모델 공유가 정리되었다. cuBlas·cuSparse 도입은 보류했고, CROWN range 정렬 문제는 localrobustness_fwd_bwd.py 코드를 참고해 알고리즘 완성을 목표로 했다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못해 한계로 남는다. [근거:E00333,E00233,E00334,U5d2b168fab4a92747ee6]"
+        ],
+        "guideline_ids": [
+          "ref1_limitations_required_3"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": []
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "sec_limitations",
+        "reference_id": "ref1_limitations",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "sec_limitations_p1",
+          "sec_limitations_p2",
+          "sec_limitations_p3",
+          "sec_limitations_p4",
+          "sec_limitations_p5",
+          "sec_limitations_p6",
+          "sec_limitations_p7",
+          "sec_limitations_p8"
+        ],
+        "reason": "데이터 범위와 일반화 제약(ref1_limitations_required_1)은 여러 문단에서 신경망 크기·배치·방법·데이터셋·샘플 수·실시간 초점 등으로 반영되어 있으나, 향후 연구 초점(ref1_limitations_required_3)은 일부 문단에서만 부분적으로 다뤄지고, reference_guide의 paragraph_flow 중 '데이터 다양성과 도메인 이동 문제' 및 '경량화와 하드웨어 활용 개선 가능성' 항목은 본문에 구체적으로 나타나지 않는다.",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "paragraph_quotes": [
+          "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+          "GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으며, v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 정리되었다. 배칭 시스템 구현으로 3배 빨라졌다는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, 별도 branch로 저장되었다. 이러한 관측은 체감 요약 수준이며 정량 측정 조건·반복 측정 통계는 현재 기록에 없다. [근거:E00030,E00033,E00203,E00211]",
+          "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 세 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 또한 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. [근거:E00216,E00217,E00245,E00246,E00247,E00249,E00250,E00251,E00252,E00253,E00254,E00255,E00256,E00257,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298]",
+          "본 검증은 256-491-491-16 신경망과 배치 1, CROWN의 forward·forward+backward·backward_only 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list로 수행되어 결과의 적용 범위가 해당 설정에 한정된다. 평가 샘플 수 10만 개 제한과 실시간 대규모 연산 충족 여부를 확인하려는 초점 역시 일반화 제약으로 남는다. 향후 연구로는 방법 C 로드맵에 따라 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이는 p68 figure 캡션에 기록된 목표·방식이며 실제 구현·평가 결과는 아니다. [근거:E00262]",
+          "현재 CPU 기반 CROWN 검증은 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황이다. 이번 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현·최적화하여 네트워크 환경을 따라잡을 수 있는지를 확인하는 데 목적이 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00226,E00256]",
+          "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+          "Pinned 메모리와 No-Pin 비교에서는 평균 시간만으로 보면 No-Pin이 더 빠르게 보일 수 있으나, 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 더 유리했다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터는 118.94μs였고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로, Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소했다. 다만 1KB 수준의 작은 데이터를 매 루프마다 개별 DMA 셋업으로 전송하는 환경에서는 Pinned가 총 소요 시간에서 더 길게 나타나는 현상도 관측되어, 전송 크기와 반복 호출 구조가 결과에 영향을 줄 수 있음을 보여준다. [근거:E00299,E00300,E00301]",
+          "본 연구의 검증 범위는 256-491-491-16 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 데이터셋·eps_list로 한정되며, CROWN의 forward, forward+backward, backward_only 실행 방식 중 forward+backward를 유지했다. 향후 과제로 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 배칭·다중 스트림과 실제 환경의 괴리 검토, 컴파일러 팀 모델 공유가 정리되었다. cuBlas·cuSparse 도입은 보류했고, CROWN range 정렬 문제는 localrobustness_fwd_bwd.py 코드를 참고해 알고리즘 완성을 목표로 했다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못해 한계로 남는다. [근거:E00333,E00233,E00334,U5d2b168fab4a92747ee6]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 수치(10만 개)를 실측 결과로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 신경망 구조(256-491-491-16)와 배치 크기 1을 실측 조건으로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 실행 방식(forward, forward+backward, backward_only)을 실측 범위로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 평가 대상(C++ 프로그램)을 실측 대상으로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 데이터셋·eps_list 출처(기존 신경망 검증팀 사용)를 실측 조건으로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 GPU 클록 고정·warm up 시점을 실측 조건으로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 정확도 지표(검증 결과·비율 동일)를 실측 결과로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 ablation study 미수행 한계를 실측 한계로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p2",
+        "reason": "E00203(Nvidia warm up 가이드라인 채택 및 측정 기준 재설정 방향)이 문단에 반영되어 있으나, 해당 근거는 실제 적용 후 측정 결과나 효과 분리 해석을 제공하지 않으며, 문단에서도 이 점을 명확히 구분해 서술하지 않았다. 또한 E00203의 'warm up 가이드라인 채택' 기록이 E00033의 'cuBLAS 예열' 방안과 동일한 실행 조치로 혼동될 수 있어, 계획·방향 기록과 실제 적용 결과를 구분해 서술할 필요가 있다.",
+        "evidence_ids": [
+          "E00203",
+          "E00033"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p2-0",
+        "failure_owner": "none",
+        "quote": "GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으며, v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 정리되었다. 배칭 시스템 구현으로 3배 빨라졌다는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, 별도 branch로 저장되었다. 이러한 관측은 체감 요약 수준이며 정량 측정 조건·반복 측정 통계는 현재 기록에 없다. [근거:E00030,E00033,E00203,E00211]"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p3",
+        "reason": "근거 E00261의 '약 4배 빠르다'는 비교 대상·조건이 E00216의 '단일 스트림 대비 3배(25분→8분)'와 다르며, E00261은 antenna_lirpa(싱글 스트림, cuBLAS Batched GEMM·텐서 코어 활용)와 현재 C++ 멀티스트림(8분)의 비교로 기록되어 있다. 본문은 두 비교의 대상과 조건을 구분하지 않고 '배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)'과 '약 4배'를 같은 문장·같은 비교 맥락처럼 서술해, 근거 귀속과 비교 조건을 혼동했다.",
+        "evidence_ids": [
+          "E00216",
+          "E00261"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p3-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 세 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 또한 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. [근거:E00216,E00217,E00245,E00246,E00247,E00249,E00250,E00251,E00252,E00253,E00254,E00255,E00256,E00257,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p3",
+        "reason": "근거 E00262(방법 C 로드맵: 30초~1분대 진입 목표, 전체 40,000개)와 E00256(auto_lirpa 빠른 이유에 대한 고민, 이후 페이지 연결)은 작성_role이 context_only/planned로, 실제 관측 결과가 아니라 계획·질문·가설·해석 성격의 기록이다. 본문은 이를 '평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다'처럼 수행된 평가 범위·초점처럼 서술해, 근거의 성격을 관측 결과로 잘못 승격했다.",
+        "evidence_ids": [
+          "E00256",
+          "E00262"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p3-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 세 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 또한 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. [근거:E00216,E00217,E00245,E00246,E00247,E00249,E00250,E00251,E00252,E00253,E00254,E00255,E00256,E00257,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p3",
+        "reason": "근거 E00217은 배칭(데이터셋 통째로 넘기는 방식)이 실시간 환경이 아니라 판단해 pinned memory와 cudaMemcpyAsync를 대안으로 채택한 기록이며, pinned memory 적용 후 정량 성능 수치는 이 근거만으로 제시되지 않는다. 본문은 이를 배칭의 실시간 부적합성 및 pinned memory 대안 채택 맥락 없이 '배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축' 서술과 함께 묶어, E00217의 조건·한계 귀속을 반영하지 않았다.",
+        "evidence_ids": [
+          "E00217"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p3-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 세 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 또한 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. [근거:E00216,E00217,E00245,E00246,E00247,E00249,E00250,E00251,E00252,E00253,E00254,E00255,E00256,E00257,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p3",
+        "reason": "근거 E00292~E00298은 cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 비교, 클록 고정·재실험, 실시간성/지연 스파이크/지터 해석 등 별도 실험·해석 묶음이다. 본문은 이 근거들을 E00216~E00263의 배칭·스트림·auto_LiRPA 실행 맥락과 구분하지 않고 한 문장에 나열해, 각 근거의 비교 조건(메모리 방식, 클록 고정 여부, 실시간성 판단 기준 등)과 한계를 반영하지 않았다.",
+        "evidence_ids": [
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00298"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p3-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 세 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 또한 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. [근거:E00216,E00217,E00245,E00246,E00247,E00249,E00250,E00251,E00252,E00253,E00254,E00255,E00256,E00257,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p4",
+        "reason": "근거 E00262의 한계(목표·방식 서술이며 실제 구현·평가 결과 미포함, 30초~1분대 진입은 목표치이지 실측값이 아님, 전체 40,000개 규모 실현 여부 미검증)를 본문에서 명시했음에도, 동일 문장에서 '향후 연구로는 방법 C 로드맵에 따라 … 진입을 목표로 한다'고 서술하여 계획·목표 진술을 향후 연구 방향의 확정적 서술로 확대·변경했다. 이는 E00262의 writing_role(context_only) 및 claim_status(planned)와 충돌한다.",
+        "evidence_ids": [
+          "E00262"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p4-0",
+        "failure_owner": "writer",
+        "quote": "본 검증은 256-491-491-16 신경망과 배치 1, CROWN의 forward·forward+backward·backward_only 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list로 수행되어 결과의 적용 범위가 해당 설정에 한정된다. 평가 샘플 수 10만 개 제한과 실시간 대규모 연산 충족 여부를 확인하려는 초점 역시 일반화 제약으로 남는다. 향후 연구로는 방법 C 로드맵에 따라 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이는 p68 figure 캡션에 기록된 목표·방식이며 실제 구현·평가 결과는 아니다. [근거:E00262]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00300의 '5G/6G 기지국 기준 패킷 드랍/통신 두절 발생 가능' 및 '1.5μs 하드웨어 통행료' 등 해석·문맥 전용 진술을 연구의 측정 범위·초점 설명으로 실측·일반화 한계처럼 사용했다. E00300은 writing_role이 context_only이고 claim_status가 interpretation이므로 이 문단의 사실 근거로 연결하면 안 된다.",
+        "evidence_ids": [
+          "E00300"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00303의 'H2D 복사 시간이 영향을 미칠 수 있다'는 해석(가설)을 '측정 범위에 기반한다'는 확정적 서술로 연결했다. E00303은 writing_role이 context_only이고 claim_status가 interpretation이므로 확정적 인과로 쓰지 말아야 한다.",
+        "evidence_ids": [
+          "E00303"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00305의 'staging buffer로 옮기는 고정 비용이 크지 않을 수 있다'는 해석 진술을 측정 범위·조건 설명의 근거로 연결했다. E00305는 writing_role이 context_only이고 claim_status가 interpretation이므로 사실 근거로 사용할 수 없다.",
+        "evidence_ids": [
+          "E00305"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00304와 E00306의 'cudaMemcpyAsync가 빠르거나 느렸다', '확신할 수 없게 되었다'는 비일관 측정·기록자 판단을 '측정 범위에 기반한다'는 확정적 서술로 연결했다. 이 근거들은 관측 결과이지만 결론이 불안정하며, 문단의 일반화 범위 서술과 직접 대응하지 않는다.",
+        "evidence_ids": [
+          "E00304",
+          "E00306"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00307의 '이 정도로 마무리하기로 했다', '분석 연구도 아니다', '깊게 들어가면 다른 것도 못할 것 같다'는 기록자의 분석 중단 판단을 연구의 측정 범위·한계 서술 근거로 연결했다. 이는 연구 설계나 측정 범위가 아니라 작업 진행 판단에 해당한다.",
+        "evidence_ids": [
+          "E00307"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00308의 'backward_only가 왜 제일 빠른가라는 질문 제기' 사실만 기록된 근거를 '측정 범위에 기반한다'는 서술에 연결했다. 이 근거는 답변이 완료되지 않은 질문 제기 사실이며, 측정 범위·조건·일반화 한계를 뒷받침하지 않는다.",
+        "evidence_ids": [
+          "E00308"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00333의 '세미나 이후 할 일 목록·코드·문제 메모, 실제 구현 완료·측정 결과·발표 결과 미포함'이라는 한계를 가진 근거를 측정 범위·초점 서술의 근거로 연결했다. E00333은 할 일 정리와 메모 중심이므로 이 문단의 사실 근거로 적절하지 않다.",
+        "evidence_ids": [
+          "E00333"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "사용자 추가 정보(실시간 환경 대규모 연산 대응 여부 확인 초점, CPU 환경에서 CROWN이 느렸다는 배경)를 원문 근거 없이 연구의 측정 초점·배경으로 반영했다. 관련 사용자 지침은 '부족한 세부 기준·수치·실험을 추가하지 않는다'는 accept_limited이므로, 원문 근거가 없는 초점·배경 서술을 사실처럼 넣지 말아야 한다.",
+        "evidence_ids": [],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p2",
+        "reason": "sec_limitations_p2는 '체감 요약 수준이며 정량 측정 조건·반복 측정 통계는 현재 기록에 없다'고 서술하지만, 동일 섹션 내 다른 문단(sec_limitations_p7 등)은 Pinned/No-Pin 비교에서 평균·최대 지연시간·지터 등 정량 수치를 제시하고 있어, 섹션 내 정량성 서술의 톤이 일관되지 않는다.",
+        "evidence_ids": [
+          "E00030",
+          "E00033",
+          "E00203",
+          "E00211",
+          "E00299",
+          "E00300",
+          "E00301"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으며, v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 정리되었다. 배칭 시스템 구현으로 3배 빨라졌다는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, 별도 branch로 저장되었다. 이러한 관측은 체감 요약 수준이며 정량 측정 조건·반복 측정 통계는 현재 기록에 없다. [근거:E00030,E00033,E00203,E00211]"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p4",
+        "reason": "sec_limitations_p4는 향후 연구 목표로 'cublasSgemmBatched 호출, 텐서 코어 100% 활용, 30초~1분대 진입' 등을 제시하지만, 이는 p68 figure 캡션에 기록된 목표·방식이며 실제 구현·평가 결과가 아니라고 스스로 밝히고 있어, 향후 연구 초점과 현재 성과/한계의 경계가 모호해질 수 있다.",
+        "evidence_ids": [
+          "E00262"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "본 검증은 256-491-491-16 신경망과 배치 1, CROWN의 forward·forward+backward·backward_only 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list로 수행되어 결과의 적용 범위가 해당 설정에 한정된다. 평가 샘플 수 10만 개 제한과 실시간 대규모 연산 충족 여부를 확인하려는 초점 역시 일반화 제약으로 남는다. 향후 연구로는 방법 C 로드맵에 따라 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이는 p68 figure 캡션에 기록된 목표·방식이며 실제 구현·평가 결과는 아니다. [근거:E00262]"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p5",
+        "reason": "sec_limitations_p5는 사용자 제공 정보(실시간 환경 대규모 연산 충족 여부 확인 목적, ablation study 미수행 한계)를 반영하지만, 이 내용이 원문 근거에서 직접 확인되는 범위인지 경계가 불분명하며, acceptance_method가 explicit_button인 사용자 지시 기반 반영임을 명확히 구분할 필요가 있다.",
+        "evidence_ids": [
+          "E00226",
+          "E00256",
+          "U5d2b168fab4a92747ee6"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "현재 CPU 기반 CROWN 검증은 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황이다. 이번 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현·최적화하여 네트워크 환경을 따라잡을 수 있는지를 확인하는 데 목적이 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00226,E00256]"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p7",
+        "reason": "sec_limitations_p7은 Pinned/No-Pin 비교의 평균·최대 지연시간·지터 수치를 구체적으로 제시하지만, 이 수치가 해당 섹션의 다른 문단에서 말하는 '정량 측정 조건·반복 측정 통계 부재' 서술과 어떻게 양립하는지 설명이 부족하다.",
+        "evidence_ids": [
+          "E00299",
+          "E00300",
+          "E00301"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "Pinned 메모리와 No-Pin 비교에서는 평균 시간만으로 보면 No-Pin이 더 빠르게 보일 수 있으나, 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 더 유리했다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터는 118.94μs였고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로, Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소했다. 다만 1KB 수준의 작은 데이터를 매 루프마다 개별 DMA 셋업으로 전송하는 환경에서는 Pinned가 총 소요 시간에서 더 길게 나타나는 현상도 관측되어, 전송 크기와 반복 호출 구조가 결과에 영향을 줄 수 있음을 보여준다. [근거:E00299,E00300,E00301]"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p8",
+        "reason": "sec_limitations_p8은 향후 과제 목록을 넓게 제시하지만, 일부 항목(backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통 등)이 실제 수행된 결과인지 향후 계획인지 구분이 충분히 드러나지 않는다.",
+        "evidence_ids": [
+          "E00333",
+          "E00233",
+          "E00334",
+          "U5d2b168fab4a92747ee6"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "본 연구의 검증 범위는 256-491-491-16 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 데이터셋·eps_list로 한정되며, CROWN의 forward, forward+backward, backward_only 실행 방식 중 forward+backward를 유지했다. 향후 과제로 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 배칭·다중 스트림과 실제 환경의 괴리 검토, 컴파일러 팀 모델 공유가 정리되었다. cuBlas·cuSparse 도입은 보류했고, CROWN range 정렬 문제는 localrobustness_fwd_bwd.py 코드를 참고해 알고리즘 완성을 목표로 했다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못해 한계로 남는다. [근거:E00333,E00233,E00334,U5d2b168fab4a92747ee6]"
+      },
+      {
+        "section_id": "sec_limitations",
+        "part": "p0",
+        "paragraph_id": "sec_limitations_p1",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "sec_limitations",
+        "part": "p0",
+        "paragraph_id": "sec_limitations_p3",
+        "evidence_ids": [
+          "E00216",
+          "E00217",
+          "E00245",
+          "E00246",
+          "E00247",
+          "E00249",
+          "E00250",
+          "E00251",
+          "E00252",
+          "E00253",
+          "E00254",
+          "E00255",
+          "E00256",
+          "E00257",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00298"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "sec_limitations",
+        "part": "p0",
+        "paragraph_id": "sec_limitations_p6",
+        "evidence_ids": [
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00303",
+          "E00304",
+          "E00305",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00309",
+          "E00333"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "sec_limitations",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "한계 및 향후 연구: 본문 2931자 / 목표 1600자 / 허용 상한 2000자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      }
+    ],
+    "evidence_usage_review": {
+      "batches": [
+        {
+          "name": "review-2-approved-evidence-sec_limitations_p1-0",
+          "paragraph_id": "sec_limitations_p1",
+          "target_evidence_ids": [
+            "E00027",
+            "E00029",
+            "E00030",
+            "E00044",
+            "E00046",
+            "E00075",
+            "E00101",
+            "E00174"
+          ],
+          "context_evidence_ids": [
+            "E00027",
+            "E00029",
+            "E00030",
+            "E00044",
+            "E00046",
+            "E00075",
+            "E00101",
+            "E00174"
+          ],
+          "issue_count": 8
+        },
+        {
+          "name": "review-2-approved-evidence-sec_limitations_p2-0",
+          "paragraph_id": "sec_limitations_p2",
+          "target_evidence_ids": [
+            "E00030",
+            "E00033",
+            "E00203",
+            "E00211"
+          ],
+          "context_evidence_ids": [
+            "E00030",
+            "E00033",
+            "E00203",
+            "E00211"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-sec_limitations_p3-0",
+          "paragraph_id": "sec_limitations_p3",
+          "target_evidence_ids": [
+            "E00216",
+            "E00217",
+            "E00245",
+            "E00246",
+            "E00247",
+            "E00249",
+            "E00250",
+            "E00251",
+            "E00252",
+            "E00253",
+            "E00254",
+            "E00255",
+            "E00256",
+            "E00257",
+            "E00260",
+            "E00261",
+            "E00262",
+            "E00263",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00295",
+            "E00296",
+            "E00297",
+            "E00298"
+          ],
+          "context_evidence_ids": [
+            "E00216",
+            "E00217",
+            "E00245",
+            "E00246",
+            "E00247",
+            "E00249",
+            "E00250",
+            "E00251",
+            "E00252",
+            "E00253",
+            "E00254",
+            "E00255",
+            "E00256",
+            "E00257",
+            "E00260",
+            "E00261",
+            "E00262",
+            "E00263",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286",
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00295",
+            "E00296",
+            "E00297",
+            "E00298"
+          ],
+          "issue_count": 4
+        },
+        {
+          "name": "review-2-approved-evidence-sec_limitations_p4-0",
+          "paragraph_id": "sec_limitations_p4",
+          "target_evidence_ids": [
+            "E00262"
+          ],
+          "context_evidence_ids": [
+            "E00262"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-sec_limitations_p5-0",
+          "paragraph_id": "sec_limitations_p5",
+          "target_evidence_ids": [
+            "E00226",
+            "E00256"
+          ],
+          "context_evidence_ids": [
+            "E00226",
+            "E00256"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-sec_limitations_p6-0",
+          "paragraph_id": "sec_limitations_p6",
+          "target_evidence_ids": [
+            "E00299",
+            "E00300",
+            "E00301",
+            "E00303",
+            "E00304",
+            "E00305",
+            "E00306",
+            "E00307",
+            "E00308",
+            "E00309",
+            "E00333"
+          ],
+          "context_evidence_ids": [
+            "E00299",
+            "E00300",
+            "E00301",
+            "E00303",
+            "E00304",
+            "E00305",
+            "E00306",
+            "E00307",
+            "E00308",
+            "E00309",
+            "E00333"
+          ],
+          "issue_count": 8
+        },
+        {
+          "name": "review-2-approved-evidence-sec_limitations_p7-0",
+          "paragraph_id": "sec_limitations_p7",
+          "target_evidence_ids": [
+            "E00299",
+            "E00300",
+            "E00301"
+          ],
+          "context_evidence_ids": [
+            "E00299",
+            "E00300",
+            "E00301"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-sec_limitations_p8-0",
+          "paragraph_id": "sec_limitations_p8",
+          "target_evidence_ids": [
+            "E00233",
+            "E00333",
+            "E00334",
+            "U5d2b168fab4a92747ee6"
+          ],
+          "context_evidence_ids": [
+            "E00233",
+            "E00333",
+            "E00334",
+            "U5d2b168fab4a92747ee6"
+          ],
+          "issue_count": 0
+        }
+      ],
+      "summary": {
+        "checked_paragraph_ids": [
+          "sec_limitations_p1",
+          "sec_limitations_p2",
+          "sec_limitations_p3",
+          "sec_limitations_p4",
+          "sec_limitations_p5",
+          "sec_limitations_p6",
+          "sec_limitations_p7",
+          "sec_limitations_p8"
+        ],
+        "checked_evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00033",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174",
+          "E00203",
+          "E00211",
+          "E00216",
+          "E00217",
+          "E00226",
+          "E00233",
+          "E00245",
+          "E00246",
+          "E00247",
+          "E00249",
+          "E00250",
+          "E00251",
+          "E00252",
+          "E00253",
+          "E00254",
+          "E00255",
+          "E00256",
+          "E00257",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00298",
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00303",
+          "E00304",
+          "E00305",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00309",
+          "E00333",
+          "E00334",
+          "U5d2b168fab4a92747ee6"
+        ],
+        "issue_count": 22,
+        "blocking_paragraph_ids": [
+          "sec_limitations_p1",
+          "sec_limitations_p3",
+          "sec_limitations_p4",
+          "sec_limitations_p6"
+        ]
+      },
+      "coverage_batches": [
+        "all"
+      ]
+    },
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 3,
+      "total": 3,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 1,
+      "not_visible": 0,
+      "total": 1,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    },
+    "content_warnings": [
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 수치(10만 개)를 실측 결과로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 신경망 구조(256-491-491-16)와 배치 크기 1을 실측 조건으로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 실행 방식(forward, forward+backward, backward_only)을 실측 범위로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 평가 대상(C++ 프로그램)을 실측 대상으로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 데이터셋·eps_list 출처(기존 신경망 검증팀 사용)를 실측 조건으로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 GPU 클록 고정·warm up 시점을 실측 조건으로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 정확도 지표(검증 결과·비율 동일)를 실측 결과로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p1",
+        "reason": "근거에 없는 ablation study 미수행 한계를 실측 한계로 서술함",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p1-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 크기 1, CROWN의 forward, forward+backward, backward_only 세 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에서 얻어졌다. 평가 샘플은 10만 개로 제한되어 있으며, 실시간 환경에서 대규모 연산을 충족할 수 있는지 확인하는 데 초점이 맞춰져 있다. GPU OPTIMIZED 모드에서 CROWN Verification 실행 시간은 229.691800 ms로 기록되었고, 이후 약 100 ms 줄었음에도 CPU보다 느리다는 평가가 남아 있어, CPU 대비 속도 개선이 여전히 과제로 남는다. 이러한 결과는 특정 신경망 크기와 단일 배치, 제한된 입력 조건에서 얻어진 것이므로 다른 구조나 배치 조건으로의 일반화는 별도로 확인해야 한다. [근거:E00027,E00029,E00030,E00044,E00046,E00075,E00101,E00174]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p2",
+        "reason": "E00203(Nvidia warm up 가이드라인 채택 및 측정 기준 재설정 방향)이 문단에 반영되어 있으나, 해당 근거는 실제 적용 후 측정 결과나 효과 분리 해석을 제공하지 않으며, 문단에서도 이 점을 명확히 구분해 서술하지 않았다. 또한 E00203의 'warm up 가이드라인 채택' 기록이 E00033의 'cuBLAS 예열' 방안과 동일한 실행 조치로 혼동될 수 있어, 계획·방향 기록과 실제 적용 결과를 구분해 서술할 필요가 있다.",
+        "evidence_ids": [
+          "E00203",
+          "E00033"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p2-0",
+        "failure_owner": "none",
+        "quote": "GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으며, v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 정리되었다. 배칭 시스템 구현으로 3배 빨라졌다는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, 별도 branch로 저장되었다. 이러한 관측은 체감 요약 수준이며 정량 측정 조건·반복 측정 통계는 현재 기록에 없다. [근거:E00030,E00033,E00203,E00211]",
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p3",
+        "reason": "근거 E00261의 '약 4배 빠르다'는 비교 대상·조건이 E00216의 '단일 스트림 대비 3배(25분→8분)'와 다르며, E00261은 antenna_lirpa(싱글 스트림, cuBLAS Batched GEMM·텐서 코어 활용)와 현재 C++ 멀티스트림(8분)의 비교로 기록되어 있다. 본문은 두 비교의 대상과 조건을 구분하지 않고 '배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)'과 '약 4배'를 같은 문장·같은 비교 맥락처럼 서술해, 근거 귀속과 비교 조건을 혼동했다.",
+        "evidence_ids": [
+          "E00216",
+          "E00261"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p3-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 세 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 또한 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. [근거:E00216,E00217,E00245,E00246,E00247,E00249,E00250,E00251,E00252,E00253,E00254,E00255,E00256,E00257,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p3",
+        "reason": "근거 E00262(방법 C 로드맵: 30초~1분대 진입 목표, 전체 40,000개)와 E00256(auto_lirpa 빠른 이유에 대한 고민, 이후 페이지 연결)은 작성_role이 context_only/planned로, 실제 관측 결과가 아니라 계획·질문·가설·해석 성격의 기록이다. 본문은 이를 '평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다'처럼 수행된 평가 범위·초점처럼 서술해, 근거의 성격을 관측 결과로 잘못 승격했다.",
+        "evidence_ids": [
+          "E00256",
+          "E00262"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p3-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 세 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 또한 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. [근거:E00216,E00217,E00245,E00246,E00247,E00249,E00250,E00251,E00252,E00253,E00254,E00255,E00256,E00257,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p3",
+        "reason": "근거 E00217은 배칭(데이터셋 통째로 넘기는 방식)이 실시간 환경이 아니라 판단해 pinned memory와 cudaMemcpyAsync를 대안으로 채택한 기록이며, pinned memory 적용 후 정량 성능 수치는 이 근거만으로 제시되지 않는다. 본문은 이를 배칭의 실시간 부적합성 및 pinned memory 대안 채택 맥락 없이 '배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축' 서술과 함께 묶어, E00217의 조건·한계 귀속을 반영하지 않았다.",
+        "evidence_ids": [
+          "E00217"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p3-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 세 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 또한 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. [근거:E00216,E00217,E00245,E00246,E00247,E00249,E00250,E00251,E00252,E00253,E00254,E00255,E00256,E00257,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p3",
+        "reason": "근거 E00292~E00298은 cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 비교, 클록 고정·재실험, 실시간성/지연 스파이크/지터 해석 등 별도 실험·해석 묶음이다. 본문은 이 근거들을 E00216~E00263의 배칭·스트림·auto_LiRPA 실행 맥락과 구분하지 않고 한 문장에 나열해, 각 근거의 비교 조건(메모리 방식, 클록 고정 여부, 실시간성 판단 기준 등)과 한계를 반영하지 않았다.",
+        "evidence_ids": [
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00298"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p3-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 구조의 신경망과 배치 사이즈 1, CROWN의 forward·forward+backward·backward_only 세 방법을 대상으로 하며, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 그대로 사용하였다. 평가는 CROWN을 구현한 C++ 프로그램을 대상으로 진행되었고, 평가 샘플 수는 10만개로 제한되어 있어 실시간 환경에서의 대규모 연산 충족 여부를 확인하는 데 초점이 맞춰져 있다. 따라서 이 결과는 해당 신경망 크기·배치·방법·데이터셋 조합에 국한되며, 다른 구조나 배치 조건, 더 큰 규모의 검증 대상으로의 일반화는 별도로 확인해야 한다. 또한 배칭(멀티 스트림) 실험에서 단일 스트림 대비 약 3배 단축(25분→8분)이 관측되었으나, 이는 기존 데이터셋이 준비된 실험 환경에서의 결과이며 실시간 환경이나 다른 조건에서의 일반화 가능성은 별도 확인이 필요하다. [근거:E00216,E00217,E00245,E00246,E00247,E00249,E00250,E00251,E00252,E00253,E00254,E00255,E00256,E00257,E00260,E00261,E00262,E00263,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00292,E00293,E00294,E00295,E00296,E00297,E00298]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p4",
+        "reason": "근거 E00262의 한계(목표·방식 서술이며 실제 구현·평가 결과 미포함, 30초~1분대 진입은 목표치이지 실측값이 아님, 전체 40,000개 규모 실현 여부 미검증)를 본문에서 명시했음에도, 동일 문장에서 '향후 연구로는 방법 C 로드맵에 따라 … 진입을 목표로 한다'고 서술하여 계획·목표 진술을 향후 연구 방향의 확정적 서술로 확대·변경했다. 이는 E00262의 writing_role(context_only) 및 claim_status(planned)와 충돌한다.",
+        "evidence_ids": [
+          "E00262"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p4-0",
+        "failure_owner": "writer",
+        "quote": "본 검증은 256-491-491-16 신경망과 배치 1, CROWN의 forward·forward+backward·backward_only 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list로 수행되어 결과의 적용 범위가 해당 설정에 한정된다. 평가 샘플 수 10만 개 제한과 실시간 대규모 연산 충족 여부를 확인하려는 초점 역시 일반화 제약으로 남는다. 향후 연구로는 방법 C 로드맵에 따라 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이는 p68 figure 캡션에 기록된 목표·방식이며 실제 구현·평가 결과는 아니다. [근거:E00262]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00300의 '5G/6G 기지국 기준 패킷 드랍/통신 두절 발생 가능' 및 '1.5μs 하드웨어 통행료' 등 해석·문맥 전용 진술을 연구의 측정 범위·초점 설명으로 실측·일반화 한계처럼 사용했다. E00300은 writing_role이 context_only이고 claim_status가 interpretation이므로 이 문단의 사실 근거로 연결하면 안 된다.",
+        "evidence_ids": [
+          "E00300"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00303의 'H2D 복사 시간이 영향을 미칠 수 있다'는 해석(가설)을 '측정 범위에 기반한다'는 확정적 서술로 연결했다. E00303은 writing_role이 context_only이고 claim_status가 interpretation이므로 확정적 인과로 쓰지 말아야 한다.",
+        "evidence_ids": [
+          "E00303"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00305의 'staging buffer로 옮기는 고정 비용이 크지 않을 수 있다'는 해석 진술을 측정 범위·조건 설명의 근거로 연결했다. E00305는 writing_role이 context_only이고 claim_status가 interpretation이므로 사실 근거로 사용할 수 없다.",
+        "evidence_ids": [
+          "E00305"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00304와 E00306의 'cudaMemcpyAsync가 빠르거나 느렸다', '확신할 수 없게 되었다'는 비일관 측정·기록자 판단을 '측정 범위에 기반한다'는 확정적 서술로 연결했다. 이 근거들은 관측 결과이지만 결론이 불안정하며, 문단의 일반화 범위 서술과 직접 대응하지 않는다.",
+        "evidence_ids": [
+          "E00304",
+          "E00306"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00307의 '이 정도로 마무리하기로 했다', '분석 연구도 아니다', '깊게 들어가면 다른 것도 못할 것 같다'는 기록자의 분석 중단 판단을 연구의 측정 범위·한계 서술 근거로 연결했다. 이는 연구 설계나 측정 범위가 아니라 작업 진행 판단에 해당한다.",
+        "evidence_ids": [
+          "E00307"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00308의 'backward_only가 왜 제일 빠른가라는 질문 제기' 사실만 기록된 근거를 '측정 범위에 기반한다'는 서술에 연결했다. 이 근거는 답변이 완료되지 않은 질문 제기 사실이며, 측정 범위·조건·일반화 한계를 뒷받침하지 않는다.",
+        "evidence_ids": [
+          "E00308"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "E00333의 '세미나 이후 할 일 목록·코드·문제 메모, 실제 구현 완료·측정 결과·발표 결과 미포함'이라는 한계를 가진 근거를 측정 범위·초점 서술의 근거로 연결했다. E00333은 할 일 정리와 메모 중심이므로 이 문단의 사실 근거로 적절하지 않다.",
+        "evidence_ids": [
+          "E00333"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p6",
+        "reason": "사용자 추가 정보(실시간 환경 대규모 연산 대응 여부 확인 초점, CPU 환경에서 CROWN이 느렸다는 배경)를 원문 근거 없이 연구의 측정 초점·배경으로 반영했다. 관련 사용자 지침은 '부족한 세부 기준·수치·실험을 추가하지 않는다'는 accept_limited이므로, 원문 근거가 없는 초점·배경 서술을 사실처럼 넣지 말아야 한다.",
+        "evidence_ids": [],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-sec_limitations_p6-0",
+        "failure_owner": "writer",
+        "quote": "본 연구의 CUDA 최적화 결과는 256-491-491-16 신경망, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list를 대상으로 한 측정 범위에 기반한다. 평가 샘플은 10만 개로 제한되었으며, CPU 환경에서 느리게 동작하던 CROWN 검증을 실시간 환경의 대규모 연산 요구에 대응할 수 있는지 확인하려는 초점에서 수행되었다. 따라서 결과의 일반화는 이 특정 신경망 규모, 단일 배치, 제한된 입력 조건 밖으로 바로 확장된다고 단정하기 어렵다. [근거:E00299,E00300,E00301,E00303,E00304,E00305,E00306,E00307,E00308,E00309,E00333]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p2",
+        "reason": "sec_limitations_p2는 '체감 요약 수준이며 정량 측정 조건·반복 측정 통계는 현재 기록에 없다'고 서술하지만, 동일 섹션 내 다른 문단(sec_limitations_p7 등)은 Pinned/No-Pin 비교에서 평균·최대 지연시간·지터 등 정량 수치를 제시하고 있어, 섹션 내 정량성 서술의 톤이 일관되지 않는다.",
+        "evidence_ids": [
+          "E00030",
+          "E00033",
+          "E00203",
+          "E00211",
+          "E00299",
+          "E00300",
+          "E00301"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "GPU OPTIMIZED 모드 이후에도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도했으며, v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방안이 정리되었다. 배칭 시스템 구현으로 3배 빨라졌다는 관측이 있었으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 제약이 인식되었고, 별도 branch로 저장되었다. 이러한 관측은 체감 요약 수준이며 정량 측정 조건·반복 측정 통계는 현재 기록에 없다. [근거:E00030,E00033,E00203,E00211]",
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p4",
+        "reason": "sec_limitations_p4는 향후 연구 목표로 'cublasSgemmBatched 호출, 텐서 코어 100% 활용, 30초~1분대 진입' 등을 제시하지만, 이는 p68 figure 캡션에 기록된 목표·방식이며 실제 구현·평가 결과가 아니라고 스스로 밝히고 있어, 향후 연구 초점과 현재 성과/한계의 경계가 모호해질 수 있다.",
+        "evidence_ids": [
+          "E00262"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "본 검증은 256-491-491-16 신경망과 배치 1, CROWN의 forward·forward+backward·backward_only 방식, 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list로 수행되어 결과의 적용 범위가 해당 설정에 한정된다. 평가 샘플 수 10만 개 제한과 실시간 대규모 연산 충족 여부를 확인하려는 초점 역시 일반화 제약으로 남는다. 향후 연구로는 방법 C 로드맵에 따라 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이는 p68 figure 캡션에 기록된 목표·방식이며 실제 구현·평가 결과는 아니다. [근거:E00262]",
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p5",
+        "reason": "sec_limitations_p5는 사용자 제공 정보(실시간 환경 대규모 연산 충족 여부 확인 목적, ablation study 미수행 한계)를 반영하지만, 이 내용이 원문 근거에서 직접 확인되는 범위인지 경계가 불분명하며, acceptance_method가 explicit_button인 사용자 지시 기반 반영임을 명확히 구분할 필요가 있다.",
+        "evidence_ids": [
+          "E00226",
+          "E00256",
+          "U5d2b168fab4a92747ee6"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "현재 CPU 기반 CROWN 검증은 시간이 매우 느리고, 신경망 검증팀은 오프라인 환경에서만 제한적으로 빠른 상황이다. 이번 연구는 실시간 환경에서의 대규모 연산을 CUDA로 구현·최적화하여 네트워크 환경을 따라잡을 수 있는지를 확인하는 데 목적이 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지 못한 점은 한계로 남는다. [근거:E00226,E00256]",
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p7",
+        "reason": "sec_limitations_p7은 Pinned/No-Pin 비교의 평균·최대 지연시간·지터 수치를 구체적으로 제시하지만, 이 수치가 해당 섹션의 다른 문단에서 말하는 '정량 측정 조건·반복 측정 통계 부재' 서술과 어떻게 양립하는지 설명이 부족하다.",
+        "evidence_ids": [
+          "E00299",
+          "E00300",
+          "E00301"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "Pinned 메모리와 No-Pin 비교에서는 평균 시간만으로 보면 No-Pin이 더 빠르게 보일 수 있으나, 지터와 최악 실행 시간(WCET) 관점에서는 Pinned가 더 유리했다. No-Pin의 최대 지연시간은 8.80ms~11.6ms, 지터는 118.94μs였고, Pinned의 최대 지연시간은 1.64ms, 지터는 47.28μs로, Pinned가 최대 지연에서 약 7배 안정적이고 지터는 약 60% 감소했다. 다만 1KB 수준의 작은 데이터를 매 루프마다 개별 DMA 셋업으로 전송하는 환경에서는 Pinned가 총 소요 시간에서 더 길게 나타나는 현상도 관측되어, 전송 크기와 반복 호출 구조가 결과에 영향을 줄 수 있음을 보여준다. [근거:E00299,E00300,E00301]",
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "severity": "warning",
+        "paragraph_id": "sec_limitations_p8",
+        "reason": "sec_limitations_p8은 향후 과제 목록을 넓게 제시하지만, 일부 항목(backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통 등)이 실제 수행된 결과인지 향후 계획인지 구분이 충분히 드러나지 않는다.",
+        "evidence_ids": [
+          "E00333",
+          "E00233",
+          "E00334",
+          "U5d2b168fab4a92747ee6"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "본 연구의 검증 범위는 256-491-491-16 신경망, 배치 크기 1, 기존 신경망 검증팀이 사용하던 데이터셋·eps_list로 한정되며, CROWN의 forward, forward+backward, backward_only 실행 방식 중 forward+backward를 유지했다. 향후 과제로 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 배칭·다중 스트림과 실제 환경의 괴리 검토, 컴파일러 팀 모델 공유가 정리되었다. cuBlas·cuSparse 도입은 보류했고, CROWN range 정렬 문제는 localrobustness_fwd_bwd.py 코드를 참고해 알고리즘 완성을 목표로 했다. 다만 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못해 한계로 남는다. [근거:E00333,E00233,E00334,U5d2b168fab4a92747ee6]",
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "part": "p0",
+        "paragraph_id": "sec_limitations_p1",
+        "evidence_ids": [
+          "E00027",
+          "E00029",
+          "E00030",
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00101",
+          "E00174"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "part": "p0",
+        "paragraph_id": "sec_limitations_p3",
+        "evidence_ids": [
+          "E00216",
+          "E00217",
+          "E00245",
+          "E00246",
+          "E00247",
+          "E00249",
+          "E00250",
+          "E00251",
+          "E00252",
+          "E00253",
+          "E00254",
+          "E00255",
+          "E00256",
+          "E00257",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00298"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "part": "p0",
+        "paragraph_id": "sec_limitations_p6",
+        "evidence_ids": [
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00303",
+          "E00304",
+          "E00305",
+          "E00306",
+          "E00307",
+          "E00308",
+          "E00309",
+          "E00333"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-sec_limitations-p0"
+      },
+      {
+        "section_id": "sec_limitations",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "한계 및 향후 연구: 본문 2931자 / 목표 1600자 / 허용 상한 2000자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-sec_limitations-p0"
+      }
+    ],
+    "content_status": "needs_attention",
+    "content_approved": false
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "request_fingerprint": "9cf1a6efa50ad7303a78e37788332354fd8ef540c51d03fda13cbb5ea1603968",
+  "value": {
+    "sections": {
+      "sec_methods": {
+        "parts": {
+          "p3": {
+            "sec_methods_p27_s1": {
+              "action": "replace",
+              "text": "측정은 추론, bound 계산, 검증 값을 나눠 기록하기로 했다. cudaGraph 커널 캡처는 92만 번 입력값 계산 중 1회 CROWN 계산 내 수십 번 커널 호출 상황에서 호출 압축을 노리는 방식으로 검토했으며, 커널 자체 최적화 완료 후 고려할 스냅샷 기능으로 이해했다. 추론·bound를 따로 캡처한 경우와 추론+bound를 한 번에 캡처한 경우를 나눠 커널 런치 비용 최소화를 시도했다.",
+              "join_previous": false
+            },
+            "sec_methods_p28_s1": {
+              "action": "replace",
+              "text": "측정 환경 설정으로는 Persistence mode를 위해 sudo nvidia-smi -pm 1을 사용했고, 현재 클록 확인은 nvidia-smi -q -d CLOCK, 클록 고정은 sudo nvidia-smi -lgc 1410 등의 명령어로 수행하였다. 클록 고정 후 재실험을 위해 RAII 방식의 ScopedGpuClockLock 구조체를 작성해 자동 잠금·해제를 구현했으며, CUDA 강의 19장의 GPU 클록 고정을 참고하였다. 실제 실험에서는 클록을 2800 MHz로 고정하고 기존 HostRegister 방식으로 돌린 결과가 기록되었다.",
+              "join_previous": false
+            },
+            "sec_methods_p30_s1": {
+              "action": "replace",
+              "text": "커널 횟수 측정은 3-layer 네트워크 기준으로 CUDA kernel launch만 세고, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하였다. graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회이다.",
+              "join_previous": false
+            },
+            "sec_methods_p31_s1": {
+              "action": "replace",
+              "text": "측정 구간과 방식은 CROWN 검증 실행 종료 시점에 Elapsed time을 기록하는 단일 실행 기준으로 정리되었다. MEMPOOL + Weights PRELOAD ON GPU 모드에서는 eps=1e-06, 출력 차원 16 조건에서 149.820400 ms가 관측되었고, 이후 가중치 사전 업로드 적용 결과는 149~155ms 범위로 요약되었다. 반복 측정 통계나 측정 구간별 누적 시간 합산 방식은 현재 페이지에 직접 드러나지 않는다.",
+              "join_previous": false
+            },
+            "sec_methods_p32_s1": {
+              "action": "replace",
+              "text": "실시간성 확인 기준으로 마이크로초~수 밀리초(ms) 내 제한을 목표로 삼았다.",
+              "join_previous": false
+            },
+            "sec_methods_p36_s1": {
+              "action": "replace",
+              "text": "cudaEvent를 추가한 것이 지연 증가 원인일 가능성이 제기되었으며, 이 영향은 시스템 인자를 넣어 제어해보는 중이다.",
+              "join_previous": false
+            }
+          },
+          "p4": {
+            "sec_methods_p38_s1": {
+              "action": "replace",
+              "text": "평가 대상은 CROWN 검증을 구현한 C++ 프로그램이며, 신경망 구조는 256-491-491-16 크기의 완전연결망이다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용했고, 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only로 구분했다. 배치 사이즈는 1로 설정했으며, 정확도 지표는 기존 신경망 검증팀 프로그램과 검증 결과·비율이 얼마나 차이나는지를 기준으로 삼았고, 관측된 범위에서는 모두 동일했다.",
+              "join_previous": false
+            },
+            "sec_methods_p39_s1": {
+              "action": "replace",
+              "text": "실행 환경은 GPU OPTIMIZED(cuBLAS + Pool), MEMPOOL + Weights PRELOAD ON GPU, CPU ONLY(no GPU) 등 여러 모드로 기록되었다. GPU OPTIMIZED 모드에서 eps=1e-06, 출력 차원 16 조건으로 CROWN Verification을 실행했을 때 Elapsed time은 229.691800 ms로 관측되었고, MEMPOOL + Weights PRELOAD ON GPU 모드에서는 149.820400 ms, CPU ONLY 모드에서는 500회 반복 총 실행 시간이 39148.493900 ms, 반복당 평균 78.296988 ms로 기록되었다. forward 함수에서 DTOH memcpy를 극단적으로 제거한 뒤에는 64.716000 ms가 관측되었다.",
+              "join_previous": false
+            },
+            "sec_methods_p40_s1": {
+              "action": "replace",
+              "text": "측정 조건 통제를 위해 Persistence mode를 sudo nvidia-smi -pm 1로 활성화하고, 클록 확인은 nvidia-smi -q -d CLOCK, 클록 고정은 sudo nvidia-smi -lgc 1410 등의 명령어로 수행했다. cudaHostRegister(Pinned)와 No Pinning(일반 메모리) 간 전체 실행 시간은 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였으며, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 역전되었다.",
+              "join_previous": false
+            }
+          }
+        }
+      },
+      "sec_components": {
+        "parts": {
+          "p0": {
+            "sec_components_p3_s1": {
+              "action": "replace",
+              "text": "포팅의 목적은 GPU 가속 효과를 확인하는 데 있었다. CPU 전용 계산 버전과 GPU 버전을 각각 만들어 신경망 정방향 통과와 CROWN 알고리즘(backward) 계산 시간을 측정했으며, 이후 AI를 통해 대략적으로 최적화된 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보는 시도도 이어졌다. 이 단계의 기록은 포팅 방향과 측정 동기에 해당하며, 실제 정량 성능 수치는 이후 측정 결과에서 다룬다.",
+              "join_previous": false
+            },
+            "sec_components_p4_s1": {
+              "action": "replace",
+              "text": "라이브러리 활용 측면에서는 cuBLAS를 연결하기 위해 컴파일 옵션에 -lcublas를 사용했다. -l은 라이브러리 링크 옵션이고, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이며, my_lirpa_op.cu에서 cublasDgemm() 같은 GPU 최적화 행렬곱 함수를 사용하기 때문에 이 라이브러리 연결이 필요했다. CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되므로 별도 설치는 필요하지 않았고, cuBLAS는 NVIDIA GPU에서 선형대수 연산을 빠르게 수행하도록 만든 가속 라이브러리로 정리되었다.",
+              "join_previous": false
+            },
+            "sec_components_p5_s1": {
+              "action": "replace",
+              "text": "이후 구성에서는 메모리풀에 cuBLAS를 도입하고 matvec·matmul을 기존 자체 계산이 아닌 cuBLAS 활용으로 바꾸는 버전(v1-1-1-1, my_lirpa_mempool_cuBlas.cu)이 검토되었다. 또한 cuSparse를 도입해 벡터 곱(spMV)만 적용해 보는 시도도 있었으며, 이 경우 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고 cuSPARSE handle 및 CSR descriptor를 유지한 뒤 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체했지만, 기존 matmul은 아직 유지되었다.",
+              "join_previous": false
+            },
+            "sec_components_p6_s1": {
+              "action": "replace",
+              "text": "커널 인자 전달 방식은 포인터와 스칼라로 구분해 정리되었다. 포인터(배열)는 cudaMalloc·cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라(int·float·double·enum 등)는 CPU 메모리 값을 커널 실행 시 Parameter Bank/Constant Memory에 함께 실어 보낼 수 있다. 포인터 변수는 크기가 커서 CPU가 커널 매개변수 주머니에 값을 직접 넣어줄 수 없으므로 memcpy로 올려야 하며, 4~8바이트 수준의 값만 CPU가 직접 참조해 보낼 수 있다는 점이 함께 정리되었다.",
+              "join_previous": false
+            },
+            "sec_components_p7_s1": {
+              "action": "replace",
+              "text": "실행 구성에서는 pinned Memory 추가, cudaEvent 제어, 필요한 만큼 계산해서 D2H memcpy, certify topk 자료구조 스택화가 함께 언급되었다. 이와 별도로 graph와 비교할 때 단일 스트림 입력 복사 최적화를 논의하자는 관점이 제시되었고, 10주차 세미나 이후에는 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통(repo 수령, 데이터셋·모델 동일 확인), 미팅 일정, 배칭+다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 과제로 기록되었다. auto lirpa repo는 https://github.com/horangahor/antenna_auto_lirpa에서 받아 실행해 보기로 했다.",
+              "join_previous": false
+            },
+            "sec_components_p8_s1": {
+              "action": "replace",
+              "text": "배치·스트림 구성에서는 배치 사이즈 64일 때 약 424초가 걸렸고, 현재 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들어 각 스트림이 GPU 메모리를 차지하는 방식이었다. 배치 사이즈를 512로 하면 메모리를 넘지 않지만 느려졌는데, 이는 각 스트림마다 CPU가 돌아가면서 다음 커널을 런치해줘야 해서 1024개의 스트림이 각각 CPU의 커널 런치를 기다리는 구조였기 때문이다. 스트림 수를 64개 정도로 줄이고 배치 사이즈를 1024로 하는 방안은 하나의 스트림이 하나의 입력을 처리하므로 동시에 돌릴 수 있는 데이터가 64개이고 16번씩 나눠서 처리하게 되어 의미가 없다고 판단되었으며, 초기 데이터 H2D 비용은 줄지만 연산 병목은 스트림이 64개라 한 번에 64개밖에 대응하지 못하는 제약이 있었다.",
+              "join_previous": false
+            },
+            "sec_components_p9_s1": {
+              "action": "replace",
+              "text": "현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요되었다. 반면 antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 현재 구현은 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산(평면적 계산)을 수행 중이며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다.",
+              "join_previous": false
+            },
+            "sec_components_p10_s1": {
+              "action": "replace",
+              "text": "방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. pinned memory 성능 측정을 위해 pinned memory 미적용, my_lirpa에 있는 입력 공간 하나(HostAlloc), 지금 하는 방식(HostRegister) 3가지를 측정하려고 했으며, cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. cudaHostRegister가 더 느리게 측정된 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론(Infer) 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남았다.",
+              "join_previous": false
+            },
+            "sec_components_p11_s1": {
+              "action": "replace",
+              "text": "GPU 클록 변동을 통제하기 위해 클록을 고정하고 다시 실험하기로 했으며, 이를 위해 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했다. 클록을 2800MHz로 고정하고 돌린 결과(기존 HostRegister)가 기록되었고, GPU 클록 고정 방법은 CUDA 강의 19장을 참고했다.",
+              "join_previous": false
+            }
+          },
+          "p1": {
+            "sec_components_p13_s1": {
+              "action": "replace",
+              "text": "메모리 풀은 할당·해제 반복을 줄이기 위해 도입되었고, cuBLAS는 행렬곱·행렬-벡터 연산을 GPU 최적화 루틴으로 처리하기 위해 적용되었다. 컴파일 옵션 -lcublas로 cuBLAS 라이브러리를 링크하며, my_lirpa_op.cu에서 cublasDgemm()를 사용하기 때문에 이 연결이 필요하다. CUDA Toolkit 설치 시 cuBLAS가 자동 포함되므로 별도 설치는 필요하지 않다. cuBLAS는 NVIDIA GPU에서 선형대수 연산을 빠르게 수행하도록 만든 NVIDIA Developer 가속 라이브러리이다. 메모리 풀과 cuBLAS를 함께 적용한 버전(v1-1-1-1)에서는 matvec, matmul을 기존 자체 계산이 아니라 cuBLAS 활용으로 바꾸었고, 관련 파일은 my_lirpa_mempool_cuBlas.cu이다. 메모리 풀 크기 산정은 Matrix 3개와 Vector 6개를 동시에 사용하는 상황을 근거로 한다.",
+              "join_previous": false
+            },
+            "sec_components_p14_s1": {
+              "action": "replace",
+              "text": "데이터 규모에 따라 전송 방식의 역할이 갈린다. 수 MB~수백 MB 수준에서는 CPU 복사 속도가 감당이 어려워지고 DMA의 고속 대역폭(1224GB/s)이 압도적이 되어 Pinned Memory가 일반 메모리보다 23배 빠르다. 반면 1KB 수준의 작은 데이터에서는 대역폭보다 셋업 지연시간이 지배해, Pinned는 매번 DMA 디스크립터 생성·큐 제출로 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 약 0.02~0.05μs에 끝나 더 빠르다.",
+              "join_previous": false
+            },
+            "sec_components_p15_s1": {
+              "action": "replace",
+              "text": "평균 처리 속도에서는 No-Pin이 약 13초 빠르지만, 실시간성 관점에서는 Pinned Memory가 유리하다. No-Pin은 윈도우 OS의 가상 메모리 정리나 백그라운드 작업 개입 시 최대 11.6ms까지 지연 스파이크가 발생할 수 있고, Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 안정성을 보인다. 지터는 No-Pin이 118μs, Pinned Memory가 47μs로 관측되었다.",
+              "join_previous": false
+            }
+          },
+          "p2": {
+            "sec_components_p17_s1": {
+              "action": "replace",
+              "text": "가중치 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 GPU 메모리에 미리 올려, matmul·matvec 호출마다 반복되는 호스트-디바이스 복사를 줄이려는 목적으로 도입되었다. 이를 위해 pre_upload_weights_to_gpu 함수를 구현하여 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하고, 할당된 메모리를 net->d_W[i]에 저장해 두었다. 이후 v1-1-3(crown_test_preload_fix)에서는 GPU 주소를 저장하던 double* 타입을 Matrix*로 바꾸고, pre_upload_weights_to_gpu도 memcpy2D 대신 Matrix를 할당·복사하도록 변경하여 사전 업로드된 가중치를 실제 연산에서 활용하도록 수정하였다. 이 변경으로 positive_part와 negative_part에서 W 복사를 스킵해 각각 2MB를 절약하고, matmul의 B행렬 복사 스킵(backward)으로 4MB, matvec의 A행렬 복사 스킵(forward)으로 2MB를 절약하는 구성이 확인되었다. 이 초기 적용은 v1-1-2에서 처음 이루어져 149~155ms 범위로 기록되었으며, 가중치만 미리 GPU에 올리는 방식으로 이후 다른 메모리 전송 최적화와 결합되기 전의 결과로 남는다.",
+              "join_previous": false
+            },
+            "sec_components_p19_s1": {
+              "action": "replace",
+              "text": "프로그램 전체 실행에서 memcpy는 총 18번 발생하고, 내부 6번을 제외하면 외부에서 12번 발생하며, 가중치 행은 가중치, 가중치 양수부/음수부, bias의 3개로 구성되고 신경망 구조 256 * 491 * 491 * 16에 따라 개수만큼 복사된다. 한편 커널 memcpy에서 MAXDIM 512 float 고정 복사를 필요한 크기만 복사하도록 바꾸었을 때는 CPU 계산 오버헤드가 커져 시간이 늘어나는 경우도 기록되어, 복사 크기 축소가 항상 유리한 것은 아니었다.",
+              "join_previous": false
+            }
+          },
+          "p3": {
+            "sec_components_p21_s1": {
+              "action": "replace",
+              "text": "커널 퓨전은 여러 단계의 커널 호출을 하나로 묶어 런치 오버헤드를 줄이는 방향으로 적용되었다. lirpa_forward_bound 함수 커널 퓨전, backward_matmul_pair_gpu 커널 통합, build_coeff_pair_fused_gpu·backward_bias_pair_fused_gpu 커널 퓨전이 수행되었고, backward_bound_gpu에서는 affine_min/max까지 함께 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. 함수 통합은 포인터·스칼라 인자 전달 규칙과 메모리 풀을 활용해 중간 복사·포인터 스와핑을 제거하는 방향으로 진행되었다. new_(upper, lower)_p 포인터 스와핑(std::swap)과 forward-backward 간 alpha/beta 메모리 풀 전달 과정 삭제 및 GPU 버퍼 직접 사용, D2H 복사 제거, 기본 초기 상태 GPU 커널 직접 생성이 함께 적용되었다. 지금까지 수행한 최적화에는 제로 memcpy, 커널 자체 실행 횟수 감소(커널 퓨전·커널 graph), GPU SM 구조를 고려한 FP64→FP32·double→float 변경이 포함된다. lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 호출 횟수를 줄였고, backward_bound_gpu에서는 affine 중복 계산을 삭제해 커널 2개 함수를 줄였다. new_(upper, lower)_p는 복사 대신 std::swap으로 포인터 스와핑했으며, backward의 행렬곱 커널 2개는 backward_matmul_pair_gpu로 통합했다. build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu에도 커널 퓨전을 적용했다. 이후 1개 커널 호출로 줄일 수 있는 함수들을 계속 퓨전하는 방향으로 진행했다. 커널 퓨전 적용 후 CROWN Verification 실행에서 Elapsed time이 22.342900 ms로 기록되었고, 22ms 초반까지 나오는 경우도 관측되었다. backward_bound_gpu에 먼저 퓨전을 진행했을 때는 23.925200 ms가 관측되었으며, 컴퓨터 사정에 따라 26ms까지 뛰는 경우도 있었지만 23ms 정도가 보인다는 점이 중요하게 기록되었다. 5번까지 적용했을 때 최고 성능이 나왔다고 기록되었다. 커널 감소 내역을 보면 forward에서는 무거운 커널 연산 호출이 9개 줄었고, backward에서는 forward 부분 12개(9+3), 실제 backward 부분 3개가 줄었다. backward_only는 45회에서 33회로 감소해 26.7%로 가장 적게 줄었으며, 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄어 커널 비용도 다르다. memcpy 호출 횟수는 66개에서 56개로 감소했다. switch 문 안에서 구조체를 선언과 동시에 만들도록 변경하려 했으나, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않았다. case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생해, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 해결했다. 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다. 이 변경은 복사 크기 조정 시도였으나 시간 증가로 이어졌고, CPU 오버헤드 증가의 정량적 분리 측정 결과는 포함되지 않았다.",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

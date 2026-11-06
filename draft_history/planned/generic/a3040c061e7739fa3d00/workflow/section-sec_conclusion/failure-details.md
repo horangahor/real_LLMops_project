@@ -1,0 +1,9 @@
+# 작성 검토 실패: section-sec_conclusion
+
+## 검토 지적
+
+- [editorial; 처리 책임: editor] 단일 실행 결과 나열과 대규모 실행 결과 서술이 같은 문단 안에서 연결어 없이 전환되어, 결과 제시 순서가 abrupt하다. '단일 실행 기준'과 '더 큰 규모 실행 기준'을 명시적으로 구분하거나 소결을 한 문장 추가하면 논리 흐름이 안정된다. (finding-2 미해결)
+  - 문단: sec_conclusion_p2; 근거: 미지정
+  - 실제 본문: 주요 정량 결과는 단일 실행 결과 중심으로 정리된다. CPU ONLY는 101.237800 ms, GPU OPTIMIZED는 229.691800 ms, HYBRID는 201.670100 ms, HYBRID V2는 85.785300 ms로 기록되었으며, HYBRID V2에서 처음으로 CPU보다 빨라졌다고 평가되었다. 이후 메모리 풀과 warmup 조합에서 152.902900 ms, mempool+cuBLAS+warmup에서 174.978400 ms, 결과 벡터 memcpy 제거 후 128.894800 ms, forward 함수 DTOH memcpy 제거 후 64.716000 ms, alpha/beta 메모리 풀 적용 후 21.018800 ms, 커널 퓨전 후 22.342900 ms, backward 메모리 복사 제거 및 초기화 최적화 후 13.939000 ms, 커널 퓨전 완료 후 15.751000 ms, mempool+warmup calc success에서 15.828400 ms가 관측되었다. 더 큰 규모의 실행에서는 cuda graph 적용 후 backward_only가 787.8832s에서 630s로, forward가 1029s에서 668s로, forward+backward가 1138s에서 758s로 감소하는 경향이 기록되었다. [근거:E00035,E00044,E00046,E00064,E00075,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368,E00375]
+- [composition; 처리 책임: editor] sec_conclusion/p0: 가장 긴 문단이 642자로 공통 문단 목표 600자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.
+  - 문단: none; 근거: 미지정

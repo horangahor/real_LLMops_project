@@ -1,0 +1,1875 @@
+{
+  "sections": {
+    "S_methods": {
+      "parts": {
+        "p0": "구성 요소별 역할과 결합 방식은 현재 구현의 관측과 차기 로드맵의 계획 수준으로 구분된다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32 연산기)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 이 방식은 기존 단일 샘플 커널을 유지한 채 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선으로 해석된다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림보다 약 4배 빠르다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이 목표는 실제 구현·평가 결과가 아니라 계획 단계의 서술이며, 전체 40,000개 규모에서의 실현 여부는 아직 검증되지 않았다. [근거:E00257,E00261,E00262,E00263]\n\n구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉘어 적용되었다. CUDA 커널 인자 전달에서는 포인터(배열)는 cudaMalloc·cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라(int/float/double/enum 등)는 Parameter Bank/Constant Memory에 값으로 실어 보낼 수 있어, 큰 데이터는 포인터로, 작은 숫자나 열거형은 값으로 전달하는 방식이 사용되었다. cuSparse는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고 cuSPARSE handle 및 CSR descriptor를 유지한 뒤 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하는 방식으로 시도되었으나, 기존 matmul은 유지되었고 spMM 도입은 별도 검토 대상으로 남았다. [근거:E00105,E00135,E00136]\n\n구성 요소별 역할과 결합 방식은 실제 구현·실행에서 확인되는 범위로 서술된다. backward_bound_gpu에서는 기존 GPU 계산 결과 → CPU → affine_min/max → 최종 결과 흐름에서 발생하던 불필요한 GPU↔CPU 복사를 줄이기 위해, affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 메모리 복사를 최소화하였다. 측정 환경 통제에서는 현재 클록 확인(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1), graphics clock 잠금(sudo nvidia-smi -lgc 1410) 등의 명령어가 사용되었고, 클록 고정 재실험을 위해 RAII 방식의 ScopedGpuClockLock 구조체가 작성되었다. cudaHostRegister(Pinned)와 No Pinning(일반 메모리) 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 다만 현재 기록은 figure 캡션에 제시된 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다. [근거:E00277,E00278,E00281,E00283,E00284,E00286]\n\nPinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]\n\n구성 요소는 GPU 가속과 CPU 회귀를 조합해 CROWN 검증의 실행 경로를 재구성하는 방식으로 결합되었다. cuBLAS는 NVIDIA GPU에서 선형대수 연산을 가속하는 라이브러리로 matmul에 사용되었고, 메모리 풀은 함수 호출마다의 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 적용되었다. 가중치(W) GPU 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 미리 GPU에 올려 matmul 호출마다의 memcpy를 줄이려는 역할이며, 벡터 연산을 CPU로 돌리는 것은 matmul만 GPU로 실행하는 하이브리드 구성을 만들기 위한 역할이다. 다만 가중치 사전 업로드의 실제 효과는 제한적이었던 것으로 기록되었다. [근거:H85ca0e507c4e_88]\n\n초기 결합은 cuBLAS로 행렬곱을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 처리하는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 구성되었다. 이후 행렬곱만 GPU로, 나머지 연산을 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 결합 방식을 변경하였다. v2와 v4 적용 방안에서는 cuBLAS 예열(계산 시간 측정 전 더미 행렬곱 호출로 초기화), 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하도록 메모리 복사 범위를 줄이는 방식이 추가로 결합되었다. [근거:H85ca0e507c4e_89,E00033,E00038]\n\n구성 요소 단위 변경과 전체 처리 과정 변경의 효과는 함수별 실행 위치와 GPU 메모리 풀 구조에서 구분된다. only_GPU는 d_mat[4] + d_vec[2](행렬 4개, 벡터 2개)를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU(커널/cudaMemset)에서 CPU(생성자 초기화/for 문)로 변경되었고, matmul은 cuBLAS + 메모리풀로 양쪽이 동일하게 유지되었다. [근거:H40849fcc17fe_1,E00036]\n\n실행 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당하여 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]\n\n구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당해 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]\n\n실행 방식 차이는 함수별 실행 위치(GPU 커널 또는 cudaMemset 대 CPU 생성자 초기화 및 for 문)와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당하여 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:H40849fcc17fe_1,E00036]\n\n구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. 결합 방식은 only_GPU와 hybrid의 함수별 실행 위치 및 GPU 메모리 풀 구조 차이로 정리된다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리 풀로 양쪽에서 동일하게 유지된다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 구성 없이 GPU 코드를 삭제하여 CPU로 회귀한 케이스로 기록된다. 다만 현재 자료에는 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석이 명시적으로 존재하지 않는다. [근거:E00036,H40849fcc17fe_1,E00037,Hcdbfb7147ce4_2]\n\n구성 요소 결합 방식은 only_GPU와 hybrid의 함수별 실행 위치 및 GPU 메모리 풀 구조 차이로 정리된다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset 기반 처리에서 CPU 생성자 초기화 및 for 문 처리로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 두 구성에서 동일하게 유지된다. GPU 풀 구조체는 only_GPU에서 d_mat[4]와 d_vec[2]를 미리 할당하는 방식에서 hybrid의 d_A, d_B, d_C 세 개로 축소되었다. 이러한 구성 차이는 함수별 실행 위치와 메모리 풀 구조에서 나타나며, 정량 성능 수치는 이 표에 포함되지 않는다. [근거:E00036,H40849fcc17fe_1]\n\n실행 결과에서는 HYBRID 모드가 201.670100 ms, HYBRID V2 모드가 85.785300 ms로 측정되었고, HYBRID V2는 CPU보다 빨라진 것으로 평가되었다. 다만 이 수치들은 각 모드의 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 자료에 제시되지 않는다. [근거:E00031,E00035]\n\ncudaGraph는 92만 번의 입력값을 계산하는 CROWN 검증에서 한 번의 계산 내에 수십 번 호출되는 커널을 하나의 호출로 압축해 커널 호출 오버헤드를 줄이기 위한 방법으로 고려되었다. 이는 커널 자체 최적화가 끝난 뒤 검토할 수 있는 스냅샷 생성 기능이다. 또한 cudaGraph로 추론과 bound를 따로 캡처한 경우와 추론과 bound를 한 번에 캡처한 경우를 구분해 커널 런치 비용을 줄이는 실험이 수행되었다. [근거:E00213,E00214]\n\nCUDA 포팅에서는 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등 구성 요소를 결합한다. 결합 방식은 실제 구현·실행에서 확인되는 범위로 제한한다. 정방향과 backward 바운드를 함께 실행하는 forward+backward, backward 바운드만 실행하는 backward_only, CUDA 그래프 적용 버전을 별도로 측정하였다. 관측된 속도 순서는 backward_only가 forward+backward보다 빠르고 forward가 가장 느려, 일반적인 예상과 다른 실행 결과로 기록되었다. CUDA 그래프 적용 후 전체 소요 시간이 감소한 사례(787s → 630s, 1029s → 668s)가 있으며, phase breakdown에서는 bound 단계가 전체 elapsed의 대부분을 차지하고 infer 단계가 그 다음, certify 단계가 가장 작은 비중을 차지하는 것으로 나타났다. 다만 이는 개별 실행의 해석 기록이며, 반복 측정 통계나 조건별 분리 측정은 포함되지 않는다. [근거:H85ca0e507c4e_92,H85ca0e507c4e_93,H85ca0e507c4e_94]\n\n구성 요소별 역할은 GPU 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 결합 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술되었다. 한편 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다. [근거:H85ca0e507c4e_97,E00036,H40849fcc17fe_1,Hcdbfb7147ce4_2]\n\n구성 요소별 역할과 결합 방식은 실제 구현·실행 기록에서 확인되는 범위로 서술한다. 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등은 각각 도입·변경된 시점과 관측된 효과가 확인된 경우에만 결합 방식으로 다룬다. 구상·계획·AI 조언 단계의 검토 항목만으로는 구성 요소 간 상호작용이나 결합 효과를 확정하지 않는다. 추가 최적화 후보로는 infer의 크기 계산 주석 처리(벡터라 크지 않다는 점)와 certify의 heap 재변경 여부가 검토되었다. [근거:E00232]\n\n측정 구간은 CUDA kernel launch 횟수를 기준으로 정의했으며, 3-layer 네트워크 기준으로 bound 내 커널 launch만 계수하고 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했다. 이 범위 설정은 커널 횟수 비교의 해석 조건을 한정한다. [근거:E00311]\n\n구성 요소별 역할과 결합 방식은 실제 구현·실행 원문에서 확인되는 범위로 서술한다. 추론 커널은 그대로 둔 상태에서 graph mode=1, 샘플 1개 전체 기준으로 커널 launch 횟수를 비교했을 때 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다. 이 감소는 bound 내 커널 launch 횟수 감소와 같은 폭이다. 실행 시간 감소 요약은 1138s에서 758s로 기록되었으나, 이 값은 요약 기록이며 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다. [근거:E00313,E00320]\n\n구성 요소별 역할과 결합 방식은 실제 구현·실행 기록에서 확인되는 범위로 서술한다. v1-1-2에서는 가중치를 미리 GPU에 업로드하도록 조정하였고, 그 결과 경과 시간이 149~155ms 범위로 기록되었다. 또한 memcpy 호출 횟수는 66개에서 56개로 감소한 것으로 관측되었다. 두 관측은 각각 경과 시간 범위와 호출 횟수의 비교 기록이며, 각 호출의 시간이나 총 실행 시간과의 관계는 별도 문맥이 필요하다. [근거:E00322,E00339]\n\n구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]\n\n실행 루프는 eps_list에 대한 이중 루프로 구성되며, 각 데이터 i에 대해 network_forward로 정방향 통과 후 method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정(certify_topk) 결과에 따라 Ht_count 또는 f_count를 증가시킨다. 배칭은 싱글 스트림이 아닌 멀티 스트림을 사용하여 데이터를 여러 개 묶어 병렬 처리를 가능하게 하는 방법이며, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 시간 빨라져 25분에서 8분으로 단축되었다. cudaGraph만 적용된 버전과 비교 대상 버전을 평균으로 측정했을 때 forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 났다. backward에서는 total 시간이 비슷하며, 그 이유는 infer에서 줄어든 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이다. Forward와 Backward의 cudaMemcpy 호출 횟수는 동일하다. [근거:E00174,E00216,E00227,E00228,E00165]\n\n구성 요소 결합은 backward_bound_gpu의 affine 중복 계산 삭제로 커널 2개 함수를 줄이고, backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합하는 방식으로 진행되었다. 기존 backward_bound_gpu는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 복귀하는 GPU→CPU→GPU→CPU 복사 경로를 가졌으며, 이를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. 이 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time은 13.939000 ms로 기록되었고 출력 차원은 16이었으며, 실행 시간은 13ms 후반 거의 14ms 정도로 관측되었다. fp32에 단정밀도 연산으로 바꿔보기도 했으나 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. [근거:E00122,E00124,E00137,E00138,E00146,E00147,E00148,E00149,E00150]\n\n구성 요소별 역할과 결합 방식은 실제 구현·실행 기록에서 확인되는 범위로 서술한다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이전 27ms 수준보다 느려진 결과로 기록되었다. 이 수치는 단일 실행 결과이며, 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞다고 판단되었다. network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다. 공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다고 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며, 약 0.2ms 정도 차이가 난다. [근거:E00106,E00114,E00115,E00117,E00202]\n\n실행 인자 있는 forward와 실행 인자 없는 버전을 비교한 실행에서 시간 차이가 관측되었다. 실행 인자 있는 forward는 1360.22s, 실행 인자 없는 backward는 1447.17s, 다른 실행은 1375.97s로 측정되어, 실행 인자 추가와 switch문 사용이 성능에 영향을 주었을 가능성이 제기되었다. [근거:E00180]\n\ncudaHostRegister는 No Pinning보다 느리게 측정되었으며, 이론상 다이렉트 DMA를 사용하는 Pinned Memory가 일반 메모리보다 더 느리게 나타난 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었다. 추론(Infer) 단계에서도 시간이 느려졌다는 관찰이 함께 남아 있다. [근거:E00279,E00280]\n\n클록을 2800MHz로 고정하고 기존 HostRegister 방식으로 다시 실행한 결과가 기록되었다. [근거:E00282]\n\n보완 과제로 Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행에서 가끔 튀는 값의 평균·분산 산출, 추론·bound·검증을 합쳐 측정하던 것을 각각 나눠 측정하기로 정리되었다. [근거:E00183]\n\n보완 실행 항목으로 forward/backward 92만 번 측정을 20번씩 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며, sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. [근거:E00184]"
+      }
+    }
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "RI_methods_3",
+        "verdict": "met",
+        "paragraph_ids": [
+          "S_methods_p2",
+          "S_methods_p5",
+          "S_methods_p6",
+          "S_methods_p7",
+          "S_methods_p8",
+          "S_methods_p9",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12",
+          "S_methods_p16",
+          "S_methods_p17",
+          "S_methods_p21",
+          "S_methods_p23"
+        ],
+        "evidence_ids": [
+          "E00105",
+          "E00135",
+          "E00136",
+          "H85ca0e507c4e_88",
+          "H85ca0e507c4e_89",
+          "E00033",
+          "E00038",
+          "E00036",
+          "H40849fcc17fe_1",
+          "E00037",
+          "Hcdbfb7147ce4_2",
+          "E00130",
+          "E00133",
+          "E00124",
+          "E00115",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00150",
+          "E00231",
+          "E00279",
+          "E00280",
+          "E00282",
+          "E00227",
+          "E00228",
+          "E00122",
+          "E00148",
+          "E00149"
+        ],
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉘어 적용되었다. CUDA 커널 인자 전달에서는 포인터(배열)는 cudaMalloc·cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라(int/float/double/enum 등)는 Parameter Bank/Constant Memory에 값으로 실어 보낼 수 있어, 큰 데이터는 포인터로, 작은 숫자나 열거형은 값으로 전달하는 방식이 사용되었다. cuSparse는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고 cuSPARSE handle 및 CSR descriptor를 유지한 뒤 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하는 방식으로 시도되었으나, 기존 matmul은 유지되었고 spMM 도입은 별도 검토 대상으로 남았다. [근거:E00105,E00135,E00136]",
+        "paragraph_quotes": [
+          "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉘어 적용되었다. CUDA 커널 인자 전달에서는 포인터(배열)는 cudaMalloc·cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라(int/float/double/enum 등)는 Parameter Bank/Constant Memory에 값으로 실어 보낼 수 있어, 큰 데이터는 포인터로, 작은 숫자나 열거형은 값으로 전달하는 방식이 사용되었다. cuSparse는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고 cuSPARSE handle 및 CSR descriptor를 유지한 뒤 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하는 방식으로 시도되었으나, 기존 matmul은 유지되었고 spMM 도입은 별도 검토 대상으로 남았다. [근거:E00105,E00135,E00136]",
+          "구성 요소는 GPU 가속과 CPU 회귀를 조합해 CROWN 검증의 실행 경로를 재구성하는 방식으로 결합되었다. cuBLAS는 NVIDIA GPU에서 선형대수 연산을 가속하는 라이브러리로 matmul에 사용되었고, 메모리 풀은 함수 호출마다의 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 적용되었다. 가중치(W) GPU 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 미리 GPU에 올려 matmul 호출마다의 memcpy를 줄이려는 역할이며, 벡터 연산을 CPU로 돌리는 것은 matmul만 GPU로 실행하는 하이브리드 구성을 만들기 위한 역할이다. 다만 가중치 사전 업로드의 실제 효과는 제한적이었던 것으로 기록되었다. [근거:H85ca0e507c4e_88]",
+          "초기 결합은 cuBLAS로 행렬곱을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 처리하는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 구성되었다. 이후 행렬곱만 GPU로, 나머지 연산을 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 결합 방식을 변경하였다. v2와 v4 적용 방안에서는 cuBLAS 예열(계산 시간 측정 전 더미 행렬곱 호출로 초기화), 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하도록 메모리 복사 범위를 줄이는 방식이 추가로 결합되었다. [근거:H85ca0e507c4e_89,E00033,E00038]",
+          "구성 요소 단위 변경과 전체 처리 과정 변경의 효과는 함수별 실행 위치와 GPU 메모리 풀 구조에서 구분된다. only_GPU는 d_mat[4] + d_vec[2](행렬 4개, 벡터 2개)를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU(커널/cudaMemset)에서 CPU(생성자 초기화/for 문)로 변경되었고, matmul은 cuBLAS + 메모리풀로 양쪽이 동일하게 유지되었다. [근거:H40849fcc17fe_1,E00036]",
+          "실행 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당하여 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]",
+          "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당해 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]",
+          "실행 방식 차이는 함수별 실행 위치(GPU 커널 또는 cudaMemset 대 CPU 생성자 초기화 및 for 문)와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당하여 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:H40849fcc17fe_1,E00036]",
+          "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. 결합 방식은 only_GPU와 hybrid의 함수별 실행 위치 및 GPU 메모리 풀 구조 차이로 정리된다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리 풀로 양쪽에서 동일하게 유지된다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 구성 없이 GPU 코드를 삭제하여 CPU로 회귀한 케이스로 기록된다. 다만 현재 자료에는 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석이 명시적으로 존재하지 않는다. [근거:E00036,H40849fcc17fe_1,E00037,Hcdbfb7147ce4_2]",
+          "구성 요소 결합 방식은 only_GPU와 hybrid의 함수별 실행 위치 및 GPU 메모리 풀 구조 차이로 정리된다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset 기반 처리에서 CPU 생성자 초기화 및 for 문 처리로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 두 구성에서 동일하게 유지된다. GPU 풀 구조체는 only_GPU에서 d_mat[4]와 d_vec[2]를 미리 할당하는 방식에서 hybrid의 d_A, d_B, d_C 세 개로 축소되었다. 이러한 구성 차이는 함수별 실행 위치와 메모리 풀 구조에서 나타나며, 정량 성능 수치는 이 표에 포함되지 않는다. [근거:E00036,H40849fcc17fe_1]",
+          "구성 요소별 역할은 GPU 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 결합 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술되었다. 한편 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다. [근거:H85ca0e507c4e_97,E00036,H40849fcc17fe_1,Hcdbfb7147ce4_2]",
+          "구성 요소별 역할과 결합 방식은 실제 구현·실행 기록에서 확인되는 범위로 서술한다. 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등은 각각 도입·변경된 시점과 관측된 효과가 확인된 경우에만 결합 방식으로 다룬다. 구상·계획·AI 조언 단계의 검토 항목만으로는 구성 요소 간 상호작용이나 결합 효과를 확정하지 않는다. 추가 최적화 후보로는 infer의 크기 계산 주석 처리(벡터라 크지 않다는 점)와 certify의 heap 재변경 여부가 검토되었다. [근거:E00232]",
+          "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+          "구성 요소 결합은 backward_bound_gpu의 affine 중복 계산 삭제로 커널 2개 함수를 줄이고, backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합하는 방식으로 진행되었다. 기존 backward_bound_gpu는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 복귀하는 GPU→CPU→GPU→CPU 복사 경로를 가졌으며, 이를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. 이 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time은 13.939000 ms로 기록되었고 출력 차원은 16이었으며, 실행 시간은 13ms 후반 거의 14ms 정도로 관측되었다. fp32에 단정밀도 연산으로 바꿔보기도 했으나 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. [근거:E00122,E00124,E00137,E00138,E00146,E00147,E00148,E00149,E00150]"
+        ],
+        "guideline_ids": [
+          "ref1_methods_required_5"
+        ],
+        "used_non_candidate_evidence_ids": [
+          "H40849fcc17fe_1",
+          "Hcdbfb7147ce4_2"
+        ],
+        "unused_candidate_evidence_ids": []
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "S_methods",
+        "reference_id": "ref1_methods",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p2",
+          "S_methods_p3",
+          "S_methods_p4",
+          "S_methods_p5",
+          "S_methods_p6",
+          "S_methods_p7",
+          "S_methods_p8",
+          "S_methods_p9",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12",
+          "S_methods_p13",
+          "S_methods_p14",
+          "S_methods_p15",
+          "S_methods_p16",
+          "S_methods_p17",
+          "S_methods_p18",
+          "S_methods_p19",
+          "S_methods_p20",
+          "S_methods_p21",
+          "S_methods_p22",
+          "S_methods_p23",
+          "S_methods_p24",
+          "S_methods_p25",
+          "S_methods_p26",
+          "S_methods_p27",
+          "S_methods_p28",
+          "S_methods_p29"
+        ],
+        "reason": "구성 요소별 역할과 결합 방식은 실제 구현·실행 근거로 서술되어 있으나, 실험 준비·조건 통제, 데이터 구성·분할, 기준 구조 및 변형 단계적 서술, 학습·검증 절차 정리 등 ref1_methods의 paragraph_flow와 figures_tables 요구 항목은 이 절의 자료 범위에서 확인되지 않는다.",
+        "quote": "구성 요소별 역할과 결합 방식은 현재 구현의 관측과 차기 로드맵의 계획 수준으로 구분된다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32 연산기)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 이 방식은 기존 단일 샘플 커널을 유지한 채 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선으로 해석된다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림보다 약 4배 빠르다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이 목표는 실제 구현·평가 결과가 아니라 계획 단계의 서술이며, 전체 40,000개 규모에서의 실현 여부는 아직 검증되지 않았다. [근거:E00257,E00261,E00262,E00263]",
+        "paragraph_quotes": [
+          "구성 요소별 역할과 결합 방식은 현재 구현의 관측과 차기 로드맵의 계획 수준으로 구분된다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32 연산기)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 이 방식은 기존 단일 샘플 커널을 유지한 채 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선으로 해석된다. antenna_lirpa는 멀티스트림이 아니라 싱글 스트림으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림보다 약 4배 빠르다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 이 목표는 실제 구현·평가 결과가 아니라 계획 단계의 서술이며, 전체 40,000개 규모에서의 실현 여부는 아직 검증되지 않았다. [근거:E00257,E00261,E00262,E00263]",
+          "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉘어 적용되었다. CUDA 커널 인자 전달에서는 포인터(배열)는 cudaMalloc·cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라(int/float/double/enum 등)는 Parameter Bank/Constant Memory에 값으로 실어 보낼 수 있어, 큰 데이터는 포인터로, 작은 숫자나 열거형은 값으로 전달하는 방식이 사용되었다. cuSparse는 W, W_pos, W_neg를 네트워크 준비 단계에서 CSR 형식으로 변환하고 cuSPARSE handle 및 CSR descriptor를 유지한 뒤 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하는 방식으로 시도되었으나, 기존 matmul은 유지되었고 spMM 도입은 별도 검토 대상으로 남았다. [근거:E00105,E00135,E00136]",
+          "구성 요소별 역할과 결합 방식은 실제 구현·실행에서 확인되는 범위로 서술된다. backward_bound_gpu에서는 기존 GPU 계산 결과 → CPU → affine_min/max → 최종 결과 흐름에서 발생하던 불필요한 GPU↔CPU 복사를 줄이기 위해, affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 메모리 복사를 최소화하였다. 측정 환경 통제에서는 현재 클록 확인(nvidia-smi -q -d CLOCK), Persistence mode 활성화(sudo nvidia-smi -pm 1), graphics clock 잠금(sudo nvidia-smi -lgc 1410) 등의 명령어가 사용되었고, 클록 고정 재실험을 위해 RAII 방식의 ScopedGpuClockLock 구조체가 작성되었다. cudaHostRegister(Pinned)와 No Pinning(일반 메모리) 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 다만 현재 기록은 figure 캡션에 제시된 수치와 해석만 포함하며, 반복 측정 통계나 조건별 분리 측정은 포함하지 않는다. [근거:E00277,E00278,E00281,E00283,E00284,E00286]",
+          "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+          "구성 요소는 GPU 가속과 CPU 회귀를 조합해 CROWN 검증의 실행 경로를 재구성하는 방식으로 결합되었다. cuBLAS는 NVIDIA GPU에서 선형대수 연산을 가속하는 라이브러리로 matmul에 사용되었고, 메모리 풀은 함수 호출마다의 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 적용되었다. 가중치(W) GPU 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 미리 GPU에 올려 matmul 호출마다의 memcpy를 줄이려는 역할이며, 벡터 연산을 CPU로 돌리는 것은 matmul만 GPU로 실행하는 하이브리드 구성을 만들기 위한 역할이다. 다만 가중치 사전 업로드의 실제 효과는 제한적이었던 것으로 기록되었다. [근거:H85ca0e507c4e_88]",
+          "초기 결합은 cuBLAS로 행렬곱을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 처리하는 GPU 최적화 모드(MODE: GPU OPTIMIZED (cuBLAS + Pool))로 구성되었다. 이후 행렬곱만 GPU로, 나머지 연산을 CPU로 처리하는 하이브리드 모드(MODE: HYBRID (matmul=GPU, rest=CPU))로 결합 방식을 변경하였다. v2와 v4 적용 방안에서는 cuBLAS 예열(계산 시간 측정 전 더미 행렬곱 호출로 초기화), 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하도록 메모리 복사 범위를 줄이는 방식이 추가로 결합되었다. [근거:H85ca0e507c4e_89,E00033,E00038]",
+          "구성 요소 단위 변경과 전체 처리 과정 변경의 효과는 함수별 실행 위치와 GPU 메모리 풀 구조에서 구분된다. only_GPU는 d_mat[4] + d_vec[2](행렬 4개, 벡터 2개)를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU(커널/cudaMemset)에서 CPU(생성자 초기화/for 문)로 변경되었고, matmul은 cuBLAS + 메모리풀로 양쪽이 동일하게 유지되었다. [근거:H40849fcc17fe_1,E00036]",
+          "실행 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당하여 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]",
+          "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당해 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]",
+          "실행 방식 차이는 함수별 실행 위치(GPU 커널 또는 cudaMemset 대 CPU 생성자 초기화 및 for 문)와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당하여 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:H40849fcc17fe_1,E00036]",
+          "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. 결합 방식은 only_GPU와 hybrid의 함수별 실행 위치 및 GPU 메모리 풀 구조 차이로 정리된다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리 풀로 양쪽에서 동일하게 유지된다. hybrid는 only_GPU에서 matmul(cuBLAS)만 남기고 나머지 GPU 커널을 전부 CPU for문으로 되돌린 버전이며, 새로 추가된 구성 없이 GPU 코드를 삭제하여 CPU로 회귀한 케이스로 기록된다. 다만 현재 자료에는 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석이 명시적으로 존재하지 않는다. [근거:E00036,H40849fcc17fe_1,E00037,Hcdbfb7147ce4_2]",
+          "구성 요소 결합 방식은 only_GPU와 hybrid의 함수별 실행 위치 및 GPU 메모리 풀 구조 차이로 정리된다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset 기반 처리에서 CPU 생성자 초기화 및 for 문 처리로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 두 구성에서 동일하게 유지된다. GPU 풀 구조체는 only_GPU에서 d_mat[4]와 d_vec[2]를 미리 할당하는 방식에서 hybrid의 d_A, d_B, d_C 세 개로 축소되었다. 이러한 구성 차이는 함수별 실행 위치와 메모리 풀 구조에서 나타나며, 정량 성능 수치는 이 표에 포함되지 않는다. [근거:E00036,H40849fcc17fe_1]",
+          "실행 결과에서는 HYBRID 모드가 201.670100 ms, HYBRID V2 모드가 85.785300 ms로 측정되었고, HYBRID V2는 CPU보다 빨라진 것으로 평가되었다. 다만 이 수치들은 각 모드의 단일 실행 결과이며, CPU 버전이나 이전 모드와의 반복 측정 기반 통계는 현재 자료에 제시되지 않는다. [근거:E00031,E00035]",
+          "cudaGraph는 92만 번의 입력값을 계산하는 CROWN 검증에서 한 번의 계산 내에 수십 번 호출되는 커널을 하나의 호출로 압축해 커널 호출 오버헤드를 줄이기 위한 방법으로 고려되었다. 이는 커널 자체 최적화가 끝난 뒤 검토할 수 있는 스냅샷 생성 기능이다. 또한 cudaGraph로 추론과 bound를 따로 캡처한 경우와 추론과 bound를 한 번에 캡처한 경우를 구분해 커널 런치 비용을 줄이는 실험이 수행되었다. [근거:E00213,E00214]",
+          "CUDA 포팅에서는 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등 구성 요소를 결합한다. 결합 방식은 실제 구현·실행에서 확인되는 범위로 제한한다. 정방향과 backward 바운드를 함께 실행하는 forward+backward, backward 바운드만 실행하는 backward_only, CUDA 그래프 적용 버전을 별도로 측정하였다. 관측된 속도 순서는 backward_only가 forward+backward보다 빠르고 forward가 가장 느려, 일반적인 예상과 다른 실행 결과로 기록되었다. CUDA 그래프 적용 후 전체 소요 시간이 감소한 사례(787s → 630s, 1029s → 668s)가 있으며, phase breakdown에서는 bound 단계가 전체 elapsed의 대부분을 차지하고 infer 단계가 그 다음, certify 단계가 가장 작은 비중을 차지하는 것으로 나타났다. 다만 이는 개별 실행의 해석 기록이며, 반복 측정 통계나 조건별 분리 측정은 포함되지 않는다. [근거:H85ca0e507c4e_92,H85ca0e507c4e_93,H85ca0e507c4e_94]",
+          "구성 요소별 역할은 GPU 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 결합 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술되었다. 한편 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다. [근거:H85ca0e507c4e_97,E00036,H40849fcc17fe_1,Hcdbfb7147ce4_2]",
+          "구성 요소별 역할과 결합 방식은 실제 구현·실행 기록에서 확인되는 범위로 서술한다. 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등은 각각 도입·변경된 시점과 관측된 효과가 확인된 경우에만 결합 방식으로 다룬다. 구상·계획·AI 조언 단계의 검토 항목만으로는 구성 요소 간 상호작용이나 결합 효과를 확정하지 않는다. 추가 최적화 후보로는 infer의 크기 계산 주석 처리(벡터라 크지 않다는 점)와 certify의 heap 재변경 여부가 검토되었다. [근거:E00232]",
+          "측정 구간은 CUDA kernel launch 횟수를 기준으로 정의했으며, 3-layer 네트워크 기준으로 bound 내 커널 launch만 계수하고 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했다. 이 범위 설정은 커널 횟수 비교의 해석 조건을 한정한다. [근거:E00311]",
+          "구성 요소별 역할과 결합 방식은 실제 구현·실행 원문에서 확인되는 범위로 서술한다. 추론 커널은 그대로 둔 상태에서 graph mode=1, 샘플 1개 전체 기준으로 커널 launch 횟수를 비교했을 때 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다. 이 감소는 bound 내 커널 launch 횟수 감소와 같은 폭이다. 실행 시간 감소 요약은 1138s에서 758s로 기록되었으나, 이 값은 요약 기록이며 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다. [근거:E00313,E00320]",
+          "구성 요소별 역할과 결합 방식은 실제 구현·실행 기록에서 확인되는 범위로 서술한다. v1-1-2에서는 가중치를 미리 GPU에 업로드하도록 조정하였고, 그 결과 경과 시간이 149~155ms 범위로 기록되었다. 또한 memcpy 호출 횟수는 66개에서 56개로 감소한 것으로 관측되었다. 두 관측은 각각 경과 시간 범위와 호출 횟수의 비교 기록이며, 각 호출의 시간이나 총 실행 시간과의 관계는 별도 문맥이 필요하다. [근거:E00322,E00339]",
+          "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+          "실행 루프는 eps_list에 대한 이중 루프로 구성되며, 각 데이터 i에 대해 network_forward로 정방향 통과 후 method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정(certify_topk) 결과에 따라 Ht_count 또는 f_count를 증가시킨다. 배칭은 싱글 스트림이 아닌 멀티 스트림을 사용하여 데이터를 여러 개 묶어 병렬 처리를 가능하게 하는 방법이며, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 시간 빨라져 25분에서 8분으로 단축되었다. cudaGraph만 적용된 버전과 비교 대상 버전을 평균으로 측정했을 때 forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 났다. backward에서는 total 시간이 비슷하며, 그 이유는 infer에서 줄어든 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이다. Forward와 Backward의 cudaMemcpy 호출 횟수는 동일하다. [근거:E00174,E00216,E00227,E00228,E00165]",
+          "구성 요소 결합은 backward_bound_gpu의 affine 중복 계산 삭제로 커널 2개 함수를 줄이고, backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합하는 방식으로 진행되었다. 기존 backward_bound_gpu는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 복귀하는 GPU→CPU→GPU→CPU 복사 경로를 가졌으며, 이를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. 이 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time은 13.939000 ms로 기록되었고 출력 차원은 16이었으며, 실행 시간은 13ms 후반 거의 14ms 정도로 관측되었다. fp32에 단정밀도 연산으로 바꿔보기도 했으나 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. [근거:E00122,E00124,E00137,E00138,E00146,E00147,E00148,E00149,E00150]",
+          "구성 요소별 역할과 결합 방식은 실제 구현·실행 기록에서 확인되는 범위로 서술한다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이전 27ms 수준보다 느려진 결과로 기록되었다. 이 수치는 단일 실행 결과이며, 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞다고 판단되었다. network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다. 공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다고 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며, 약 0.2ms 정도 차이가 난다. [근거:E00106,E00114,E00115,E00117,E00202]",
+          "실행 인자 있는 forward와 실행 인자 없는 버전을 비교한 실행에서 시간 차이가 관측되었다. 실행 인자 있는 forward는 1360.22s, 실행 인자 없는 backward는 1447.17s, 다른 실행은 1375.97s로 측정되어, 실행 인자 추가와 switch문 사용이 성능에 영향을 주었을 가능성이 제기되었다. [근거:E00180]",
+          "cudaHostRegister는 No Pinning보다 느리게 측정되었으며, 이론상 다이렉트 DMA를 사용하는 Pinned Memory가 일반 메모리보다 더 느리게 나타난 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었다. 추론(Infer) 단계에서도 시간이 느려졌다는 관찰이 함께 남아 있다. [근거:E00279,E00280]",
+          "클록을 2800MHz로 고정하고 기존 HostRegister 방식으로 다시 실행한 결과가 기록되었다. [근거:E00282]",
+          "보완 과제로 Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행에서 가끔 튀는 값의 평균·분산 산출, 추론·bound·검증을 합쳐 측정하던 것을 각각 나눠 측정하기로 정리되었다. [근거:E00183]",
+          "보완 실행 항목으로 forward/backward 92만 번 측정을 20번씩 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며, sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. [근거:E00184]"
+        ]
+      },
+      {
+        "section_id": "S_methods",
+        "reference_id": "ref2_methods",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "S_methods_p18",
+          "S_methods_p19",
+          "S_methods_p20",
+          "S_methods_p21",
+          "S_methods_p22",
+          "S_methods_p23",
+          "S_methods_p24",
+          "S_methods_p25",
+          "S_methods_p26",
+          "S_methods_p27",
+          "S_methods_p28",
+          "S_methods_p29"
+        ],
+        "reason": "측정 구간 정의, 실행 경로·모드 구분, 워크로드·데이터셋·정확도 지표, 보완 측정 항목 등 일부 구성·조건 정의는 실제 근거로 서술되지만, 프레임워크·플랫폼·소프트웨어 스택 표, 기준선 구성의 역할·제외 최적화 명시, 벤더별 배포 설정, 호스트 차이 등 통제 조건을 정리한 표/그림 및 단계적 정의는 이 절에서 확인되지 않는다.",
+        "quote": "측정 구간은 CUDA kernel launch 횟수를 기준으로 정의했으며, 3-layer 네트워크 기준으로 bound 내 커널 launch만 계수하고 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했다. 이 범위 설정은 커널 횟수 비교의 해석 조건을 한정한다. [근거:E00311]",
+        "paragraph_quotes": [
+          "측정 구간은 CUDA kernel launch 횟수를 기준으로 정의했으며, 3-layer 네트워크 기준으로 bound 내 커널 launch만 계수하고 H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외했다. 이 범위 설정은 커널 횟수 비교의 해석 조건을 한정한다. [근거:E00311]",
+          "구성 요소별 역할과 결합 방식은 실제 구현·실행 원문에서 확인되는 범위로 서술한다. 추론 커널은 그대로 둔 상태에서 graph mode=1, 샘플 1개 전체 기준으로 커널 launch 횟수를 비교했을 때 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다. 이 감소는 bound 내 커널 launch 횟수 감소와 같은 폭이다. 실행 시간 감소 요약은 1138s에서 758s로 기록되었으나, 이 값은 요약 기록이며 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다. [근거:E00313,E00320]",
+          "구성 요소별 역할과 결합 방식은 실제 구현·실행 기록에서 확인되는 범위로 서술한다. v1-1-2에서는 가중치를 미리 GPU에 업로드하도록 조정하였고, 그 결과 경과 시간이 149~155ms 범위로 기록되었다. 또한 memcpy 호출 횟수는 66개에서 56개로 감소한 것으로 관측되었다. 두 관측은 각각 경과 시간 범위와 호출 횟수의 비교 기록이며, 각 호출의 시간이나 총 실행 시간과의 관계는 별도 문맥이 필요하다. [근거:E00322,E00339]",
+          "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+          "실행 루프는 eps_list에 대한 이중 루프로 구성되며, 각 데이터 i에 대해 network_forward로 정방향 통과 후 method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정(certify_topk) 결과에 따라 Ht_count 또는 f_count를 증가시킨다. 배칭은 싱글 스트림이 아닌 멀티 스트림을 사용하여 데이터를 여러 개 묶어 병렬 처리를 가능하게 하는 방법이며, 기존 데이터셋이 준비된 실험 환경에서는 단일 스트림보다 3배 시간 빨라져 25분에서 8분으로 단축되었다. cudaGraph만 적용된 버전과 비교 대상 버전을 평균으로 측정했을 때 forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 났다. backward에서는 total 시간이 비슷하며, 그 이유는 infer에서 줄어든 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이다. Forward와 Backward의 cudaMemcpy 호출 횟수는 동일하다. [근거:E00174,E00216,E00227,E00228,E00165]",
+          "구성 요소 결합은 backward_bound_gpu의 affine 중복 계산 삭제로 커널 2개 함수를 줄이고, backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합하는 방식으로 진행되었다. 기존 backward_bound_gpu는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 복귀하는 GPU→CPU→GPU→CPU 복사 경로를 가졌으며, 이를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. 이 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time은 13.939000 ms로 기록되었고 출력 차원은 16이었으며, 실행 시간은 13ms 후반 거의 14ms 정도로 관측되었다. fp32에 단정밀도 연산으로 바꿔보기도 했으나 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. [근거:E00122,E00124,E00137,E00138,E00146,E00147,E00148,E00149,E00150]",
+          "구성 요소별 역할과 결합 방식은 실제 구현·실행 기록에서 확인되는 범위로 서술한다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이전 27ms 수준보다 느려진 결과로 기록되었다. 이 수치는 단일 실행 결과이며, 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞다고 판단되었다. network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다. 공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다고 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며, 약 0.2ms 정도 차이가 난다. [근거:E00106,E00114,E00115,E00117,E00202]",
+          "실행 인자 있는 forward와 실행 인자 없는 버전을 비교한 실행에서 시간 차이가 관측되었다. 실행 인자 있는 forward는 1360.22s, 실행 인자 없는 backward는 1447.17s, 다른 실행은 1375.97s로 측정되어, 실행 인자 추가와 switch문 사용이 성능에 영향을 주었을 가능성이 제기되었다. [근거:E00180]",
+          "cudaHostRegister는 No Pinning보다 느리게 측정되었으며, 이론상 다이렉트 DMA를 사용하는 Pinned Memory가 일반 메모리보다 더 느리게 나타난 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었다. 추론(Infer) 단계에서도 시간이 느려졌다는 관찰이 함께 남아 있다. [근거:E00279,E00280]",
+          "클록을 2800MHz로 고정하고 기존 HostRegister 방식으로 다시 실행한 결과가 기록되었다. [근거:E00282]",
+          "보완 과제로 Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행에서 가끔 튀는 값의 평균·분산 산출, 추론·bound·검증을 합쳐 측정하던 것을 각각 나눠 측정하기로 정리되었다. [근거:E00183]",
+          "보완 실행 항목으로 forward/backward 92만 번 측정을 20번씩 완료했고, 단일 데이터(optimizing.exe)에 대해 warm up 영향 측정을 완료했으며, sparse.py도 나눠 측정하기 위해 forward만 2번 더 측정하기로 했고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. [근거:E00184]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "근거 E00297과 E00300은 claim_status가 'interpretation'이고 writing_role이 'context_only'로, 관측 결과가 아니라 계획·질문·가설·해석·AI 조언 성격의 문맥 근거로 분류된다. 이를 '표에 제시된 결과', '측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다'는 관측 결과·한계 서술과 함께 사실 주장으로 사용했다.",
+        "evidence_ids": [
+          "E00297",
+          "E00300"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p4-0",
+        "failure_owner": "writer",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "근거 E00295의 측정값은 'Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다'인데, 본문은 이를 'Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다'로 연결했다. E00295에는 DMA 셋업 오버헤드나 총 소요 시간 비교에 대한 측정값이 없으며, E00297의 해석(호출 1회당 약 1.0~1.5μs, 920,000회 누적 1.38초)은 context_only 근거이므로 E00295의 측정 결과로 제시할 수 없다.",
+        "evidence_ids": [
+          "E00295",
+          "E00297"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p4-0",
+        "failure_owner": "writer",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "근거 E00292의 measurements에는 '평균 처리 속도 차이 13초'만 있고, '실시간성(Real-Time)에서 치명적인 약점'이라는 서술의 구체적 판단 기준이나 측정 지표는 evidence_limitations에 명시되어 있다. 본문은 이를 '1ms 무선 통신 데드라인을 파괴할 수 있다'는 구체적 시스템 맥락으로 확장했는데, E00292에는 해당 맥락이 없다.",
+        "evidence_ids": [
+          "E00292"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p4-0",
+        "failure_owner": "writer",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "근거 E00294의 measurements에는 '최대 지연 스파이크 No-Pin 11.6ms', 'DMA 셋업 비용 1~2μs', '최대 지연 Pinned Memory 1.64ms'만 있고, 'OS 페이징 간섭을 100% 차단'이라는 표현은 measurements나 observations에 없다. 본문은 이를 Pinned의 특성으로 단정해 서술했다.",
+        "evidence_ids": [
+          "E00294"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p4-0",
+        "failure_owner": "writer",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "근거 E00296의 measurements에는 '지터 안정화 비율 60%'만 있고, 'WCET를 1.64ms로 엄격히 제한'이라는 표현은 measurements의 Pinned Memory 최악 지연시간 1.64ms와 연결되지만, E00296의 statement에는 '최악 지연시간(WCET)을 1.64ms로 엄격히 제한'이라고 명시되어 있다. 다만 본문은 E00296을 인용하면서 '실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다'는 결론을 추가했는데, E00296의 statement에는 '실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다'라고 되어 있어 결론 자체는 일치한다. 그러나 E00296의 measurements에는 '지터를 60% 이상 안정화'만 있고 'WCET를 1.64ms로 엄격히 제한'이라는 표현은 measurements에 없으며, 이는 E00294의 measurements(최대 지연 Pinned Memory 1.64ms)와 E00299의 measurements(최대 지연시간 Pinned 1.64ms)에서 가져온다. 본문은 E00296 하나로 WCET 제한과 지터 60% 감소를 함께 뒷받침되는 것처럼 서술했으나, 각 측정의 출처가 분리되어 있다.",
+        "evidence_ids": [
+          "E00296"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p4-0",
+        "failure_owner": "writer",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p9",
+        "reason": "근거 범위를 벗어난 구성 요소 나열 및 결합·상호작용 서술이 포함됨",
+        "evidence_ids": [
+          "E00036",
+          "H40849fcc17fe_1"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p9-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당해 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p9",
+        "reason": "근거에 없는 구성 요소(커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph, 가중치 GPU 사전 업로드)를 역할로 제시함",
+        "evidence_ids": [
+          "E00036",
+          "H40849fcc17fe_1"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p9-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당해 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p16",
+        "reason": "근거 E00036과 H40849fcc17fe_1은 only_GPU와 hybrid의 함수별 실행 위치 및 GPU 메모리 풀 구조 차이, 그리고 matmul이 cuBLAS + 메모리풀로 동일하게 유지된다는 점만 뒷받침한다. 본문은 이를 넘어 '커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph'를 구성 요소별 역할로 나열했으나, 해당 요소들은 현재 근거에서 확인되지 않는다.",
+        "evidence_ids": [
+          "E00036",
+          "H40849fcc17fe_1"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p16-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 GPU 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 결합 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술되었다. 한편 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다. [근거:H85ca0e507c4e_97,E00036,H40849fcc17fe_1,Hcdbfb7147ce4_2]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p16",
+        "reason": "근거 H85ca0e507c4e_97은 forward에서 graph 단일 적용이 전체적(추론, bound, 검증)으로 우수하고 infer_s에서 약 20초 차이가 나며, backward에서 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술된 점만 뒷받침한다. 본문은 이 서술의 출처 조건(p62:img0:e6, p62:img0:e7)과 해석적 서술이라는 한계를 반영하지 않은 채 단정적으로 사용했다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_97"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p16-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 GPU 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 결합 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술되었다. 한편 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다. [근거:H85ca0e507c4e_97,E00036,H40849fcc17fe_1,Hcdbfb7147ce4_2]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p16",
+        "reason": "근거 Hcdbfb7147ce4_2는 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석이 원문에 명시적으로 존재하지 않는다는 점만 뒷받침한다. 본문은 이 사실을 '한편'으로 덧붙였으나, 문단 앞부분에서 구성 요소별 역할과 결합 방식, 상호작용 효과를 서술한 뒤 이 한계를 함께 제시하는 구조가 근거 범위를 넘어서는 확장으로 보인다.",
+        "evidence_ids": [
+          "Hcdbfb7147ce4_2"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p16-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 GPU 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 결합 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술되었다. 한편 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다. [근거:H85ca0e507c4e_97,E00036,H40849fcc17fe_1,Hcdbfb7147ce4_2]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00115의 관측 범위를 초과하여 정량 분리 측정 결과가 있는 것처럼 서술함.",
+        "evidence_ids": [
+          "E00115"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00133의 한계(성능 최고점 상승 여부 불확실)를 반영하지 않고 bias 메모리 풀 변경의 효과를 단정적으로 서술함.",
+        "evidence_ids": [
+          "E00133"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00137의 설명 범위를 넘어 기존 방식의 정량 성능 수치가 있는 것처럼 서술함.",
+        "evidence_ids": [
+          "E00137"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00138의 한계(개선 후 정량 성능 수치 미포함)를 반영하지 않고 복사 최소화 결과를 정량적으로 서술함.",
+        "evidence_ids": [
+          "E00138"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00146, E00147의 한계(단일 실행 결과만 기록, 반복 측정 통계나 다른 조건과의 정량 비교 미포함)를 반영하지 않고 최적화 결과를 확정적으로 서술함.",
+        "evidence_ids": [
+          "E00146",
+          "E00147"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00150의 한계(fp32 변경 시도 사실과 별도 고찰 참조만 기록, 실제 변경 결과나 정량 성능 수치 미포함)를 반영하지 않고 fp32 변경의 결과를 서술함.",
+        "evidence_ids": [
+          "E00150"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00227의 한계(평균 측정 결과와 정성적 비교만 포함, 개별 실행 반복 측정 통계나 조건별 분리 측정 미포함, 비교 대상 버전의 구체적 정체 미분리)를 반영하지 않고 graph 단일 적용이 우수하다고 단정적으로 서술함.",
+        "evidence_ids": [
+          "E00227"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00228의 한계(backward total 시간 유사성과 원인 해석만 포함, 정량 분리 측정이나 반복 측정 통계 미포함)를 반영하지 않고 infer 약 20초 절감, bound 약 20초 빠른 수행을 확정적 사실로 서술함.",
+        "evidence_ids": [
+          "E00228"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00231의 한계(비교 관점의 제안만 포함, 실제 단일 스트림 복사 최적화의 정량 효과나 구현 결과 미포함)를 반영하지 않고 단일 스트림 입력 복사 최적화가 실제 적용된 것처럼 서술함.",
+        "evidence_ids": [
+          "E00231"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00279의 한계(figure 캡션의 원인 제시 문장만 포함, 3가지 기술적 이유의 구체적 내용 미제시)를 반영하지 않고 cudaHostRegister가 No Pinning보다 느린 이유에 대해 구체적 기술적 이유가 제시된 것처럼 서술함.",
+        "evidence_ids": [
+          "E00279"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00280의 한계(정성적 관찰 기록만 포함, 정량 수치나 원인 분석 미제시)를 반영하지 않고 추론 단계 시간 느려짐을 정량적 맥락 없이 단정적으로 서술함.",
+        "evidence_ids": [
+          "E00280"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00282의 한계(클록 고정 실험 재시도 사실과 조건만 포함, 실제 측정 결과 수치 미제시)를 반영하지 않고 클록 고정 실험 결과를 서술함.",
+        "evidence_ids": [
+          "E00282"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p23",
+        "reason": "E00148의 측정 조건(eps=1e-06, Output Dimension 16, Backward 메모리 복사 제거 및 초기화 최적화 적용)이 본문에 명시되지 않아, 단일 실행 결과라는 한계와 함께 조건이 불완전하게 제시됨.",
+        "evidence_ids": [
+          "E00148"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p23-0",
+        "failure_owner": "none",
+        "quote": "구성 요소 결합은 backward_bound_gpu의 affine 중복 계산 삭제로 커널 2개 함수를 줄이고, backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합하는 방식으로 진행되었다. 기존 backward_bound_gpu는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 복귀하는 GPU→CPU→GPU→CPU 복사 경로를 가졌으며, 이를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. 이 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time은 13.939000 ms로 기록되었고 출력 차원은 16이었으며, 실행 시간은 13ms 후반 거의 14ms 정도로 관측되었다. fp32에 단정밀도 연산으로 바꿔보기도 했으나 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. [근거:E00122,E00124,E00137,E00138,E00146,E00147,E00148,E00149,E00150]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p23",
+        "reason": "E00149의 정성적 관측(13ms 후반 거의 14ms 정도)이 E00148의 단일 실행 수치(13.939000 ms)와 함께 서술되어, 반복 측정 통계가 없다는 한계가 명확히 구분되지 않음.",
+        "evidence_ids": [
+          "E00148",
+          "E00149"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p23-0",
+        "failure_owner": "none",
+        "quote": "구성 요소 결합은 backward_bound_gpu의 affine 중복 계산 삭제로 커널 2개 함수를 줄이고, backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합하는 방식으로 진행되었다. 기존 backward_bound_gpu는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 복귀하는 GPU→CPU→GPU→CPU 복사 경로를 가졌으며, 이를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. 이 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time은 13.939000 ms로 기록되었고 출력 차원은 16이었으며, 실행 시간은 13ms 후반 거의 14ms 정도로 관측되었다. fp32에 단정밀도 연산으로 바꿔보기도 했으나 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. [근거:E00122,E00124,E00137,E00138,E00146,E00147,E00148,E00149,E00150]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p24",
+        "reason": "E00106의 limits에 따르면 '이전 27ms 수준'이라는 표현은 p28:e195의 '27ms .. 좀 더 느려졌다'를 paraphrase한 것으로, 이전 기준값이 24ms라는 언급(p29:enh:e0)과 정확히 일치하지 않는다. 초안에서는 이를 '이전 27ms 수준보다 느려진 결과'로 서술하여 근거의 불확실성(비교 기준 시점의 정확한 수치 불일치 가능성)을 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00106"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p24-0",
+        "failure_owner": "none",
+        "quote": "구성 요소별 역할과 결합 방식은 실제 구현·실행 기록에서 확인되는 범위로 서술한다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이전 27ms 수준보다 느려진 결과로 기록되었다. 이 수치는 단일 실행 결과이며, 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞다고 판단되었다. network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다. 공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다고 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며, 약 0.2ms 정도 차이가 난다. [근거:E00106,E00114,E00115,E00117,E00202]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "Pinned vs No-Pin 비교의 수치·해석은 figure 캡션 근거로 서술되나, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않는다는 한계가 명시되어 있어, 구성 요소 결합의 정량 근거로만 사용하기에는 해석 범위가 제한된다.",
+        "evidence_ids": [
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p9",
+        "reason": "구성 요소 목록과 only_GPU/hybrid 차이는 반복 서술되며, 결합 방식 서술이 실제 구현·실행 근거로만 제한되는지 확인하기 어려운 중복 문단이 존재한다.",
+        "evidence_ids": [
+          "E00036",
+          "H40849fcc17fe_1"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당해 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p16",
+        "reason": "forward/backward의 graph 적용 해석(infer_s 약 20초 차이, bound에서 약 20초 보상 등)은 관측 기록으로 보이나, 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교·불일치 분석이 원문에 명시적으로 없다는 한계가 함께 서술되어 있어 상호작용 효과 단정은 제한된다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_97",
+          "E00036",
+          "H40849fcc17fe_1",
+          "Hcdbfb7147ce4_2"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "구성 요소별 역할은 GPU 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 결합 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술되었다. 한편 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다. [근거:H85ca0e507c4e_97,E00036,H40849fcc17fe_1,Hcdbfb7147ce4_2]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "메모리 풀, alpha/beta GPU 버퍼, 커널 퓨전, pinned memory, cudaGraph 등 여러 구성 요소의 도입·변경·관측 효과가 한 문단에 밀집되어 있어, 실제 구현·실행에서 확인된 결합과 계획·검토 단계의 항목을 구분하기 위해 문단 분리가 필요하다.",
+        "evidence_ids": [
+          "E00130",
+          "E00133",
+          "E00124",
+          "E00115",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00150",
+          "E00231",
+          "E00279",
+          "E00280",
+          "E00282",
+          "E00227",
+          "E00228"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 2.3 구성 요소의 역할과 결합 방식: 본문 12103자 / 목표 2143자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "organization",
+        "validation_code": "composition_layout",
+        "reason": "S_methods/p0: 표 source_table_0001에 근거 인용으로 연결된 문단이 8개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "flow",
+        "validation_code": "composition_layout",
+        "reason": "S_methods/p0: 가장 긴 문단이 818자로 공통 문단 목표 800자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "style",
+        "validation_code": "composition_style",
+        "reason": "S_methods/p0: 기록자·자료 중심 표현 ['현재 페이지에 제시']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+        "original_severity": "error",
+        "deferred": true
+      }
+    ],
+    "evidence_usage_review": {
+      "batches": [
+        {
+          "name": "review-2-approved-evidence-S_methods_p1-0",
+          "paragraph_id": "S_methods_p1",
+          "target_evidence_ids": [
+            "E00257",
+            "E00261",
+            "E00262",
+            "E00263"
+          ],
+          "context_evidence_ids": [
+            "E00257",
+            "E00261",
+            "E00262",
+            "E00263"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p2-0",
+          "paragraph_id": "S_methods_p2",
+          "target_evidence_ids": [
+            "E00105",
+            "E00135",
+            "E00136"
+          ],
+          "context_evidence_ids": [
+            "E00105",
+            "E00135",
+            "E00136"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p3-0",
+          "paragraph_id": "S_methods_p3",
+          "target_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00281",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278",
+            "E00281",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p4-0",
+          "paragraph_id": "S_methods_p4",
+          "target_evidence_ids": [
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00295",
+            "E00296",
+            "E00297",
+            "E00299",
+            "E00300",
+            "E00301"
+          ],
+          "context_evidence_ids": [
+            "E00292",
+            "E00293",
+            "E00294",
+            "E00295",
+            "E00296",
+            "E00297",
+            "E00299",
+            "E00300",
+            "E00301"
+          ],
+          "issue_count": 5
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p5-0",
+          "paragraph_id": "S_methods_p5",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_88"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_88"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p6-0",
+          "paragraph_id": "S_methods_p6",
+          "target_evidence_ids": [
+            "E00033",
+            "E00038",
+            "H85ca0e507c4e_89"
+          ],
+          "context_evidence_ids": [
+            "E00033",
+            "E00038",
+            "H85ca0e507c4e_89"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p7-0",
+          "paragraph_id": "S_methods_p7",
+          "target_evidence_ids": [
+            "E00036",
+            "H40849fcc17fe_1"
+          ],
+          "context_evidence_ids": [
+            "E00031",
+            "E00035",
+            "E00036",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p8-0",
+          "paragraph_id": "S_methods_p8",
+          "target_evidence_ids": [
+            "E00036",
+            "H40849fcc17fe_1"
+          ],
+          "context_evidence_ids": [
+            "E00031",
+            "E00035",
+            "E00036",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p9-0",
+          "paragraph_id": "S_methods_p9",
+          "target_evidence_ids": [
+            "E00036",
+            "H40849fcc17fe_1"
+          ],
+          "context_evidence_ids": [
+            "E00031",
+            "E00035",
+            "E00036",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2"
+          ],
+          "issue_count": 2
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p10-0",
+          "paragraph_id": "S_methods_p10",
+          "target_evidence_ids": [
+            "E00036",
+            "H40849fcc17fe_1"
+          ],
+          "context_evidence_ids": [
+            "E00031",
+            "E00035",
+            "E00036",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p11-0",
+          "paragraph_id": "S_methods_p11",
+          "target_evidence_ids": [
+            "E00036",
+            "E00037",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2"
+          ],
+          "context_evidence_ids": [
+            "E00031",
+            "E00035",
+            "E00036",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2",
+            "E00037"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p12-0",
+          "paragraph_id": "S_methods_p12",
+          "target_evidence_ids": [
+            "E00036",
+            "H40849fcc17fe_1"
+          ],
+          "context_evidence_ids": [
+            "E00031",
+            "E00035",
+            "E00036",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p13-0",
+          "paragraph_id": "S_methods_p13",
+          "target_evidence_ids": [
+            "E00031",
+            "E00035"
+          ],
+          "context_evidence_ids": [
+            "E00031",
+            "E00035",
+            "E00036",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p14-0",
+          "paragraph_id": "S_methods_p14",
+          "target_evidence_ids": [
+            "E00213",
+            "E00214"
+          ],
+          "context_evidence_ids": [
+            "E00213",
+            "E00214"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p15-0",
+          "paragraph_id": "S_methods_p15",
+          "target_evidence_ids": [
+            "H85ca0e507c4e_92",
+            "H85ca0e507c4e_93",
+            "H85ca0e507c4e_94"
+          ],
+          "context_evidence_ids": [
+            "H85ca0e507c4e_92",
+            "H85ca0e507c4e_93",
+            "H85ca0e507c4e_94"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p16-0",
+          "paragraph_id": "S_methods_p16",
+          "target_evidence_ids": [
+            "E00036",
+            "H40849fcc17fe_1",
+            "H85ca0e507c4e_97",
+            "Hcdbfb7147ce4_2"
+          ],
+          "context_evidence_ids": [
+            "E00031",
+            "E00035",
+            "E00036",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2",
+            "H85ca0e507c4e_97"
+          ],
+          "issue_count": 3
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p17-0",
+          "paragraph_id": "S_methods_p17",
+          "target_evidence_ids": [
+            "E00232"
+          ],
+          "context_evidence_ids": [
+            "E00232"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p18-0",
+          "paragraph_id": "S_methods_p18",
+          "target_evidence_ids": [
+            "E00311"
+          ],
+          "context_evidence_ids": [
+            "E00311"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p19-0",
+          "paragraph_id": "S_methods_p19",
+          "target_evidence_ids": [
+            "E00313",
+            "E00320"
+          ],
+          "context_evidence_ids": [
+            "E00313",
+            "E00320"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p20-0",
+          "paragraph_id": "S_methods_p20",
+          "target_evidence_ids": [
+            "E00322",
+            "E00339"
+          ],
+          "context_evidence_ids": [
+            "E00322",
+            "E00339"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p21-0",
+          "paragraph_id": "S_methods_p21",
+          "target_evidence_ids": [
+            "E00115",
+            "E00124",
+            "E00130",
+            "E00133",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00150",
+            "E00227",
+            "E00228",
+            "E00231",
+            "E00279",
+            "E00280",
+            "E00282"
+          ],
+          "context_evidence_ids": [
+            "E00115",
+            "E00124",
+            "E00130",
+            "E00133",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00150",
+            "E00227",
+            "E00228",
+            "E00231",
+            "E00279",
+            "E00280",
+            "E00282"
+          ],
+          "issue_count": 12
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p22-0",
+          "paragraph_id": "S_methods_p22",
+          "target_evidence_ids": [
+            "E00165",
+            "E00174",
+            "E00216",
+            "E00227",
+            "E00228"
+          ],
+          "context_evidence_ids": [
+            "E00165",
+            "E00174",
+            "E00216",
+            "E00227",
+            "E00228"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p23-0",
+          "paragraph_id": "S_methods_p23",
+          "target_evidence_ids": [
+            "E00122",
+            "E00124",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00148",
+            "E00149",
+            "E00150"
+          ],
+          "context_evidence_ids": [
+            "E00122",
+            "E00124",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00148",
+            "E00149",
+            "E00150"
+          ],
+          "issue_count": 2
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p24-0",
+          "paragraph_id": "S_methods_p24",
+          "target_evidence_ids": [
+            "E00106",
+            "E00114",
+            "E00115",
+            "E00117",
+            "E00202"
+          ],
+          "context_evidence_ids": [
+            "E00106",
+            "E00114",
+            "E00115",
+            "E00117",
+            "E00202"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p25-0",
+          "paragraph_id": "S_methods_p25",
+          "target_evidence_ids": [
+            "E00180"
+          ],
+          "context_evidence_ids": [
+            "E00180"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p26-0",
+          "paragraph_id": "S_methods_p26",
+          "target_evidence_ids": [
+            "E00279",
+            "E00280"
+          ],
+          "context_evidence_ids": [
+            "E00279",
+            "E00280"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p27-0",
+          "paragraph_id": "S_methods_p27",
+          "target_evidence_ids": [
+            "E00282"
+          ],
+          "context_evidence_ids": [
+            "E00282"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p28-0",
+          "paragraph_id": "S_methods_p28",
+          "target_evidence_ids": [
+            "E00183"
+          ],
+          "context_evidence_ids": [
+            "E00183"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p29-0",
+          "paragraph_id": "S_methods_p29",
+          "target_evidence_ids": [
+            "E00184"
+          ],
+          "context_evidence_ids": [
+            "E00184"
+          ],
+          "issue_count": 0
+        }
+      ],
+      "summary": {
+        "checked_paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p2",
+          "S_methods_p3",
+          "S_methods_p4",
+          "S_methods_p5",
+          "S_methods_p6",
+          "S_methods_p7",
+          "S_methods_p8",
+          "S_methods_p9",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12",
+          "S_methods_p13",
+          "S_methods_p14",
+          "S_methods_p15",
+          "S_methods_p16",
+          "S_methods_p17",
+          "S_methods_p18",
+          "S_methods_p19",
+          "S_methods_p20",
+          "S_methods_p21",
+          "S_methods_p22",
+          "S_methods_p23",
+          "S_methods_p24",
+          "S_methods_p25",
+          "S_methods_p26",
+          "S_methods_p27",
+          "S_methods_p28",
+          "S_methods_p29"
+        ],
+        "checked_evidence_ids": [
+          "E00031",
+          "E00033",
+          "E00035",
+          "E00036",
+          "E00037",
+          "E00038",
+          "E00105",
+          "E00106",
+          "E00114",
+          "E00115",
+          "E00117",
+          "E00122",
+          "E00124",
+          "E00130",
+          "E00133",
+          "E00135",
+          "E00136",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00148",
+          "E00149",
+          "E00150",
+          "E00165",
+          "E00174",
+          "E00180",
+          "E00183",
+          "E00184",
+          "E00202",
+          "E00213",
+          "E00214",
+          "E00216",
+          "E00227",
+          "E00228",
+          "E00231",
+          "E00232",
+          "E00257",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00311",
+          "E00313",
+          "E00320",
+          "E00322",
+          "E00339",
+          "H40849fcc17fe_1",
+          "H85ca0e507c4e_88",
+          "H85ca0e507c4e_89",
+          "H85ca0e507c4e_92",
+          "H85ca0e507c4e_93",
+          "H85ca0e507c4e_94",
+          "H85ca0e507c4e_97",
+          "Hcdbfb7147ce4_2"
+        ],
+        "issue_count": 25,
+        "blocking_paragraph_ids": [
+          "S_methods_p4",
+          "S_methods_p9",
+          "S_methods_p16",
+          "S_methods_p21"
+        ]
+      },
+      "coverage_batches": [
+        "all"
+      ]
+    },
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 1,
+      "total": 1,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 2,
+      "not_visible": 0,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    },
+    "content_warnings": [
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "근거 E00297과 E00300은 claim_status가 'interpretation'이고 writing_role이 'context_only'로, 관측 결과가 아니라 계획·질문·가설·해석·AI 조언 성격의 문맥 근거로 분류된다. 이를 '표에 제시된 결과', '측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다'는 관측 결과·한계 서술과 함께 사실 주장으로 사용했다.",
+        "evidence_ids": [
+          "E00297",
+          "E00300"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p4-0",
+        "failure_owner": "writer",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "근거 E00295의 측정값은 'Pinned Memory의 평균 전송 속도가 Pageable 메모리 대비 약 1.4% 미세하게 낮게 측정될 수 있다'인데, 본문은 이를 'Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다'로 연결했다. E00295에는 DMA 셋업 오버헤드나 총 소요 시간 비교에 대한 측정값이 없으며, E00297의 해석(호출 1회당 약 1.0~1.5μs, 920,000회 누적 1.38초)은 context_only 근거이므로 E00295의 측정 결과로 제시할 수 없다.",
+        "evidence_ids": [
+          "E00295",
+          "E00297"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p4-0",
+        "failure_owner": "writer",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "근거 E00292의 measurements에는 '평균 처리 속도 차이 13초'만 있고, '실시간성(Real-Time)에서 치명적인 약점'이라는 서술의 구체적 판단 기준이나 측정 지표는 evidence_limitations에 명시되어 있다. 본문은 이를 '1ms 무선 통신 데드라인을 파괴할 수 있다'는 구체적 시스템 맥락으로 확장했는데, E00292에는 해당 맥락이 없다.",
+        "evidence_ids": [
+          "E00292"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p4-0",
+        "failure_owner": "writer",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "근거 E00294의 measurements에는 '최대 지연 스파이크 No-Pin 11.6ms', 'DMA 셋업 비용 1~2μs', '최대 지연 Pinned Memory 1.64ms'만 있고, 'OS 페이징 간섭을 100% 차단'이라는 표현은 measurements나 observations에 없다. 본문은 이를 Pinned의 특성으로 단정해 서술했다.",
+        "evidence_ids": [
+          "E00294"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p4-0",
+        "failure_owner": "writer",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "근거 E00296의 measurements에는 '지터 안정화 비율 60%'만 있고, 'WCET를 1.64ms로 엄격히 제한'이라는 표현은 measurements의 Pinned Memory 최악 지연시간 1.64ms와 연결되지만, E00296의 statement에는 '최악 지연시간(WCET)을 1.64ms로 엄격히 제한'이라고 명시되어 있다. 다만 본문은 E00296을 인용하면서 '실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다'는 결론을 추가했는데, E00296의 statement에는 '실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다'라고 되어 있어 결론 자체는 일치한다. 그러나 E00296의 measurements에는 '지터를 60% 이상 안정화'만 있고 'WCET를 1.64ms로 엄격히 제한'이라는 표현은 measurements에 없으며, 이는 E00294의 measurements(최대 지연 Pinned Memory 1.64ms)와 E00299의 measurements(최대 지연시간 Pinned 1.64ms)에서 가져온다. 본문은 E00296 하나로 WCET 제한과 지터 60% 감소를 함께 뒷받침되는 것처럼 서술했으나, 각 측정의 출처가 분리되어 있다.",
+        "evidence_ids": [
+          "E00296"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p4-0",
+        "failure_owner": "writer",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p9",
+        "reason": "근거 범위를 벗어난 구성 요소 나열 및 결합·상호작용 서술이 포함됨",
+        "evidence_ids": [
+          "E00036",
+          "H40849fcc17fe_1"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p9-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당해 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p9",
+        "reason": "근거에 없는 구성 요소(커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph, 가중치 GPU 사전 업로드)를 역할로 제시함",
+        "evidence_ids": [
+          "E00036",
+          "H40849fcc17fe_1"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p9-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당해 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p16",
+        "reason": "근거 E00036과 H40849fcc17fe_1은 only_GPU와 hybrid의 함수별 실행 위치 및 GPU 메모리 풀 구조 차이, 그리고 matmul이 cuBLAS + 메모리풀로 동일하게 유지된다는 점만 뒷받침한다. 본문은 이를 넘어 '커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph'를 구성 요소별 역할로 나열했으나, 해당 요소들은 현재 근거에서 확인되지 않는다.",
+        "evidence_ids": [
+          "E00036",
+          "H40849fcc17fe_1"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p16-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 GPU 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 결합 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술되었다. 한편 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다. [근거:H85ca0e507c4e_97,E00036,H40849fcc17fe_1,Hcdbfb7147ce4_2]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p16",
+        "reason": "근거 H85ca0e507c4e_97은 forward에서 graph 단일 적용이 전체적(추론, bound, 검증)으로 우수하고 infer_s에서 약 20초 차이가 나며, backward에서 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술된 점만 뒷받침한다. 본문은 이 서술의 출처 조건(p62:img0:e6, p62:img0:e7)과 해석적 서술이라는 한계를 반영하지 않은 채 단정적으로 사용했다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_97"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p16-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 GPU 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 결합 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술되었다. 한편 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다. [근거:H85ca0e507c4e_97,E00036,H40849fcc17fe_1,Hcdbfb7147ce4_2]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p16",
+        "reason": "근거 Hcdbfb7147ce4_2는 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석이 원문에 명시적으로 존재하지 않는다는 점만 뒷받침한다. 본문은 이 사실을 '한편'으로 덧붙였으나, 문단 앞부분에서 구성 요소별 역할과 결합 방식, 상호작용 효과를 서술한 뒤 이 한계를 함께 제시하는 구조가 근거 범위를 넘어서는 확장으로 보인다.",
+        "evidence_ids": [
+          "Hcdbfb7147ce4_2"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p16-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 GPU 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 결합 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술되었다. 한편 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다. [근거:H85ca0e507c4e_97,E00036,H40849fcc17fe_1,Hcdbfb7147ce4_2]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00115의 관측 범위를 초과하여 정량 분리 측정 결과가 있는 것처럼 서술함.",
+        "evidence_ids": [
+          "E00115"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00133의 한계(성능 최고점 상승 여부 불확실)를 반영하지 않고 bias 메모리 풀 변경의 효과를 단정적으로 서술함.",
+        "evidence_ids": [
+          "E00133"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00137의 설명 범위를 넘어 기존 방식의 정량 성능 수치가 있는 것처럼 서술함.",
+        "evidence_ids": [
+          "E00137"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00138의 한계(개선 후 정량 성능 수치 미포함)를 반영하지 않고 복사 최소화 결과를 정량적으로 서술함.",
+        "evidence_ids": [
+          "E00138"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00146, E00147의 한계(단일 실행 결과만 기록, 반복 측정 통계나 다른 조건과의 정량 비교 미포함)를 반영하지 않고 최적화 결과를 확정적으로 서술함.",
+        "evidence_ids": [
+          "E00146",
+          "E00147"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00150의 한계(fp32 변경 시도 사실과 별도 고찰 참조만 기록, 실제 변경 결과나 정량 성능 수치 미포함)를 반영하지 않고 fp32 변경의 결과를 서술함.",
+        "evidence_ids": [
+          "E00150"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00227의 한계(평균 측정 결과와 정성적 비교만 포함, 개별 실행 반복 측정 통계나 조건별 분리 측정 미포함, 비교 대상 버전의 구체적 정체 미분리)를 반영하지 않고 graph 단일 적용이 우수하다고 단정적으로 서술함.",
+        "evidence_ids": [
+          "E00227"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00228의 한계(backward total 시간 유사성과 원인 해석만 포함, 정량 분리 측정이나 반복 측정 통계 미포함)를 반영하지 않고 infer 약 20초 절감, bound 약 20초 빠른 수행을 확정적 사실로 서술함.",
+        "evidence_ids": [
+          "E00228"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00231의 한계(비교 관점의 제안만 포함, 실제 단일 스트림 복사 최적화의 정량 효과나 구현 결과 미포함)를 반영하지 않고 단일 스트림 입력 복사 최적화가 실제 적용된 것처럼 서술함.",
+        "evidence_ids": [
+          "E00231"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00279의 한계(figure 캡션의 원인 제시 문장만 포함, 3가지 기술적 이유의 구체적 내용 미제시)를 반영하지 않고 cudaHostRegister가 No Pinning보다 느린 이유에 대해 구체적 기술적 이유가 제시된 것처럼 서술함.",
+        "evidence_ids": [
+          "E00279"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00280의 한계(정성적 관찰 기록만 포함, 정량 수치나 원인 분석 미제시)를 반영하지 않고 추론 단계 시간 느려짐을 정량적 맥락 없이 단정적으로 서술함.",
+        "evidence_ids": [
+          "E00280"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "근거 E00282의 한계(클록 고정 실험 재시도 사실과 조건만 포함, 실제 측정 결과 수치 미제시)를 반영하지 않고 클록 고정 실험 결과를 서술함.",
+        "evidence_ids": [
+          "E00282"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p21-0",
+        "failure_owner": "writer",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p23",
+        "reason": "E00148의 측정 조건(eps=1e-06, Output Dimension 16, Backward 메모리 복사 제거 및 초기화 최적화 적용)이 본문에 명시되지 않아, 단일 실행 결과라는 한계와 함께 조건이 불완전하게 제시됨.",
+        "evidence_ids": [
+          "E00148"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p23-0",
+        "failure_owner": "none",
+        "quote": "구성 요소 결합은 backward_bound_gpu의 affine 중복 계산 삭제로 커널 2개 함수를 줄이고, backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합하는 방식으로 진행되었다. 기존 backward_bound_gpu는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 복귀하는 GPU→CPU→GPU→CPU 복사 경로를 가졌으며, 이를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. 이 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time은 13.939000 ms로 기록되었고 출력 차원은 16이었으며, 실행 시간은 13ms 후반 거의 14ms 정도로 관측되었다. fp32에 단정밀도 연산으로 바꿔보기도 했으나 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. [근거:E00122,E00124,E00137,E00138,E00146,E00147,E00148,E00149,E00150]",
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p23",
+        "reason": "E00149의 정성적 관측(13ms 후반 거의 14ms 정도)이 E00148의 단일 실행 수치(13.939000 ms)와 함께 서술되어, 반복 측정 통계가 없다는 한계가 명확히 구분되지 않음.",
+        "evidence_ids": [
+          "E00148",
+          "E00149"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p23-0",
+        "failure_owner": "none",
+        "quote": "구성 요소 결합은 backward_bound_gpu의 affine 중복 계산 삭제로 커널 2개 함수를 줄이고, backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합하는 방식으로 진행되었다. 기존 backward_bound_gpu는 GPU 계산 결과를 CPU로 옮긴 뒤 CPU에서 affine_min/max를 수행하고 다시 GPU로 복귀하는 GPU→CPU→GPU→CPU 복사 경로를 가졌으며, 이를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용하여 H2D 복사를 제거하고, 기본 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였다. 이 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time은 13.939000 ms로 기록되었고 출력 차원은 16이었으며, 실행 시간은 13ms 후반 거의 14ms 정도로 관측되었다. fp32에 단정밀도 연산으로 바꿔보기도 했으나 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. [근거:E00122,E00124,E00137,E00138,E00146,E00147,E00148,E00149,E00150]",
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p24",
+        "reason": "E00106의 limits에 따르면 '이전 27ms 수준'이라는 표현은 p28:e195의 '27ms .. 좀 더 느려졌다'를 paraphrase한 것으로, 이전 기준값이 24ms라는 언급(p29:enh:e0)과 정확히 일치하지 않는다. 초안에서는 이를 '이전 27ms 수준보다 느려진 결과'로 서술하여 근거의 불확실성(비교 기준 시점의 정확한 수치 불일치 가능성)을 충분히 반영하지 않았다.",
+        "evidence_ids": [
+          "E00106"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p24-0",
+        "failure_owner": "none",
+        "quote": "구성 요소별 역할과 결합 방식은 실제 구현·실행 기록에서 확인되는 범위로 서술한다. cuSparse를 이용해 spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 기록되었으며, 이전 27ms 수준보다 느려진 결과로 기록되었다. 이 수치는 단일 실행 결과이며, 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 페이지에 제시되지 않았다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 빼고 기존 dense matvec/matmul을 유지하는 것이 맞다고 판단되었다. network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며, SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다. 공식 결과는 24 ms dense baseline으로 유지하고, cuSPARSE는 별도 benchmark 옵션으로 비교하는 것이 좋다고 정리되었다. 초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며, 약 0.2ms 정도 차이가 난다. [근거:E00106,E00114,E00115,E00117,E00202]",
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "Pinned vs No-Pin 비교의 수치·해석은 figure 캡션 근거로 서술되나, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않는다는 한계가 명시되어 있어, 구성 요소 결합의 정량 근거로만 사용하기에는 해석 범위가 제한된다.",
+        "evidence_ids": [
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "Pinned Memory는 cudaHostRegister를 통해 OS 페이징을 차단하여 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 약 60% 감소시키므로, 실시간 무선 안테나 선택 시스템에서는 도입 필수 요소로 판단된다. 반면 No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 1KB 수준의 작은 데이터 전송 시 호출 1회당 약 0.02~0.05μs로 DMA 셋업보다 30~50배 빠르지만, OS 백그라운드 작업·페이징·드라이버 임시 버퍼 락 경합이 발생하는 순간 지연시간이 최대 11.6ms까지 튀어 1ms 무선 통신 데드라인을 파괴할 수 있다. 다만 평균 처리 속도만 보면 No-Pin이 약 13초 빠르고, Pinned는 매번 DMA 디스크립터 생성 및 큐 제출 오버헤드로 호출 1회당 약 1.0~1.5μs를 지불하여 총 소요 시간이 더 길게 나타난다. 이 비교는 표에 제시된 결과이며, 측정 방법론·샘플 수·통계 처리 등 실험 설계 상세가 원문에 제시되지 않았다는 한계가 있다. [근거:E00292,E00293,E00294,E00295,E00296,E00297,E00299,E00300,E00301]",
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p9",
+        "reason": "구성 요소 목록과 only_GPU/hybrid 차이는 반복 서술되며, 결합 방식 서술이 실제 구현·실행 근거로만 제한되는지 확인하기 어려운 중복 문단이 존재한다.",
+        "evidence_ids": [
+          "E00036",
+          "H40849fcc17fe_1"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4]와 d_vec[2]를 미리 할당해 행렬 4개와 벡터 2개를 유지하고, hybrid는 matmul 전용으로 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU의 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS와 메모리풀을 사용하는 방식이 양쪽에서 동일하게 유지되었다. [근거:E00036,H40849fcc17fe_1]",
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p16",
+        "reason": "forward/backward의 graph 적용 해석(infer_s 약 20초 차이, bound에서 약 20초 보상 등)은 관측 기록으로 보이나, 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교·불일치 분석이 원문에 명시적으로 없다는 한계가 함께 서술되어 있어 상호작용 효과 단정은 제한된다.",
+        "evidence_ids": [
+          "H85ca0e507c4e_97",
+          "E00036",
+          "H40849fcc17fe_1",
+          "Hcdbfb7147ce4_2"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "구성 요소별 역할은 GPU 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 구분된다. only_GPU와 hybrid의 결합 방식 차이는 함수별 실행 위치와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2]를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다. make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max는 GPU 커널 또는 cudaMemset에서 CPU 생성자 초기화 또는 for 문으로 변경되었고, matmul은 cuBLAS + 메모리풀로 동일하게 유지되었다. forward에서는 전체적(추론, bound, 검증)으로 graph 단일 적용이 우수하고 특히 infer_s에서 약 20초 차이가 나며, backward에서는 total 시간이 비슷해지는 이유가 infer에서 깎인 약 20초를 bound에서 graph보다 약 20초 빨리 수행하기 때문이라고 서술되었다. 한편 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다. [근거:H85ca0e507c4e_97,E00036,H40849fcc17fe_1,Hcdbfb7147ce4_2]",
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p21",
+        "reason": "메모리 풀, alpha/beta GPU 버퍼, 커널 퓨전, pinned memory, cudaGraph 등 여러 구성 요소의 도입·변경·관측 효과가 한 문단에 밀집되어 있어, 실제 구현·실행에서 확인된 결합과 계획·검토 단계의 항목을 구분하기 위해 문단 분리가 필요하다.",
+        "evidence_ids": [
+          "E00130",
+          "E00133",
+          "E00124",
+          "E00115",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00150",
+          "E00231",
+          "E00279",
+          "E00280",
+          "E00282",
+          "E00227",
+          "E00228"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "구성 요소별 역할은 메모리 풀, cuBLAS, 가중치 GPU 사전 업로드, 벡터 연산 CPU 회귀, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cudaGraph 등으로 나뉜다. 메모리 풀은 forward와 backward 사이에 전달되는 alpha, beta 값을 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 추가해 forward에서 GPU에 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 하는 데 쓰였다. 이 과정에서 alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. bias도 메모리 풀에서 관리하도록 변경되었다. cuBLAS는 행렬곱 연산에 사용되며, backward에서는 행렬곱 커널 2개를 backward_matmul_pair_gpu 하나로 합친 커널 함수가 만들어졌다. 가중치 GPU 사전 업로드는 네트워크 가중치를 실행 전 GPU에 올려두는 방식으로 적용된다. 벡터 연산 CPU 회귀는 network_forward()에서 layer마다 D2H, CPU vec_add, H2D를 수행하는 기존 경로와 관련된다. 커널 퓨전은 build_coeff_pair_fused_gpu, backward_bias_pair_fused_gpu 등에 적용되었다. pinned memory는 cudaHostRegister로 실험되었고, cudaGraph는 단일 적용 버전이 비교 대상으로 측정되었다. 단일 스트림 입력 복사 최적화는 graph와 비교 관점에서 논의되었다. [근거:E00130,E00133,E00124,E00115,E00137,E00138,E00146,E00147,E00150,E00231,E00279,E00280,E00282,E00227,E00228]",
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 2.3 구성 요소의 역할과 결합 방식: 본문 12103자 / 목표 2143자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "organization",
+        "validation_code": "composition_layout",
+        "reason": "S_methods/p0: 표 source_table_0001에 근거 인용으로 연결된 문단이 8개입니다. 표 하나마다 핵심 관찰·비교 조건·해석 한계를 독립 문단 1~2개로 구성하세요. 근거를 일괄 부착하거나 조건·반례를 삭제하지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "flow",
+        "validation_code": "composition_layout",
+        "reason": "S_methods/p0: 가장 긴 문단이 818자로 공통 문단 목표 800자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "style",
+        "validation_code": "composition_style",
+        "reason": "S_methods/p0: 기록자·자료 중심 표현 ['현재 페이지에 제시']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p2"
+      }
+    ],
+    "content_status": "needs_attention",
+    "content_approved": false
+  }
+}

@@ -1,0 +1,646 @@
+{
+  "sha256": "067657446e921863e4ddb6f2e441d4db16feeeb30a233510f2ace94f23c3a684",
+  "value": {
+    "input_fingerprint": "56b1dc8b02092e7faea87d5b6c1fe3612f255b5aaf5141b74f69b0849ea79fb0",
+    "sections": {
+      "methods": {
+        "parts": {
+          "p0": "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192]\n\n측정은 신경망 정방향 통과와 CROWN bound 계산을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행한 뒤에도 GPU OPTIMIZED 모드에서 CPU보다 느린 문제가 남아, matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]\n\n측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00193,E00194,E00195]\n\n측정은 추론, bound 계산, 검증 세 항목을 분리해 진행했다. 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적했으며, 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]\n\n검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]\n\n측정은 추론, bound 계산, 검증 절차를 분리해 각각 시간을 재는 방식으로 설계했다. 타임스탬프를 누적해 구간별 소요를 기록하고, cudaEvent로 측정 구간을 제어하며, 초기 warm up 이후 반복 측정으로 재현성을 확보하려 했다. 다만 backward_only 재측정을 위해 flag를 false로 두고 memcpy를 6번으로 조정해 다시 측정하려는 계획이 남아 있어, 해당 조건의 정량 결과는 아직 확정되지 않았다. 또한 backward_only가 가장 빠른 원인을 천천히 조사하고, 발표자료용으로 pinned memory 성능을 정확히 측정하려는 후속 계획이 함께 정리되었다. pinned memory 측정은 미적용, my_lirpa의 입력 공간 하나(HostAlloc), 현재 방식(HostRegister) 세 가지로 나누어 진행할 예정이나, 이 역시 실제 측정값이 아닌 계획 단계의 내용이다. [근거:E00271,E00275,E00276]"
+        }
+      }
+    },
+    "raw_review": {
+      "checks": [
+        {
+          "item_id": "methods_4",
+          "verdict": "met",
+          "paragraph_ids": [
+            "methods_p4",
+            "methods_p5",
+            "methods_p6"
+          ],
+          "evidence_ids": [
+            "E00196",
+            "E00198",
+            "E00199",
+            "E00202",
+            "E00203",
+            "E00205",
+            "E00206",
+            "E00207",
+            "E00208",
+            "E00221",
+            "E00343",
+            "E00344",
+            "E00271",
+            "E00275",
+            "E00276"
+          ]
+        }
+      ],
+      "reference_checks": [
+        {
+          "section_id": "methods",
+          "reference_id": "ref1_methods",
+          "verdict": "partial",
+          "paragraph_ids": [
+            "methods_p1",
+            "methods_p2",
+            "methods_p3",
+            "methods_p4",
+            "methods_p5",
+            "methods_p6"
+          ],
+          "reason": "실행·측정 구간·반복 측정·warm up·cudaEvent 제어 등 측정 방식과 검증 절차, 재현 가능성 및 방법론적 한계는 정리되었으나, ref1_methods의 '실행·학습 설정과 검증 절차' 흐름 중 학습 설정·모델 구조·데이터 분할·증강 등 연구 노트에서 확인되지 않는 항목은 본 연구의 성격과 맞지 않아 채우지 않았다. 따라서 실행·측정·검증 절차 중심의 서술은 충족되나, ref1_methods의 전체 필수 내용을 그대로 옮긴 것은 아니다."
+        },
+        {
+          "section_id": "methods",
+          "reference_id": "ref2_methods",
+          "verdict": "partial",
+          "paragraph_ids": [
+            "methods_p4",
+            "methods_p5",
+            "methods_p6"
+          ],
+          "reason": "실행 경로와 측정 구간(추론·bound·검증 분리, 타임스탬프 누적, cudaEvent 제어, warm up, measure_gpu 모드 정의, cudaMemcpy 예시)은 methods_p4~p6에서 서술되어 ref2_methods의 '실행 경로와 측정 구간' 요건을 부분적으로 충족한다. 다만 ref2_methods가 요구하는 프레임워크·워크로드·데이터셋·정확도 지표·플랫폼/소프트웨어 스택·통제 조건을 하나의 절에서 단계적으로 모두 제시하는 수준까지는 연구 노트만으로 충분히 정리되지 않아, 해당 부분은 사용자 임시 승인 범위와 원문 관측 기록 범위로 제한하였다."
+        }
+      ],
+      "issues": [],
+      "review_policy": "approved-facts-v1",
+      "review_selection_bindings": []
+    },
+    "reviews": [
+      {
+        "checks": [
+          {
+            "item_id": "methods_4",
+            "verdict": "missing",
+            "paragraph_ids": [
+              "methods_p1",
+              "methods_p2",
+              "methods_p3"
+            ],
+            "evidence_ids": [
+              "E00017",
+              "E00023",
+              "E00030",
+              "E00031",
+              "E00033",
+              "E00035",
+              "E00044",
+              "E00045",
+              "E00046",
+              "E00068",
+              "E00069",
+              "E00070",
+              "E00071",
+              "E00075",
+              "E00081",
+              "E00083",
+              "E00094",
+              "E00095",
+              "E00096",
+              "E00097",
+              "E00100",
+              "E00102",
+              "E00106",
+              "E00119",
+              "E00120",
+              "E00131",
+              "E00132",
+              "E00139",
+              "E00140",
+              "E00172",
+              "E00174",
+              "E00184",
+              "E00187",
+              "E00188",
+              "E00189",
+              "E00190",
+              "E00191",
+              "E00192",
+              "E00193",
+              "E00194",
+              "E00195",
+              "E00196",
+              "E00198",
+              "E00199",
+              "E00202",
+              "E00203",
+              "E00205",
+              "E00206",
+              "E00207",
+              "E00208",
+              "E00221",
+              "E00270",
+              "E00271",
+              "E00272",
+              "E00274",
+              "E00275",
+              "E00276",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00287",
+              "E00298",
+              "E00326",
+              "E00329",
+              "E00333",
+              "E00353",
+              "E00354",
+              "E00366"
+            ],
+            "quote": "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195]",
+            "paragraph_quotes": [
+              "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195]",
+              "측정은 추론(inference), bound 계산, 검증(verification) 세 항목을 분리하여 진행했으며, 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적하는 방식으로 시간을 측정했다. 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고, 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+              "검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]"
+            ],
+            "guideline_ids": [
+              "ref1_methods_required_6",
+              "ref2_methods_required_2"
+            ],
+            "used_non_candidate_evidence_ids": [],
+            "unused_candidate_evidence_ids": [
+              "E00271",
+              "E00275",
+              "E00276"
+            ],
+            "model_verdict": "met",
+            "missing_review_evidence_ids": [],
+            "missing_body_evidence_ids": [
+              "E00271",
+              "E00275",
+              "E00276"
+            ],
+            "missing_section_evidence_ids": [
+              "E00271",
+              "E00275",
+              "E00276"
+            ],
+            "unselected_cited_evidence_ids": [],
+            "failure_owner": "writer",
+            "validation_note": "검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다."
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "methods",
+            "reference_id": "ref1_methods",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "methods_p1",
+              "methods_p2",
+              "methods_p3"
+            ],
+            "reason": "실행·측정 방식·검증 절차 흐름은 반영했으나, ref1_methods의 모델 구조·학습 설정·데이터 증강·분할·특정 성능 수치·특정 모델명·참고문헌 등 not_to_transfer 항목은 본 연구 맥락과 무관하여 이전되지 않았다. 또한 평가 대상·입력 조건·통제 변수의 완전한 특정은 원문만으로 충분하지 않아 사용자 임시 승인 범위를 짧게 반영했고, 실측으로 승격하지 않았다.",
+            "quote": "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195]",
+            "paragraph_quotes": [
+              "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195]",
+              "측정은 추론(inference), bound 계산, 검증(verification) 세 항목을 분리하여 진행했으며, 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적하는 방식으로 시간을 측정했다. 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고, 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+              "검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]"
+            ]
+          },
+          {
+            "section_id": "methods",
+            "reference_id": "ref2_methods",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "methods_p1",
+              "methods_p2",
+              "methods_p3"
+            ],
+            "reason": "실행 경로·측정 구간·비교 구성·플랫폼/소프트웨어 스택·통제 조건 일부는 반영했으나, ref2_methods의 특정 벤더 구성 명칭·특정 하드웨어/소프트웨어 제품명·특정 관측 성능 수치·표/그림 번호·저자/참고문헌 등은 본 연구 맥락과 무관하여 이전되지 않았다. cudaHostRegister/No Pinning 비교와 클록·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않고, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계도 원문에 직접 제시되지 않아 공정 비교를 위한 통제 조건으로 확정하기 어렵다는 한계가 남는다.",
+            "quote": "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195]",
+            "paragraph_quotes": [
+              "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195]",
+              "측정은 추론(inference), bound 계산, 검증(verification) 세 항목을 분리하여 진행했으며, 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적하는 방식으로 시간을 측정했다. 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고, 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+              "검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "methods",
+            "severity": "warning",
+            "paragraph_id": "methods_p3",
+            "reason": "cudaHostRegister vs No Pinning 비교와 GPU 클록 고정·Persistence mode 등 측정 조건이 원문에 직접 명시되어 있지 않으며, GPU 클록 고정 후 재측정 결과나 cudaHostRegister/No Pinning 간 반복 측정 통계도 원문에 직접 제시되지 않는다. 따라서 이를 공정 비교를 위한 통제 조건으로 확정하는 서술은 피하고, figure 캡션 중심 관측 및 해석이라는 한계를 함께 명시해야 한다.",
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00281",
+              "E00282",
+              "E00284",
+              "E00286"
+            ],
+            "failure_owner": "none",
+            "quote": "검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]"
+          },
+          {
+            "section_id": "methods",
+            "severity": "error",
+            "quote": "",
+            "reason": "필수 내용 methods_4: missing. 검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다. 누락 근거=E00271,E00275,E00276",
+            "evidence_ids": [
+              "E00271",
+              "E00275",
+              "E00276"
+            ],
+            "validation_code": "required_content",
+            "item_id": "methods_4",
+            "review_stage": "required_evidence_validation",
+            "failure_owner": "writer"
+          },
+          {
+            "section_id": "methods",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 2.4 측정 방식과 검증 절차: 본문 2822자 / 목표 2142자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 0,
+          "total": 1,
+          "value": 0.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 2,
+          "not_visible": 0,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "methods_4",
+            "verdict": "met",
+            "paragraph_ids": [
+              "methods_p3",
+              "methods_p4",
+              "methods_p5"
+            ],
+            "evidence_ids": [
+              "E00196",
+              "E00198",
+              "E00199",
+              "E00202",
+              "E00203",
+              "E00205",
+              "E00206",
+              "E00207",
+              "E00208",
+              "E00221",
+              "E00343",
+              "E00344",
+              "E00271",
+              "E00275",
+              "E00276",
+              "E00270",
+              "E00272",
+              "E00274",
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00287",
+              "E00298",
+              "E00326",
+              "E00329",
+              "E00333",
+              "E00353",
+              "E00354",
+              "E00366"
+            ],
+            "quote": "측정은 추론, bound 계산, 검증 세 항목을 분리해 진행했다. 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적했으며, 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+            "paragraph_quotes": [
+              "측정은 추론, bound 계산, 검증 세 항목을 분리해 진행했다. 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적했으며, 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+              "검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]",
+              "측정은 추론, bound 계산, 검증 절차를 분리해 각각 시간을 재는 방식으로 설계했다. 타임스탬프를 누적해 구간별 소요를 기록하고, cudaEvent로 측정 구간을 제어하며, 초기 warm up 이후 반복 측정으로 재현성을 확보하려 했다. 다만 backward_only 재측정을 위해 flag를 false로 두고 memcpy를 6번으로 조정해 다시 측정하려는 계획이 남아 있어, 해당 조건의 정량 결과는 아직 확정되지 않았다. 또한 backward_only가 가장 빠른 원인을 천천히 조사하고, 발표자료용으로 pinned memory 성능을 정확히 측정하려는 후속 계획이 함께 정리되었다. pinned memory 측정은 미적용, my_lirpa의 입력 공간 하나(HostAlloc), 현재 방식(HostRegister) 세 가지로 나누어 진행할 예정이나, 이 역시 실제 측정값이 아닌 계획 단계의 내용이다. [근거:E00271,E00275,E00276]"
+            ],
+            "guideline_ids": [
+              "ref1_methods_required_6",
+              "ref2_methods_required_2"
+            ],
+            "used_non_candidate_evidence_ids": [
+              "E00343",
+              "E00344"
+            ],
+            "unused_candidate_evidence_ids": []
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "methods",
+            "reference_id": "ref1_methods",
+            "verdict": "not_visible",
+            "paragraph_ids": [
+              "methods_p1",
+              "methods_p2",
+              "methods_p3",
+              "methods_p4",
+              "methods_p5"
+            ],
+            "reason": "ref1_methods의 '실행·학습 설정과 검증 절차' 흐름은 본 연구의 CROWN 검증 C++ 프로그램 CUDA 포팅·최적화 기록에 맞게 평가 대상·입력 조건·실행 환경·측정 방식 중심으로 적용되었다. 다만 모델 구조나 학습 설정 관련 내용은 본 연구의 범위에 해당하지 않아 해당 흐름은 직접 드러나지 않는다.",
+            "quote": "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192]",
+            "paragraph_quotes": [
+              "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192]",
+              "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00193,E00194,E00195]",
+              "측정은 추론, bound 계산, 검증 세 항목을 분리해 진행했다. 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적했으며, 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+              "검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]",
+              "측정은 추론, bound 계산, 검증 절차를 분리해 각각 시간을 재는 방식으로 설계했다. 타임스탬프를 누적해 구간별 소요를 기록하고, cudaEvent로 측정 구간을 제어하며, 초기 warm up 이후 반복 측정으로 재현성을 확보하려 했다. 다만 backward_only 재측정을 위해 flag를 false로 두고 memcpy를 6번으로 조정해 다시 측정하려는 계획이 남아 있어, 해당 조건의 정량 결과는 아직 확정되지 않았다. 또한 backward_only가 가장 빠른 원인을 천천히 조사하고, 발표자료용으로 pinned memory 성능을 정확히 측정하려는 후속 계획이 함께 정리되었다. pinned memory 측정은 미적용, my_lirpa의 입력 공간 하나(HostAlloc), 현재 방식(HostRegister) 세 가지로 나누어 진행할 예정이나, 이 역시 실제 측정값이 아닌 계획 단계의 내용이다. [근거:E00271,E00275,E00276]"
+            ]
+          },
+          {
+            "section_id": "methods",
+            "reference_id": "ref2_methods",
+            "verdict": "not_visible",
+            "paragraph_ids": [
+              "methods_p3",
+              "methods_p4",
+              "methods_p5"
+            ],
+            "reason": "ref2_methods의 '실행 경로와 측정 구간' 흐름은 추론·bound·검증 분리 측정, 타임스탬프 누적, cudaEvent 제어, warm up, measure_gpu 인자 정의 등으로 부분적으로 반영되었다. 그러나 기준선·변형 구성 비교 표나 워크로드·데이터셋·플랫폼 표처럼 ref2_methods가 제안하는 표 중심 정리 형식은 본 초안 문단에 직접 나타나지 않는다.",
+            "quote": "측정은 추론, bound 계산, 검증 세 항목을 분리해 진행했다. 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적했으며, 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+            "paragraph_quotes": [
+              "측정은 추론, bound 계산, 검증 세 항목을 분리해 진행했다. 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적했으며, 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+              "검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]",
+              "측정은 추론, bound 계산, 검증 절차를 분리해 각각 시간을 재는 방식으로 설계했다. 타임스탬프를 누적해 구간별 소요를 기록하고, cudaEvent로 측정 구간을 제어하며, 초기 warm up 이후 반복 측정으로 재현성을 확보하려 했다. 다만 backward_only 재측정을 위해 flag를 false로 두고 memcpy를 6번으로 조정해 다시 측정하려는 계획이 남아 있어, 해당 조건의 정량 결과는 아직 확정되지 않았다. 또한 backward_only가 가장 빠른 원인을 천천히 조사하고, 발표자료용으로 pinned memory 성능을 정확히 측정하려는 후속 계획이 함께 정리되었다. pinned memory 측정은 미적용, my_lirpa의 입력 공간 하나(HostAlloc), 현재 방식(HostRegister) 세 가지로 나누어 진행할 예정이나, 이 역시 실제 측정값이 아닌 계획 단계의 내용이다. [근거:E00271,E00275,E00276]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "methods",
+            "severity": "error",
+            "paragraph_id": "methods_p1",
+            "reason": "methods_p1은 methods_4의 측정 방식·검증 절차·재현 가능성·방법론적 한계를 다루는 필수 항목 문단으로 보기 어렵다. 문단 내용이 평가 대상·입력 조건·실행 환경·구성 요소 역할·결합 방식에 가깝고, methods_p3~p5와 역할이 겹치며 중복 서술이 있다. 또한 문단 끝의 근거 태그에 methods_p3~p5에서 다루는 측정 방식 관련 근거(E00196 등)가 빠져 있어 필수 항목 충족 근거로 연결되지 않는다.",
+            "evidence_ids": [
+              "E00196",
+              "E00198",
+              "E00199",
+              "E00202",
+              "E00203",
+              "E00205",
+              "E00206",
+              "E00207",
+              "E00208",
+              "E00221",
+              "E00343",
+              "E00344"
+            ],
+            "failure_owner": "writer",
+            "quote": "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192]"
+          },
+          {
+            "section_id": "methods",
+            "severity": "error",
+            "paragraph_id": "methods_p2",
+            "reason": "methods_p2는 methods_p1과 거의 동일한 내용을 반복하며, methods_4의 핵심 내용인 측정 방식·검증 절차·재현 가능성·방법론적 한계를 새로 보강하지 않는다. 문단 끝 근거도 E00193~E00195로 제한되어 있어, 해당 문단이 methods_4를 뒷받침한다고 보기 어렵다.",
+            "evidence_ids": [
+              "E00193",
+              "E00194",
+              "E00195"
+            ],
+            "failure_owner": "writer",
+            "quote": "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00193,E00194,E00195]"
+          },
+          {
+            "section_id": "methods",
+            "severity": "error",
+            "paragraph_id": "methods_p4",
+            "reason": "methods_p4는 cudaHostRegister와 No Pinning 비교 수치(787.88초 대 776.70초, Bound 658.80초 대 663.17초, Infer 127.18초 대 111.92초 등)를 실제 측정 결과처럼 서술하고 있으나, 해당 수치는 figure 캡션 기록 중심의 관측이며 반복 측정 통계나 조건별 분리 측정 수치가 이 절만으로 제시되지 않는다는 한계가 있다. 또한 GPU 클록 고정, Persistence mode, 클록 확인·고정 명령어 등은 계획·명령어 확인·설정 기록에 가까워, 이를 공정 비교를 위한 통제 조건으로 확정하는 서술은 원문 범위와 어긋난다.",
+            "evidence_ids": [
+              "E00277",
+              "E00278",
+              "E00279",
+              "E00280",
+              "E00281",
+              "E00282",
+              "E00283",
+              "E00284",
+              "E00286",
+              "E00287",
+              "E00298"
+            ],
+            "failure_owner": "writer",
+            "quote": "검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]"
+          },
+          {
+            "section_id": "methods",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "error",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 2.4 측정 방식과 검증 절차: 본문 4254자 / 목표 2142자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요."
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": false,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 0,
+          "not_visible": 2,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+      },
+      {
+        "checks": [
+          {
+            "item_id": "methods_4",
+            "verdict": "met",
+            "paragraph_ids": [
+              "methods_p4",
+              "methods_p5",
+              "methods_p6"
+            ],
+            "evidence_ids": [
+              "E00196",
+              "E00198",
+              "E00199",
+              "E00202",
+              "E00203",
+              "E00205",
+              "E00206",
+              "E00207",
+              "E00208",
+              "E00221",
+              "E00343",
+              "E00344",
+              "E00271",
+              "E00275",
+              "E00276"
+            ],
+            "quote": "측정은 추론, bound 계산, 검증 세 항목을 분리해 진행했다. 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적했으며, 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+            "paragraph_quotes": [
+              "측정은 추론, bound 계산, 검증 세 항목을 분리해 진행했다. 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적했으며, 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+              "검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]",
+              "측정은 추론, bound 계산, 검증 절차를 분리해 각각 시간을 재는 방식으로 설계했다. 타임스탬프를 누적해 구간별 소요를 기록하고, cudaEvent로 측정 구간을 제어하며, 초기 warm up 이후 반복 측정으로 재현성을 확보하려 했다. 다만 backward_only 재측정을 위해 flag를 false로 두고 memcpy를 6번으로 조정해 다시 측정하려는 계획이 남아 있어, 해당 조건의 정량 결과는 아직 확정되지 않았다. 또한 backward_only가 가장 빠른 원인을 천천히 조사하고, 발표자료용으로 pinned memory 성능을 정확히 측정하려는 후속 계획이 함께 정리되었다. pinned memory 측정은 미적용, my_lirpa의 입력 공간 하나(HostAlloc), 현재 방식(HostRegister) 세 가지로 나누어 진행할 예정이나, 이 역시 실제 측정값이 아닌 계획 단계의 내용이다. [근거:E00271,E00275,E00276]"
+            ],
+            "guideline_ids": [
+              "ref1_methods_required_6",
+              "ref2_methods_required_2"
+            ],
+            "used_non_candidate_evidence_ids": [
+              "E00343",
+              "E00344"
+            ],
+            "unused_candidate_evidence_ids": []
+          }
+        ],
+        "reference_checks": [
+          {
+            "section_id": "methods",
+            "reference_id": "ref1_methods",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "methods_p1",
+              "methods_p2",
+              "methods_p3",
+              "methods_p4",
+              "methods_p5",
+              "methods_p6"
+            ],
+            "reason": "실행·측정 구간·반복 측정·warm up·cudaEvent 제어 등 측정 방식과 검증 절차, 재현 가능성 및 방법론적 한계는 정리되었으나, ref1_methods의 '실행·학습 설정과 검증 절차' 흐름 중 학습 설정·모델 구조·데이터 분할·증강 등 연구 노트에서 확인되지 않는 항목은 본 연구의 성격과 맞지 않아 채우지 않았다. 따라서 실행·측정·검증 절차 중심의 서술은 충족되나, ref1_methods의 전체 필수 내용을 그대로 옮긴 것은 아니다.",
+            "quote": "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192]",
+            "paragraph_quotes": [
+              "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00017,E00023,E00030,E00031,E00033,E00035,E00044,E00045,E00046,E00068,E00069,E00070,E00071,E00075,E00081,E00083,E00094,E00095,E00096,E00097,E00100,E00102,E00106,E00119,E00120,E00131,E00132,E00139,E00140,E00172,E00174,E00184,E00187,E00188,E00189,E00190,E00191,E00192]",
+              "측정은 신경망 정방향 통과와 CROWN bound 계산을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행한 뒤에도 GPU OPTIMIZED 모드에서 CPU보다 느린 문제가 남아, matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+              "측정은 신경망 정방향 통과와 CROWN backward 계산 시간을 CPU 전용 버전과 GPU 버전으로 나누어 비교하는 방식으로 진행되었다. 이후 GPU 최적화 버전(my_lirpa_op_only_GPU, crown_test_op_only_GPU.cu)을 만들어 실행해 보았고, GPU OPTIMIZED 모드에서도 CPU보다 느린 문제가 남아 matmul만 GPU로 처리하는 하이브리드 프로그램을 시도하였다. 실행은 eps=1e-06, 출력 차원 16 조건에서 CROWN Verification을 돌려 elapsed time을 기록하는 형태로 이루어졌으며, HYBRID 모드 201.670100 ms, HYBRID V2 모드 85.785300 ms가 각각 기록되었다. 이후 메모리 풀과 warm up 조합, 가중치 GPU 사전 업로드, 결과 벡터 memcpy 제거, forward 함수 DTOH memcpy 제거, 커널 퓨전, alpha/beta 메모리 풀 적용 등 여러 변경을 순차적으로 적용하면서 단일 실행 결과를 누적해 비교하였다. 기록자는 메모리 풀과 warm up 조합이 효과가 크다고 판단했고, cuBLAS 예열, 가중치 사전 업로드, 필요한 행렬만 복사하는 방안을 v2 적용 방안으로 정리하였다. bias까지 GPU에 미리 올리는 시도는 bias가 약 4KB 수준의 벡터여서 성능 개선 의미가 크지 않다고 보았다. 반복 측정에서는 forward와 backward를 각각 20번씩 측정하고 평균과 분산을 구할 계획이 세워졌으며, 단일 데이터 측정 검증을 위해 warm up 코드를 먼저 넣었다. 추론, bound 계산, 검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 측정하도록 하였고, elapsed 타임과 미세한 오차가 있지만 세 누적 시간을 더한 값을 더 올바른 시간으로 판단해 사용하기로 하였다. 다만 개별 최적화 기법의 효과를 체계적으로 분리한 ablation은 이루어지지 않았고, 많은 수치는 단일 실행 기록이거나 기록자의 정성적 관찰에 머물러 있어 비교 해석의 범위가 제한된다. [근거:E00193,E00194,E00195]",
+              "측정은 추론, bound 계산, 검증 세 항목을 분리해 진행했다. 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적했으며, 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+              "검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]",
+              "측정은 추론, bound 계산, 검증 절차를 분리해 각각 시간을 재는 방식으로 설계했다. 타임스탬프를 누적해 구간별 소요를 기록하고, cudaEvent로 측정 구간을 제어하며, 초기 warm up 이후 반복 측정으로 재현성을 확보하려 했다. 다만 backward_only 재측정을 위해 flag를 false로 두고 memcpy를 6번으로 조정해 다시 측정하려는 계획이 남아 있어, 해당 조건의 정량 결과는 아직 확정되지 않았다. 또한 backward_only가 가장 빠른 원인을 천천히 조사하고, 발표자료용으로 pinned memory 성능을 정확히 측정하려는 후속 계획이 함께 정리되었다. pinned memory 측정은 미적용, my_lirpa의 입력 공간 하나(HostAlloc), 현재 방식(HostRegister) 세 가지로 나누어 진행할 예정이나, 이 역시 실제 측정값이 아닌 계획 단계의 내용이다. [근거:E00271,E00275,E00276]"
+            ]
+          },
+          {
+            "section_id": "methods",
+            "reference_id": "ref2_methods",
+            "verdict": "partial",
+            "paragraph_ids": [
+              "methods_p4",
+              "methods_p5",
+              "methods_p6"
+            ],
+            "reason": "실행 경로와 측정 구간(추론·bound·검증 분리, 타임스탬프 누적, cudaEvent 제어, warm up, measure_gpu 모드 정의, cudaMemcpy 예시)은 methods_p4~p6에서 서술되어 ref2_methods의 '실행 경로와 측정 구간' 요건을 부분적으로 충족한다. 다만 ref2_methods가 요구하는 프레임워크·워크로드·데이터셋·정확도 지표·플랫폼/소프트웨어 스택·통제 조건을 하나의 절에서 단계적으로 모두 제시하는 수준까지는 연구 노트만으로 충분히 정리되지 않아, 해당 부분은 사용자 임시 승인 범위와 원문 관측 기록 범위로 제한하였다.",
+            "quote": "측정은 추론, bound 계산, 검증 세 항목을 분리해 진행했다. 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적했으며, 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+            "paragraph_quotes": [
+              "측정은 추론, bound 계산, 검증 세 항목을 분리해 진행했다. 각 구간의 시작·종료 시점을 std::chrono::high_resolution_clock으로 기록해 구간별 소요 시간을 누적했으며, 측정 시작 직후 network_forward로 일반 예측값을 확인한 뒤 추론 시간을 먼저 분리하고 이후 lirpa_forward_bound_impl 또는 lirpa_backward_bound로 bound 계산을 수행하는 흐름을 사용했다. 반복 측정의 안정성을 높이기 위해 warm up을 적용했고, GPU 벤치마크 모범 사례를 참고해 Nvidia의 warm up 가이드라인을 기준으로 삼았다. 다만 warm up을 적용해도 스파이크성 데이터가 남아 있었고, 10회 측정 시 평균 시간이 느려지는 경우가 관찰되어 warm up만으로 변동이 완전히 정리되지는 않았다. warm up 적용 여부와 측정 시간 차이는 크지 않았으나, 스파이크가 나타나지 않는 구간에서는 시간이 상대적으로 더 안정적으로 보였다. 측정 정밀도와 오버헤드를 제어하기 위해 cudaEvent 기반 하드웨어 타이머 측정을 measure_gpu 시스템 인자로 조절했으며, 0은 비활성화, 1은 마지막 샘플 1회 측정(기본값), 2는 매 샘플 측정으로 정의했다. 2 모드에서는 호출당 20~50μs 수준의 드라이버 오버헤드가 발생할 수 있어 주의가 필요했다. cudaMemcpy 호출의 시작·지속 시간 예시도 표로 확인해 측정 구간의 실제 형태를 살펴보았다. [근거:E00196,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00343,E00344]",
+              "검증 절차는 CROWN을 구현한 C++ 프로그램을 대상으로 진행했으며, 신경망 크기·배치 크기 1·실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 비교했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율이 얼마나 차이나는지로 확인했으며 결과는 모두 동일했다. 최적화 과정에서는 memcpy 횟수 조정, CUDA Graph 적용, 커널 퓨전, cudaHostRegister와 No Pinning 비교, GPU 클록 고정 등 여러 기법이 적용·철회되며 시도되었고, 이 때문에 개별 기법의 효과를 체계적으로 분리한 ablation study는 이루어지지 못했다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 적용된 사항이며, 측정 환경 통제를 위해 Persistence mode 설정(sudo nvidia-smi -pm 1)과 클록 확인·고정 명령어(nvidia-smi -q -d CLOCK, nvidia-smi -lgc 1410 등)가 함께 사용되었다. cudaHostRegister와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 언급했고, 추론 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남겼다. 다만 이러한 비교는 figure 캡션에 기록된 수치와 해석 중심의 관측이며, 반복 측정 통계나 조건별 분리 측정 수치는 이 절만으로 제시되지 않는다. [근거:E00270,E00272,E00274,E00277,E00278,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366]",
+              "측정은 추론, bound 계산, 검증 절차를 분리해 각각 시간을 재는 방식으로 설계했다. 타임스탬프를 누적해 구간별 소요를 기록하고, cudaEvent로 측정 구간을 제어하며, 초기 warm up 이후 반복 측정으로 재현성을 확보하려 했다. 다만 backward_only 재측정을 위해 flag를 false로 두고 memcpy를 6번으로 조정해 다시 측정하려는 계획이 남아 있어, 해당 조건의 정량 결과는 아직 확정되지 않았다. 또한 backward_only가 가장 빠른 원인을 천천히 조사하고, 발표자료용으로 pinned memory 성능을 정확히 측정하려는 후속 계획이 함께 정리되었다. pinned memory 측정은 미적용, my_lirpa의 입력 공간 하나(HostAlloc), 현재 방식(HostRegister) 세 가지로 나누어 진행할 예정이나, 이 역시 실제 측정값이 아닌 계획 단계의 내용이다. [근거:E00271,E00275,E00276]"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "section_id": "methods",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 2.4 측정 방식과 검증 절차: 본문 5262자 / 목표 2142자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+            "original_severity": "error",
+            "deferred": true
+          }
+        ],
+        "review_policy": "approved-facts-v1",
+        "review_selection_bindings": [],
+        "response_normalizations": [],
+        "approved": true,
+        "required_content_coverage": {
+          "met": 1,
+          "total": 1,
+          "value": 1.0
+        },
+        "reference_application": {
+          "applied": 0,
+          "partial": 2,
+          "not_visible": 0,
+          "total": 2,
+          "assessment": "LLM-assisted; human validation needed"
+        },
+        "evidence_policy": "candidate-pool-v1",
+        "evidence_scope_policy": "used-evidence-scope-v1",
+        "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+        "content_completion": {
+          "policy": "content-warning-v1",
+          "status": "needs_attention",
+          "revisions": 2,
+          "reason": "revision_limit"
+        },
+        "content_warnings": [
+          {
+            "section_id": "methods",
+            "paragraph_id": "none",
+            "part": "p0",
+            "severity": "warning",
+            "category": "organization",
+            "evidence_ids": [],
+            "quote": "",
+            "validation_code": "composition_length",
+            "review_stage": "composition",
+            "failure_owner": "writer",
+            "reason": "### 2.4 측정 방식과 검증 절차: 본문 5262자 / 목표 2142자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+            "original_severity": "error",
+            "deferred": true,
+            "stage": "subsection-methods-p3"
+          }
+        ],
+        "content_status": "needs_attention",
+        "content_approved": false
+      }
+    ],
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    }
+  }
+}

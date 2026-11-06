@@ -1,0 +1,36 @@
+{
+  "request_fingerprint": "d65144fed78661493f786378b00991c8ddd330ec0a6ca7db06555ed5626ba154",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "비교 구성은 CPU ONLY, GPU OPTIMIZED(cuBLAS+Pool), HYBRID(matmul=GPU, rest=CPU), HYBRID V2, mempool+warmup, cuda graph 적용 버전 등으로 정리되었다. 다만 이 절의 근거는 각 구성의 적용 범위와 측정 초점을 직접 구분하지 않으며, 구성 조건이 통제하는 범위도 현재 기록에서 충분히 확인되지 않는다.",
+          "evidence_ids": [
+            "E00105",
+            "E00106",
+            "E00174",
+            "E00202"
+          ]
+        },
+        {
+          "text": "실행 경로에서는 eps_list에 대해 이중 루프를 돌며 각 데이터에 대해 network_forward로 정방향 통과 후, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정(certify_topk) 결과에 따라 Ht_count 또는 f_count를 증가시킨다. 이 구조는 코드 수준에서 확인되나 실제 호출 횟수나 성능 수치는 이 근거만으로 제시되지 않는다.",
+          "evidence_ids": [
+            "E00174"
+          ]
+        },
+        {
+          "text": "측정 조건으로는 CROWN Verification 실행 시 eps=1e-06, 출력 차원 16이 사용되었고, cuSparse의 spMV만 적용한 경우 실행 시간이 27.107400 ms로 기록되었으며 이전 27ms 수준보다 느려진 것으로 관찰되었다. 이 수치는 단일 실행 결과이며 비교 기준 시점의 정확한 수치나 반복 측정 통계는 현재 기록에 제시되지 않는다.",
+          "evidence_ids": [
+            "E00106"
+          ]
+        },
+        {
+          "text": "초기화만 하면 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다는 관측도 기록되어 있다. 다만 이 관측은 초기화 이후 bound 계산 시간 비교에 대한 기록이며, 초기화 비용 포함 여부나 반복 측정 통계는 이 사실만으로 제시되지 않는다.",
+          "evidence_ids": [
+            "E00202"
+          ]
+        }
+      ]
+    }
+  }
+}

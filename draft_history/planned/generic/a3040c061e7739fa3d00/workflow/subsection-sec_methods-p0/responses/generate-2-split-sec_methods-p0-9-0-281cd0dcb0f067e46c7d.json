@@ -1,0 +1,31 @@
+{
+  "request_fingerprint": "281cd0dcb0f067e46c7d68914272a4e16b51557bc4d17a13216e2eb6c9623e57",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 입력 조건은 신경망 크기(256-491-491-16), 배치 사이즈 1, 실행 방식(CROWN의 3가지 방법: forward, forward+backward, backward_only), 데이터셋과 eps_list가 기존 신경망 검증팀이 사용하던 인풋이라는 점을 반영한다. 통제된 변수와 통제 방법은 연구 일지 수준에서 충분히 규정되지 않았다. CROWN Verification은 eps=1e-06, 출력 차원 16 조건에서 실행되었으며, CPU ONLY/GPU 버전 생성, 시간 측정 방식, 추론·bound·검증 단계 분리 측정, warm up 코드 삽입, cudaEvent 측정 제어 시스템 인자, GPU 클록 고정 시도, Persistence mode 설정 등이 적용되었다. 재현을 위해 필요한 세부 정보는 연구 일지 수준에서 충분히 제공되지 않았다.",
+          "evidence_ids": [
+            "E00031",
+            "E00035"
+          ]
+        },
+        {
+          "text": "구성 요소의 역할과 결합 방식은 메모리 풀(할당·해제 제거), cuBLAS, 가중치(W) GPU 사전 업로드, 벡터 연산을 CPU로 돌리는 하이브리드 구성, 커널 퓨전, alpha/beta GPU 버퍼, pinned memory, cuda graph 등의 역할을 정리한다. 방법 B와 방법 C의 개념·구도(3차원 배칭 커널 직접 작성 vs 행렬곱만 cuBLAS로 교체하는 하이브리드)도 함께 반영된다. only_GPU와 hybrid의 구조 차이는 함수별 실행 위치(GPU 커널 vs CPU for 문)와 GPU 메모리 풀 구조에서 나타난다. only_GPU는 d_mat[4] + d_vec[2](행렬 4개, 벡터 2개)를 미리 할당하고, hybrid는 matmul 전용 d_A, d_B, d_C 3개만 유지한다.",
+          "evidence_ids": [
+            "E00036",
+            "H40849fcc17fe_1"
+          ]
+        },
+        {
+          "text": "비교를 위한 구성과 조건은 CPU ONLY, GPU OPTIMIZED(cuBLAS+Pool), HYBRID(matmul=GPU, rest=CPU), HYBRID V2, mempool+warmup, cuda graph 적용 버전 등으로 정리되며, 각 조건이 통제하는 범위는 함수별 구현 위치와 전체 처리 시간의 변화로 확인된다. 다만 구성 요소 단위 성능과 전체 처리 성능 간 순위 비교 또는 불일치 분석은 원문에 명시적으로 존재하지 않는다.",
+          "evidence_ids": [
+            "E00036",
+            "H40849fcc17fe_1",
+            "Hcdbfb7147ce4_2"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00261",
+          "E00263",
+          "E00262",
+          "E00314"
+        ],
+        "text": "CUDA 기반 CROWN 검증 최적화에서는 싱글 스트림으로 동작하는 antenna_lirpa가 cuBLAS Batched GEMM과 텐서 코어를 활용해 현재 C++ 멀티스트림(8분)보다 약 4배 빠르게 동작한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 방법 C(Batched GEMM, 3D 텐서 연산화)는 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 한다. 커널 감소는 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회이며, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다."
+      }
+    }
+  },
+  "reason": "교체 문단이 허용 분량 600자를 넘었습니다."
+}

@@ -1,0 +1,28 @@
+{
+  "request_fingerprint": "4e98113bc6e391d34437d24808255081c4aab0f5d21d3bddbe0d940ddc582d47",
+  "value": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00326",
+          "E00329",
+          "E00366",
+          "E00115",
+          "E00122",
+          "E00124",
+          "E00130",
+          "E00146",
+          "E00147",
+          "E00148",
+          "E00149",
+          "E00150",
+          "E00165",
+          "E00232",
+          "E00066",
+          "E00067"
+        ],
+        "text": "CROWN Verification은 eps=1e-6, 출력 차원 16 조건에서 실행했으며, CPU 전용 계산 버전과 GPU 버전을 만들어 신경망 정방향 통과 및 backward 계산 시간을 측정했다. 추론·bound 계산·검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하도록 구성했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기 256-491-491-16, 배치 사이즈 1, 실행 방식은 forward, forward+backward, backward_only의 세 가지로 진행했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 프로그램과 검증 결과·비율의 차이를 확인하는 방식으로 모두 동일하게 나타났다. GPU 클록 고정은 이후 고정된 사항이며, warm up은 초기에 적용되었다. 측정 과정에서 network_forward()는 전체 타이머에 포함되지만 cuSPARSE 파이프라인이 완성되지 않아 SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가되었고, 신경망이 작아 실제 sparse 연산보다 setup/launch 비용이 더 크게 나타났다. cuBlas도 큰 영향을 주지 못하는 것으로 관찰되었으며, mempool에서 ensure_pool()로 미리 메모리를 할당하는 것은 영향이 크지만 cuBlas 사용 및 warm up과 크게 다르지 않다고 기록되었다. memcpy 병목을 잡아야 CPU보다 빨라질 수 있다는 판단 아래 동기화(cudaDeviceSynchronize) 제거, mempool+warmup 적용, 커널 퓨전, affine 중복 계산 삭제, 포인터 스와핑, 행렬곱 커널 통합, forward-backward 간 alpha/beta 전달 과정 삭제 및 D2D 복사 통합, Forward 입력 버퍼(x0±eps)의 Backward 재사용, 기본 초기 상태의 GPU 커널 직접 생성 등의 구현 변경이 비교 결과에 영향을 주는 요소로 나타났다. backward_bound_gpu()에 커널 퓨전을 먼저 진행해 23ms 후반대까지의 실행 시간이 관측되었고, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 23ms 정도가 보인다는 점이 기록되었다. 이후 Backward 메모리 복사 제거 및 초기화 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time이 13.939000ms로 기록되었으며, 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었다. fp32 단정밀도 연산 변경 시도도 있었으나 이 부분은 fp32에 대한 고찰에 있다. Forward와 Backward의 cudaMemcpy 호출 횟수는 동일하며, 추가 최적화 후보로 infer 크기 계산 주석 처리(vector라 크지 않다는 점)와 certify heap 재변경 여부가 검토되었다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것은 한계로 남는다."
+      }
+    }
+  }
+}

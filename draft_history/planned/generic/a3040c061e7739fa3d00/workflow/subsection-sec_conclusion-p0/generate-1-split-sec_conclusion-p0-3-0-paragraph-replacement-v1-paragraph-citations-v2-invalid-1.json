@@ -1,0 +1,25 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00106",
+          "E00166",
+          "E00257",
+          "E00076",
+          "E00077",
+          "E00078",
+          "E00081",
+          "E00122",
+          "E00124",
+          "E00130",
+          "E00133",
+          "E00137",
+          "E00138"
+        ],
+        "text": "본 연구는 CROWN 신경망 검증을 CUDA로 구현해 실시간 대규모 연산에 대응하려는 시도였다. cuSparse spMV만 적용한 CROWN Verification은 27.107400 ms로 이전 27ms 수준보다 느려졌고, Forward 전체는 약 64s, Backward 전체는 약 98s로 관측되었다. 현재 C++ 멀티스트림은 단일 샘플 커널을 64개 스트림에 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어만 사용해 1024개 처리에 수만 번 커널 호출이 필요해 약 8분이 소요된다. make_zero_matrix·make_zero_vector의 CPU 회귀는 22~25ms 감소, 영벡터 GPU 재시도는 3~5ms 증가로 CPU 유지가 유리했으며, 결과 저장용 벡터 memcpy 제거로 약 10ms가 추가 단축되었다. mempool+warmup+결과 벡터 memcpy 제거 후 출력 16개 차원의 Lower/Upper Bound와 Normal Pred(y)가 출력되었다. backward_bound_gpu의 affine 중복 계산 삭제로 커널 2개 함수가 줄었고, 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합했으며, forward-backward 간 alpha·beta 전달 과정을 메모리 풀로 삭제하고 레이어별 GPU 버퍼를 직접 사용하도록 변경했으며, bias도 메모리 풀에서 관리하도록 바꾸었다. 기존 GPU→CPU→GPU→CPU 복사 구조를 affine_min/max까지 backward_bound_gpu에서 실행되도록 개선해 GPU→CPU 복사를 최소화했다. 다만 이러한 수치는 대부분 단일 실행 결과에 기반하며 반복 측정 통계가 부족하고, 메모리 풀+warmup, 가중치 사전 업로드, 커널 퓨전, cuda graph, pinned memory 등 여러 요소가 동시에 바뀌어 개별 효과를 분리하기 어려우며, preload가 의도치 않게 GPU warmup 역할을 한 사례처럼 효과 혼입이 발생할 수 있어 개별 구성 요소 변경 효과와 전체 처리 과정 변경 효과를 구분해야 한다. 또한 CPU 대비 속도 개선 목표와 관련해 50ms만 더 단축하면 CPU를 따라잡을 수 있다는 판단이 있었으나, CPU 버전의 정확한 수치나 반복 측정 기반 비교는 현재 페이지에 제시되지 않았다."
+      }
+    }
+  },
+  "reason": "교체 문단이 허용 분량 296자를 넘었습니다."
+}

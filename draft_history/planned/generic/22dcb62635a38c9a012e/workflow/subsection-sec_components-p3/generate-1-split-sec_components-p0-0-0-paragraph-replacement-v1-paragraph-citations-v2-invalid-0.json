@@ -1,0 +1,24 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "E00135",
+          "E00136",
+          "E00130",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00212",
+          "E00213",
+          "E00214",
+          "E00313",
+          "E00314"
+        ],
+        "text": "커널 퓨전은 여러 단계의 커널 호출을 하나의 커널로 묶어 런치 오버헤드를 줄이는 방향이며, 함수 통합은 포인터·스칼라 인자 전달 규칙과 메모리 풀을 활용해 중간 복사·포인터 스와핑을 제거하는 방향으로 진행되었다.\n\nCUDA 커널 인자는 포인터(배열)와 스칼라(단일 숫자·열거형)로 구분된다. 포인터는 cudaMalloc·cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 포인터 변수는 크기가 커서 CPU가 커널 매개변수 주머니에 값을 직접 넣어줄 수 없으므로 memcpy로 올려야 한다. 반면 int·float·double·enum 같은 4~8바이트 수준의 값은 CPU가 직접 참조해 커널 실행 시 Parameter Bank/Constant Memory에 실어 보낼 수 있다.\n\n이러한 전달 규칙 위에서 lirpa_forward_bound 함수 커널 퓨전, backward_bound_gpu의 affine 중복 계산 삭제, new_(upper, lower)_p 포인터 스와핑(std::swap), backward_matmul_pair_gpu 커널 통합, build_coeff_pair_fused_gpu·backward_bias_pair_fused_gpu 커널 퓨전이 적용되었다. forward-backward 간 alpha·beta 메모리 풀 전달 과정 삭제 및 GPU 버퍼 직접 사용, D2H 복사 제거, 기본 초기 상태 GPU 커널 직접 생성도 함께 정리되었다.\n\n커널 호출 횟수 감소는 그래프 캡처와 함께 검토되었다. cudaGraph는 1번의 CROWN 계산 내에서도 수십 번 호출되는 커널을 하나의 호출로 압축해 런치 오버헤드를 줄이는 방법으로, 커널 자체 최적화까지 끝낸 뒤 고려할 수 있는 스냅샷 기능이다. 추론과 bound를 따로 캡처한 경우와 추론+bound를 한 번에 캡처한 경우를 구분해 커널 런치 비용 최소화를 시도했다. 그래프 모드에서 샘플 1개 전체 기준으로 Forward 33→24회, Backward 52→37회, Backward-only 51→39회로 줄었고, 구체적으로는 Forward에서 lower/upper matmul·bias matvec·matrix scaling+vector affine이 각 2→1로 통합되어 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg+bias accumulation 2→1 및 레이어당 backward 단계 5→4회, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 split/bias kernel 통합으로 총 12회 감소했다.\n\n지금까지의 최적화 목록에는 제로 memcpy, 커널 자체 실행 횟수 감소(커널 퓨전·커널 graph), GPU 아키텍처의 SM 구조를 고려한 FP64→FP32·double→float 변경이 포함된다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 수행하지는 못했다."
+      }
+    }
+  },
+  "reason": "교체 문단의 text에 여러 문단이 합쳐져 있습니다."
+}

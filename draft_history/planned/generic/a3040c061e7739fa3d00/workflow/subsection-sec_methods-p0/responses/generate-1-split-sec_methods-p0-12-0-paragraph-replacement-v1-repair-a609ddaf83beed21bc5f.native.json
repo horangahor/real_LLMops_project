@@ -1,0 +1,33 @@
+{
+  "id": "d36ca3a5-a21c-4084-966d-a36fa9a5dbc0",
+  "object": "chat.completion",
+  "created": 1793980957,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"parts\": {\"p0\": {\"evidence_ids\": [\"E00105\", \"E00106\", \"E00174\", \"E00202\", \"E00233\", \"E00252\", \"E00253\", \"E00254\", \"E00255\", \"E00256\", \"E00257\", \"E00260\", \"E00261\", \"E00262\", \"E00263\"], \"text\": \"평가 대상은 CROWN을 구현한 C++ 프로그램이며, 입력 조건은 신경망 크기 256-491-491-16, 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only), 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list이다. 실행은 eps_list 이중 루프에서 각 데이터 i에 대해 network_forward로 정방향 통과 후 method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, certify_topk 판정 결과에 따라 Ht_count 또는 f_count를 증가시킨다. cuSparse 도입 시도에서는 W, W_pos, W_neg를 CSR 형식으로 변환하고 cuSPARSE handle 및 CSR descriptor를 유지한 채 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체했으나 기존 matmul은 유지되었으며, spMV만 적용한 CROWN Verification 실행 시간은 27.107400 ms로 이전 27ms 수준보다 느려진 것으로 기록되었다. 초기화 이후 forward와 backward의 bound 계산 시간은 비슷하며 약 0.2ms 정도 차이가 난다. 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요되며, 스트림 수의 한계(SM 포화)로 7~8분이 한계선으로 기록된다. antenna_lirpa는 싱글 스트림으로 동작하지만 cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림보다 약 4배 빠르다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대 진입을 목표로 한다. 배치 사이즈 64일 때 약 424초가 걸렸으며, 현재 구현은 배치 사이즈만큼 동일한 수의 독립 스트림을 만들어 각 스트림이 GPU 메모리를 차지하는 방식이다. 배치 사이즈를 512로 하면 메모리를 넘지 않지만 느리며, 그 이유는 각 스트림마다 CPU가 돌아가면서 다음 커널을 런치해줘야 해서 1024개의 스트림이 각각 CPU가 다음 커널을 런치해줄 때까지 기다리고 있기 때문이다. 스트림 수를 64개 정도로 줄이고 배치 사이즈를 1024로 하는 방안은 의미가 없다고 판단했으며, 초기 데이터 H2D 비용은 확실히 줄지만 연산 병목은 스트림이 64개라 한 번에 64개밖에 대응하지 못하는 제약이 있다. 10주차 세미나 이후 생각해볼 사항으로 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 미팅 일정, 배칭+다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 기록되었다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계로 기록된다.\"}}}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 24875,
+    "completion_tokens": 755,
+    "total_tokens": 25630,
+    "prompt_tokens_details": {
+      "cached_tokens": 16320,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

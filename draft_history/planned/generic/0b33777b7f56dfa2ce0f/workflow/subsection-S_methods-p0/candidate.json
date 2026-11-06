@@ -1,0 +1,747 @@
+{
+  "sections": {
+    "S_methods": {
+      "parts": {
+        "p0": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 교체하는 방향으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 NVIDIA C Compiler(nvcc)에서 컴파일이 가능하다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅 방향과 환경 정보를 정리한 기록이며, CUDA 컴파일러(nvcc) 사용과 C++ 기반 코드에 GPU 동작이 필요한 부분만 커널로 변경하는 조건을 전제로 한다. [근거:E00001]\n\nCUDA 포팅 초기 접근은 lirpa_forward_backward_fc_array.cpp의 기본 틀을 유지한 채 병렬 연산이 필요한 부분만 GPU에서 동작하는 kernel 함수로 바꾸는 구상을 검토하는 방식으로 진행되었다. 이 구상은 실제 구현 완료 결과가 아니라 포팅 방향에 대한 검토 단계의 기록이다. CUDA 동작이 필요한 코드만 별도로 변경해도 nvcc에서 컴파일이 가능하다는 점을 전제로, 기존 C++ 코드의 기본 틀을 유지하는 방향을 함께 고려하였다. [근거:E00002,E00003,E00004]\n\nmain 함수 분석에서는 epsilon 입력 시 시스템 호출 인자를 줄 수 있고 eps 값을 변경할 수 있다고 보았다. main 함수에는 self_test_relaxations 호출과 run_xor_demo 호출이 포함되며, self_test_relaxations는 안정성 테스트용 코드로 전체 흐름에 큰 영향을 주지 않는다고 해석하였다. 이 역시 코드 흐름 파악 과정의 해석이며, 실제 검증 결과나 정량적 영향은 이 단계에서 확인되지 않았다. [근거:E00003,E00004]\n\nCUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근했으며, 기존 구현의 기본 틀은 유지하는 구상을 전제로 했다. 이 절은 실제 성능·정확도 결과가 아니라 초기 접근과 환경 구성 방식을 기록한 것이다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했고, 컴파일 옵션에는 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이며, CUDA Toolkit 설치 시 자동으로 포함되어 별도 설치는 필요하지 않다. my_lirpa_op.cu에서 cublasDgemm() 함수를 사용하기 때문에 이 라이브러리 연결이 필요하다. [근거:E00016,E00024,E00025,E00026,E00034]\n\n본 절은 CUDA 포팅 접근과 초기 환경을 서술한다. CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 시작했으며, 기본 틀은 유지하는 구상을 전제로 하였다. 이 내용은 실제 성능이나 정확도 결과가 아니라 초기 접근 기록이며, 과제 수령 시점인 2주차에 해당 과제를 받은 사실에서 출발한다. 평가 대상은 CROWN을 구현한 C++ 프로그램이었고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 신경망 크기와 배치 사이즈는 1로 두었으며, 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지 방법을 대상으로 하였다. GPU 클록 고정은 이후 고정된 사항이고, warm up은 초기에 적용되었다. 이 절의 서술은 최적화 과정에서 적용 여부를 바꾸며 검토한 구성들을 배경으로 하며, 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못한 한계가 있다. [근거:E00010]\n\nCUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방식으로 접근하였다. 커널 인자는 포인터(배열)와 스칼라(단일 숫자·열거형)로 구분되며, 포인터는 cudaMalloc과 cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라는 CPU 메모리 값을 커널 실행 시 Parameter Bank 또는 Constant Memory에 함께 실어 보낼 수 있다. 포인터 변수는 크기가 커서 CPU가 커널 매개변수 주머니에 값을 직접 넣어줄 수 없으므로 memcpy로 올려야 하며, 4~8바이트 수준의 값만 CPU가 직접 참조해 보낼 수 있다. 이 서술은 CUDA 인자 전달 방식에 대한 초기 접근 기록이며, 실제 성능·정확도 결과는 포함하지 않는다. [근거:E00135,E00136]\n\nCUDA 포팅 초기 구성은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이후 구성에는 pinned Memory 추가, cudaEvent 제어, 필요한 만큼 계산 후 D2H memcpy, certify topk 자료구조 스택화가 포함되었으며, graph와 비교 시 단일 스트림 입력 복사 최적화를 논의하자는 관점이 제시되었다. 10주차 세미나 이후에는 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 미팅 일정, 배칭과 다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 과제로 기록되었다. auto lirpa repo는 https://github.com/horangahor/antenna_auto_lirpa에서 받아 실행해보기로 하였다. 이 내용은 초기 접근과 과제·생각 목록의 기록이며, 각 구성 요소의 개별 효과 정량 분리나 성능 수치는 포함하지 않는다. [근거:E00230,E00231,E00233,E00235]\n\nCUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근했으며, 기존 C++ 구현의 기본 틀은 유지하는 구상을 전제로 한다. 초기 접근 단계에서는 실제 성능·정확도 결과가 아니라 CUDA 동작이 필요한 연산의 커널 분리와 실행 구조 정리가 중심이었다. [근거:E00257,E00260,E00261,E00262,E00263]\n\n현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32 연산기)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 현재 커널은 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산, 즉 평면적 계산을 수행하며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 현재는 2차원 커널이라 fp32 코어로만 수행 중이다. [근거:E00257,E00260]\n\n방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 이 가속 배율과 한계선은 단일 서술에 기반하며, 반복 측정 통계나 SM 포화에 대한 정량적 근거는 포함하지 않는다. [근거:E00263]\n\nantenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 이 약 4배 비교는 8분 대비 2분 미만의 근사 비교로, 정밀 배율 측정값은 아니다. [근거:E00261]\n\n차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표치는 실측값이 아니라 계획 단계의 목표이며, 전체 40,000개 규모에서의 실현 여부는 아직 검증되지 않았다. [근거:E00262]\n\n평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16)와 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only)은 기존 신경망 검증팀이 사용하던 입력과 eps_list를 기준으로 한다. 데이터셋과 eps_list는 기존 신경망 검증팀의 구현과 시간을 비교하기 위해 해당 팀이 사용하던 것을 사용했고, GPU 클록 고정은 이후 고정된 사항이며 warm up은 초기에 적용되었다. 최적화 과정에서 적용 여부가 바뀐 요소가 많아 각 최적화 기법을 체계적으로 분리한 ablation study는 수행되지 않았다. [근거:E00257,E00260,E00261,E00262,E00263]\n\nCUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅의 기본 틀과 환경 구성을 정리한 기록이며, 이후 최적화 과정에서 세부 구성이 조정되었다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. 이와 별개로 No-Pin(일반 메모리) 방식에서는 CPU가 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 발생하지 않는다고 설명된다. 다만 이 두 내용은 인용·설명 기반 서술로, 실제 측정 결과나 구현 검증과는 별도로 보존한다. [근거:E00287,E00288]\n\nCUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이 초기 접근은 실제 성능이나 정확도 결과가 아니라 포팅 구상과 환경 설정에 관한 기록이다. 신경망 구조에서는 GPU 메모리 주소를 저장하는 포인터 배열을 FullyConnectedNetwork에 미리 구성하였고, 이 배열의 크기는 MAX_LAYERS를 기준으로 하므로 신경망이 작으면 공간이 낭비될 여지가 있었다. 또한 double 기반 행렬·벡터 구조체에서 float 접근 속도가 더 빠르다는 점을 고려하더라도, 전체 구조가 double을 기준으로 설계되어 있어 float 포인터를 사용하려면 전반적인 구조 변경이 필요하다는 점이 함께 검토되었다. [근거:E00323,E00324]\n\nCUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였고, 기본 틀은 유지하는 구상을 전제로 하였다. 외부 라이브러리 cuBlas·cuSparse 도입은 일단은 보류하였으며, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이와 함께 localrobustness_fwd_bwd.py 코드 검토와 CROWN range 정렬 문제에 대한 해답 확인이 진행되었고, Nsight Compute를 활용한 CUDA core 점유율 50% 목표 분석이 과제로 정리되었다. 다만 현재 기록은 세미나 이후 할 일 목록과 코드·문제 관련 메모에 해당하며, 실제 구현 완료나 측정 결과, 발표 결과를 포함하지 않는다. [근거:E00333]\n\nCUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 기본 틀은 유지한 채 외부 라이브러리 cuBlas·cuSparse 도입은 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이 내용은 실제 성능·정확도 결과가 아니라 6번째 세미나 이후 정리된 초기 접근 기록이다. localrobustness_fwd_bwd.py 코드 검토와 CROWN range 정렬 문제 해답 확인, Nsight Compute를 이용한 CUDA core 점유율 50% 목표 분석이 함께 기록되었다. [근거:E00333]"
+      }
+    }
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "RI_methods_1",
+        "verdict": "met",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p2",
+          "S_methods_p4",
+          "S_methods_p6",
+          "S_methods_p7",
+          "S_methods_p8",
+          "S_methods_p14",
+          "S_methods_p15",
+          "S_methods_p17"
+        ],
+        "evidence_ids": [
+          "E00001",
+          "E00002",
+          "E00003",
+          "E00004",
+          "E00016",
+          "E00024",
+          "E00025",
+          "E00026",
+          "E00034",
+          "E00135",
+          "E00136",
+          "E00230",
+          "E00231",
+          "E00233",
+          "E00235",
+          "E00287",
+          "E00288",
+          "E00323",
+          "E00324",
+          "E00333"
+        ],
+        "quote": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 교체하는 방향으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 NVIDIA C Compiler(nvcc)에서 컴파일이 가능하다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅 방향과 환경 정보를 정리한 기록이며, CUDA 컴파일러(nvcc) 사용과 C++ 기반 코드에 GPU 동작이 필요한 부분만 커널로 변경하는 조건을 전제로 한다. [근거:E00001]",
+        "paragraph_quotes": [
+          "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 교체하는 방향으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 NVIDIA C Compiler(nvcc)에서 컴파일이 가능하다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅 방향과 환경 정보를 정리한 기록이며, CUDA 컴파일러(nvcc) 사용과 C++ 기반 코드에 GPU 동작이 필요한 부분만 커널로 변경하는 조건을 전제로 한다. [근거:E00001]",
+          "CUDA 포팅 초기 접근은 lirpa_forward_backward_fc_array.cpp의 기본 틀을 유지한 채 병렬 연산이 필요한 부분만 GPU에서 동작하는 kernel 함수로 바꾸는 구상을 검토하는 방식으로 진행되었다. 이 구상은 실제 구현 완료 결과가 아니라 포팅 방향에 대한 검토 단계의 기록이다. CUDA 동작이 필요한 코드만 별도로 변경해도 nvcc에서 컴파일이 가능하다는 점을 전제로, 기존 C++ 코드의 기본 틀을 유지하는 방향을 함께 고려하였다. [근거:E00002,E00003,E00004]",
+          "CUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근했으며, 기존 구현의 기본 틀은 유지하는 구상을 전제로 했다. 이 절은 실제 성능·정확도 결과가 아니라 초기 접근과 환경 구성 방식을 기록한 것이다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했고, 컴파일 옵션에는 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이며, CUDA Toolkit 설치 시 자동으로 포함되어 별도 설치는 필요하지 않다. my_lirpa_op.cu에서 cublasDgemm() 함수를 사용하기 때문에 이 라이브러리 연결이 필요하다. [근거:E00016,E00024,E00025,E00026,E00034]",
+          "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방식으로 접근하였다. 커널 인자는 포인터(배열)와 스칼라(단일 숫자·열거형)로 구분되며, 포인터는 cudaMalloc과 cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라는 CPU 메모리 값을 커널 실행 시 Parameter Bank 또는 Constant Memory에 함께 실어 보낼 수 있다. 포인터 변수는 크기가 커서 CPU가 커널 매개변수 주머니에 값을 직접 넣어줄 수 없으므로 memcpy로 올려야 하며, 4~8바이트 수준의 값만 CPU가 직접 참조해 보낼 수 있다. 이 서술은 CUDA 인자 전달 방식에 대한 초기 접근 기록이며, 실제 성능·정확도 결과는 포함하지 않는다. [근거:E00135,E00136]",
+          "CUDA 포팅 초기 구성은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이후 구성에는 pinned Memory 추가, cudaEvent 제어, 필요한 만큼 계산 후 D2H memcpy, certify topk 자료구조 스택화가 포함되었으며, graph와 비교 시 단일 스트림 입력 복사 최적화를 논의하자는 관점이 제시되었다. 10주차 세미나 이후에는 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 미팅 일정, 배칭과 다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 과제로 기록되었다. auto lirpa repo는 https://github.com/horangahor/antenna_auto_lirpa에서 받아 실행해보기로 하였다. 이 내용은 초기 접근과 과제·생각 목록의 기록이며, 각 구성 요소의 개별 효과 정량 분리나 성능 수치는 포함하지 않는다. [근거:E00230,E00231,E00233,E00235]",
+          "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근했으며, 기존 C++ 구현의 기본 틀은 유지하는 구상을 전제로 한다. 초기 접근 단계에서는 실제 성능·정확도 결과가 아니라 CUDA 동작이 필요한 연산의 커널 분리와 실행 구조 정리가 중심이었다. [근거:E00257,E00260,E00261,E00262,E00263]",
+          "CUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅의 기본 틀과 환경 구성을 정리한 기록이며, 이후 최적화 과정에서 세부 구성이 조정되었다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. 이와 별개로 No-Pin(일반 메모리) 방식에서는 CPU가 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 발생하지 않는다고 설명된다. 다만 이 두 내용은 인용·설명 기반 서술로, 실제 측정 결과나 구현 검증과는 별도로 보존한다. [근거:E00287,E00288]",
+          "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이 초기 접근은 실제 성능이나 정확도 결과가 아니라 포팅 구상과 환경 설정에 관한 기록이다. 신경망 구조에서는 GPU 메모리 주소를 저장하는 포인터 배열을 FullyConnectedNetwork에 미리 구성하였고, 이 배열의 크기는 MAX_LAYERS를 기준으로 하므로 신경망이 작으면 공간이 낭비될 여지가 있었다. 또한 double 기반 행렬·벡터 구조체에서 float 접근 속도가 더 빠르다는 점을 고려하더라도, 전체 구조가 double을 기준으로 설계되어 있어 float 포인터를 사용하려면 전반적인 구조 변경이 필요하다는 점이 함께 검토되었다. [근거:E00323,E00324]",
+          "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 기본 틀은 유지한 채 외부 라이브러리 cuBlas·cuSparse 도입은 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이 내용은 실제 성능·정확도 결과가 아니라 6번째 세미나 이후 정리된 초기 접근 기록이다. localrobustness_fwd_bwd.py 코드 검토와 CROWN range 정렬 문제 해답 확인, Nsight Compute를 이용한 CUDA core 점유율 50% 목표 분석이 함께 기록되었다. [근거:E00333]"
+        ],
+        "guideline_ids": [
+          "ref1_methods_required_2"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [
+          "E00054",
+          "E00095",
+          "E00104",
+          "E00105",
+          "E00252",
+          "E00253",
+          "E00254",
+          "E00255",
+          "E00256",
+          "E00276",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00290",
+          "E00291",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00298",
+          "E00299",
+          "E00300",
+          "E00301"
+        ]
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "S_methods",
+        "reference_id": "ref1_methods",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p2",
+          "S_methods_p4",
+          "S_methods_p6",
+          "S_methods_p7",
+          "S_methods_p8",
+          "S_methods_p14",
+          "S_methods_p15",
+          "S_methods_p17"
+        ],
+        "reason": "CUDA 포팅 초기 환경과 구성 요소 서술은 있으나, 평가 대상·입력 조건·통제 변수·버전별 구성이 연구 노트만으로 충분히 특정되지 않아 실행 플랫폼 구성 서술이 부분적으로만 충족된다.",
+        "quote": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 교체하는 방향으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 NVIDIA C Compiler(nvcc)에서 컴파일이 가능하다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅 방향과 환경 정보를 정리한 기록이며, CUDA 컴파일러(nvcc) 사용과 C++ 기반 코드에 GPU 동작이 필요한 부분만 커널로 변경하는 조건을 전제로 한다. [근거:E00001]",
+        "paragraph_quotes": [
+          "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 교체하는 방향으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 NVIDIA C Compiler(nvcc)에서 컴파일이 가능하다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅 방향과 환경 정보를 정리한 기록이며, CUDA 컴파일러(nvcc) 사용과 C++ 기반 코드에 GPU 동작이 필요한 부분만 커널로 변경하는 조건을 전제로 한다. [근거:E00001]",
+          "CUDA 포팅 초기 접근은 lirpa_forward_backward_fc_array.cpp의 기본 틀을 유지한 채 병렬 연산이 필요한 부분만 GPU에서 동작하는 kernel 함수로 바꾸는 구상을 검토하는 방식으로 진행되었다. 이 구상은 실제 구현 완료 결과가 아니라 포팅 방향에 대한 검토 단계의 기록이다. CUDA 동작이 필요한 코드만 별도로 변경해도 nvcc에서 컴파일이 가능하다는 점을 전제로, 기존 C++ 코드의 기본 틀을 유지하는 방향을 함께 고려하였다. [근거:E00002,E00003,E00004]",
+          "CUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근했으며, 기존 구현의 기본 틀은 유지하는 구상을 전제로 했다. 이 절은 실제 성능·정확도 결과가 아니라 초기 접근과 환경 구성 방식을 기록한 것이다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했고, 컴파일 옵션에는 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이며, CUDA Toolkit 설치 시 자동으로 포함되어 별도 설치는 필요하지 않다. my_lirpa_op.cu에서 cublasDgemm() 함수를 사용하기 때문에 이 라이브러리 연결이 필요하다. [근거:E00016,E00024,E00025,E00026,E00034]",
+          "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방식으로 접근하였다. 커널 인자는 포인터(배열)와 스칼라(단일 숫자·열거형)로 구분되며, 포인터는 cudaMalloc과 cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라는 CPU 메모리 값을 커널 실행 시 Parameter Bank 또는 Constant Memory에 함께 실어 보낼 수 있다. 포인터 변수는 크기가 커서 CPU가 커널 매개변수 주머니에 값을 직접 넣어줄 수 없으므로 memcpy로 올려야 하며, 4~8바이트 수준의 값만 CPU가 직접 참조해 보낼 수 있다. 이 서술은 CUDA 인자 전달 방식에 대한 초기 접근 기록이며, 실제 성능·정확도 결과는 포함하지 않는다. [근거:E00135,E00136]",
+          "CUDA 포팅 초기 구성은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이후 구성에는 pinned Memory 추가, cudaEvent 제어, 필요한 만큼 계산 후 D2H memcpy, certify topk 자료구조 스택화가 포함되었으며, graph와 비교 시 단일 스트림 입력 복사 최적화를 논의하자는 관점이 제시되었다. 10주차 세미나 이후에는 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 미팅 일정, 배칭과 다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 과제로 기록되었다. auto lirpa repo는 https://github.com/horangahor/antenna_auto_lirpa에서 받아 실행해보기로 하였다. 이 내용은 초기 접근과 과제·생각 목록의 기록이며, 각 구성 요소의 개별 효과 정량 분리나 성능 수치는 포함하지 않는다. [근거:E00230,E00231,E00233,E00235]",
+          "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근했으며, 기존 C++ 구현의 기본 틀은 유지하는 구상을 전제로 한다. 초기 접근 단계에서는 실제 성능·정확도 결과가 아니라 CUDA 동작이 필요한 연산의 커널 분리와 실행 구조 정리가 중심이었다. [근거:E00257,E00260,E00261,E00262,E00263]",
+          "CUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅의 기본 틀과 환경 구성을 정리한 기록이며, 이후 최적화 과정에서 세부 구성이 조정되었다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. 이와 별개로 No-Pin(일반 메모리) 방식에서는 CPU가 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 발생하지 않는다고 설명된다. 다만 이 두 내용은 인용·설명 기반 서술로, 실제 측정 결과나 구현 검증과는 별도로 보존한다. [근거:E00287,E00288]",
+          "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이 초기 접근은 실제 성능이나 정확도 결과가 아니라 포팅 구상과 환경 설정에 관한 기록이다. 신경망 구조에서는 GPU 메모리 주소를 저장하는 포인터 배열을 FullyConnectedNetwork에 미리 구성하였고, 이 배열의 크기는 MAX_LAYERS를 기준으로 하므로 신경망이 작으면 공간이 낭비될 여지가 있었다. 또한 double 기반 행렬·벡터 구조체에서 float 접근 속도가 더 빠르다는 점을 고려하더라도, 전체 구조가 double을 기준으로 설계되어 있어 float 포인터를 사용하려면 전반적인 구조 변경이 필요하다는 점이 함께 검토되었다. [근거:E00323,E00324]",
+          "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 기본 틀은 유지한 채 외부 라이브러리 cuBlas·cuSparse 도입은 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이 내용은 실제 성능·정확도 결과가 아니라 6번째 세미나 이후 정리된 초기 접근 기록이다. localrobustness_fwd_bwd.py 코드 검토와 CROWN range 정렬 문제 해답 확인, Nsight Compute를 이용한 CUDA core 점유율 50% 목표 분석이 함께 기록되었다. [근거:E00333]"
+        ]
+      },
+      {
+        "section_id": "S_methods",
+        "reference_id": "ref2_methods",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "S_methods_p5",
+          "S_methods_p9",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12",
+          "S_methods_p13"
+        ],
+        "reason": "비교 구성과 측정 구간 서술 흐름이 일부 반영되었으나, 기준선·변경 범위·측정 초점·워크로드/데이터셋/지표·플랫폼/소프트웨어 환경이 연구 노트만으로 충분히 정리되지 않아 부분적으로만 충족된다.",
+        "quote": "본 절은 CUDA 포팅 접근과 초기 환경을 서술한다. CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 시작했으며, 기본 틀은 유지하는 구상을 전제로 하였다. 이 내용은 실제 성능이나 정확도 결과가 아니라 초기 접근 기록이며, 과제 수령 시점인 2주차에 해당 과제를 받은 사실에서 출발한다. 평가 대상은 CROWN을 구현한 C++ 프로그램이었고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 신경망 크기와 배치 사이즈는 1로 두었으며, 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지 방법을 대상으로 하였다. GPU 클록 고정은 이후 고정된 사항이고, warm up은 초기에 적용되었다. 이 절의 서술은 최적화 과정에서 적용 여부를 바꾸며 검토한 구성들을 배경으로 하며, 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못한 한계가 있다. [근거:E00010]",
+        "paragraph_quotes": [
+          "본 절은 CUDA 포팅 접근과 초기 환경을 서술한다. CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 시작했으며, 기본 틀은 유지하는 구상을 전제로 하였다. 이 내용은 실제 성능이나 정확도 결과가 아니라 초기 접근 기록이며, 과제 수령 시점인 2주차에 해당 과제를 받은 사실에서 출발한다. 평가 대상은 CROWN을 구현한 C++ 프로그램이었고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 신경망 크기와 배치 사이즈는 1로 두었으며, 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지 방법을 대상으로 하였다. GPU 클록 고정은 이후 고정된 사항이고, warm up은 초기에 적용되었다. 이 절의 서술은 최적화 과정에서 적용 여부를 바꾸며 검토한 구성들을 배경으로 하며, 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못한 한계가 있다. [근거:E00010]",
+          "현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32 연산기)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 현재 커널은 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산, 즉 평면적 계산을 수행하며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 현재는 2차원 커널이라 fp32 코어로만 수행 중이다. [근거:E00257,E00260]",
+          "방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 이 가속 배율과 한계선은 단일 서술에 기반하며, 반복 측정 통계나 SM 포화에 대한 정량적 근거는 포함하지 않는다. [근거:E00263]",
+          "antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 이 약 4배 비교는 8분 대비 2분 미만의 근사 비교로, 정밀 배율 측정값은 아니다. [근거:E00261]",
+          "차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표치는 실측값이 아니라 계획 단계의 목표이며, 전체 40,000개 규모에서의 실현 여부는 아직 검증되지 않았다. [근거:E00262]",
+          "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16)와 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only)은 기존 신경망 검증팀이 사용하던 입력과 eps_list를 기준으로 한다. 데이터셋과 eps_list는 기존 신경망 검증팀의 구현과 시간을 비교하기 위해 해당 팀이 사용하던 것을 사용했고, GPU 클록 고정은 이후 고정된 사항이며 warm up은 초기에 적용되었다. 최적화 과정에서 적용 여부가 바뀐 요소가 많아 각 최적화 기법을 체계적으로 분리한 ablation study는 수행되지 않았다. [근거:E00257,E00260,E00261,E00262,E00263]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p5",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않고, 평가 대상·입력 조건·통제 변수·ablation 한계 등 다른 항목으로 내용이 이동했다. 해당 문단의 실제 인용 근거는 E00010뿐이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002, E00016, E00024, E00025, E00026, E00034, E00135, E00136 등)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00010"
+        ],
+        "failure_owner": "writer",
+        "quote": "본 절은 CUDA 포팅 접근과 초기 환경을 서술한다. CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 시작했으며, 기본 틀은 유지하는 구상을 전제로 하였다. 이 내용은 실제 성능이나 정확도 결과가 아니라 초기 접근 기록이며, 과제 수령 시점인 2주차에 해당 과제를 받은 사실에서 출발한다. 평가 대상은 CROWN을 구현한 C++ 프로그램이었고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 신경망 크기와 배치 사이즈는 1로 두었으며, 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지 방법을 대상으로 하였다. GPU 클록 고정은 이후 고정된 사항이고, warm up은 초기에 적용되었다. 이 절의 서술은 최적화 과정에서 적용 여부를 바꾸며 검토한 구성들을 배경으로 하며, 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못한 한계가 있다. [근거:E00010]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p9",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 현재 커널 구조와 Task Parallelism 해석을 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00257, E00260이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00257",
+          "E00260"
+        ],
+        "failure_owner": "writer",
+        "quote": "현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32 연산기)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 현재 커널은 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산, 즉 평면적 계산을 수행하며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 현재는 2차원 커널이라 fp32 코어로만 수행 중이다. [근거:E00257,E00260]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p10",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 방법 A의 가속 배율과 한계선만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00263이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00263"
+        ],
+        "failure_owner": "writer",
+        "quote": "방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 이 가속 배율과 한계선은 단일 서술에 기반하며, 반복 측정 통계나 SM 포화에 대한 정량적 근거는 포함하지 않는다. [근거:E00263]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p11",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 antenna_lirpa의 싱글 스트림·cuBLAS Batched GEMM·텐서 코어 비교만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00261이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00261"
+        ],
+        "failure_owner": "writer",
+        "quote": "antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 이 약 4배 비교는 8분 대비 2분 미만의 근사 비교로, 정밀 배율 측정값은 아니다. [근거:E00261]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p12",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 방법 C 로드맵 목표만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00262이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00262"
+        ],
+        "failure_owner": "writer",
+        "quote": "차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표치는 실측값이 아니라 계획 단계의 목표이며, 전체 40,000개 규모에서의 실현 여부는 아직 검증되지 않았다. [근거:E00262]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p13",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 평가 대상·입력 조건·ablation 한계를 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00257, E00260, E00261, E00262, E00263이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00257",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263"
+        ],
+        "failure_owner": "writer",
+        "quote": "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16)와 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only)은 기존 신경망 검증팀이 사용하던 입력과 eps_list를 기준으로 한다. 데이터셋과 eps_list는 기존 신경망 검증팀의 구현과 시간을 비교하기 위해 해당 팀이 사용하던 것을 사용했고, GPU 클록 고정은 이후 고정된 사항이며 warm up은 초기에 적용되었다. 최적화 과정에서 적용 여부가 바뀐 요소가 많아 각 최적화 기법을 체계적으로 분리한 ablation study는 수행되지 않았다. [근거:E00257,E00260,E00261,E00262,E00263]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p14",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 CUDA 공식 가이드 인용과 No-Pin 동작 설명만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00287, E00288이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00287",
+          "E00288"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅의 기본 틀과 환경 구성을 정리한 기록이며, 이후 최적화 과정에서 세부 구성이 조정되었다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. 이와 별개로 No-Pin(일반 메모리) 방식에서는 CPU가 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 발생하지 않는다고 설명된다. 다만 이 두 내용은 인용·설명 기반 서술로, 실제 측정 결과나 구현 검증과는 별도로 보존한다. [근거:E00287,E00288]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p15",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 포인터 배열 설계와 double/float 검토만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00323, E00324이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00323",
+          "E00324"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이 초기 접근은 실제 성능이나 정확도 결과가 아니라 포팅 구상과 환경 설정에 관한 기록이다. 신경망 구조에서는 GPU 메모리 주소를 저장하는 포인터 배열을 FullyConnectedNetwork에 미리 구성하였고, 이 배열의 크기는 MAX_LAYERS를 기준으로 하므로 신경망이 작으면 공간이 낭비될 여지가 있었다. 또한 double 기반 행렬·벡터 구조체에서 float 접근 속도가 더 빠르다는 점을 고려하더라도, 전체 구조가 double을 기준으로 설계되어 있어 float 포인터를 사용하려면 전반적인 구조 변경이 필요하다는 점이 함께 검토되었다. [근거:E00323,E00324]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p17",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 6번째 세미나 이후 할 일 목록만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00333이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00333"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 기본 틀은 유지한 채 외부 라이브러리 cuBlas·cuSparse 도입은 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이 내용은 실제 성능·정확도 결과가 아니라 6번째 세미나 이후 정리된 초기 접근 기록이다. localrobustness_fwd_bwd.py 코드 검토와 CROWN range 정렬 문제 해답 확인, Nsight Compute를 이용한 CUDA core 점유율 50% 목표 분석이 함께 기록되었다. [근거:E00333]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p1",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00001이며, 기본 틀 유지 구상 관련 근거(E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00001"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 교체하는 방향으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 NVIDIA C Compiler(nvcc)에서 컴파일이 가능하다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅 방향과 환경 정보를 정리한 기록이며, CUDA 컴파일러(nvcc) 사용과 C++ 기반 코드에 GPU 동작이 필요한 부분만 커널로 변경하는 조건을 전제로 한다. [근거:E00001]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p2",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00002, E00003, E00004이며, CUDA 포팅 초기 환경 관련 근거(E00001)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00002",
+          "E00003",
+          "E00004"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅 초기 접근은 lirpa_forward_backward_fc_array.cpp의 기본 틀을 유지한 채 병렬 연산이 필요한 부분만 GPU에서 동작하는 kernel 함수로 바꾸는 구상을 검토하는 방식으로 진행되었다. 이 구상은 실제 구현 완료 결과가 아니라 포팅 방향에 대한 검토 단계의 기록이다. CUDA 동작이 필요한 코드만 별도로 변경해도 nvcc에서 컴파일이 가능하다는 점을 전제로, 기존 C++ 코드의 기본 틀을 유지하는 방향을 함께 고려하였다. [근거:E00002,E00003,E00004]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00016, E00024, E00025, E00026, E00034이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00016",
+          "E00024",
+          "E00025",
+          "E00026",
+          "E00034"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근했으며, 기존 구현의 기본 틀은 유지하는 구상을 전제로 했다. 이 절은 실제 성능·정확도 결과가 아니라 초기 접근과 환경 구성 방식을 기록한 것이다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했고, 컴파일 옵션에는 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이며, CUDA Toolkit 설치 시 자동으로 포함되어 별도 설치는 필요하지 않다. my_lirpa_op.cu에서 cublasDgemm() 함수를 사용하기 때문에 이 라이브러리 연결이 필요하다. [근거:E00016,E00024,E00025,E00026,E00034]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p6",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00135, E00136이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00135",
+          "E00136"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방식으로 접근하였다. 커널 인자는 포인터(배열)와 스칼라(단일 숫자·열거형)로 구분되며, 포인터는 cudaMalloc과 cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라는 CPU 메모리 값을 커널 실행 시 Parameter Bank 또는 Constant Memory에 함께 실어 보낼 수 있다. 포인터 변수는 크기가 커서 CPU가 커널 매개변수 주머니에 값을 직접 넣어줄 수 없으므로 memcpy로 올려야 하며, 4~8바이트 수준의 값만 CPU가 직접 참조해 보낼 수 있다. 이 서술은 CUDA 인자 전달 방식에 대한 초기 접근 기록이며, 실제 성능·정확도 결과는 포함하지 않는다. [근거:E00135,E00136]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p7",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00230, E00231, E00233, E00235이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00230",
+          "E00231",
+          "E00233",
+          "E00235"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅 초기 구성은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이후 구성에는 pinned Memory 추가, cudaEvent 제어, 필요한 만큼 계산 후 D2H memcpy, certify topk 자료구조 스택화가 포함되었으며, graph와 비교 시 단일 스트림 입력 복사 최적화를 논의하자는 관점이 제시되었다. 10주차 세미나 이후에는 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 미팅 일정, 배칭과 다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 과제로 기록되었다. auto lirpa repo는 https://github.com/horangahor/antenna_auto_lirpa에서 받아 실행해보기로 하였다. 이 내용은 초기 접근과 과제·생각 목록의 기록이며, 각 구성 요소의 개별 효과 정량 분리나 성능 수치는 포함하지 않는다. [근거:E00230,E00231,E00233,E00235]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p8",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00257, E00260, E00261, E00262, E00263이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00257",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근했으며, 기존 C++ 구현의 기본 틀은 유지하는 구상을 전제로 한다. 초기 접근 단계에서는 실제 성능·정확도 결과가 아니라 CUDA 동작이 필요한 연산의 커널 분리와 실행 구조 정리가 중심이었다. [근거:E00257,E00260,E00261,E00262,E00263]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p14",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00287, E00288이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00287",
+          "E00288"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅의 기본 틀과 환경 구성을 정리한 기록이며, 이후 최적화 과정에서 세부 구성이 조정되었다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. 이와 별개로 No-Pin(일반 메모리) 방식에서는 CPU가 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 발생하지 않는다고 설명된다. 다만 이 두 내용은 인용·설명 기반 서술로, 실제 측정 결과나 구현 검증과는 별도로 보존한다. [근거:E00287,E00288]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p15",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00323, E00324이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00323",
+          "E00324"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이 초기 접근은 실제 성능이나 정확도 결과가 아니라 포팅 구상과 환경 설정에 관한 기록이다. 신경망 구조에서는 GPU 메모리 주소를 저장하는 포인터 배열을 FullyConnectedNetwork에 미리 구성하였고, 이 배열의 크기는 MAX_LAYERS를 기준으로 하므로 신경망이 작으면 공간이 낭비될 여지가 있었다. 또한 double 기반 행렬·벡터 구조체에서 float 접근 속도가 더 빠르다는 점을 고려하더라도, 전체 구조가 double을 기준으로 설계되어 있어 float 포인터를 사용하려면 전반적인 구조 변경이 필요하다는 점이 함께 검토되었다. [근거:E00323,E00324]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p17",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00333이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00333"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 기본 틀은 유지한 채 외부 라이브러리 cuBlas·cuSparse 도입은 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이 내용은 실제 성능·정확도 결과가 아니라 6번째 세미나 이후 정리된 초기 접근 기록이다. localrobustness_fwd_bwd.py 코드 검토와 CROWN range 정렬 문제 해답 확인, Nsight Compute를 이용한 CUDA core 점유율 50% 목표 분석이 함께 기록되었다. [근거:E00333]",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 2.1 CUDA 포팅 접근과 초기 환경: 본문 5591자 / 목표 2143자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      }
+    ],
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 1,
+      "total": 1,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 2,
+      "not_visible": 0,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    },
+    "content_warnings": [
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p5",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않고, 평가 대상·입력 조건·통제 변수·ablation 한계 등 다른 항목으로 내용이 이동했다. 해당 문단의 실제 인용 근거는 E00010뿐이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002, E00016, E00024, E00025, E00026, E00034, E00135, E00136 등)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00010"
+        ],
+        "failure_owner": "writer",
+        "quote": "본 절은 CUDA 포팅 접근과 초기 환경을 서술한다. CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 시작했으며, 기본 틀은 유지하는 구상을 전제로 하였다. 이 내용은 실제 성능이나 정확도 결과가 아니라 초기 접근 기록이며, 과제 수령 시점인 2주차에 해당 과제를 받은 사실에서 출발한다. 평가 대상은 CROWN을 구현한 C++ 프로그램이었고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 인풋을 사용하였다. 신경망 크기와 배치 사이즈는 1로 두었으며, 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지 방법을 대상으로 하였다. GPU 클록 고정은 이후 고정된 사항이고, warm up은 초기에 적용되었다. 이 절의 서술은 최적화 과정에서 적용 여부를 바꾸며 검토한 구성들을 배경으로 하며, 각 최적화 기법을 체계적으로 분리한 ablation study는 수행하지 못한 한계가 있다. [근거:E00010]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p9",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 현재 커널 구조와 Task Parallelism 해석을 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00257, E00260이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00257",
+          "E00260"
+        ],
+        "failure_owner": "writer",
+        "quote": "현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식이며, 일반 CUDA 코어(FP32 연산기)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요된다. 현재 커널은 2차원 block 크기와 그 안의 tid로 단일 샘플에 대한 행렬 연산, 즉 평면적 계산을 수행하며, z축을 추가하면 3차원(multi sample)을 처리하는 텐서 코어를 통해 평면 연산을 한 번에 처리할 수 있다. 현재는 2차원 커널이라 fp32 코어로만 수행 중이다. [근거:E00257,E00260]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p10",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 방법 A의 가속 배율과 한계선만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00263이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00263"
+        ],
+        "failure_owner": "writer",
+        "quote": "방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 이 가속 배율과 한계선은 단일 서술에 기반하며, 반복 측정 통계나 SM 포화에 대한 정량적 근거는 포함하지 않는다. [근거:E00263]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p11",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 antenna_lirpa의 싱글 스트림·cuBLAS Batched GEMM·텐서 코어 비교만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00261이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00261"
+        ],
+        "failure_owner": "writer",
+        "quote": "antenna_lirpa는 멀티스트림이 아니라 싱글 스트림(Single Stream)으로 동작하지만, cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 C++ 멀티스트림(8분)보다 약 4배 빠르다. 이 약 4배 비교는 8분 대비 2분 미만의 근사 비교로, 정밀 배율 측정값은 아니다. [근거:E00261]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p12",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 방법 C 로드맵 목표만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00262이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00262"
+        ],
+        "failure_owner": "writer",
+        "quote": "차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여, antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 이 목표치는 실측값이 아니라 계획 단계의 목표이며, 전체 40,000개 규모에서의 실현 여부는 아직 검증되지 않았다. [근거:E00262]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p13",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 평가 대상·입력 조건·ablation 한계를 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00257, E00260, E00261, E00262, E00263이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00257",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263"
+        ],
+        "failure_owner": "writer",
+        "quote": "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16)와 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only)은 기존 신경망 검증팀이 사용하던 입력과 eps_list를 기준으로 한다. 데이터셋과 eps_list는 기존 신경망 검증팀의 구현과 시간을 비교하기 위해 해당 팀이 사용하던 것을 사용했고, GPU 클록 고정은 이후 고정된 사항이며 warm up은 초기에 적용되었다. 최적화 과정에서 적용 여부가 바뀐 요소가 많아 각 최적화 기법을 체계적으로 분리한 ablation study는 수행되지 않았다. [근거:E00257,E00260,E00261,E00262,E00263]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p14",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 CUDA 공식 가이드 인용과 No-Pin 동작 설명만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00287, E00288이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00287",
+          "E00288"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅의 기본 틀과 환경 구성을 정리한 기록이며, 이후 최적화 과정에서 세부 구성이 조정되었다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. 이와 별개로 No-Pin(일반 메모리) 방식에서는 CPU가 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 발생하지 않는다고 설명된다. 다만 이 두 내용은 인용·설명 기반 서술로, 실제 측정 결과나 구현 검증과는 별도로 보존한다. [근거:E00287,E00288]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p15",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 포인터 배열 설계와 double/float 검토만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00323, E00324이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00323",
+          "E00324"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이 초기 접근은 실제 성능이나 정확도 결과가 아니라 포팅 구상과 환경 설정에 관한 기록이다. 신경망 구조에서는 GPU 메모리 주소를 저장하는 포인터 배열을 FullyConnectedNetwork에 미리 구성하였고, 이 배열의 크기는 MAX_LAYERS를 기준으로 하므로 신경망이 작으면 공간이 낭비될 여지가 있었다. 또한 double 기반 행렬·벡터 구조체에서 float 접근 속도가 더 빠르다는 점을 고려하더라도, 전체 구조가 double을 기준으로 설계되어 있어 float 포인터를 사용하려면 전반적인 구조 변경이 필요하다는 점이 함께 검토되었다. [근거:E00323,E00324]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p17",
+        "reason": "RI_methods_1의 필수 내용(CUDA 포팅 초기 환경, nvcc, CUDA 동작이 필요한 부분만 커널로 변경, 기본 틀 유지 구상, 실제 성능·정확도 결과가 아닌 초기 접근 기록임)을 서술하지 않았다. 해당 문단은 6번째 세미나 이후 할 일 목록만 다루며, CUDA 포팅 초기 접근 기록과는 직접 연결되지 않는다. 실제 인용 근거는 E00333이며, CUDA 포팅 초기 환경 관련 근거는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00333"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 기본 틀은 유지한 채 외부 라이브러리 cuBlas·cuSparse 도입은 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이 내용은 실제 성능·정확도 결과가 아니라 6번째 세미나 이후 정리된 초기 접근 기록이다. localrobustness_fwd_bwd.py 코드 검토와 CROWN range 정렬 문제 해답 확인, Nsight Compute를 이용한 CUDA core 점유율 50% 목표 분석이 함께 기록되었다. [근거:E00333]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p1",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00001이며, 기본 틀 유지 구상 관련 근거(E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00001"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 C++ 기반 CROWN 구현에서 GPU 동작이 필요한 부분만 CUDA 커널로 교체하는 방향으로 접근했다. CUDA는 기본적으로 C++에서 GPU 동작을 가능하게 하며, CUDA 동작이 필요한 코드만 따로 바꾸어도 NVIDIA C Compiler(nvcc)에서 컴파일이 가능하다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅 방향과 환경 정보를 정리한 기록이며, CUDA 컴파일러(nvcc) 사용과 C++ 기반 코드에 GPU 동작이 필요한 부분만 커널로 변경하는 조건을 전제로 한다. [근거:E00001]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p2",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00002, E00003, E00004이며, CUDA 포팅 초기 환경 관련 근거(E00001)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00002",
+          "E00003",
+          "E00004"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅 초기 접근은 lirpa_forward_backward_fc_array.cpp의 기본 틀을 유지한 채 병렬 연산이 필요한 부분만 GPU에서 동작하는 kernel 함수로 바꾸는 구상을 검토하는 방식으로 진행되었다. 이 구상은 실제 구현 완료 결과가 아니라 포팅 방향에 대한 검토 단계의 기록이다. CUDA 동작이 필요한 코드만 별도로 변경해도 nvcc에서 컴파일이 가능하다는 점을 전제로, 기존 C++ 코드의 기본 틀을 유지하는 방향을 함께 고려하였다. [근거:E00002,E00003,E00004]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p4",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00016, E00024, E00025, E00026, E00034이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00016",
+          "E00024",
+          "E00025",
+          "E00026",
+          "E00034"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근했으며, 기존 구현의 기본 틀은 유지하는 구상을 전제로 했다. 이 절은 실제 성능·정확도 결과가 아니라 초기 접근과 환경 구성 방식을 기록한 것이다. 모델 파일을 읽어올 때는 CustomToLirpa.py를 참조해 모델.bin 구조를 파악했고, 컴파일 옵션에는 -lcublas를 넣어 NVIDIA cuBLAS 라이브러리를 링크하도록 했다. cuBLAS는 NVIDIA GPU에서 빠르게 선형대수 연산을 수행하도록 만든 NVIDIA Developer 가속 라이브러리이며, CUDA Toolkit 설치 시 자동으로 포함되어 별도 설치는 필요하지 않다. my_lirpa_op.cu에서 cublasDgemm() 함수를 사용하기 때문에 이 라이브러리 연결이 필요하다. [근거:E00016,E00024,E00025,E00026,E00034]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p6",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00135, E00136이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00135",
+          "E00136"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방식으로 접근하였다. 커널 인자는 포인터(배열)와 스칼라(단일 숫자·열거형)로 구분되며, 포인터는 cudaMalloc과 cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라는 CPU 메모리 값을 커널 실행 시 Parameter Bank 또는 Constant Memory에 함께 실어 보낼 수 있다. 포인터 변수는 크기가 커서 CPU가 커널 매개변수 주머니에 값을 직접 넣어줄 수 없으므로 memcpy로 올려야 하며, 4~8바이트 수준의 값만 CPU가 직접 참조해 보낼 수 있다. 이 서술은 CUDA 인자 전달 방식에 대한 초기 접근 기록이며, 실제 성능·정확도 결과는 포함하지 않는다. [근거:E00135,E00136]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p7",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00230, E00231, E00233, E00235이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00230",
+          "E00231",
+          "E00233",
+          "E00235"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅 초기 구성은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이후 구성에는 pinned Memory 추가, cudaEvent 제어, 필요한 만큼 계산 후 D2H memcpy, certify topk 자료구조 스택화가 포함되었으며, graph와 비교 시 단일 스트림 입력 복사 최적화를 논의하자는 관점이 제시되었다. 10주차 세미나 이후에는 backward_only CUDA 구현, cudaGraph 원리 학습, auto lirpa 모델 소통, 미팅 일정, 배칭과 다중 스트림 관련 실제 환경과의 괴리 검토, 컴파일러 팀에 모델 공유가 과제로 기록되었다. auto lirpa repo는 https://github.com/horangahor/antenna_auto_lirpa에서 받아 실행해보기로 하였다. 이 내용은 초기 접근과 과제·생각 목록의 기록이며, 각 구성 요소의 개별 효과 정량 분리나 성능 수치는 포함하지 않는다. [근거:E00230,E00231,E00233,E00235]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p8",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00257, E00260, E00261, E00262, E00263이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00257",
+          "E00260",
+          "E00261",
+          "E00262",
+          "E00263"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근했으며, 기존 C++ 구현의 기본 틀은 유지하는 구상을 전제로 한다. 초기 접근 단계에서는 실제 성능·정확도 결과가 아니라 CUDA 동작이 필요한 연산의 커널 분리와 실행 구조 정리가 중심이었다. [근거:E00257,E00260,E00261,E00262,E00263]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p14",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00287, E00288이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00287",
+          "E00288"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 컴파일 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 이 초기 접근은 실제 성능·정확도 결과가 아니라 포팅의 기본 틀과 환경 구성을 정리한 기록이며, 이후 최적화 과정에서 세부 구성이 조정되었다. CUDA 공식 가이드에 따르면 호스트 메모리가 Pageable(일반 메모리)일 때 cudaMemcpyAsync는 비동기가 아니라, CPU가 드라이버의 내부 고정 스테이징 버퍼로 동기식 memcpy를 즉시 수행한다. 이와 별개로 No-Pin(일반 메모리) 방식에서는 CPU가 1KB를 자신의 최고 속도(L1 캐시 복사)로 스테이징 버퍼에 복사하고 바로 다음 코드로 넘어가며, 드라이버의 스테이징 버퍼는 이미 GPU 메모리 매퍼에 영구 등록된 아주 작은 고정 주소라서 GPU TLB 미스도 발생하지 않는다고 설명된다. 다만 이 두 내용은 인용·설명 기반 서술로, 실제 측정 결과나 구현 검증과는 별도로 보존한다. [근거:E00287,E00288]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p15",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00323, E00324이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00323",
+          "E00324"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하고, 나머지 기본 틀은 유지하는 방향으로 접근하였다. 이 초기 접근은 실제 성능이나 정확도 결과가 아니라 포팅 구상과 환경 설정에 관한 기록이다. 신경망 구조에서는 GPU 메모리 주소를 저장하는 포인터 배열을 FullyConnectedNetwork에 미리 구성하였고, 이 배열의 크기는 MAX_LAYERS를 기준으로 하므로 신경망이 작으면 공간이 낭비될 여지가 있었다. 또한 double 기반 행렬·벡터 구조체에서 float 접근 속도가 더 빠르다는 점을 고려하더라도, 전체 구조가 double을 기준으로 설계되어 있어 float 포인터를 사용하려면 전반적인 구조 변경이 필요하다는 점이 함께 검토되었다. [근거:E00323,E00324]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p17",
+        "reason": "RI_methods_1의 필수 내용 중 CUDA 포팅 초기 환경(nvcc, CUDA 동작이 필요한 부분만 커널로 변경)과 기본 틀 유지 구상을 서술했으나, 실제 성능·정확도 결과가 아닌 초기 접근 기록임을 명시하지 않았다. 실제 인용 근거는 E00333이며, CUDA 포팅 초기 환경 관련 근거(E00001, E00002)는 사용되지 않았다.",
+        "evidence_ids": [
+          "E00333"
+        ],
+        "failure_owner": "writer",
+        "quote": "CUDA 포팅은 nvcc 기반 환경에서 CUDA 동작이 필요한 부분만 커널로 변경하는 방식으로 접근하였다. 기본 틀은 유지한 채 외부 라이브러리 cuBlas·cuSparse 도입은 보류하였고, backward_only 대신 forward+backward 진행을 유지하는 방향이 검토되었다. 이 내용은 실제 성능·정확도 결과가 아니라 6번째 세미나 이후 정리된 초기 접근 기록이다. localrobustness_fwd_bwd.py 코드 검토와 CROWN range 정렬 문제 해답 확인, Nsight Compute를 이용한 CUDA core 점유율 50% 목표 분석이 함께 기록되었다. [근거:E00333]",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      },
+      {
+        "section_id": "S_methods",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 2.1 CUDA 포팅 접근과 초기 환경: 본문 5591자 / 목표 2143자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-S_methods-p0"
+      }
+    ],
+    "content_status": "needs_attention",
+    "content_approved": false
+  }
+}

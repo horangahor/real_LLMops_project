@@ -1,0 +1,19 @@
+{
+  "request_fingerprint": "6f135ceb8cc9863669e034f5596e3c6917f0529150a64e062013f19d7bebb7a7",
+  "value": {
+    "parts": {
+      "p0": [
+        {
+          "text": "본 연구의 효율 검토는 GPU OPTIMIZED 모드(cuBLAS + 메모리 풀) 적용 후 실행 시간이 약 229.691ms로 약 100ms 줄었으나 여전히 CPU보다 느리다는 관측에서 출발한다. 이후 가중치 사전 업로드(PRELOAD ON GPU)를 적용한 MEMPOOL 모드에서는 CROWN Verification(eps=1e-06, 출력 차원 16) 실행 시간이 149.820400ms, 결과 요약 범위로는 149~155ms로 기록되었다. 다만 이 감소 폭은 실제 가중치 활용 효과라기보다 CUDA 컨텍스트 초기화 웜업 효과로 해석되었으며, 이 해석은 요인 효과 분리와 복합 변경 해석의 한계로 이어진다. 이후 forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤에는 64.716000ms가 기록되어 memcpy가 주요 병목이라는 인식이 반복되었다. make_zero_matrix·make_zero_vector를 CPU 실행으로 회귀했을 때 22~25ms 정도 감소했으나, 영벡터 만들기를 다시 GPU로 시도했을 때는 3~5ms 정도 늘어나 CPU 유지가 낫다는 판단이 남았다. cuSparse는 W, W_pos, W_neg를 CSR 형식으로 변환하고 cuSPARSE handle·CSR descriptor를 유지한 뒤 network_forward()의 dense matvec를 cuSPARSE SpMV로 교체하는 방식으로 spMV만 적용되었으나, 실행 시간은 27.107400ms로 이전 27ms 수준보다 느려졌고, spMM 도입 후에는 38ms가 되어 setup/launch 오버헤드가 계산 이득보다 큰 상황으로 기록되었다. 이는 모델과 layer 수가 작아 실제 희소 연산보다 호출별 descriptor·buffer 처리 비용이 더 크게 작용했기 때문으로 해석되며, network_forward()가 전체 타이머에 포함되지만 cuSPARSE 파이프라인이 완성되지 않은 상태라는 점도 함께 지적되었다. cudaHostRegister(Pinned)와 No Pinning 비교에서는 전체 실행 시간이 787.88초 대 776.70초로 약 1.4%(약 11초) 차이였고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려져 데이터 전송 직후 동기화가 일어나는 단계에서 역전되었다. 이 역전 현상에 대해 기록자는 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 남겼고, 이후 GPU 클록을 2800MHz로 고정한 재실험이 시도되었다. 한편 현재 C++ 멀티스트림 구현은 단일 샘플 커널을 64개 스트림에 각각 런치하는 Task Parallelism 방식으로, 일반 CUDA 코어(FP32)만 사용하고 1024개 처리에 수만 번의 커널 호출이 필요해 약 8분이 소요되며, 이는 스트림 수 한계(SM 포화)로 7~8분이 한계선으로 기록되었다. antenna_lirpa는 싱글 스트림으로 동작하지만 cuBLAS Batched GEMM과 텐서 코어 활용으로 현재 구현보다 약 4배 빠르며, 이 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이로 해석되었다. 차기 로드맵(방법 C: Batched GEMM, 3D 텐서 연산화)은 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하여 antenna_lirpa의 2분을 뛰어넘어 30초~1분대(전체 40,000개) 진입을 목표로 한다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study를 하지 못한 점, 단일 실행 결과나 기록자 요약 중심의 수치가 많아 반복 측정 기반 통계가 부족한 점, 그리고 여러 요소가 동시에 바뀌어 개별 효과 분리가 어려운 점은 효율 검토 결과의 해석 범위를 제한한다. HYBRID 모드(matmul=GPU, rest=CPU)에서는 CROWN Verification 실행 시간이 201.670100ms로 기록되었고, HYBRID V2에서는 85.785300ms로 기록되어 기록자가 CPU보다 빨라졌다고 평가했다. only_GPU와 hybrid를 비교하면 make_zero_matrix·make_zero_vector·make_eye·mat_add·positive_part·negative_part·rowwise_scale·affine_min·affine_max가 GPU에서 CPU로 변경되었고, matmul은 cuBLAS + 메모리 풀로 동일하게 유지되었으며, GPU 풀 구조체는 only_GPU의 d_mat[4]+d_vec[2]에서 hybrid의 d_A, d_B, d_C 3개로 축소되었다. 또한 backward_bound_gpu에서 affine 중복 계산을 삭제해 커널 2개 함수가 줄었고, backward에서 사용하는 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합했다. 다만 이 변경들은 함수 감소나 관측된 경향만 기록하며, 정량 성능 수치나 정확도 결과는 포함하지 않는다.",
+          "evidence_ids": [
+            "E00031",
+            "E00035",
+            "E00036",
+            "E00122",
+            "E00124"
+          ]
+        }
+      ]
+    }
+  }
+}

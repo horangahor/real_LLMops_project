@@ -1,0 +1,1878 @@
+{
+  "raw_review": {
+    "checks": [
+      {
+        "item_id": "RI_methods_4",
+        "verdict": "met",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p8",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12",
+          "S_methods_p14",
+          "S_methods_p16",
+          "S_methods_p20",
+          "S_methods_p23",
+          "S_methods_p24",
+          "S_methods_p17",
+          "S_methods_p19"
+        ],
+        "evidence_ids": [
+          "E00257",
+          "E00261",
+          "E00263",
+          "E00205",
+          "E00187",
+          "E00191",
+          "E00198",
+          "E00199",
+          "E00174",
+          "E00114",
+          "E00117",
+          "E00036",
+          "E00083",
+          "E00131",
+          "E00132",
+          "E00133",
+          "E00148",
+          "E00149",
+          "E00146",
+          "E00147",
+          "E00137",
+          "E00138",
+          "E00122",
+          "E00124",
+          "E00150",
+          "E00311",
+          "E00313",
+          "E00315",
+          "E00339",
+          "E00184",
+          "E00320",
+          "E00221",
+          "E00220",
+          "E00180",
+          "E00119",
+          "E00120",
+          "E00203",
+          "E00217",
+          "E00321"
+        ]
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "S_methods",
+        "reference_id": "ref1_methods",
+        "verdict": "not_visible",
+        "paragraph_ids": [],
+        "reason": "ref1_methods의 not_to_transfer 및 required_content는 이 절의 실제 서술과 무관하며, 해당 가이드가 요구하는 특정 실험·모델·데이터·성능 수치·문헌 표기는 본문에 존재하지 않는다."
+      },
+      {
+        "section_id": "S_methods",
+        "reference_id": "ref2_methods",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p8",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12",
+          "S_methods_p14",
+          "S_methods_p16",
+          "S_methods_p20",
+          "S_methods_p23",
+          "S_methods_p24"
+        ],
+        "reason": "실행 경로와 측정 구간, 평가 대상 플랫폼·소프트웨어 스택, 공통 고정 요소 및 버전별 구성 설명은 실제 문단에 반영되어 있으나, 구성/조건의 통제 범위 정의와 벤더별 배포 설정·적용 수준 관련 항목은 이 절의 실제 서술 범위에서 확인되지 않는다."
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p2",
+        "reason": "근거 E00030의 limits·evidence_limitations은 '하이브리드 프로그램의 실제 구현 완료·측정 결과는 현재 페이지에 없음'이며 claim_status도 documented_method로, 시도 동기와 방향 기록임을 명시한다. 본문은 'GPU OPTIMIZED 모드 이후에도 CPU보다 느리다는 평가 이후 시도된 방향'이라고 서술해 근거의 동기·방향 기록 범위를 벗어나지 않으나, '측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 측정하였다'는 측정 방식·구간 분리는 E00030·E00033 어디에도 직접 근거가 없다. 또한 'v0부터 v4까지 단계적으로 정리되며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 포함된다'는 버전 목록과 구성 요소 명칭은 제시된 근거(E00030, E00033)에 직접 등장하지 않는다. E00033은 v2 적용 방안 목록만 기록하며 실제 적용 결과나 성능 영향은 없다고 명시하는데, 본문은 이를 '제시되었다'로만 서술해 근거 범위에는 부합하나, 앞부분의 측정 방식·버전 목록이 근거 없이 확장되어 있다.",
+        "evidence_ids": [
+          "E00030",
+          "E00033"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p2-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p3",
+        "reason": "근거 E00257·E00261·E00263은 p68 figure 캡션에 기록된 현재 C++ 멀티스트림 구현의 방식(Task Parallelism, 64개 스트림, 단일 샘플 커널, FP32만 사용, 1024개 처리, 수만 번 커널 호출, 약 8분), antenna_lirpa의 싱글 스트림·cuBLAS Batched GEMM·텐서 코어 활용 및 약 4배 비교, 방법 A의 3.2배 가속(25분→8분)과 한계선(7~8분, SM 포화)에 관한 서술이다. 그러나 초안 문단은 측정 구간 분리·타임스탬프 누적, 배치 사이즈 1, 실행 방식 3가지(forward/forward+backward/backward_only), 기존 신경망 검증팀 데이터셋·eps_list 사용, 평가 대상이 CROWN C++ 프로그램이라는 점, GPU 클록 고정과 warm up이 나중에 적용·정리된 사항이라는 점 등 근거의 statement·conditions·measurements·parameters에 없는 내용을 해당 근거들에 귀속시켰다. 이는 근거의 범위를 벗어나며, 해당 근거들이 이러한 측정 구간·입력 조건·평가 대상·설정 이력을 직접 뒷받침하지 않는다.",
+        "evidence_ids": [
+          "E00257",
+          "E00261",
+          "E00263"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p3-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p7",
+        "reason": "E00281은 GPU 클록 고정 후 재실험 계획과 ScopedGpuClockLock 구조체 작성(RAII 방식 자동 잠금·해제)을 내용으로 하나, 본문은 이를 반영하지 않고 figure 캡션의 명령어 예시만 서술했다. 또한 E00281의 기본 클록 목표값(2475 MHz)과 실제 실험에서 사용된 2800 MHz(p75:e588) 관련 정보가 누락되었다.",
+        "evidence_ids": [
+          "E00281"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p7-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p7",
+        "reason": "E00284는 figure 캡션의 'nvidia-smi -lgc 1410'(그래픽 클록만 잠금)을 다루나, ScopedGpuClockLock 코드(E00281, p74:e585)는 'nvidia-smi -1gc'를 사용한다. -1gc(그래픽+메모리 클록 동시 설정)와 -lgc(그래픽 클록만 잠금)는 다른 명령어이므로, 두 접근 방식을 동일 선상에서 혼동하지 않도록 구분해야 한다.",
+        "evidence_ids": [
+          "E00281",
+          "E00284"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p7-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p9",
+        "reason": "근거 E00036은 only_GPU와 hybrid의 변경점 비교 표 및 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. 그러나 초안 문단(S_methods_p9)은 측정 구간 구성, 타임스탬프 누적 방식, 평가 대상(CROWN C++ 프로그램), 신경망 크기(256-491-491-16), 배치 사이즈 1, 실행 방식(forward/forward+backward/backward_only), 데이터셋·eps_list 사용, GPU 클록 고정과 warmup 적용 시점 등 E00036의 관찰 항목(함수별 구현 방식·복잡도, GPU→CPU 변경 함수 목록, matmul의 cuBLAS+메모리풀 동일성, GPU 풀 구조체 축소)과 대응하지 않는 내용을 E00036에 귀속시켰다. 이는 근거의 범위를 부당하게 확대·변경한 주장에 해당한다.",
+        "evidence_ids": [
+          "E00036"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p9-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p13",
+        "reason": "근거 범위를 벗어난 주장 포함",
+        "evidence_ids": [
+          "E00101",
+          "U8602da87af586b3567f6"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p13-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p13",
+        "reason": "근거 범위를 벗어난 주장 포함",
+        "evidence_ids": [
+          "E00213",
+          "E00214"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p13-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p13",
+        "reason": "근거 범위를 벗어난 주장 포함",
+        "evidence_ids": [
+          "E00130"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p13-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p13",
+        "reason": "근거 범위를 벗어난 주장 포함",
+        "evidence_ids": [
+          "E00216"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p13-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p13",
+        "reason": "근거 범위를 벗어난 주장 포함",
+        "evidence_ids": [
+          "E00320",
+          "E00339"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p13-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p14",
+        "reason": "근거 범위를 벗어난 수치·조건 사용",
+        "evidence_ids": [
+          "E00311",
+          "E00313",
+          "E00315",
+          "E00339",
+          "H85ca0e507c4e_85"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p14-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p16",
+        "reason": "E00184는 측정 계획과 일부 완료 사실 기록이며 실제 평균·배율 수치나 검증 결과는 현재 페이지에 없다고 명시되어 있으나, 본문은 'sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다'는 계획·정리 내용을 마치 확정된 측정 결과처럼 서술하여 근거의 한계를 넘어섰다.",
+        "evidence_ids": [
+          "E00184"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p16-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p16",
+        "reason": "E00320의 limits는 실행 시간 감소 요약 기록이며 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다고 명시하고 있으나, 본문은 '1138s에서 758s로 감소한 값이 기록되었다'를 반복 측정·통계 기반이 있는 것처럼 배치하여 근거의 한계를 반영하지 않았다.",
+        "evidence_ids": [
+          "E00320"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p16-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p19",
+        "reason": "근거 E00180의 관측 대상은 '실행 인자 있는 forward'와 '실행 인자 없는 backward', 그리고 '다른 실행'이며, 실행 인자 없는 backward의 값은 1447.17s이다. 본문은 이를 '실행 인자 없는 backward는 1447.17s'로 서술해 측정값과 조건은 일치하지만, 근거의 관측 구성(forward/backward/다른 실행)과 의문 제기 범위를 벗어나 실행 인자·switch문의 성능 영향 가능성을 단정적으로 연결하는 서술로 읽힐 여지가 있다. 근거는 인과 분리 실험 결과가 없고 '관측된 시간 차이와 의문 제기'만 존재한다고 명시하므로, 성능 영향 가능성을 사실처럼 서술하지 말고 관측 기록과 의문 제기로만 제한해야 한다.",
+        "evidence_ids": [
+          "E00180"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p19-0",
+        "failure_owner": "writer"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p2",
+        "reason": "v2에서 적용할 방안으로 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 구성이 제시되었다는 서술은 시도 동기·제안 수준으로 남아 있으며, RI_methods_4가 요구하는 버전별 구성·측정 구간의 실제 측정 결과로 연결되지 않는다.",
+        "evidence_ids": [
+          "E00030",
+          "E00033"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p3",
+        "reason": "GPU 클록 고정과 warm up이 나중에 적용·정리된 사항이라는 서술은 공통 고정 요소와 구분하기 위한 배경으로만 사용되며, 버전별 구성·측정 구간의 구체적 측정 서술로 이어지지 않는다.",
+        "evidence_ids": [
+          "E00257",
+          "E00261",
+          "E00263"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p7",
+        "reason": "GPU 클록 고정 방법과 Persistence mode 명령어 예시는 figure 캡션 기록 수준으로만 제시되며, RI_methods_4가 요구하는 측정 구간·버전별 구성의 실제 측정 결과로 연결되지 않는다.",
+        "evidence_ids": [
+          "E00281",
+          "E00283",
+          "E00284",
+          "E00286"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p9",
+        "reason": "공통 고정 요소와 GPU 클록 고정·warmup의 시점만 짧게 반복하며, 버전별 구성·측정 구간의 구체적 서술은 포함하지 않는다.",
+        "evidence_ids": [
+          "E00036"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p13",
+        "reason": "정확도 지표가 모두 동일했다는 결과와 ablation 미수행 한계는 사용자 승인 범위의 반영이지만, 측정 구간·버전별 구성의 구체적 측정 서술과는 별도로 짧게만 반영된다.",
+        "evidence_ids": [
+          "U8602da87af586b3567f6",
+          "E00216",
+          "E00213",
+          "E00214",
+          "E00101",
+          "E00130",
+          "E00320",
+          "E00339"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p14",
+        "reason": "커널 호출 횟수 감소와 memcpy 감소 수치는 구성 요소 단위 변경 기록으로 제시되며, RI_methods_4가 요구하는 측정 구간·버전별 구성의 공통 고정 요소 서술과 직접 결합되지 않는다.",
+        "evidence_ids": [
+          "E00311",
+          "H85ca0e507c4e_85",
+          "E00313",
+          "E00315",
+          "E00339"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p16",
+        "reason": "반복 측정 계획과 warm up 영향, 1138s→758s 감소 요약은 시도·계획·요약 수준으로 제시되며, RI_methods_4가 요구하는 측정 구간·버전별 구성의 실제 측정 결과로만 연결되지 않는다.",
+        "evidence_ids": [
+          "E00184",
+          "E00320"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p19",
+        "reason": "실행 인자 유무에 따른 실행 시간 차이와 switch문 영향 의문은 관측·의문 수준으로 제시되며, 인과적 영향을 분리한 실험 결과는 제시되지 않는다.",
+        "evidence_ids": [
+          "E00180"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none"
+      }
+    ],
+    "evidence_usage_review": {
+      "batches": [
+        {
+          "name": "review-2-approved-evidence-S_methods_p1-0",
+          "paragraph_id": "S_methods_p1",
+          "target_evidence_ids": [
+            "E00257",
+            "E00261",
+            "E00263"
+          ],
+          "context_evidence_ids": [
+            "E00257",
+            "E00261",
+            "E00263"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p2-0",
+          "paragraph_id": "S_methods_p2",
+          "target_evidence_ids": [
+            "E00030",
+            "E00033"
+          ],
+          "context_evidence_ids": [
+            "E00030",
+            "E00033"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p3-0",
+          "paragraph_id": "S_methods_p3",
+          "target_evidence_ids": [
+            "E00257",
+            "E00261",
+            "E00263"
+          ],
+          "context_evidence_ids": [
+            "E00257",
+            "E00261",
+            "E00263"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p4-0",
+          "paragraph_id": "S_methods_p4",
+          "target_evidence_ids": [
+            "E00230",
+            "E00231",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "context_evidence_ids": [
+            "E00230",
+            "E00231",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p5-0",
+          "paragraph_id": "S_methods_p5",
+          "target_evidence_ids": [
+            "E00277",
+            "E00278"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p6-0",
+          "paragraph_id": "S_methods_p6",
+          "target_evidence_ids": [
+            "E00279",
+            "E00282"
+          ],
+          "context_evidence_ids": [
+            "E00279",
+            "E00282"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p7-0",
+          "paragraph_id": "S_methods_p7",
+          "target_evidence_ids": [
+            "E00281",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "context_evidence_ids": [
+            "E00281",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "issue_count": 2
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p8-0",
+          "paragraph_id": "S_methods_p8",
+          "target_evidence_ids": [
+            "E00114",
+            "E00117",
+            "E00174",
+            "E00187",
+            "E00191",
+            "E00198",
+            "E00199",
+            "E00205"
+          ],
+          "context_evidence_ids": [
+            "E00114",
+            "E00117",
+            "E00174",
+            "E00187",
+            "E00191",
+            "E00198",
+            "E00199",
+            "E00205"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p9-0",
+          "paragraph_id": "S_methods_p9",
+          "target_evidence_ids": [
+            "E00036"
+          ],
+          "context_evidence_ids": [
+            "E00036"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p10-0",
+          "paragraph_id": "S_methods_p10",
+          "target_evidence_ids": [
+            "E00036"
+          ],
+          "context_evidence_ids": [
+            "E00036"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p11-0",
+          "paragraph_id": "S_methods_p11",
+          "target_evidence_ids": [
+            "E00083",
+            "E00131",
+            "E00132",
+            "E00133",
+            "E00148",
+            "E00149"
+          ],
+          "context_evidence_ids": [
+            "E00083",
+            "E00131",
+            "E00132",
+            "E00133",
+            "E00148",
+            "E00149"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p12-0",
+          "paragraph_id": "S_methods_p12",
+          "target_evidence_ids": [
+            "E00122",
+            "E00124",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00150"
+          ],
+          "context_evidence_ids": [
+            "E00122",
+            "E00124",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00150"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p13-0",
+          "paragraph_id": "S_methods_p13",
+          "target_evidence_ids": [
+            "E00101",
+            "E00130",
+            "E00213",
+            "E00214",
+            "E00216",
+            "E00320",
+            "E00339",
+            "U8602da87af586b3567f6"
+          ],
+          "context_evidence_ids": [
+            "E00101",
+            "E00130",
+            "E00213",
+            "E00214",
+            "E00216",
+            "E00320",
+            "E00339",
+            "U8602da87af586b3567f6"
+          ],
+          "issue_count": 5
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p14-0",
+          "paragraph_id": "S_methods_p14",
+          "target_evidence_ids": [
+            "E00311",
+            "E00313",
+            "E00315",
+            "E00339",
+            "H85ca0e507c4e_85"
+          ],
+          "context_evidence_ids": [
+            "E00311",
+            "E00313",
+            "H85ca0e507c4e_85",
+            "E00315",
+            "E00339"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p15-0",
+          "paragraph_id": "S_methods_p15",
+          "target_evidence_ids": [
+            "E00340",
+            "E00343",
+            "E00344"
+          ],
+          "context_evidence_ids": [
+            "E00340",
+            "E00343",
+            "E00344"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p16-0",
+          "paragraph_id": "S_methods_p16",
+          "target_evidence_ids": [
+            "E00184",
+            "E00320"
+          ],
+          "context_evidence_ids": [
+            "E00184",
+            "E00320"
+          ],
+          "issue_count": 2
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p17-0",
+          "paragraph_id": "S_methods_p17",
+          "target_evidence_ids": [
+            "E00220",
+            "E00221"
+          ],
+          "context_evidence_ids": [
+            "E00220",
+            "E00221"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p18-0",
+          "paragraph_id": "S_methods_p18",
+          "target_evidence_ids": [
+            "E00184"
+          ],
+          "context_evidence_ids": [
+            "E00184"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p19-0",
+          "paragraph_id": "S_methods_p19",
+          "target_evidence_ids": [
+            "E00180"
+          ],
+          "context_evidence_ids": [
+            "E00180"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p20-0",
+          "paragraph_id": "S_methods_p20",
+          "target_evidence_ids": [
+            "E00320"
+          ],
+          "context_evidence_ids": [
+            "E00320"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p21-0",
+          "paragraph_id": "S_methods_p21",
+          "target_evidence_ids": [
+            "E00020",
+            "E00021",
+            "E00022"
+          ],
+          "context_evidence_ids": [
+            "E00020",
+            "E00021",
+            "E00022"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p22-0",
+          "paragraph_id": "S_methods_p22",
+          "target_evidence_ids": [
+            "E00203",
+            "E00217",
+            "E00321"
+          ],
+          "context_evidence_ids": [
+            "E00203",
+            "E00217",
+            "E00321"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p23-0",
+          "paragraph_id": "S_methods_p23",
+          "target_evidence_ids": [
+            "E00203",
+            "E00217",
+            "E00321"
+          ],
+          "context_evidence_ids": [
+            "E00203",
+            "E00217",
+            "E00321"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p24-0",
+          "paragraph_id": "S_methods_p24",
+          "target_evidence_ids": [
+            "E00119",
+            "E00120"
+          ],
+          "context_evidence_ids": [
+            "E00119",
+            "E00120"
+          ],
+          "issue_count": 0
+        }
+      ],
+      "summary": {
+        "checked_paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p2",
+          "S_methods_p3",
+          "S_methods_p4",
+          "S_methods_p5",
+          "S_methods_p6",
+          "S_methods_p7",
+          "S_methods_p8",
+          "S_methods_p9",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12",
+          "S_methods_p13",
+          "S_methods_p14",
+          "S_methods_p15",
+          "S_methods_p16",
+          "S_methods_p17",
+          "S_methods_p18",
+          "S_methods_p19",
+          "S_methods_p20",
+          "S_methods_p21",
+          "S_methods_p22",
+          "S_methods_p23",
+          "S_methods_p24"
+        ],
+        "checked_evidence_ids": [
+          "E00020",
+          "E00021",
+          "E00022",
+          "E00030",
+          "E00033",
+          "E00036",
+          "E00083",
+          "E00101",
+          "E00114",
+          "E00117",
+          "E00119",
+          "E00120",
+          "E00122",
+          "E00124",
+          "E00130",
+          "E00131",
+          "E00132",
+          "E00133",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00148",
+          "E00149",
+          "E00150",
+          "E00174",
+          "E00180",
+          "E00184",
+          "E00187",
+          "E00191",
+          "E00198",
+          "E00199",
+          "E00203",
+          "E00205",
+          "E00213",
+          "E00214",
+          "E00216",
+          "E00217",
+          "E00220",
+          "E00221",
+          "E00230",
+          "E00231",
+          "E00257",
+          "E00261",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00311",
+          "E00313",
+          "E00315",
+          "E00320",
+          "E00321",
+          "E00339",
+          "E00340",
+          "E00343",
+          "E00344",
+          "H85ca0e507c4e_85",
+          "U8602da87af586b3567f6"
+        ],
+        "issue_count": 14,
+        "blocking_paragraph_ids": [
+          "S_methods_p2",
+          "S_methods_p3",
+          "S_methods_p7",
+          "S_methods_p9",
+          "S_methods_p13",
+          "S_methods_p14",
+          "S_methods_p16",
+          "S_methods_p19"
+        ]
+      },
+      "coverage_batches": [
+        "all"
+      ]
+    },
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [
+      {
+        "item_id": "RI_methods_4",
+        "added_paragraph_ids": [
+          "S_methods_p17",
+          "S_methods_p19"
+        ]
+      }
+    ]
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "RI_methods_4",
+        "verdict": "met",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p8",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12",
+          "S_methods_p14",
+          "S_methods_p16",
+          "S_methods_p20",
+          "S_methods_p23",
+          "S_methods_p24",
+          "S_methods_p17",
+          "S_methods_p19"
+        ],
+        "evidence_ids": [
+          "E00257",
+          "E00261",
+          "E00263",
+          "E00205",
+          "E00187",
+          "E00191",
+          "E00198",
+          "E00199",
+          "E00174",
+          "E00114",
+          "E00117",
+          "E00036",
+          "E00083",
+          "E00131",
+          "E00132",
+          "E00133",
+          "E00148",
+          "E00149",
+          "E00146",
+          "E00147",
+          "E00137",
+          "E00138",
+          "E00122",
+          "E00124",
+          "E00150",
+          "E00311",
+          "E00313",
+          "E00315",
+          "E00339",
+          "E00184",
+          "E00320",
+          "E00221",
+          "E00220",
+          "E00180",
+          "E00119",
+          "E00120",
+          "E00203",
+          "E00217",
+          "E00321"
+        ],
+        "quote": "측정은 추론(inference), bound 계산, 검증(certify) 단계를 분리하여 진행했으며, 각 구간의 경과 시간을 타임스탬프로 누적해 전체 실행 시간을 산출했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16이고 배치 사이즈는 1로 고정했다. 실행 방식은 CROWN의 세 가지 방법(forward, forward+backward, backward_only)을 사용했고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 적용했다. 이러한 고정 요소는 최적화 과정에서 적용·제거를 반복한 변경 사항과 구분하기 위한 공통 기준으로 삼았다. [근거:E00257,E00261,E00263]",
+        "paragraph_quotes": [
+          "측정은 추론(inference), bound 계산, 검증(certify) 단계를 분리하여 진행했으며, 각 구간의 경과 시간을 타임스탬프로 누적해 전체 실행 시간을 산출했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16이고 배치 사이즈는 1로 고정했다. 실행 방식은 CROWN의 세 가지 방법(forward, forward+backward, backward_only)을 사용했고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 적용했다. 이러한 고정 요소는 최적화 과정에서 적용·제거를 반복한 변경 사항과 구분하기 위한 공통 기준으로 삼았다. [근거:E00257,E00261,E00263]",
+          "측정 구간은 추론, bound 계산, 검증의 세 값을 나누어 측정하도록 구성하였다. 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하였고, 측정 시작을 기준으로 추론 이후 타임스탬프를 기록한 뒤 추론 시간을 계산하였다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up 단계에서는 network_forward와 lirpa_forward_bound_impl을 수행하였다. 실행 루프에서는 eps_list에 대해 이중 루프를 돌며 각 데이터 i에 대해 network_forward로 정방향 통과 후, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시켰다. 시간 측정 시작 코드에서는 std::chrono::high_resolution_clock::now로 t_start를 기록하고 network_forward 이후 t_infer를 기록해 time_infer를 계산하였다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 것으로 정했으며, 공식 결과는 24 ms dense baseline으로 유지하고 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방향이 제시되었다. [근거:E00205,E00187,E00191,E00198,E00199,E00174,E00114,E00117]",
+          "측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 구성하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 사이즈는 1로 고정하였다. 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only를 사용하였고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 버전별 구성은 v0부터 v4까지 단계적으로 변화하였다. v0은 단독 CPU 처리로 96ms였고, v1은 모든 병렬처리 함수를 커널 함수로 바꾸어 355ms가 되었다. v2는 벡터 연산을 다시 CPU로 처리하고 메모리 풀과 cuBLAS를 도입하여 229ms가 되었으며, v3는 CPU·GPU 하이브리드로 풀 구조체를 축소하여 200ms가 되었다. only_GPU와 hybrid의 변경점 비교에서는 make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max가 GPU에서 CPU로 변경되었고, matmul은 cuBLAS와 메모리풀로 양쪽이 동일하게 유지되었다. GPU 풀 구조체는 only_GPU에서 d_mat[4]와 d_vec[2]였던 것이 hybrid에서 d_A, d_B, d_C 세 개로 축소되었다. 이 비교는 구성 요소 단위의 변경 내용을 정리한 것으로, 정량 성능 수치는 포함하지 않는다. [근거:E00036]",
+          "측정은 CROWN Verification 실행 시간을 기준으로 하며, 추론·bound·검증 단계를 분리해 타임스탬프를 누적하는 방식으로 기록되었다. 평가 대상은 CROWN을 구현한 C++ 프로그램이고, 배치 크기는 1로 고정했으며 실행 방식은 forward, forward+backward, backward_only의 세 가지로 구분하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용했고, 신경망 크기는 256-491-491-16이다. 최적화 과정에서는 forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤 64.716000 ms가 기록되었고, alpha/beta 메모리 풀 적용 후에는 21.018800 ms가 기록되었으며 21.0ms 정도라는 정성적 관측도 함께 제시되었다. bias도 메모리 풀에서 관리하도록 변경되었고, Backward 메모리 복사 제거 및 초기화 최적화 적용 후에는 13.939000 ms가 기록되었으며 13ms 후반에서 거의 14ms 정도로 관측되었다. 다만 이 수치들은 단일 실행 결과이며, 반복 측정 기반 통계나 조건별 비교 해석은 현재 자료에 제시되지 않았다. [근거:E00083,E00131,E00132,E00133,E00148,E00149]",
+          "측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 구분하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16), 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only), 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 입력과 설정을 그대로 사용하였다. GPU 클록 고정과 warmup은 연구 과정에서 나중에 적용·확인된 사항이다. 버전별 구성은 v0부터 v4까지, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등으로 정리되며, 공통 고정 요소는 배치 사이즈 1, 세 가지 실행 방식, 동일한 데이터셋과 eps_list이다. 최적화 과정에서는 affine 중복 계산 삭제로 backward_bound_gpu의 커널 2개 함수가 줄었고, backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합하였으며, backward_bound_gpu에서 affine_min/max까지 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. 또한 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용해 H2D 복사를 제거하고, 단위행렬·영벡터 같은 기본 초기 상태를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였으며, fp32 단정밀도 연산 변경도 시도되었으나 그 결과는 fp32에 대한 별도 고찰에서 다룬다. [근거:E00146,E00147,E00137,E00138,E00122,E00124,E00150]",
+          "커널 호출 횟수 측정은 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch만 계수하였으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하였다. 커널 퓨전과 backward_only의 메모리 복사 커널 제거로 Forward method=0 bound는 27회에서 18회로 9회 감소, Backward method=1 bound 전체는 46회에서 31회로 15회 감소, Backward-only method=2 bound 전체는 45회에서 33회로 12회 감소하였다. graph mode=1에서 샘플 1개 전체 기준으로는 추론 커널이 그대로여서 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다. graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회이며, 이번 작업은 graph launch 횟수 자체를 줄이지는 않았다. memcpy 호출 횟수는 66개에서 56개로 감소하였다. [근거:E00311,H85ca0e507c4e_85,E00313,E00315,E00339]",
+          "측정은 추론, bound 계산, 검증 단계를 분리하여 각 구간의 시간을 누적하는 방식으로 수행하였다. 실행은 배치 크기 1로 고정하였고, CROWN의 forward, forward+backward, backward_only 세 가지 실행 방식을 적용하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 반복 측정에서는 forward/backward 92만 번 측정을 20회씩 진행하였고, 단일 데이터(optimizing.exe)에 대해 warm up 영향을 확인하였다. warm up 영향은 교수님이 초기화 비용 때문으로 언급하였다. sparse.py는 분리 측정을 위해 forward만 2회 추가 측정하기로 하였고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 실행 시간 감소 요약으로는 1138s에서 758s로 감소한 값이 기록되었다. [근거:E00184,E00320]",
+          "측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 기록하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16이고 배치 사이즈는 1로 고정하였다. 실행 방식은 forward, forward+backward, backward_only의 세 가지로 구분하였고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 버전별 구성은 v0부터 v4까지 순차적으로 적용·해제된 최적화 요소를 포함하며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 그 예이다. 이러한 고정 요소 외의 대부분은 최적화 과정에서 적용 여부를 바꾸며 검토되었다. 실행 시간 감소 요약으로 1138s에서 758s로 줄어든 값이 기록되었으나, 이는 감소 전후를 함께 제시한 요약 기록이며 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다. [근거:E00320]",
+          "측정은 추론, bound 계산, 검증 단계를 분리해 각 구간의 지연을 누적하는 방식으로 설계했다. 실행은 배치 크기 1로 고정하고, forward, forward+backward, backward_only의 세 가지 CROWN 실행 경로를 모두 측정했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용했으며, 평가 대상은 CROWN을 구현한 C++ 프로그램이었다. 최적화 과정에서는 배칭으로 데이터셋을 통째로 넘기는 방식이 실시간 환경에 맞지 않는다고 판단해, 대신 데이터셋이 있는 부분을 pinned Memory로 지정하고 메모리 복사 속도를 최대로 늘렸으며 cudaMemcpyAsync도 사용했다. 이후 pinned memory 입력층은 제거하되 Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두는 구성 변경이 이루어졌다. 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했고, Nvidia의 warm up 가이드라인을 기준으로 삼았다. GPU 클록 고정은 이후에 적용된 사항이며, warm up은 초기에 적용되었다. 최적화 기법들은 대부분 적용했다가 다시 해제하는 방식으로 검토되었고, 각 기법을 체계적으로 분리한 ablation은 수행되지 않았다. [근거:E00203,E00217,E00321]",
+          "측정 구간은 추론, bound 계산, 검증 단계를 분리해 각각 타임스탬프를 누적하는 방식으로 정의하였다. 배치 크기는 1로 고정하고, 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지로 구분하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정과 warmup은 초기 구성에서 적용되었다. 버전별 구성은 v0부터 v4까지 단계적으로 정리되며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 포함된다. 커널 퓨전 적용 후에는 CROWN Verification 실행 결과 Elapsed time이 22.342900 ms로 기록되었고, 22ms 초반까지 나오는 경우도 관측되었다. 다만 이 수치는 단일 실행 결과이며, 다른 조건과의 반복 측정 기반 통계나 비교 해석은 현재 페이지에 제시되지 않았다. [근거:E00119,E00120]",
+          "측정 구간은 추론, bound, 검증 단계를 분리하여 측정하고, 각 구간의 타임스탬프를 누적하는 방식으로 기록한다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 배치 크기는 1로 고정하고 실행 방식은 forward, forward+backward, backward_only의 세 가지로 구분한다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용한다. 버전별 구성은 v0부터 v4까지 순차적으로 적용·해제된 최적화 요소를 반영하며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 포함된다. GPU 클록 고정과 warmup은 초기에 적용된 뒤 이후 고정 사항으로 정리되었다. 정확도 지표는 기존 신경망 검증팀 프로그램과의 검증 결과 및 비율 차이로 확인하며, 모든 경우 결과가 동일하였다. 각 최적화 기법을 체계적으로 분리하여 ablation study로 검토하지 못한 점은 한계로 남는다. [근거:E00221,E00220]",
+          "측정 구간은 추론, bound, 검증 단계를 분리하여 각각 시간을 재고, 각 단계의 타임스탬프를 누적하는 방식으로 구성하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 사이즈는 1로 고정하였다. 실행 방식은 forward, forward+backward, backward_only의 세 가지로 진행하였고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 버전별 구성은 v0부터 v4까지 순차적으로 적용·해제된 최적화 요소를 포함하며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 그 예이다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이고, warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 보았으며, 관측된 결과는 모두 동일하였다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지 못한 점은 한계로 남는다. 실행 인자 유무에 따른 실행 시간 차이도 관측되었는데, 실행 인자 있는 forward는 1360.22s, 실행 인자 없는 backward는 1447.17s, 다른 실행은 1375.97s로 기록되었으며, 실행 인자 추가와 switch문 사용이 성능에 영향을 주는지에 대한 의문이 제기되었다. 다만 실행 인자 및 switch문의 인과적 영향을 분리한 실험 결과는 현재 자료에 제시되지 않는다. [근거:E00180]"
+        ],
+        "guideline_ids": [
+          "ref2_methods_required_1",
+          "ref2_methods_required_2",
+          "ref2_methods_required_6"
+        ],
+        "used_non_candidate_evidence_ids": [
+          "E00313"
+        ],
+        "unused_candidate_evidence_ids": [
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00190",
+          "E00298",
+          "E00262",
+          "E00183",
+          "E00018",
+          "E00043",
+          "E00044",
+          "E00055",
+          "E00057",
+          "E00081",
+          "E00007",
+          "E00008",
+          "E00135",
+          "E00136",
+          "E00186",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00295",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301"
+        ]
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "S_methods",
+        "reference_id": "ref1_methods",
+        "verdict": "not_visible",
+        "paragraph_ids": [],
+        "reason": "ref1_methods의 not_to_transfer 및 required_content는 이 절의 실제 서술과 무관하며, 해당 가이드가 요구하는 특정 실험·모델·데이터·성능 수치·문헌 표기는 본문에 존재하지 않는다.",
+        "quote": "",
+        "paragraph_quotes": []
+      },
+      {
+        "section_id": "S_methods",
+        "reference_id": "ref2_methods",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p8",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12",
+          "S_methods_p14",
+          "S_methods_p16",
+          "S_methods_p20",
+          "S_methods_p23",
+          "S_methods_p24"
+        ],
+        "reason": "실행 경로와 측정 구간, 평가 대상 플랫폼·소프트웨어 스택, 공통 고정 요소 및 버전별 구성 설명은 실제 문단에 반영되어 있으나, 구성/조건의 통제 범위 정의와 벤더별 배포 설정·적용 수준 관련 항목은 이 절의 실제 서술 범위에서 확인되지 않는다.",
+        "quote": "측정은 추론(inference), bound 계산, 검증(certify) 단계를 분리하여 진행했으며, 각 구간의 경과 시간을 타임스탬프로 누적해 전체 실행 시간을 산출했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16이고 배치 사이즈는 1로 고정했다. 실행 방식은 CROWN의 세 가지 방법(forward, forward+backward, backward_only)을 사용했고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 적용했다. 이러한 고정 요소는 최적화 과정에서 적용·제거를 반복한 변경 사항과 구분하기 위한 공통 기준으로 삼았다. [근거:E00257,E00261,E00263]",
+        "paragraph_quotes": [
+          "측정은 추론(inference), bound 계산, 검증(certify) 단계를 분리하여 진행했으며, 각 구간의 경과 시간을 타임스탬프로 누적해 전체 실행 시간을 산출했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16이고 배치 사이즈는 1로 고정했다. 실행 방식은 CROWN의 세 가지 방법(forward, forward+backward, backward_only)을 사용했고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 적용했다. 이러한 고정 요소는 최적화 과정에서 적용·제거를 반복한 변경 사항과 구분하기 위한 공통 기준으로 삼았다. [근거:E00257,E00261,E00263]",
+          "측정 구간은 추론, bound 계산, 검증의 세 값을 나누어 측정하도록 구성하였다. 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 측정하였고, 측정 시작을 기준으로 추론 이후 타임스탬프를 기록한 뒤 추론 시간을 계산하였다. 단일 데이터 측정 검증을 위해 먼저 warm up 코드를 넣었으며, warm up 단계에서는 network_forward와 lirpa_forward_bound_impl을 수행하였다. 실행 루프에서는 eps_list에 대해 이중 루프를 돌며 각 데이터 i에 대해 network_forward로 정방향 통과 후, method 값에 따라 case 0은 lirpa_forward_bound_impl, case 1은 lirpa_backward_bound를 호출하고, Top-k 인증 판정 결과에 따라 Ht_count 또는 f_count를 증가시켰다. 시간 측정 시작 코드에서는 std::chrono::high_resolution_clock::now로 t_start를 기록하고 network_forward 이후 t_infer를 기록해 time_infer를 계산하였다. 현재 주 측정에서는 cuSPARSE SpMV/SpMM을 제외하고 기존 dense matvec/matmul을 유지하는 것으로 정했으며, 공식 결과는 24 ms dense baseline으로 유지하고 cuSPARSE는 별도 benchmark 옵션으로 비교하는 방향이 제시되었다. [근거:E00205,E00187,E00191,E00198,E00199,E00174,E00114,E00117]",
+          "측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 구성하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 사이즈는 1로 고정하였다. 실행 방식은 CROWN의 세 가지 방법인 forward, forward+backward, backward_only를 사용하였고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 버전별 구성은 v0부터 v4까지 단계적으로 변화하였다. v0은 단독 CPU 처리로 96ms였고, v1은 모든 병렬처리 함수를 커널 함수로 바꾸어 355ms가 되었다. v2는 벡터 연산을 다시 CPU로 처리하고 메모리 풀과 cuBLAS를 도입하여 229ms가 되었으며, v3는 CPU·GPU 하이브리드로 풀 구조체를 축소하여 200ms가 되었다. only_GPU와 hybrid의 변경점 비교에서는 make_zero_matrix, make_zero_vector, make_eye, mat_add, positive_part, negative_part, rowwise_scale, affine_min, affine_max가 GPU에서 CPU로 변경되었고, matmul은 cuBLAS와 메모리풀로 양쪽이 동일하게 유지되었다. GPU 풀 구조체는 only_GPU에서 d_mat[4]와 d_vec[2]였던 것이 hybrid에서 d_A, d_B, d_C 세 개로 축소되었다. 이 비교는 구성 요소 단위의 변경 내용을 정리한 것으로, 정량 성능 수치는 포함하지 않는다. [근거:E00036]",
+          "측정은 CROWN Verification 실행 시간을 기준으로 하며, 추론·bound·검증 단계를 분리해 타임스탬프를 누적하는 방식으로 기록되었다. 평가 대상은 CROWN을 구현한 C++ 프로그램이고, 배치 크기는 1로 고정했으며 실행 방식은 forward, forward+backward, backward_only의 세 가지로 구분하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용했고, 신경망 크기는 256-491-491-16이다. 최적화 과정에서는 forward 함수의 DTOH memcpy를 극단적으로 제거한 뒤 64.716000 ms가 기록되었고, alpha/beta 메모리 풀 적용 후에는 21.018800 ms가 기록되었으며 21.0ms 정도라는 정성적 관측도 함께 제시되었다. bias도 메모리 풀에서 관리하도록 변경되었고, Backward 메모리 복사 제거 및 초기화 최적화 적용 후에는 13.939000 ms가 기록되었으며 13ms 후반에서 거의 14ms 정도로 관측되었다. 다만 이 수치들은 단일 실행 결과이며, 반복 측정 기반 통계나 조건별 비교 해석은 현재 자료에 제시되지 않았다. [근거:E00083,E00131,E00132,E00133,E00148,E00149]",
+          "측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 구분하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16), 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only), 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 입력과 설정을 그대로 사용하였다. GPU 클록 고정과 warmup은 연구 과정에서 나중에 적용·확인된 사항이다. 버전별 구성은 v0부터 v4까지, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등으로 정리되며, 공통 고정 요소는 배치 사이즈 1, 세 가지 실행 방식, 동일한 데이터셋과 eps_list이다. 최적화 과정에서는 affine 중복 계산 삭제로 backward_bound_gpu의 커널 2개 함수가 줄었고, backward의 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합하였으며, backward_bound_gpu에서 affine_min/max까지 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. 또한 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용해 H2D 복사를 제거하고, 단위행렬·영벡터 같은 기본 초기 상태를 GPU 커널에서 직접 생성하여 PCIe 통신 오버헤드를 줄였으며, fp32 단정밀도 연산 변경도 시도되었으나 그 결과는 fp32에 대한 별도 고찰에서 다룬다. [근거:E00146,E00147,E00137,E00138,E00122,E00124,E00150]",
+          "커널 호출 횟수 측정은 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch만 계수하였으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하였다. 커널 퓨전과 backward_only의 메모리 복사 커널 제거로 Forward method=0 bound는 27회에서 18회로 9회 감소, Backward method=1 bound 전체는 46회에서 31회로 15회 감소, Backward-only method=2 bound 전체는 45회에서 33회로 12회 감소하였다. graph mode=1에서 샘플 1개 전체 기준으로는 추론 커널이 그대로여서 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다. graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회이며, 이번 작업은 graph launch 횟수 자체를 줄이지는 않았다. memcpy 호출 횟수는 66개에서 56개로 감소하였다. [근거:E00311,H85ca0e507c4e_85,E00313,E00315,E00339]",
+          "측정은 추론, bound 계산, 검증 단계를 분리하여 각 구간의 시간을 누적하는 방식으로 수행하였다. 실행은 배치 크기 1로 고정하였고, CROWN의 forward, forward+backward, backward_only 세 가지 실행 방식을 적용하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 반복 측정에서는 forward/backward 92만 번 측정을 20회씩 진행하였고, 단일 데이터(optimizing.exe)에 대해 warm up 영향을 확인하였다. warm up 영향은 교수님이 초기화 비용 때문으로 언급하였다. sparse.py는 분리 측정을 위해 forward만 2회 추가 측정하기로 하였고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 실행 시간 감소 요약으로는 1138s에서 758s로 감소한 값이 기록되었다. [근거:E00184,E00320]",
+          "측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 기록하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16이고 배치 사이즈는 1로 고정하였다. 실행 방식은 forward, forward+backward, backward_only의 세 가지로 구분하였고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 버전별 구성은 v0부터 v4까지 순차적으로 적용·해제된 최적화 요소를 포함하며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 그 예이다. 이러한 고정 요소 외의 대부분은 최적화 과정에서 적용 여부를 바꾸며 검토되었다. 실행 시간 감소 요약으로 1138s에서 758s로 줄어든 값이 기록되었으나, 이는 감소 전후를 함께 제시한 요약 기록이며 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다. [근거:E00320]",
+          "측정은 추론, bound 계산, 검증 단계를 분리해 각 구간의 지연을 누적하는 방식으로 설계했다. 실행은 배치 크기 1로 고정하고, forward, forward+backward, backward_only의 세 가지 CROWN 실행 경로를 모두 측정했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용했으며, 평가 대상은 CROWN을 구현한 C++ 프로그램이었다. 최적화 과정에서는 배칭으로 데이터셋을 통째로 넘기는 방식이 실시간 환경에 맞지 않는다고 판단해, 대신 데이터셋이 있는 부분을 pinned Memory로 지정하고 메모리 복사 속도를 최대로 늘렸으며 cudaMemcpyAsync도 사용했다. 이후 pinned memory 입력층은 제거하되 Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두는 구성 변경이 이루어졌다. 측정 기준은 GPU 벤치마크 모범 사례를 참고해 다시 세우기로 했고, Nvidia의 warm up 가이드라인을 기준으로 삼았다. GPU 클록 고정은 이후에 적용된 사항이며, warm up은 초기에 적용되었다. 최적화 기법들은 대부분 적용했다가 다시 해제하는 방식으로 검토되었고, 각 기법을 체계적으로 분리한 ablation은 수행되지 않았다. [근거:E00203,E00217,E00321]",
+          "측정 구간은 추론, bound 계산, 검증 단계를 분리해 각각 타임스탬프를 누적하는 방식으로 정의하였다. 배치 크기는 1로 고정하고, 실행 방식은 CROWN의 forward, forward+backward, backward_only 세 가지로 구분하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정과 warmup은 초기 구성에서 적용되었다. 버전별 구성은 v0부터 v4까지 단계적으로 정리되며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 포함된다. 커널 퓨전 적용 후에는 CROWN Verification 실행 결과 Elapsed time이 22.342900 ms로 기록되었고, 22ms 초반까지 나오는 경우도 관측되었다. 다만 이 수치는 단일 실행 결과이며, 다른 조건과의 반복 측정 기반 통계나 비교 해석은 현재 페이지에 제시되지 않았다. [근거:E00119,E00120]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p2",
+        "reason": "근거 E00030의 limits·evidence_limitations은 '하이브리드 프로그램의 실제 구현 완료·측정 결과는 현재 페이지에 없음'이며 claim_status도 documented_method로, 시도 동기와 방향 기록임을 명시한다. 본문은 'GPU OPTIMIZED 모드 이후에도 CPU보다 느리다는 평가 이후 시도된 방향'이라고 서술해 근거의 동기·방향 기록 범위를 벗어나지 않으나, '측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 측정하였다'는 측정 방식·구간 분리는 E00030·E00033 어디에도 직접 근거가 없다. 또한 'v0부터 v4까지 단계적으로 정리되며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 포함된다'는 버전 목록과 구성 요소 명칭은 제시된 근거(E00030, E00033)에 직접 등장하지 않는다. E00033은 v2 적용 방안 목록만 기록하며 실제 적용 결과나 성능 영향은 없다고 명시하는데, 본문은 이를 '제시되었다'로만 서술해 근거 범위에는 부합하나, 앞부분의 측정 방식·버전 목록이 근거 없이 확장되어 있다.",
+        "evidence_ids": [
+          "E00030",
+          "E00033"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p2-0",
+        "failure_owner": "writer",
+        "quote": "측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 측정하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16), 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only), 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 입력과 동일하게 고정하였다. 버전별 구성은 v0부터 v4까지 단계적으로 정리되며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 포함된다. 이 중 일부는 실제 구현·측정 결과로 기록되었고, 일부는 적용 방향이나 시도 동기로만 남아 있다. 예를 들어 matmul만 GPU로 실행하는 하이브리드 프로그램은 GPU OPTIMIZED 모드 이후에도 CPU보다 느리다는 평가 이후 시도된 방향이며, v2에서 적용할 방안으로 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 구성이 제시되었다. GPU 클록 고정과 warm up은 연구 과정에서 나중에 정리된 사항이다. [근거:E00030,E00033]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p3",
+        "reason": "근거 E00257·E00261·E00263은 p68 figure 캡션에 기록된 현재 C++ 멀티스트림 구현의 방식(Task Parallelism, 64개 스트림, 단일 샘플 커널, FP32만 사용, 1024개 처리, 수만 번 커널 호출, 약 8분), antenna_lirpa의 싱글 스트림·cuBLAS Batched GEMM·텐서 코어 활용 및 약 4배 비교, 방법 A의 3.2배 가속(25분→8분)과 한계선(7~8분, SM 포화)에 관한 서술이다. 그러나 초안 문단은 측정 구간 분리·타임스탬프 누적, 배치 사이즈 1, 실행 방식 3가지(forward/forward+backward/backward_only), 기존 신경망 검증팀 데이터셋·eps_list 사용, 평가 대상이 CROWN C++ 프로그램이라는 점, GPU 클록 고정과 warm up이 나중에 적용·정리된 사항이라는 점 등 근거의 statement·conditions·measurements·parameters에 없는 내용을 해당 근거들에 귀속시켰다. 이는 근거의 범위를 벗어나며, 해당 근거들이 이러한 측정 구간·입력 조건·평가 대상·설정 이력을 직접 뒷받침하지 않는다.",
+        "evidence_ids": [
+          "E00257",
+          "E00261",
+          "E00263"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p3-0",
+        "failure_owner": "writer",
+        "quote": "측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 기록하였다. 공통 고정 요소로는 배치 사이즈 1, 실행 방식 3가지(forward, forward+backward, backward_only), 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list가 유지되었다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정과 warm up은 최적화 과정에서 나중에 적용·정리된 사항이다. 이러한 고정 요소는 최적화 과정에서 적용·제거를 반복한 변경 사항과 구분하기 위한 기준으로 사용되었다. [근거:E00257,E00261,E00263]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p7",
+        "reason": "E00281은 GPU 클록 고정 후 재실험 계획과 ScopedGpuClockLock 구조체 작성(RAII 방식 자동 잠금·해제)을 내용으로 하나, 본문은 이를 반영하지 않고 figure 캡션의 명령어 예시만 서술했다. 또한 E00281의 기본 클록 목표값(2475 MHz)과 실제 실험에서 사용된 2800 MHz(p75:e588) 관련 정보가 누락되었다.",
+        "evidence_ids": [
+          "E00281"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p7-0",
+        "failure_owner": "writer",
+        "quote": "GPU 클록 고정은 CUDA 강의 19장의 GPU 클록 고정 방법을 참고해 진행했으며, 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. 측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용했으며, 이 요소들은 figure 캡션에 기록된 명령어 예시만 포함하며 실제 실행 결과나 고정 후 측정 수치는 이 요소만으로 제시되지 않는다. [근거:E00281,E00283,E00284,E00286]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p7",
+        "reason": "E00284는 figure 캡션의 'nvidia-smi -lgc 1410'(그래픽 클록만 잠금)을 다루나, ScopedGpuClockLock 코드(E00281, p74:e585)는 'nvidia-smi -1gc'를 사용한다. -1gc(그래픽+메모리 클록 동시 설정)와 -lgc(그래픽 클록만 잠금)는 다른 명령어이므로, 두 접근 방식을 동일 선상에서 혼동하지 않도록 구분해야 한다.",
+        "evidence_ids": [
+          "E00281",
+          "E00284"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p7-0",
+        "failure_owner": "writer",
+        "quote": "GPU 클록 고정은 CUDA 강의 19장의 GPU 클록 고정 방법을 참고해 진행했으며, 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. 측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용했으며, 이 요소들은 figure 캡션에 기록된 명령어 예시만 포함하며 실제 실행 결과나 고정 후 측정 수치는 이 요소만으로 제시되지 않는다. [근거:E00281,E00283,E00284,E00286]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p9",
+        "reason": "근거 E00036은 only_GPU와 hybrid의 변경점 비교 표 및 한 줄 요약만 포함하며, 정량 성능 수치는 포함하지 않는다. 그러나 초안 문단(S_methods_p9)은 측정 구간 구성, 타임스탬프 누적 방식, 평가 대상(CROWN C++ 프로그램), 신경망 크기(256-491-491-16), 배치 사이즈 1, 실행 방식(forward/forward+backward/backward_only), 데이터셋·eps_list 사용, GPU 클록 고정과 warmup 적용 시점 등 E00036의 관찰 항목(함수별 구현 방식·복잡도, GPU→CPU 변경 함수 목록, matmul의 cuBLAS+메모리풀 동일성, GPU 풀 구조체 축소)과 대응하지 않는 내용을 E00036에 귀속시켰다. 이는 근거의 범위를 부당하게 확대·변경한 주장에 해당한다.",
+        "evidence_ids": [
+          "E00036"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p9-0",
+        "failure_owner": "writer",
+        "quote": "측정 구간은 추론·bound·검증을 분리하여 타임스탬프를 누적하는 방식으로 구성하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16), 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only), 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 입력을 그대로 사용하였다. GPU 클록 고정과 warmup은 이후 단계에서 적용된 사항이다. [근거:E00036]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p13",
+        "reason": "근거 범위를 벗어난 주장 포함",
+        "evidence_ids": [
+          "E00101",
+          "U8602da87af586b3567f6"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p13-0",
+        "failure_owner": "writer",
+        "quote": "측정은 추론, bound, 검증 단계를 분리하여 진행했으며, 각 구간의 시간은 타임스탬프를 누적하는 방식으로 기록하였다. 공통 고정 요소로는 신경망 크기, 배치 사이즈 1, 실행 방식 3가지(forward, forward+backward, backward_only), 그리고 데이터셋과 eps_list가 사용되었다. 데이터셋과 eps_list는 기존 신경망 검증팀의 구현과 시간을 비교하기 위해 해당 팀이 사용하던 것을 사용하였고, 평가 대상은 CROWN을 구현한 C++ 프로그램이었다. GPU 클록 고정과 warm up은 연구 과정에서 적용된 사항으로, 클록 고정은 이후에 고정되었으며 warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과·비율 차이를 확인하는 방식이었으며, 결과는 모두 동일하였다. 각 최적화 기법을 체계적으로 분리하여 ablation study를 수행하지 못한 점은 한계로 언급되었다. [근거:U8602da87af586b3567f6,E00216,E00213,E00214,E00101,E00130,E00320,E00339]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p13",
+        "reason": "근거 범위를 벗어난 주장 포함",
+        "evidence_ids": [
+          "E00213",
+          "E00214"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p13-0",
+        "failure_owner": "writer",
+        "quote": "측정은 추론, bound, 검증 단계를 분리하여 진행했으며, 각 구간의 시간은 타임스탬프를 누적하는 방식으로 기록하였다. 공통 고정 요소로는 신경망 크기, 배치 사이즈 1, 실행 방식 3가지(forward, forward+backward, backward_only), 그리고 데이터셋과 eps_list가 사용되었다. 데이터셋과 eps_list는 기존 신경망 검증팀의 구현과 시간을 비교하기 위해 해당 팀이 사용하던 것을 사용하였고, 평가 대상은 CROWN을 구현한 C++ 프로그램이었다. GPU 클록 고정과 warm up은 연구 과정에서 적용된 사항으로, 클록 고정은 이후에 고정되었으며 warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과·비율 차이를 확인하는 방식이었으며, 결과는 모두 동일하였다. 각 최적화 기법을 체계적으로 분리하여 ablation study를 수행하지 못한 점은 한계로 언급되었다. [근거:U8602da87af586b3567f6,E00216,E00213,E00214,E00101,E00130,E00320,E00339]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p13",
+        "reason": "근거 범위를 벗어난 주장 포함",
+        "evidence_ids": [
+          "E00130"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p13-0",
+        "failure_owner": "writer",
+        "quote": "측정은 추론, bound, 검증 단계를 분리하여 진행했으며, 각 구간의 시간은 타임스탬프를 누적하는 방식으로 기록하였다. 공통 고정 요소로는 신경망 크기, 배치 사이즈 1, 실행 방식 3가지(forward, forward+backward, backward_only), 그리고 데이터셋과 eps_list가 사용되었다. 데이터셋과 eps_list는 기존 신경망 검증팀의 구현과 시간을 비교하기 위해 해당 팀이 사용하던 것을 사용하였고, 평가 대상은 CROWN을 구현한 C++ 프로그램이었다. GPU 클록 고정과 warm up은 연구 과정에서 적용된 사항으로, 클록 고정은 이후에 고정되었으며 warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과·비율 차이를 확인하는 방식이었으며, 결과는 모두 동일하였다. 각 최적화 기법을 체계적으로 분리하여 ablation study를 수행하지 못한 점은 한계로 언급되었다. [근거:U8602da87af586b3567f6,E00216,E00213,E00214,E00101,E00130,E00320,E00339]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p13",
+        "reason": "근거 범위를 벗어난 주장 포함",
+        "evidence_ids": [
+          "E00216"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p13-0",
+        "failure_owner": "writer",
+        "quote": "측정은 추론, bound, 검증 단계를 분리하여 진행했으며, 각 구간의 시간은 타임스탬프를 누적하는 방식으로 기록하였다. 공통 고정 요소로는 신경망 크기, 배치 사이즈 1, 실행 방식 3가지(forward, forward+backward, backward_only), 그리고 데이터셋과 eps_list가 사용되었다. 데이터셋과 eps_list는 기존 신경망 검증팀의 구현과 시간을 비교하기 위해 해당 팀이 사용하던 것을 사용하였고, 평가 대상은 CROWN을 구현한 C++ 프로그램이었다. GPU 클록 고정과 warm up은 연구 과정에서 적용된 사항으로, 클록 고정은 이후에 고정되었으며 warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과·비율 차이를 확인하는 방식이었으며, 결과는 모두 동일하였다. 각 최적화 기법을 체계적으로 분리하여 ablation study를 수행하지 못한 점은 한계로 언급되었다. [근거:U8602da87af586b3567f6,E00216,E00213,E00214,E00101,E00130,E00320,E00339]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p13",
+        "reason": "근거 범위를 벗어난 주장 포함",
+        "evidence_ids": [
+          "E00320",
+          "E00339"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p13-0",
+        "failure_owner": "writer",
+        "quote": "측정은 추론, bound, 검증 단계를 분리하여 진행했으며, 각 구간의 시간은 타임스탬프를 누적하는 방식으로 기록하였다. 공통 고정 요소로는 신경망 크기, 배치 사이즈 1, 실행 방식 3가지(forward, forward+backward, backward_only), 그리고 데이터셋과 eps_list가 사용되었다. 데이터셋과 eps_list는 기존 신경망 검증팀의 구현과 시간을 비교하기 위해 해당 팀이 사용하던 것을 사용하였고, 평가 대상은 CROWN을 구현한 C++ 프로그램이었다. GPU 클록 고정과 warm up은 연구 과정에서 적용된 사항으로, 클록 고정은 이후에 고정되었으며 warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과·비율 차이를 확인하는 방식이었으며, 결과는 모두 동일하였다. 각 최적화 기법을 체계적으로 분리하여 ablation study를 수행하지 못한 점은 한계로 언급되었다. [근거:U8602da87af586b3567f6,E00216,E00213,E00214,E00101,E00130,E00320,E00339]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p14",
+        "reason": "근거 범위를 벗어난 수치·조건 사용",
+        "evidence_ids": [
+          "E00311",
+          "E00313",
+          "E00315",
+          "E00339",
+          "H85ca0e507c4e_85"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p14-0",
+        "failure_owner": "writer",
+        "quote": "커널 호출 횟수 측정은 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch만 계수하였으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하였다. 커널 퓨전과 backward_only의 메모리 복사 커널 제거로 Forward method=0 bound는 27회에서 18회로 9회 감소, Backward method=1 bound 전체는 46회에서 31회로 15회 감소, Backward-only method=2 bound 전체는 45회에서 33회로 12회 감소하였다. graph mode=1에서 샘플 1개 전체 기준으로는 추론 커널이 그대로여서 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다. graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회이며, 이번 작업은 graph launch 횟수 자체를 줄이지는 않았다. memcpy 호출 횟수는 66개에서 56개로 감소하였다. [근거:E00311,H85ca0e507c4e_85,E00313,E00315,E00339]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p16",
+        "reason": "E00184는 측정 계획과 일부 완료 사실 기록이며 실제 평균·배율 수치나 검증 결과는 현재 페이지에 없다고 명시되어 있으나, 본문은 'sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다'는 계획·정리 내용을 마치 확정된 측정 결과처럼 서술하여 근거의 한계를 넘어섰다.",
+        "evidence_ids": [
+          "E00184"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p16-0",
+        "failure_owner": "writer",
+        "quote": "측정은 추론, bound 계산, 검증 단계를 분리하여 각 구간의 시간을 누적하는 방식으로 수행하였다. 실행은 배치 크기 1로 고정하였고, CROWN의 forward, forward+backward, backward_only 세 가지 실행 방식을 적용하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 반복 측정에서는 forward/backward 92만 번 측정을 20회씩 진행하였고, 단일 데이터(optimizing.exe)에 대해 warm up 영향을 확인하였다. warm up 영향은 교수님이 초기화 비용 때문으로 언급하였다. sparse.py는 분리 측정을 위해 forward만 2회 추가 측정하기로 하였고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 실행 시간 감소 요약으로는 1138s에서 758s로 감소한 값이 기록되었다. [근거:E00184,E00320]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p16",
+        "reason": "E00320의 limits는 실행 시간 감소 요약 기록이며 단일 실행의 정밀 수치나 반복 측정 기반 통계는 이 사실만으로 제시되지 않는다고 명시하고 있으나, 본문은 '1138s에서 758s로 감소한 값이 기록되었다'를 반복 측정·통계 기반이 있는 것처럼 배치하여 근거의 한계를 반영하지 않았다.",
+        "evidence_ids": [
+          "E00320"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p16-0",
+        "failure_owner": "writer",
+        "quote": "측정은 추론, bound 계산, 검증 단계를 분리하여 각 구간의 시간을 누적하는 방식으로 수행하였다. 실행은 배치 크기 1로 고정하였고, CROWN의 forward, forward+backward, backward_only 세 가지 실행 방식을 적용하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 반복 측정에서는 forward/backward 92만 번 측정을 20회씩 진행하였고, 단일 데이터(optimizing.exe)에 대해 warm up 영향을 확인하였다. warm up 영향은 교수님이 초기화 비용 때문으로 언급하였다. sparse.py는 분리 측정을 위해 forward만 2회 추가 측정하기로 하였고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 실행 시간 감소 요약으로는 1138s에서 758s로 감소한 값이 기록되었다. [근거:E00184,E00320]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "error",
+        "paragraph_id": "S_methods_p19",
+        "reason": "근거 E00180의 관측 대상은 '실행 인자 있는 forward'와 '실행 인자 없는 backward', 그리고 '다른 실행'이며, 실행 인자 없는 backward의 값은 1447.17s이다. 본문은 이를 '실행 인자 없는 backward는 1447.17s'로 서술해 측정값과 조건은 일치하지만, 근거의 관측 구성(forward/backward/다른 실행)과 의문 제기 범위를 벗어나 실행 인자·switch문의 성능 영향 가능성을 단정적으로 연결하는 서술로 읽힐 여지가 있다. 근거는 인과 분리 실험 결과가 없고 '관측된 시간 차이와 의문 제기'만 존재한다고 명시하므로, 성능 영향 가능성을 사실처럼 서술하지 말고 관측 기록과 의문 제기로만 제한해야 한다.",
+        "evidence_ids": [
+          "E00180"
+        ],
+        "review_stage": "evidence_usage",
+        "review_request": "review-2-approved-evidence-S_methods_p19-0",
+        "failure_owner": "writer",
+        "quote": "측정 구간은 추론, bound, 검증 단계를 분리하여 각각 시간을 재고, 각 단계의 타임스탬프를 누적하는 방식으로 구성하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 사이즈는 1로 고정하였다. 실행 방식은 forward, forward+backward, backward_only의 세 가지로 진행하였고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 버전별 구성은 v0부터 v4까지 순차적으로 적용·해제된 최적화 요소를 포함하며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 그 예이다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이고, warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 보았으며, 관측된 결과는 모두 동일하였다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지 못한 점은 한계로 남는다. 실행 인자 유무에 따른 실행 시간 차이도 관측되었는데, 실행 인자 있는 forward는 1360.22s, 실행 인자 없는 backward는 1447.17s, 다른 실행은 1375.97s로 기록되었으며, 실행 인자 추가와 switch문 사용이 성능에 영향을 주는지에 대한 의문이 제기되었다. 다만 실행 인자 및 switch문의 인과적 영향을 분리한 실험 결과는 현재 자료에 제시되지 않는다. [근거:E00180]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p2",
+        "reason": "v2에서 적용할 방안으로 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 구성이 제시되었다는 서술은 시도 동기·제안 수준으로 남아 있으며, RI_methods_4가 요구하는 버전별 구성·측정 구간의 실제 측정 결과로 연결되지 않는다.",
+        "evidence_ids": [
+          "E00030",
+          "E00033"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 측정하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16), 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only), 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 입력과 동일하게 고정하였다. 버전별 구성은 v0부터 v4까지 단계적으로 정리되며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 포함된다. 이 중 일부는 실제 구현·측정 결과로 기록되었고, 일부는 적용 방향이나 시도 동기로만 남아 있다. 예를 들어 matmul만 GPU로 실행하는 하이브리드 프로그램은 GPU OPTIMIZED 모드 이후에도 CPU보다 느리다는 평가 이후 시도된 방향이며, v2에서 적용할 방안으로 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 구성이 제시되었다. GPU 클록 고정과 warm up은 연구 과정에서 나중에 정리된 사항이다. [근거:E00030,E00033]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p3",
+        "reason": "GPU 클록 고정과 warm up이 나중에 적용·정리된 사항이라는 서술은 공통 고정 요소와 구분하기 위한 배경으로만 사용되며, 버전별 구성·측정 구간의 구체적 측정 서술로 이어지지 않는다.",
+        "evidence_ids": [
+          "E00257",
+          "E00261",
+          "E00263"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "측정 구간은 추론, bound 계산, 검증 단계를 분리하여 각각 타임스탬프를 누적하는 방식으로 기록하였다. 공통 고정 요소로는 배치 사이즈 1, 실행 방식 3가지(forward, forward+backward, backward_only), 그리고 기존 신경망 검증팀이 사용하던 데이터셋과 eps_list가 유지되었다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정과 warm up은 최적화 과정에서 나중에 적용·정리된 사항이다. 이러한 고정 요소는 최적화 과정에서 적용·제거를 반복한 변경 사항과 구분하기 위한 기준으로 사용되었다. [근거:E00257,E00261,E00263]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p7",
+        "reason": "GPU 클록 고정 방법과 Persistence mode 명령어 예시는 figure 캡션 기록 수준으로만 제시되며, RI_methods_4가 요구하는 측정 구간·버전별 구성의 실제 측정 결과로 연결되지 않는다.",
+        "evidence_ids": [
+          "E00281",
+          "E00283",
+          "E00284",
+          "E00286"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "GPU 클록 고정은 CUDA 강의 19장의 GPU 클록 고정 방법을 참고해 진행했으며, 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하는 방식이 기록되었다. 측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용했으며, 이 요소들은 figure 캡션에 기록된 명령어 예시만 포함하며 실제 실행 결과나 고정 후 측정 수치는 이 요소만으로 제시되지 않는다. [근거:E00281,E00283,E00284,E00286]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p9",
+        "reason": "공통 고정 요소와 GPU 클록 고정·warmup의 시점만 짧게 반복하며, 버전별 구성·측정 구간의 구체적 서술은 포함하지 않는다.",
+        "evidence_ids": [
+          "E00036"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "측정 구간은 추론·bound·검증을 분리하여 타임스탬프를 누적하는 방식으로 구성하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기(256-491-491-16), 배치 사이즈 1, 실행 방식(forward, forward+backward, backward_only), 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 입력을 그대로 사용하였다. GPU 클록 고정과 warmup은 이후 단계에서 적용된 사항이다. [근거:E00036]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p13",
+        "reason": "정확도 지표가 모두 동일했다는 결과와 ablation 미수행 한계는 사용자 승인 범위의 반영이지만, 측정 구간·버전별 구성의 구체적 측정 서술과는 별도로 짧게만 반영된다.",
+        "evidence_ids": [
+          "U8602da87af586b3567f6",
+          "E00216",
+          "E00213",
+          "E00214",
+          "E00101",
+          "E00130",
+          "E00320",
+          "E00339"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "측정은 추론, bound, 검증 단계를 분리하여 진행했으며, 각 구간의 시간은 타임스탬프를 누적하는 방식으로 기록하였다. 공통 고정 요소로는 신경망 크기, 배치 사이즈 1, 실행 방식 3가지(forward, forward+backward, backward_only), 그리고 데이터셋과 eps_list가 사용되었다. 데이터셋과 eps_list는 기존 신경망 검증팀의 구현과 시간을 비교하기 위해 해당 팀이 사용하던 것을 사용하였고, 평가 대상은 CROWN을 구현한 C++ 프로그램이었다. GPU 클록 고정과 warm up은 연구 과정에서 적용된 사항으로, 클록 고정은 이후에 고정되었으며 warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀의 프로그램과 검증 결과·비율 차이를 확인하는 방식이었으며, 결과는 모두 동일하였다. 각 최적화 기법을 체계적으로 분리하여 ablation study를 수행하지 못한 점은 한계로 언급되었다. [근거:U8602da87af586b3567f6,E00216,E00213,E00214,E00101,E00130,E00320,E00339]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p14",
+        "reason": "커널 호출 횟수 감소와 memcpy 감소 수치는 구성 요소 단위 변경 기록으로 제시되며, RI_methods_4가 요구하는 측정 구간·버전별 구성의 공통 고정 요소 서술과 직접 결합되지 않는다.",
+        "evidence_ids": [
+          "E00311",
+          "H85ca0e507c4e_85",
+          "E00313",
+          "E00315",
+          "E00339"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "커널 호출 횟수 측정은 3-layer 네트워크 기준으로 bound 내 CUDA kernel launch만 계수하였으며, H2D/D2H memcpy, cudaStreamSynchronize, cudaGraphLaunch는 제외하였다. 커널 퓨전과 backward_only의 메모리 복사 커널 제거로 Forward method=0 bound는 27회에서 18회로 9회 감소, Backward method=1 bound 전체는 46회에서 31회로 15회 감소, Backward-only method=2 bound 전체는 45회에서 33회로 12회 감소하였다. graph mode=1에서 샘플 1개 전체 기준으로는 추론 커널이 그대로여서 Forward 33회→24회(9회 감소), Backward 52회→37회(15회 감소), Backward-only 51회→39회(12회 감소)로 줄었다. graph mode 1은 여전히 샘플당 cudaGraphLaunch가 infer 1회 + bound 1회, 총 2회이며, 이번 작업은 graph launch 횟수 자체를 줄이지는 않았다. memcpy 호출 횟수는 66개에서 56개로 감소하였다. [근거:E00311,H85ca0e507c4e_85,E00313,E00315,E00339]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p16",
+        "reason": "반복 측정 계획과 warm up 영향, 1138s→758s 감소 요약은 시도·계획·요약 수준으로 제시되며, RI_methods_4가 요구하는 측정 구간·버전별 구성의 실제 측정 결과로만 연결되지 않는다.",
+        "evidence_ids": [
+          "E00184",
+          "E00320"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "측정은 추론, bound 계산, 검증 단계를 분리하여 각 구간의 시간을 누적하는 방식으로 수행하였다. 실행은 배치 크기 1로 고정하였고, CROWN의 forward, forward+backward, backward_only 세 가지 실행 방식을 적용하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 반복 측정에서는 forward/backward 92만 번 측정을 20회씩 진행하였고, 단일 데이터(optimizing.exe)에 대해 warm up 영향을 확인하였다. warm up 영향은 교수님이 초기화 비용 때문으로 언급하였다. sparse.py는 분리 측정을 위해 forward만 2회 추가 측정하기로 하였고, 이후 sparse.py와 forward/backward 기준 평균 시간 배율 차이를 검사하기로 정리되었다. 실행 시간 감소 요약으로는 1138s에서 758s로 감소한 값이 기록되었다. [근거:E00184,E00320]"
+      },
+      {
+        "section_id": "S_methods",
+        "severity": "warning",
+        "paragraph_id": "S_methods_p19",
+        "reason": "실행 인자 유무에 따른 실행 시간 차이와 switch문 영향 의문은 관측·의문 수준으로 제시되며, 인과적 영향을 분리한 실험 결과는 제시되지 않는다.",
+        "evidence_ids": [
+          "E00180"
+        ],
+        "review_stage": "content_coverage",
+        "failure_owner": "none",
+        "quote": "측정 구간은 추론, bound, 검증 단계를 분리하여 각각 시간을 재고, 각 단계의 타임스탬프를 누적하는 방식으로 구성하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 사이즈는 1로 고정하였다. 실행 방식은 forward, forward+backward, backward_only의 세 가지로 진행하였고, 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 그대로 사용하였다. 버전별 구성은 v0부터 v4까지 순차적으로 적용·해제된 최적화 요소를 포함하며, only_GPU, hybrid, HYBRID V2, mempool+warmup, cudaGraph 적용 버전 등이 그 예이다. GPU 클록 고정은 연구 일지에서 확인되듯 나중에 고정된 사항이고, warm up은 초기에 적용되었다. 정확도 지표는 기존 신경망 검증팀 프로그램과 검증 결과 및 비율이 얼마나 차이 나는지로 보았으며, 관측된 결과는 모두 동일하였다. 다만 각 최적화 기법을 체계적으로 분리하여 ablation study로 검증하지 못한 점은 한계로 남는다. 실행 인자 유무에 따른 실행 시간 차이도 관측되었는데, 실행 인자 있는 forward는 1360.22s, 실행 인자 없는 backward는 1447.17s, 다른 실행은 1375.97s로 기록되었으며, 실행 인자 추가와 switch문 사용이 성능에 영향을 주는지에 대한 의문이 제기되었다. 다만 실행 인자 및 switch문의 인과적 영향을 분리한 실험 결과는 현재 자료에 제시되지 않는다. [근거:E00180]"
+      }
+    ],
+    "evidence_usage_review": {
+      "batches": [
+        {
+          "name": "review-2-approved-evidence-S_methods_p1-0",
+          "paragraph_id": "S_methods_p1",
+          "target_evidence_ids": [
+            "E00257",
+            "E00261",
+            "E00263"
+          ],
+          "context_evidence_ids": [
+            "E00257",
+            "E00261",
+            "E00263"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p2-0",
+          "paragraph_id": "S_methods_p2",
+          "target_evidence_ids": [
+            "E00030",
+            "E00033"
+          ],
+          "context_evidence_ids": [
+            "E00030",
+            "E00033"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p3-0",
+          "paragraph_id": "S_methods_p3",
+          "target_evidence_ids": [
+            "E00257",
+            "E00261",
+            "E00263"
+          ],
+          "context_evidence_ids": [
+            "E00257",
+            "E00261",
+            "E00263"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p4-0",
+          "paragraph_id": "S_methods_p4",
+          "target_evidence_ids": [
+            "E00230",
+            "E00231",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "context_evidence_ids": [
+            "E00230",
+            "E00231",
+            "E00277",
+            "E00278",
+            "E00279",
+            "E00280",
+            "E00281",
+            "E00282",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p5-0",
+          "paragraph_id": "S_methods_p5",
+          "target_evidence_ids": [
+            "E00277",
+            "E00278"
+          ],
+          "context_evidence_ids": [
+            "E00277",
+            "E00278"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p6-0",
+          "paragraph_id": "S_methods_p6",
+          "target_evidence_ids": [
+            "E00279",
+            "E00282"
+          ],
+          "context_evidence_ids": [
+            "E00279",
+            "E00282"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p7-0",
+          "paragraph_id": "S_methods_p7",
+          "target_evidence_ids": [
+            "E00281",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "context_evidence_ids": [
+            "E00281",
+            "E00283",
+            "E00284",
+            "E00286"
+          ],
+          "issue_count": 2
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p8-0",
+          "paragraph_id": "S_methods_p8",
+          "target_evidence_ids": [
+            "E00114",
+            "E00117",
+            "E00174",
+            "E00187",
+            "E00191",
+            "E00198",
+            "E00199",
+            "E00205"
+          ],
+          "context_evidence_ids": [
+            "E00114",
+            "E00117",
+            "E00174",
+            "E00187",
+            "E00191",
+            "E00198",
+            "E00199",
+            "E00205"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p9-0",
+          "paragraph_id": "S_methods_p9",
+          "target_evidence_ids": [
+            "E00036"
+          ],
+          "context_evidence_ids": [
+            "E00036"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p10-0",
+          "paragraph_id": "S_methods_p10",
+          "target_evidence_ids": [
+            "E00036"
+          ],
+          "context_evidence_ids": [
+            "E00036"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p11-0",
+          "paragraph_id": "S_methods_p11",
+          "target_evidence_ids": [
+            "E00083",
+            "E00131",
+            "E00132",
+            "E00133",
+            "E00148",
+            "E00149"
+          ],
+          "context_evidence_ids": [
+            "E00083",
+            "E00131",
+            "E00132",
+            "E00133",
+            "E00148",
+            "E00149"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p12-0",
+          "paragraph_id": "S_methods_p12",
+          "target_evidence_ids": [
+            "E00122",
+            "E00124",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00150"
+          ],
+          "context_evidence_ids": [
+            "E00122",
+            "E00124",
+            "E00137",
+            "E00138",
+            "E00146",
+            "E00147",
+            "E00150"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p13-0",
+          "paragraph_id": "S_methods_p13",
+          "target_evidence_ids": [
+            "E00101",
+            "E00130",
+            "E00213",
+            "E00214",
+            "E00216",
+            "E00320",
+            "E00339",
+            "U8602da87af586b3567f6"
+          ],
+          "context_evidence_ids": [
+            "E00101",
+            "E00130",
+            "E00213",
+            "E00214",
+            "E00216",
+            "E00320",
+            "E00339",
+            "U8602da87af586b3567f6"
+          ],
+          "issue_count": 5
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p14-0",
+          "paragraph_id": "S_methods_p14",
+          "target_evidence_ids": [
+            "E00311",
+            "E00313",
+            "E00315",
+            "E00339",
+            "H85ca0e507c4e_85"
+          ],
+          "context_evidence_ids": [
+            "E00311",
+            "E00313",
+            "H85ca0e507c4e_85",
+            "E00315",
+            "E00339"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p15-0",
+          "paragraph_id": "S_methods_p15",
+          "target_evidence_ids": [
+            "E00340",
+            "E00343",
+            "E00344"
+          ],
+          "context_evidence_ids": [
+            "E00340",
+            "E00343",
+            "E00344"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p16-0",
+          "paragraph_id": "S_methods_p16",
+          "target_evidence_ids": [
+            "E00184",
+            "E00320"
+          ],
+          "context_evidence_ids": [
+            "E00184",
+            "E00320"
+          ],
+          "issue_count": 2
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p17-0",
+          "paragraph_id": "S_methods_p17",
+          "target_evidence_ids": [
+            "E00220",
+            "E00221"
+          ],
+          "context_evidence_ids": [
+            "E00220",
+            "E00221"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p18-0",
+          "paragraph_id": "S_methods_p18",
+          "target_evidence_ids": [
+            "E00184"
+          ],
+          "context_evidence_ids": [
+            "E00184"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p19-0",
+          "paragraph_id": "S_methods_p19",
+          "target_evidence_ids": [
+            "E00180"
+          ],
+          "context_evidence_ids": [
+            "E00180"
+          ],
+          "issue_count": 1
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p20-0",
+          "paragraph_id": "S_methods_p20",
+          "target_evidence_ids": [
+            "E00320"
+          ],
+          "context_evidence_ids": [
+            "E00320"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p21-0",
+          "paragraph_id": "S_methods_p21",
+          "target_evidence_ids": [
+            "E00020",
+            "E00021",
+            "E00022"
+          ],
+          "context_evidence_ids": [
+            "E00020",
+            "E00021",
+            "E00022"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p22-0",
+          "paragraph_id": "S_methods_p22",
+          "target_evidence_ids": [
+            "E00203",
+            "E00217",
+            "E00321"
+          ],
+          "context_evidence_ids": [
+            "E00203",
+            "E00217",
+            "E00321"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p23-0",
+          "paragraph_id": "S_methods_p23",
+          "target_evidence_ids": [
+            "E00203",
+            "E00217",
+            "E00321"
+          ],
+          "context_evidence_ids": [
+            "E00203",
+            "E00217",
+            "E00321"
+          ],
+          "issue_count": 0
+        },
+        {
+          "name": "review-2-approved-evidence-S_methods_p24-0",
+          "paragraph_id": "S_methods_p24",
+          "target_evidence_ids": [
+            "E00119",
+            "E00120"
+          ],
+          "context_evidence_ids": [
+            "E00119",
+            "E00120"
+          ],
+          "issue_count": 0
+        }
+      ],
+      "summary": {
+        "checked_paragraph_ids": [
+          "S_methods_p1",
+          "S_methods_p2",
+          "S_methods_p3",
+          "S_methods_p4",
+          "S_methods_p5",
+          "S_methods_p6",
+          "S_methods_p7",
+          "S_methods_p8",
+          "S_methods_p9",
+          "S_methods_p10",
+          "S_methods_p11",
+          "S_methods_p12",
+          "S_methods_p13",
+          "S_methods_p14",
+          "S_methods_p15",
+          "S_methods_p16",
+          "S_methods_p17",
+          "S_methods_p18",
+          "S_methods_p19",
+          "S_methods_p20",
+          "S_methods_p21",
+          "S_methods_p22",
+          "S_methods_p23",
+          "S_methods_p24"
+        ],
+        "checked_evidence_ids": [
+          "E00020",
+          "E00021",
+          "E00022",
+          "E00030",
+          "E00033",
+          "E00036",
+          "E00083",
+          "E00101",
+          "E00114",
+          "E00117",
+          "E00119",
+          "E00120",
+          "E00122",
+          "E00124",
+          "E00130",
+          "E00131",
+          "E00132",
+          "E00133",
+          "E00137",
+          "E00138",
+          "E00146",
+          "E00147",
+          "E00148",
+          "E00149",
+          "E00150",
+          "E00174",
+          "E00180",
+          "E00184",
+          "E00187",
+          "E00191",
+          "E00198",
+          "E00199",
+          "E00203",
+          "E00205",
+          "E00213",
+          "E00214",
+          "E00216",
+          "E00217",
+          "E00220",
+          "E00221",
+          "E00230",
+          "E00231",
+          "E00257",
+          "E00261",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00311",
+          "E00313",
+          "E00315",
+          "E00320",
+          "E00321",
+          "E00339",
+          "E00340",
+          "E00343",
+          "E00344",
+          "H85ca0e507c4e_85",
+          "U8602da87af586b3567f6"
+        ],
+        "issue_count": 14,
+        "blocking_paragraph_ids": [
+          "S_methods_p2",
+          "S_methods_p3",
+          "S_methods_p7",
+          "S_methods_p9",
+          "S_methods_p13",
+          "S_methods_p14",
+          "S_methods_p16",
+          "S_methods_p19"
+        ]
+      },
+      "coverage_batches": [
+        "all"
+      ]
+    },
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [
+      {
+        "item_id": "RI_methods_4",
+        "added_paragraph_ids": [
+          "S_methods_p17",
+          "S_methods_p19"
+        ]
+      }
+    ],
+    "response_normalizations": [],
+    "approved": false,
+    "required_content_coverage": {
+      "met": 1,
+      "total": 1,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 1,
+      "not_visible": 1,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval"
+  }
+}

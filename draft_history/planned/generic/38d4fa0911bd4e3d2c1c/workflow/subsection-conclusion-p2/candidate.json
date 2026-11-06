@@ -1,0 +1,654 @@
+{
+  "sections": {
+    "conclusion": {
+      "parts": {
+        "p0": "본 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현·최적화하여 실시간성을 확보할 수 있는지 검토하였다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도하였고, 이후 메모리 풀과 warm up 조합으로 거의 200ms 단축, forward 함수의 DTOH memcpy를 극단적으로 제거하여 64.716ms까지 줄이는 등 단계별 개선이 이루어졌다. 배칭 시스템 구현으로 3배 빨라졌으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. [근거:E00030,E00071,E00083,E00211]\n\nPinned Memory는 평균 처리 속도에서 No-Pin보다 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00292,E00293,E00294,E00296,E00299]\n\n향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등이 검토 대상으로 정리되었다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법도 검토 대상이다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등도 보완 과제로 제시되었다. [근거:E00033,E00073,E00213,E00214,E00236,E00237,E00183,E00184,E00262,E00277,E00278]\n\n이 연구는 CROWN 신경망 검증을 CPU 환경에서만 수행하던 한계를 넘어, 실시간 환경의 대규모 연산을 CUDA 기반으로 가속하고 최적화하는 과정을 다룬다. 핵심 결과는 추론·bound 계산·검증 단계를 분리 측정하고, warm up과 메모리 풀을 적용해 평균 처리 시간을 줄인 점, 그리고 배칭 시스템 구현으로 처리 속도를 약 3배 높인 점이다. 다만 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못하는 한계가 있어, 마이크로초에서 수 밀리초(ms) 수준으로 지연을 제한해야 한다는 조건이 함께 인식되었다. [근거:E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00270,E00271,E00272,E00275,E00276,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366,E00370,E00374]\n\nPinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단해 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. 반면 No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있으며, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하는 차이가 확인되었다. [근거:E00072]\n\n향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등을 검토한다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법도 검토 대상이다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등은 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 반영한다. [근거:E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00333]\n\n본 연구는 CPU 환경에서만 제한적으로 수행되던 CROWN 신경망 검증을 CUDA 기반으로 가속하여, 실시간 대규모 연산 요구를 충족할 가능성을 검토하였다. 실행 루프는 eps_list 이중 반복과 정방향 통과 후 method 분기에 따라 forward bound 또는 backward bound를 호출하고, Top-k 인증 판정으로 결과를 집계하는 구조로 확인되었다. alpha/beta 메모리 풀 적용 후 약 21.0ms 수준의 실행 시간이 기록되었으며, bias를 GPU에 미리 업로드하는 시도는 데이터 크기가 작아 성능 개선 효과가 크지 않은 것으로 판단되었다. 향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등을 다루기로 하였다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법, Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등은 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 후속 검토 대상으로 정리되었다. [근거:E00174,E00045,E00132,E00331]\n\n이 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 가속하고 최적화하는 과정을 다룬다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기와 입력 데이터셋, eps_list는 기존 신경망 검증팀이 사용하던 설정을 그대로 사용했다. 실행 방식은 forward, forward+backward, backward_only의 세 가지 CROWN 방법을 기준으로 삼았고, 배치 크기는 1로 고정했다. GPU 클록 고정과 warm up은 연구 진행 중 나중에 확정된 사항으로, 초기 단계에서는 이러한 조건이 완전히 통제된 상태에서 비교가 이루어지지 않았다. [근거:E00044,E00046,E00075,E00131]\n\n메모리 관리와 가중치 사전 업로드가 CROWN 검증 실행 시간에 영향을 주었다. 가중치 사전 업로드 적용 후 실행 시간은 149~155ms 범위로 기록되었고, MEMPOOL + Weights PRELOAD ON GPU 모드에서는 149.820400ms가 관측되었다. 메모리 풀과 warm up을 함께 적용한 조합에서는 128.894800ms, alpha/beta 메모리 풀 적용 후에는 21.018800ms가 기록되었다. 다만 이 값들은 모두 단일 실행 결과로, 반복 측정 기반의 평균·분산이나 조건 간 통계 비교는 제시되지 않았다. 또한 preload로 줄어든 시간이 실제 가중치 활용 효과인지, CUDA 컨텍스트 초기화 웜업 효과인지에 대한 해석도 남아 있다. [근거:E00044,E00046,E00075,E00131]\n\n정확도와 지연 시간 사이의 trade-off는 함께 고려해야 한다. Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. 반면 No-Pin은 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있으며, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하는 것으로 정리되었다. 이러한 차이는 평균 속도만으로 방법을 판단하기 어렵고, 실시간 환경에서 요구되는 지연 안정성과 지터 억제를 함께 봐야 함을 보여준다. [근거:E00044,E00046,E00075,E00131]\n\n실용적 기여와 향후 방향은 다음과 같이 정리된다. 실시간성을 확보하려면 마이크로초에서 수 밀리초(ms) 내로 제한해야 한다는 점이 전제되며, 배칭 시스템 구현으로 처리 속도가 약 3배 빨라졌지만 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. Pinned Memory의 역할도 평균 처리 속도보다 최대 지연과 지터 억제라는 안정성 관점에서 이해된다. 향후 작업으로는 backward only mode의 재귀 버전, loop 버전, iteration 버전의 희소행렬 버전을 CUDA 프로그램으로 만들어 실행하는 방향이 검토 대상으로 정리되었고, 최종 목표 역시 이 네 가지 버전을 CUDA로 구현해 돌려보는 것으로 설정되었다. 이와 함께 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등 향후 다룰 주제가 남아 있다. [근거:E00007,E00008,E00044,E00046,E00075,E00131]\n\n추가 검토 대상 최적화 기법으로는 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등이 언급된다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론·bound·검증의 분리 측정 등도 향후 정리할 주제로 남아 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 인식된다. [근거:E00007,E00008,E00044,E00046,E00075,E00131]\n\n이 연구는 CROWN 신경망 검증을 CPU 중심 오프라인 환경에서만 수행하던 한계를 넘어, 실시간 환경에서 대규모 연산을 CUDA 기반으로 가속하고 최적화하는 과정을 다루었다. 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list를 그대로 사용하고, 신경망 크기 256-491-491-16, 배치 사이즈 1, 실행 방식은 forward, forward+backward, backward_only의 세 가지로 설정하여 기존 구현과의 시간 비교를 목표로 하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정과 warm up은 연구 과정에서 나중에 고정된 사항이다. [근거:E00274]\n\n핵심 결과로는 그래프 적용 버전이 787.8832초로 3가지 방법 중 가장 빠르다고 기록되었으며, avg 기준 forward는 1029초, forward+backward는 1138초로 비교값이 함께 언급되었다. 다만 이 수치는 기록자의 관측과 비교 요약에 해당하며, 각 방법의 반복 측정 통계나 조건별 분리 측정은 이 사실만으로 제시되지 않는다. [근거:E00274]\n\n실용적 기여 측면에서는 실시간성을 확보하려면 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 점이 확인되었고, 배칭 시스템 구현으로 처리 속도가 약 3배 빨라졌으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있지만, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. [근거:E00274]\n\n향후 방향으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등 추가 주제를 검토할 계획이다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등 최적화 기법도 추가 검토 대상이다. 아울러 Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론+bound+검증 분리 측정도 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 후속 과제로 남겨 둔다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 수행하지 못한 점 역시 한계로 인식된다. [근거:E00274]"
+      }
+    }
+  },
+  "review": {
+    "checks": [
+      {
+        "item_id": "conc_item_3",
+        "verdict": "met",
+        "paragraph_ids": [
+          "conclusion_p1",
+          "conclusion_p3",
+          "conclusion_p7",
+          "conclusion_p11",
+          "conclusion_p12",
+          "conclusion_p16",
+          "conclusion_p2",
+          "conclusion_p4",
+          "conclusion_p6"
+        ],
+        "evidence_ids": [
+          "E00211",
+          "E00262",
+          "E00296",
+          "E00007",
+          "E00008",
+          "E00030",
+          "E00033",
+          "E00213",
+          "E00214",
+          "E00236",
+          "E00237",
+          "E00183",
+          "E00184",
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00202",
+          "E00203",
+          "E00205",
+          "E00206",
+          "E00207",
+          "E00208",
+          "E00221",
+          "E00270",
+          "E00271",
+          "E00272",
+          "E00274",
+          "E00275",
+          "E00276",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00287",
+          "E00298",
+          "E00326",
+          "E00329",
+          "E00333",
+          "E00353",
+          "E00354",
+          "E00366",
+          "E00370",
+          "E00374"
+        ],
+        "quote": "본 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현·최적화하여 실시간성을 확보할 수 있는지 검토하였다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도하였고, 이후 메모리 풀과 warm up 조합으로 거의 200ms 단축, forward 함수의 DTOH memcpy를 극단적으로 제거하여 64.716ms까지 줄이는 등 단계별 개선이 이루어졌다. 배칭 시스템 구현으로 3배 빨라졌으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. [근거:E00030,E00071,E00083,E00211]",
+        "paragraph_quotes": [
+          "본 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현·최적화하여 실시간성을 확보할 수 있는지 검토하였다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도하였고, 이후 메모리 풀과 warm up 조합으로 거의 200ms 단축, forward 함수의 DTOH memcpy를 극단적으로 제거하여 64.716ms까지 줄이는 등 단계별 개선이 이루어졌다. 배칭 시스템 구현으로 3배 빨라졌으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. [근거:E00030,E00071,E00083,E00211]",
+          "향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등이 검토 대상으로 정리되었다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법도 검토 대상이다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등도 보완 과제로 제시되었다. [근거:E00033,E00073,E00213,E00214,E00236,E00237,E00183,E00184,E00262,E00277,E00278]",
+          "본 연구는 CPU 환경에서만 제한적으로 수행되던 CROWN 신경망 검증을 CUDA 기반으로 가속하여, 실시간 대규모 연산 요구를 충족할 가능성을 검토하였다. 실행 루프는 eps_list 이중 반복과 정방향 통과 후 method 분기에 따라 forward bound 또는 backward bound를 호출하고, Top-k 인증 판정으로 결과를 집계하는 구조로 확인되었다. alpha/beta 메모리 풀 적용 후 약 21.0ms 수준의 실행 시간이 기록되었으며, bias를 GPU에 미리 업로드하는 시도는 데이터 크기가 작아 성능 개선 효과가 크지 않은 것으로 판단되었다. 향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등을 다루기로 하였다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법, Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등은 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 후속 검토 대상으로 정리되었다. [근거:E00174,E00045,E00132,E00331]",
+          "실용적 기여와 향후 방향은 다음과 같이 정리된다. 실시간성을 확보하려면 마이크로초에서 수 밀리초(ms) 내로 제한해야 한다는 점이 전제되며, 배칭 시스템 구현으로 처리 속도가 약 3배 빨라졌지만 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. Pinned Memory의 역할도 평균 처리 속도보다 최대 지연과 지터 억제라는 안정성 관점에서 이해된다. 향후 작업으로는 backward only mode의 재귀 버전, loop 버전, iteration 버전의 희소행렬 버전을 CUDA 프로그램으로 만들어 실행하는 방향이 검토 대상으로 정리되었고, 최종 목표 역시 이 네 가지 버전을 CUDA로 구현해 돌려보는 것으로 설정되었다. 이와 함께 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등 향후 다룰 주제가 남아 있다. [근거:E00007,E00008,E00044,E00046,E00075,E00131]",
+          "추가 검토 대상 최적화 기법으로는 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등이 언급된다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론·bound·검증의 분리 측정 등도 향후 정리할 주제로 남아 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 인식된다. [근거:E00007,E00008,E00044,E00046,E00075,E00131]",
+          "향후 방향으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등 추가 주제를 검토할 계획이다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등 최적화 기법도 추가 검토 대상이다. 아울러 Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론+bound+검증 분리 측정도 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 후속 과제로 남겨 둔다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 수행하지 못한 점 역시 한계로 인식된다. [근거:E00274]",
+          "Pinned Memory는 평균 처리 속도에서 No-Pin보다 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00292,E00293,E00294,E00296,E00299]",
+          "이 연구는 CROWN 신경망 검증을 CPU 환경에서만 수행하던 한계를 넘어, 실시간 환경의 대규모 연산을 CUDA 기반으로 가속하고 최적화하는 과정을 다룬다. 핵심 결과는 추론·bound 계산·검증 단계를 분리 측정하고, warm up과 메모리 풀을 적용해 평균 처리 시간을 줄인 점, 그리고 배칭 시스템 구현으로 처리 속도를 약 3배 높인 점이다. 다만 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못하는 한계가 있어, 마이크로초에서 수 밀리초(ms) 수준으로 지연을 제한해야 한다는 조건이 함께 인식되었다. [근거:E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00270,E00271,E00272,E00275,E00276,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366,E00370,E00374]",
+          "향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등을 검토한다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법도 검토 대상이다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등은 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 반영한다. [근거:E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00333]"
+        ],
+        "guideline_ids": [
+          "ref1_conclusion_required_3",
+          "ref2_conclusion_required_4"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": []
+      },
+      {
+        "item_id": "conc_item_6",
+        "verdict": "met",
+        "paragraph_ids": [
+          "conclusion_p2",
+          "conclusion_p5",
+          "conclusion_p10"
+        ],
+        "evidence_ids": [
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00296",
+          "E00299",
+          "E00072"
+        ],
+        "quote": "Pinned Memory는 평균 처리 속도에서 No-Pin보다 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00292,E00293,E00294,E00296,E00299]",
+        "paragraph_quotes": [
+          "Pinned Memory는 평균 처리 속도에서 No-Pin보다 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00292,E00293,E00294,E00296,E00299]",
+          "Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단해 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. 반면 No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있으며, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하는 차이가 확인되었다. [근거:E00072]",
+          "정확도와 지연 시간 사이의 trade-off는 함께 고려해야 한다. Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. 반면 No-Pin은 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있으며, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하는 것으로 정리되었다. 이러한 차이는 평균 속도만으로 방법을 판단하기 어렵고, 실시간 환경에서 요구되는 지연 안정성과 지터 억제를 함께 봐야 함을 보여준다. [근거:E00044,E00046,E00075,E00131]"
+        ],
+        "guideline_ids": [
+          "ref2_conclusion_required_3"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [
+          "E00029",
+          "E00031",
+          "E00035"
+        ]
+      },
+      {
+        "item_id": "conc_item_7",
+        "verdict": "met",
+        "paragraph_ids": [
+          "conclusion_p3",
+          "conclusion_p6",
+          "conclusion_p7",
+          "conclusion_p12",
+          "conclusion_p16",
+          "conclusion_p1",
+          "conclusion_p2",
+          "conclusion_p5"
+        ],
+        "evidence_ids": [
+          "E00030",
+          "E00033",
+          "E00044",
+          "E00045",
+          "E00046",
+          "E00071",
+          "E00072",
+          "E00073",
+          "E00083",
+          "E00131",
+          "E00132",
+          "E00174",
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00262",
+          "E00277",
+          "E00278",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00296",
+          "E00331",
+          "E00333"
+        ],
+        "quote": "향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등이 검토 대상으로 정리되었다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법도 검토 대상이다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등도 보완 과제로 제시되었다. [근거:E00033,E00073,E00213,E00214,E00236,E00237,E00183,E00184,E00262,E00277,E00278]",
+        "paragraph_quotes": [
+          "향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등이 검토 대상으로 정리되었다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법도 검토 대상이다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등도 보완 과제로 제시되었다. [근거:E00033,E00073,E00213,E00214,E00236,E00237,E00183,E00184,E00262,E00277,E00278]",
+          "향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등을 검토한다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법도 검토 대상이다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등은 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 반영한다. [근거:E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00333]",
+          "본 연구는 CPU 환경에서만 제한적으로 수행되던 CROWN 신경망 검증을 CUDA 기반으로 가속하여, 실시간 대규모 연산 요구를 충족할 가능성을 검토하였다. 실행 루프는 eps_list 이중 반복과 정방향 통과 후 method 분기에 따라 forward bound 또는 backward bound를 호출하고, Top-k 인증 판정으로 결과를 집계하는 구조로 확인되었다. alpha/beta 메모리 풀 적용 후 약 21.0ms 수준의 실행 시간이 기록되었으며, bias를 GPU에 미리 업로드하는 시도는 데이터 크기가 작아 성능 개선 효과가 크지 않은 것으로 판단되었다. 향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등을 다루기로 하였다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법, Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등은 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 후속 검토 대상으로 정리되었다. [근거:E00174,E00045,E00132,E00331]",
+          "추가 검토 대상 최적화 기법으로는 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등이 언급된다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론·bound·검증의 분리 측정 등도 향후 정리할 주제로 남아 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 인식된다. [근거:E00007,E00008,E00044,E00046,E00075,E00131]",
+          "향후 방향으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등 추가 주제를 검토할 계획이다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등 최적화 기법도 추가 검토 대상이다. 아울러 Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론+bound+검증 분리 측정도 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 후속 과제로 남겨 둔다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 수행하지 못한 점 역시 한계로 인식된다. [근거:E00274]",
+          "본 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현·최적화하여 실시간성을 확보할 수 있는지 검토하였다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도하였고, 이후 메모리 풀과 warm up 조합으로 거의 200ms 단축, forward 함수의 DTOH memcpy를 극단적으로 제거하여 64.716ms까지 줄이는 등 단계별 개선이 이루어졌다. 배칭 시스템 구현으로 3배 빨라졌으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. [근거:E00030,E00071,E00083,E00211]",
+          "Pinned Memory는 평균 처리 속도에서 No-Pin보다 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00292,E00293,E00294,E00296,E00299]",
+          "Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단해 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. 반면 No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있으며, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하는 차이가 확인되었다. [근거:E00072]"
+        ],
+        "guideline_ids": [
+          "ref1_conclusion_required_3",
+          "ref2_conclusion_required_4"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": []
+      }
+    ],
+    "reference_checks": [
+      {
+        "section_id": "conclusion",
+        "reference_id": "ref1_conclusion",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "conclusion_p1",
+          "conclusion_p2",
+          "conclusion_p3",
+          "conclusion_p4",
+          "conclusion_p5",
+          "conclusion_p6",
+          "conclusion_p7",
+          "conclusion_p8",
+          "conclusion_p9",
+          "conclusion_p10",
+          "conclusion_p11",
+          "conclusion_p12",
+          "conclusion_p13",
+          "conclusion_p14",
+          "conclusion_p15",
+          "conclusion_p16"
+        ],
+        "reason": "결론 절의 서술 목적(문제·방법·핵심 결과·실용적 의미·향후 방향 종합)은 대체로 반영되었으나, 핵심 성능·비교 우위를 요약하는 부분이 여러 문단에 분산되어 있고 단일 문단으로 명확히 묶이지 않았다. 또한 연구 문제의 실용적 중요성과 기존 방법의 한계를 먼저 제시하는 도입부 재진술이 약하다. 골든 논문의 구체적 실험·수치·모델·데이터셋·문헌은 옮기지 않았고 장·소절의 설명 목적과 구성 방식만 유지했다.",
+        "quote": "본 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현·최적화하여 실시간성을 확보할 수 있는지 검토하였다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도하였고, 이후 메모리 풀과 warm up 조합으로 거의 200ms 단축, forward 함수의 DTOH memcpy를 극단적으로 제거하여 64.716ms까지 줄이는 등 단계별 개선이 이루어졌다. 배칭 시스템 구현으로 3배 빨라졌으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. [근거:E00030,E00071,E00083,E00211]",
+        "paragraph_quotes": [
+          "본 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현·최적화하여 실시간성을 확보할 수 있는지 검토하였다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도하였고, 이후 메모리 풀과 warm up 조합으로 거의 200ms 단축, forward 함수의 DTOH memcpy를 극단적으로 제거하여 64.716ms까지 줄이는 등 단계별 개선이 이루어졌다. 배칭 시스템 구현으로 3배 빨라졌으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. [근거:E00030,E00071,E00083,E00211]",
+          "Pinned Memory는 평균 처리 속도에서 No-Pin보다 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00292,E00293,E00294,E00296,E00299]",
+          "향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등이 검토 대상으로 정리되었다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법도 검토 대상이다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등도 보완 과제로 제시되었다. [근거:E00033,E00073,E00213,E00214,E00236,E00237,E00183,E00184,E00262,E00277,E00278]",
+          "이 연구는 CROWN 신경망 검증을 CPU 환경에서만 수행하던 한계를 넘어, 실시간 환경의 대규모 연산을 CUDA 기반으로 가속하고 최적화하는 과정을 다룬다. 핵심 결과는 추론·bound 계산·검증 단계를 분리 측정하고, warm up과 메모리 풀을 적용해 평균 처리 시간을 줄인 점, 그리고 배칭 시스템 구현으로 처리 속도를 약 3배 높인 점이다. 다만 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못하는 한계가 있어, 마이크로초에서 수 밀리초(ms) 수준으로 지연을 제한해야 한다는 조건이 함께 인식되었다. [근거:E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00221,E00270,E00271,E00272,E00275,E00276,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00287,E00298,E00326,E00329,E00333,E00353,E00354,E00366,E00370,E00374]",
+          "Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단해 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. 반면 No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있으며, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하는 차이가 확인되었다. [근거:E00072]",
+          "향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등을 검토한다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법도 검토 대상이다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등은 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 반영한다. [근거:E00187,E00188,E00189,E00190,E00191,E00192,E00193,E00194,E00195,E00196,E00197,E00198,E00199,E00202,E00203,E00205,E00206,E00207,E00208,E00279,E00280,E00281,E00282,E00283,E00284,E00286,E00333]",
+          "본 연구는 CPU 환경에서만 제한적으로 수행되던 CROWN 신경망 검증을 CUDA 기반으로 가속하여, 실시간 대규모 연산 요구를 충족할 가능성을 검토하였다. 실행 루프는 eps_list 이중 반복과 정방향 통과 후 method 분기에 따라 forward bound 또는 backward bound를 호출하고, Top-k 인증 판정으로 결과를 집계하는 구조로 확인되었다. alpha/beta 메모리 풀 적용 후 약 21.0ms 수준의 실행 시간이 기록되었으며, bias를 GPU에 미리 업로드하는 시도는 데이터 크기가 작아 성능 개선 효과가 크지 않은 것으로 판단되었다. 향후 작업으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열·가중치 GPU 사전 업로드·필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등을 다루기로 하였다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링·루프 언롤링·고속 내장 수학 함수, warp divergence 최소화·비동기 스트림·블록 사이즈 계산·메모리 coalescing·타일링 등 추가 최적화 기법, Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값 평균·분산 산출, 추론+bound+검증 분리 측정 등은 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 후속 검토 대상으로 정리되었다. [근거:E00174,E00045,E00132,E00331]",
+          "이 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 가속하고 최적화하는 과정을 다룬다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기와 입력 데이터셋, eps_list는 기존 신경망 검증팀이 사용하던 설정을 그대로 사용했다. 실행 방식은 forward, forward+backward, backward_only의 세 가지 CROWN 방법을 기준으로 삼았고, 배치 크기는 1로 고정했다. GPU 클록 고정과 warm up은 연구 진행 중 나중에 확정된 사항으로, 초기 단계에서는 이러한 조건이 완전히 통제된 상태에서 비교가 이루어지지 않았다. [근거:E00044,E00046,E00075,E00131]",
+          "메모리 관리와 가중치 사전 업로드가 CROWN 검증 실행 시간에 영향을 주었다. 가중치 사전 업로드 적용 후 실행 시간은 149~155ms 범위로 기록되었고, MEMPOOL + Weights PRELOAD ON GPU 모드에서는 149.820400ms가 관측되었다. 메모리 풀과 warm up을 함께 적용한 조합에서는 128.894800ms, alpha/beta 메모리 풀 적용 후에는 21.018800ms가 기록되었다. 다만 이 값들은 모두 단일 실행 결과로, 반복 측정 기반의 평균·분산이나 조건 간 통계 비교는 제시되지 않았다. 또한 preload로 줄어든 시간이 실제 가중치 활용 효과인지, CUDA 컨텍스트 초기화 웜업 효과인지에 대한 해석도 남아 있다. [근거:E00044,E00046,E00075,E00131]",
+          "정확도와 지연 시간 사이의 trade-off는 함께 고려해야 한다. Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. 반면 No-Pin은 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있으며, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하는 것으로 정리되었다. 이러한 차이는 평균 속도만으로 방법을 판단하기 어렵고, 실시간 환경에서 요구되는 지연 안정성과 지터 억제를 함께 봐야 함을 보여준다. [근거:E00044,E00046,E00075,E00131]",
+          "실용적 기여와 향후 방향은 다음과 같이 정리된다. 실시간성을 확보하려면 마이크로초에서 수 밀리초(ms) 내로 제한해야 한다는 점이 전제되며, 배칭 시스템 구현으로 처리 속도가 약 3배 빨라졌지만 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. Pinned Memory의 역할도 평균 처리 속도보다 최대 지연과 지터 억제라는 안정성 관점에서 이해된다. 향후 작업으로는 backward only mode의 재귀 버전, loop 버전, iteration 버전의 희소행렬 버전을 CUDA 프로그램으로 만들어 실행하는 방향이 검토 대상으로 정리되었고, 최종 목표 역시 이 네 가지 버전을 CUDA로 구현해 돌려보는 것으로 설정되었다. 이와 함께 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등 향후 다룰 주제가 남아 있다. [근거:E00007,E00008,E00044,E00046,E00075,E00131]",
+          "추가 검토 대상 최적화 기법으로는 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등이 언급된다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론·bound·검증의 분리 측정 등도 향후 정리할 주제로 남아 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 인식된다. [근거:E00007,E00008,E00044,E00046,E00075,E00131]",
+          "이 연구는 CROWN 신경망 검증을 CPU 중심 오프라인 환경에서만 수행하던 한계를 넘어, 실시간 환경에서 대규모 연산을 CUDA 기반으로 가속하고 최적화하는 과정을 다루었다. 기존 신경망 검증팀이 사용하던 입력 데이터셋과 eps_list를 그대로 사용하고, 신경망 크기 256-491-491-16, 배치 사이즈 1, 실행 방식은 forward, forward+backward, backward_only의 세 가지로 설정하여 기존 구현과의 시간 비교를 목표로 하였다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, GPU 클록 고정과 warm up은 연구 과정에서 나중에 고정된 사항이다. [근거:E00274]",
+          "핵심 결과로는 그래프 적용 버전이 787.8832초로 3가지 방법 중 가장 빠르다고 기록되었으며, avg 기준 forward는 1029초, forward+backward는 1138초로 비교값이 함께 언급되었다. 다만 이 수치는 기록자의 관측과 비교 요약에 해당하며, 각 방법의 반복 측정 통계나 조건별 분리 측정은 이 사실만으로 제시되지 않는다. [근거:E00274]",
+          "실용적 기여 측면에서는 실시간성을 확보하려면 마이크로초에서 수 밀리초(ms) 수준으로 제한해야 한다는 점이 확인되었고, 배칭 시스템 구현으로 처리 속도가 약 3배 빨라졌으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있지만, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. [근거:E00274]",
+          "향후 방향으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등 추가 주제를 검토할 계획이다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등 최적화 기법도 추가 검토 대상이다. 아울러 Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론+bound+검증 분리 측정도 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 후속 과제로 남겨 둔다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 수행하지 못한 점 역시 한계로 인식된다. [근거:E00274]"
+        ]
+      },
+      {
+        "section_id": "conclusion",
+        "reference_id": "ref2_conclusion",
+        "verdict": "partial",
+        "paragraph_ids": [
+          "conclusion_p2",
+          "conclusion_p5",
+          "conclusion_p10",
+          "conclusion_p11",
+          "conclusion_p12",
+          "conclusion_p16"
+        ],
+        "reason": "정확도·지연 시간 trade-off를 함께 봐야 하는 점과 향후 작업 방향은 여러 문단에서 반영되었다. 다만 수준별 핵심 발견을 순서대로 정리하고 순위 변화·추가 이득·정확도 보존 여부를 함께 언급하는 흐름은 약하며, 비교 시 고려해야 할 요소를 종합하는 문단이 분리되어 있지 않다. 향후 확장 방향도 범위 확대·요인 분리·제약 조건 반영으로 명확히 구조화하기보다 항목 나열에 가깝다.",
+        "quote": "Pinned Memory는 평균 처리 속도에서 No-Pin보다 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00292,E00293,E00294,E00296,E00299]",
+        "paragraph_quotes": [
+          "Pinned Memory는 평균 처리 속도에서 No-Pin보다 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화한다. 따라서 실시간 무선 안테나 선택 시스템에서는 Pinned Memory 도입이 필수적이다. [근거:E00292,E00293,E00294,E00296,E00299]",
+          "Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단해 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. 반면 No-Pin은 OS 페이징 간섭으로 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있으며, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화하는 차이가 확인되었다. [근거:E00072]",
+          "정확도와 지연 시간 사이의 trade-off는 함께 고려해야 한다. Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. 반면 No-Pin은 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있으며, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하는 것으로 정리되었다. 이러한 차이는 평균 속도만으로 방법을 판단하기 어렵고, 실시간 환경에서 요구되는 지연 안정성과 지터 억제를 함께 봐야 함을 보여준다. [근거:E00044,E00046,E00075,E00131]",
+          "실용적 기여와 향후 방향은 다음과 같이 정리된다. 실시간성을 확보하려면 마이크로초에서 수 밀리초(ms) 내로 제한해야 한다는 점이 전제되며, 배칭 시스템 구현으로 처리 속도가 약 3배 빨라졌지만 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. Pinned Memory의 역할도 평균 처리 속도보다 최대 지연과 지터 억제라는 안정성 관점에서 이해된다. 향후 작업으로는 backward only mode의 재귀 버전, loop 버전, iteration 버전의 희소행렬 버전을 CUDA 프로그램으로 만들어 실행하는 방향이 검토 대상으로 정리되었고, 최종 목표 역시 이 네 가지 버전을 CUDA로 구현해 돌려보는 것으로 설정되었다. 이와 함께 cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등 향후 다룰 주제가 남아 있다. [근거:E00007,E00008,E00044,E00046,E00075,E00131]",
+          "추가 검토 대상 최적화 기법으로는 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등이 언급된다. Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론·bound·검증의 분리 측정 등도 향후 정리할 주제로 남아 있다. 다만 각 최적화 기법을 체계적으로 분리해 ablation study로 검증하지 못한 점은 한계로 인식된다. [근거:E00007,E00008,E00044,E00046,E00075,E00131]",
+          "향후 방향으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등 추가 주제를 검토할 계획이다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등 최적화 기법도 추가 검토 대상이다. 아울러 Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론+bound+검증 분리 측정도 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 후속 과제로 남겨 둔다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 수행하지 못한 점 역시 한계로 인식된다. [근거:E00274]"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "section_id": "conclusion",
+        "severity": "warning",
+        "paragraph_id": "conclusion_p1",
+        "reason": "핵심 성능·비교 우위를 요약하는 내용이 여러 문단(p1, p4, p9, p14)에 분산되어 있어, 결론 절의 첫 부분에서 문제·방법·핵심 결과를 짧게 재진술하는 흐름이 약하다.",
+        "evidence_ids": [
+          "E00030",
+          "E00071",
+          "E00083",
+          "E00211"
+        ],
+        "failure_owner": "none",
+        "quote": "본 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현·최적화하여 실시간성을 확보할 수 있는지 검토하였다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도하였고, 이후 메모리 풀과 warm up 조합으로 거의 200ms 단축, forward 함수의 DTOH memcpy를 극단적으로 제거하여 64.716ms까지 줄이는 등 단계별 개선이 이루어졌다. 배칭 시스템 구현으로 3배 빨라졌으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. [근거:E00030,E00071,E00083,E00211]"
+      },
+      {
+        "section_id": "conclusion",
+        "severity": "warning",
+        "paragraph_id": "conclusion_p10",
+        "reason": "정확도·지연 시간 trade-off를 함께 고려해야 하는 이유가 서술되어 있으나, 이 절에서 정확도 관련 결과나 지표에 대한 직접 근거가 충분히 연결되지 않아 trade-off 판단의 근거가 약하다.",
+        "evidence_ids": [
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00131"
+        ],
+        "failure_owner": "none",
+        "quote": "정확도와 지연 시간 사이의 trade-off는 함께 고려해야 한다. Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. 반면 No-Pin은 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있으며, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하는 것으로 정리되었다. 이러한 차이는 평균 속도만으로 방법을 판단하기 어렵고, 실시간 환경에서 요구되는 지연 안정성과 지터 억제를 함께 봐야 함을 보여준다. [근거:E00044,E00046,E00075,E00131]"
+      },
+      {
+        "section_id": "conclusion",
+        "severity": "warning",
+        "paragraph_id": "conclusion_p16",
+        "reason": "향후 작업 방향이 항목별로 나열되어 있으나, 각 항목이 현재 결과와 어떻게 연결되는지, 범위 확대·요인 분리·제약 조건 반영 중 어떤 확장 축에 해당하는지 구조화가 약하다.",
+        "evidence_ids": [
+          "E00274"
+        ],
+        "failure_owner": "none",
+        "quote": "향후 방향으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등 추가 주제를 검토할 계획이다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등 최적화 기법도 추가 검토 대상이다. 아울러 Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론+bound+검증 분리 측정도 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 후속 과제로 남겨 둔다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 수행하지 못한 점 역시 한계로 인식된다. [근거:E00274]"
+      },
+      {
+        "section_id": "conclusion",
+        "part": "p0",
+        "paragraph_id": "conclusion_p6",
+        "evidence_ids": [
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00202",
+          "E00203",
+          "E00205",
+          "E00206",
+          "E00207",
+          "E00208",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00333"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "conclusion",
+        "part": "p0",
+        "paragraph_id": "conclusion_p7",
+        "evidence_ids": [
+          "E00045",
+          "E00132",
+          "E00174",
+          "E00331"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다."
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 5.3 실용적 기여와 향후 방향: 본문 6505자 / 목표 1428자 / 허용 상한 1785자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "conclusion: 절 전체 본문 6505자가 공통 상한 6000자를 넘습니다. 절 전체에서 중복·실행 이력·표의 수치 재열거를 줄이고 소절·핵심 조건·반례는 보존하세요.",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "flow",
+        "validation_code": "composition_layout",
+        "reason": "conclusion/p0: 가장 긴 문단이 874자로 공통 문단 목표 600자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+        "original_severity": "error",
+        "deferred": true
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "style",
+        "validation_code": "composition_style",
+        "reason": "conclusion/p0: 기록자·자료 중심 표현 ['연구 일지에서 확인']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+        "original_severity": "error",
+        "deferred": true
+      }
+    ],
+    "review_policy": "approved-facts-v1",
+    "review_selection_bindings": [
+      {
+        "item_id": "conc_item_3",
+        "added_paragraph_ids": [
+          "conclusion_p2",
+          "conclusion_p4",
+          "conclusion_p6"
+        ]
+      },
+      {
+        "item_id": "conc_item_7",
+        "added_paragraph_ids": [
+          "conclusion_p1",
+          "conclusion_p2",
+          "conclusion_p5"
+        ]
+      }
+    ],
+    "response_normalizations": [],
+    "approved": true,
+    "required_content_coverage": {
+      "met": 3,
+      "total": 3,
+      "value": 1.0
+    },
+    "reference_application": {
+      "applied": 0,
+      "partial": 2,
+      "not_visible": 0,
+      "total": 2,
+      "assessment": "LLM-assisted; human validation needed"
+    },
+    "evidence_policy": "candidate-pool-v1",
+    "evidence_scope_policy": "used-evidence-scope-v1",
+    "assessment": "LLM assisted; content coverage and actually used citations checked; unused candidates do not block approval",
+    "content_completion": {
+      "policy": "content-warning-v1",
+      "status": "needs_attention",
+      "revisions": 2,
+      "reason": "revision_limit"
+    },
+    "content_warnings": [
+      {
+        "section_id": "conclusion",
+        "severity": "warning",
+        "paragraph_id": "conclusion_p1",
+        "reason": "핵심 성능·비교 우위를 요약하는 내용이 여러 문단(p1, p4, p9, p14)에 분산되어 있어, 결론 절의 첫 부분에서 문제·방법·핵심 결과를 짧게 재진술하는 흐름이 약하다.",
+        "evidence_ids": [
+          "E00030",
+          "E00071",
+          "E00083",
+          "E00211"
+        ],
+        "failure_owner": "none",
+        "quote": "본 연구는 CROWN 신경망 검증을 CPU 환경에서만 실행하던 기존 방식에서 벗어나, 실시간 환경의 대규모 연산을 CUDA 기반으로 구현·최적화하여 실시간성을 확보할 수 있는지 검토하였다. GPU OPTIMIZED 모드 이후에도 CPU보다 느렸던 문제를 계기로 matmul만 GPU로 실행하는 하이브리드 프로그램을 시도하였고, 이후 메모리 풀과 warm up 조합으로 거의 200ms 단축, forward 함수의 DTOH memcpy를 극단적으로 제거하여 64.716ms까지 줄이는 등 단계별 개선이 이루어졌다. 배칭 시스템 구현으로 3배 빨라졌으나 실시간 환경에서는 데이터셋을 꽉 채워 넣지 못한다는 한계가 인식되었다. [근거:E00030,E00071,E00083,E00211]",
+        "stage": "subsection-conclusion-p2"
+      },
+      {
+        "section_id": "conclusion",
+        "severity": "warning",
+        "paragraph_id": "conclusion_p10",
+        "reason": "정확도·지연 시간 trade-off를 함께 고려해야 하는 이유가 서술되어 있으나, 이 절에서 정확도 관련 결과나 지표에 대한 직접 근거가 충분히 연결되지 않아 trade-off 판단의 근거가 약하다.",
+        "evidence_ids": [
+          "E00044",
+          "E00046",
+          "E00075",
+          "E00131"
+        ],
+        "failure_owner": "none",
+        "quote": "정확도와 지연 시간 사이의 trade-off는 함께 고려해야 한다. Pinned Memory는 평균 처리 속도에서는 미세하게 불리할 수 있으나, OS 페이징 간섭을 차단하여 최대 지연과 지터를 억제하는 안정성 관점의 역할이 있다. 반면 No-Pin은 OS 페이징 간섭으로 인해 최대 11.6ms에 달하는 치명적인 지연 스파이크를 유발할 수 있으며, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 엄격히 제한하고 지터를 60% 이상 안정화하는 것으로 정리되었다. 이러한 차이는 평균 속도만으로 방법을 판단하기 어렵고, 실시간 환경에서 요구되는 지연 안정성과 지터 억제를 함께 봐야 함을 보여준다. [근거:E00044,E00046,E00075,E00131]",
+        "stage": "subsection-conclusion-p2"
+      },
+      {
+        "section_id": "conclusion",
+        "severity": "warning",
+        "paragraph_id": "conclusion_p16",
+        "reason": "향후 작업 방향이 항목별로 나열되어 있으나, 각 항목이 현재 결과와 어떻게 연결되는지, 범위 확대·요인 분리·제약 조건 반영 중 어떤 확장 축에 해당하는지 구조화가 약하다.",
+        "evidence_ids": [
+          "E00274"
+        ],
+        "failure_owner": "none",
+        "quote": "향후 방향으로는 backward only mode의 재귀·loop·iteration 버전 검토, cuBLAS 미리 예열, 가중치 GPU 사전 업로드, 필요한 부분만 복사하는 방안, global memory와 SM 병목, Nsight Compute, shared memory, tile, tiling 등 추가 주제를 검토할 계획이다. 방법 B(Custom Implementation)와 방법 C(Library Integration)의 개념·구도, cudaGraph 커널 캡처, 공유 메모리 타일링, 루프 언롤링, 고속 내장 수학 함수, warp divergence 최소화, 비동기 스트림, 블록 사이즈 계산, 메모리 coalescing, 타일링 등 최적화 기법도 추가 검토 대상이다. 아울러 Compute Throughput과 Memory Throughput의 정확한 정의 확인, memory throughput 비율 감소 원인 검토, forward/backward 92만 번 실행의 튀는 값에 대한 평균·분산 산출, 추론+bound+검증 분리 측정도 연구 일지에서 확인된 범위와 사용자가 임시 승인한 범위 안에서 후속 과제로 남겨 둔다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 수행하지 못한 점 역시 한계로 인식된다. [근거:E00274]",
+        "stage": "subsection-conclusion-p2"
+      },
+      {
+        "section_id": "conclusion",
+        "part": "p0",
+        "paragraph_id": "conclusion_p6",
+        "evidence_ids": [
+          "E00187",
+          "E00188",
+          "E00189",
+          "E00190",
+          "E00191",
+          "E00192",
+          "E00193",
+          "E00194",
+          "E00195",
+          "E00196",
+          "E00197",
+          "E00198",
+          "E00199",
+          "E00202",
+          "E00203",
+          "E00205",
+          "E00206",
+          "E00207",
+          "E00208",
+          "E00279",
+          "E00280",
+          "E00281",
+          "E00282",
+          "E00283",
+          "E00284",
+          "E00286",
+          "E00333"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-conclusion-p2"
+      },
+      {
+        "section_id": "conclusion",
+        "part": "p0",
+        "paragraph_id": "conclusion_p7",
+        "evidence_ids": [
+          "E00045",
+          "E00132",
+          "E00174",
+          "E00331"
+        ],
+        "severity": "warning",
+        "original_severity": "error",
+        "deferred": true,
+        "validation_code": "paragraph_revision_deferred",
+        "review_stage": "generation_completion",
+        "failure_owner": "writer",
+        "repair_attempts": 1,
+        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
+        "stage": "subsection-conclusion-p2"
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "### 5.3 실용적 기여와 향후 방향: 본문 6505자 / 목표 1428자 / 허용 상한 1785자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-conclusion-p2"
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "category": "organization",
+        "evidence_ids": [],
+        "quote": "",
+        "validation_code": "composition_length",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "reason": "conclusion: 절 전체 본문 6505자가 공통 상한 6000자를 넘습니다. 절 전체에서 중복·실행 이력·표의 수치 재열거를 줄이고 소절·핵심 조건·반례는 보존하세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-conclusion-p2"
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "flow",
+        "validation_code": "composition_layout",
+        "reason": "conclusion/p0: 가장 긴 문단이 874자로 공통 문단 목표 600자를 넘습니다. 입력 조건·환경·측정 방식·결과·해석을 설명 단위별 문단 또는 병렬 목록으로 나누세요. 내용·조건·인용을 보존하고 코드·수식 중간을 자르지 마세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-conclusion-p2"
+      },
+      {
+        "section_id": "conclusion",
+        "paragraph_id": "none",
+        "part": "p0",
+        "severity": "warning",
+        "evidence_ids": [],
+        "quote": "",
+        "review_stage": "composition",
+        "failure_owner": "writer",
+        "category": "style",
+        "validation_code": "composition_style",
+        "reason": "conclusion/p0: 기록자·자료 중심 표현 ['연구 일지에서 확인']을 객관적인 3인칭 학술 문체로 고치세요. 관측·시도·제안·미검증 해석의 확실성 수준과 필요한 귀속은 유지하세요.",
+        "original_severity": "error",
+        "deferred": true,
+        "stage": "subsection-conclusion-p2"
+      }
+    ],
+    "content_status": "needs_attention",
+    "content_approved": false
+  }
+}

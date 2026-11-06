@@ -1,0 +1,260 @@
+{
+  "policy": "editorial-revision-batches-v1",
+  "base_fingerprint": "74228e7dc996d7b20496c95c2958fae8b0dbb7e6f4b51e921f165f41f6b0b631",
+  "completed_batches": [
+    {
+      "index": 0,
+      "editable_spans": {
+        "sec_components": {
+          "p0": [
+            "sec_components_p3_s1",
+            "sec_components_p4_s1",
+            "sec_components_p5_s1",
+            "sec_components_p9_s1",
+            "sec_components_p10_s1",
+            "sec_components_p11_s1"
+          ],
+          "p1": [
+            "sec_components_p14_s1",
+            "sec_components_p15_s1"
+          ],
+          "p2": [
+            "sec_components_p17_s1",
+            "sec_components_p19_s1",
+            "sec_components_p20_s1"
+          ],
+          "p3": [
+            "sec_components_p22_s1"
+          ],
+          "p4": [
+            "sec_components_p24_s1"
+          ]
+        }
+      }
+    }
+  ],
+  "total_batches": 1,
+  "slots": {
+    "sec_components": {
+      "parts": {
+        "p0": {
+          "sec_components_p2_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p3_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p4_s1": {
+            "action": "replace",
+            "text": "라이브러리 활용 측면에서는 cuBLAS를 연결하기 위해 컴파일 옵션에 -lcublas를 사용했다. -l은 라이브러리 링크 옵션이고, cublas는 NVIDIA가 제공하는 cuBLAS 라이브러리이며, my_lirpa_op.cu에서 cublasDgemm() 같은 GPU 최적화 행렬곱 함수를 사용하기 때문에 이 라이브러리 연결이 필요했다. CUDA Toolkit 설치 시 cuBLAS가 자동으로 포함되므로 별도 설치는 필요하지 않았고, cuBLAS는 NVIDIA GPU에서 선형대수 연산을 빠르게 수행하도록 만든 가속 라이브러리로 정리되었다.",
+            "join_previous": false
+          },
+          "sec_components_p5_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p6_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p7_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p8_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p9_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p10_s1": {
+            "action": "replace",
+            "text": "방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. pinned memory 성능 측정을 위해 pinned memory 미적용, my_lirpa에 있는 입력 공간 하나(HostAlloc), 지금 하는 방식(HostRegister) 3가지를 측정하려고 했으며, cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. cudaHostRegister가 더 느리게 측정된 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론(Infer) 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남았다.",
+            "join_previous": false
+          },
+          "sec_components_p11_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          }
+        },
+        "p1": {
+          "sec_components_p13_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p14_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p15_s1": {
+            "action": "replace",
+            "text": "평균 처리 속도에서는 No-Pin이 약 13초 빠르지만, 실시간성 관점에서는 Pinned Memory가 유리하다. No-Pin은 윈도우 OS의 가상 메모리 정리나 백그라운드 작업 개입 시 최대 11.6ms까지 지연 스파이크가 발생할 수 있고, Pinned Memory는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 안정성을 보인다. 지터는 No-Pin이 118μs, Pinned Memory가 47μs로 관측되었다.",
+            "join_previous": false
+          }
+        },
+        "p2": {
+          "sec_components_p17_s1": {
+            "action": "replace",
+            "text": "가중치 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 GPU 메모리에 미리 올려, matmul·matvec 호출마다 반복되는 호스트-디바이스 복사를 줄이려는 목적으로 도입되었다. 이를 위해 pre_upload_weights_to_gpu 함수를 구현하여 각 레이어의 가중치 행렬(net->W[i])을 cudaMalloc으로 할당한 뒤 cudaMemcpy2D로 호스트에서 디바이스로 복사하고, 할당된 메모리를 net->d_W[i]에 저장해 두었다. 이후 v1-1-3(crown_test_preload_fix)에서는 GPU 주소를 저장하던 double* 타입을 Matrix*로 바꾸고, pre_upload_weights_to_gpu도 memcpy2D 대신 Matrix를 할당·복사하도록 변경하여 사전 업로드된 가중치를 실제 연산에서 활용하도록 수정하였다. 이 변경으로 positive_part와 negative_part에서 W 복사를 스킵해 각각 2MB를 절약하고, matmul의 B행렬 복사 스킵(backward)으로 4MB, matvec의 A행렬 복사 스킵(forward)으로 2MB를 절약하는 구성이 확인되었다. 이 초기 적용은 v1-1-2에서 처음 이루어져 149~155ms 범위로 기록되었으며, 가중치만 미리 GPU에 올리는 방식으로 이후 다른 메모리 전송 최적화와 결합되기 전의 결과로 남는다.",
+            "join_previous": false
+          },
+          "sec_components_p18_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p19_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p20_s1": {
+            "action": "delete",
+            "text": "",
+            "join_previous": false
+          }
+        },
+        "p3": {
+          "sec_components_p22_s1": {
+            "action": "replace",
+            "text": "커널 퓨전은 여러 단계의 커널 호출을 하나로 묶어 런치 오버헤드를 줄이는 방향으로 적용되었다. lirpa_forward_bound 함수 커널 퓨전, backward_matmul_pair_gpu 커널 통합, build_coeff_pair_fused_gpu·backward_bias_pair_fused_gpu 커널 퓨전이 수행되었고, backward_bound_gpu에서는 affine_min/max까지 함께 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. 함수 통합은 포인터·스칼라 인자 전달 규칙과 메모리 풀을 활용해 중간 복사·포인터 스와핑을 제거하는 방향으로 진행되었다. new_(upper, lower)_p 포인터 스와핑(std::swap)과 forward-backward 간 alpha/beta 메모리 풀 전달 과정 삭제 및 GPU 버퍼 직접 사용, D2H 복사 제거, 기본 초기 상태 GPU 커널 직접 생성이 함께 적용되었다. 지금까지 수행한 최적화에는 제로 memcpy, 커널 자체 실행 횟수 감소(커널 퓨전·커널 graph), GPU SM 구조를 고려한 FP64→FP32·double→float 변경이 포함된다. lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 호출 횟수를 줄였고, backward_bound_gpu에서는 affine 중복 계산을 삭제해 커널 2개 함수를 줄였다. new_(upper, lower)_p는 복사 대신 std::swap으로 포인터 스와핑했으며, backward의 행렬곱 커널 2개는 backward_matmul_pair_gpu로 통합했다. build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu에도 커널 퓨전을 적용했다. 이후 1개 커널 호출로 줄일 수 있는 함수들을 계속 퓨전하는 방향으로 진행했다. 커널 퓨전 적용 후 CROWN Verification 실행에서 Elapsed time이 22.342900 ms로 기록되었고, 22ms 초반까지 나오는 경우도 관측되었다. backward_bound_gpu에 먼저 퓨전을 진행했을 때는 23.925200 ms가 관측되었으며, 컴퓨터 사정에 따라 26ms까지 뛰는 경우도 있었지만 23ms 정도가 보인다는 점이 중요하게 기록되었다. 5번까지 적용했을 때 최고 성능이 나왔다고 기록되었다. 커널 감소 내역을 보면 forward에서는 무거운 커널 연산 호출이 9개 줄었고, backward에서는 forward 부분 12개(9+3), 실제 backward 부분 3개가 줄었다. backward_only는 45회에서 33회로 감소해 26.7%로 가장 적게 줄었으며, 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄어 커널 비용도 다르다. memcpy 호출 횟수는 66개에서 56개로 감소했다. switch 문 안에서 구조체를 선언과 동시에 만들도록 변경하려 했으나, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않았다. case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생해, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 해결했다. 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다. 이 변경은 복사 크기 조정 시도였으나 시간 증가로 이어졌고, CPU 오버헤드 증가의 정량적 분리 측정 결과는 포함되지 않았다.",
+            "join_previous": false
+          }
+        },
+        "p4": {
+          "sec_components_p24_s1": {
+            "action": "replace",
+            "text": "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다.",
+            "join_previous": false
+          },
+          "sec_components_p25_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p26_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p27_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p28_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p29_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          }
+        },
+        "p5": {
+          "sec_components_p31_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p32_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p33_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p34_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          },
+          "sec_components_p35_s1": {
+            "action": "keep",
+            "text": "",
+            "join_previous": false
+          }
+        }
+      }
+    }
+  },
+  "preserved_subsections": [],
+  "deferred_warnings": [
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p22",
+      "category": "terminology",
+      "severity": "warning",
+      "reason": "p22에서 “커널 자체 실행 횟수 감소(커널 퓨전·커널 graph)”처럼 커널 퓨전과 CUDA 그래프를 함께 묶어 서술하지만, 이 절의 다른 문단(p31~p35)은 CUDA 그래프 캡처를 별도로 다룬다. 동일 문단 안에서 두 기법을 동등하게 병기하면 독자가 결합 방식을 혼동할 수 있으므로 구분 표기가 바람직하다."
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p22",
+      "category": "terminology",
+      "severity": "warning",
+      "reason": "p22의 “backward에서는 forward 부분 12개(9+3)” 표현은 괄호 안 합산의 기준이 즉시 드러나지 않는다. 앞문단의 커널 감소 내역과 일관되게 용어를 정리하거나, 괄호 의미를 짧게 명시하면 읽기 쉽다."
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p22",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "p22 후반부에 MAXDIM 512 float 고정 복사를 필요 크기만큼 바꾸었으나 CPU 오버헤드가 커져 시간이 늘었다는 내용이 나오는데, 이 관찰은 p19의 유사 서술과 연결된다. 두 문단이 같은 시행착오 계열이라면 참조 관계를 명시하거나 한쪽으로 모으는 편이 자연스럽다."
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p24",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "p24는 p10과 사실상 같은 측정 결과를 다시 제시하므로, 전송 방식 비교 절의 도입 역할을 하려면 p10과의 차이를 한 문장 정도로 명시하거나, 중복 수치를 줄이고 비교 관점에 집중한 서술로 정리하는 것이 좋다."
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p27",
+      "category": "terminology",
+      "severity": "warning",
+      "reason": "p27은 평균 처리 속도, 지터, WCET 관점을 함께 다루면서 “총 시간만 보면 No-Pin이 빨라 보여도”라는 표현을 쓰는데, 앞 문단들(p15, p25, p26)과 관점이 겹친다. 문단마다 강조점(평균/최악/지터)을 더 분명히 나누면 반복 인상을 줄일 수 있다."
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p34",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "p34는 CUDA 그래프 캡처 방식과 시간 감소 관측(약 400초 감소, graph만 적용한 버전이 더 빠름, forward infer_s 약 20초 차이, backward total 유사)을 다루지만, 그래프 캡처의 전제(커널 최적화 후 스냅샷 검토)가 p31에 이미 나와 있다. p31과 p34의 역할 구분을 더 분명히 하거나, 관측 결과를 한 문단으로 모아 흐름을 정리하는 편이 좋다."
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p35",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "p35는 graph mode=1의 런치 횟수 유지, memcpy 감소, pinned memory 입력층 제거, 실행 시간 감소(1138s→758s)를 함께 서술한다. 구성 변경과 시간 결과를 같은 문단에 두면 변경 항목별 인과가 흐려질 수 있으므로, 구성 변경과 성능 결과를 분리하거나 연결 문장을 보강하는 것이 바람직하다."
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p3",
+      "category": "flow",
+      "severity": "warning",
+      "reason": "p3은 포팅 목적·측정 동기·정량 수치는 이후 측정 결과에서 다룬다고 밝히지만, 이 절 안에 이미 여러 측정·수치 관찰이 등장하므로 독자가 “이후 측정 결과”의 위치를 찾기 어렵다. 절 서두에 정량 결과가 어느 문단들에서 다루어지는지 간단히 안내하면 연결이 부드러워진다."
+    }
+  ],
+  "status": "complete"
+}

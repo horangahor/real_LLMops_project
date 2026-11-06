@@ -1,0 +1,118 @@
+{
+  "request_fingerprint": "1d2475be97f07419557dae5add747f070f35944aac32448f9898a4550d418a1d",
+  "value": {
+    "sections": {
+      "S_limitations": {
+        "parts": {
+          "p2": {
+            "S_limitations_p28_s1": {
+              "action": "replace",
+              "text": "Pinned 메모리(cudaHostRegister)와 No Pinning의 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 느려 역전되었다. 이 불일치는 데이터 전송 직후 동기화가 일어나는 Infer 단계의 특성과 작은 전송 크기에서의 DMA 셋업 오버헤드로 설명되었으나, 반복 측정 통계나 조건별 분리 측정은 포함되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p29_s1": {
+              "action": "replace",
+              "text": "여러 최적화가 함께 적용·변경된 탓에 개별 기법의 효과를 분리하기 어렵고, 체계적인 ablation study는 수행되지 않았다. 또한 forward, backward, backward_only 등 실행 방식이 번갈아 사용되었고, 측정 방식도 단계별 시간 기록과 누적 합산, warm up 삽입, 20회 반복 측정 계획 등으로 변화하여 결과 해석 범위가 제한된다. 현재 2차원 커널은 일반 CUDA 코어(FP32)로 단일 샘플 행렬 연산을 수행 중이며, z축 추가를 통한 3차원 텐서 코어 활용은 향후 방향으로만 제시되어 있다. 이에 따라 antenna_lirpa의 싱글 스트림·cuBLAS Batched GEMM·텐서 코어 활용 대비 현재 C++ 멀티스트림(Task Parallelism, 64개 스트림, 1024개 처리에 약 8분 소요)의 격차는 연산기와 커널 호출 방식의 차이로 설명되지만, 방법 C(Batched GEMM, 3D 텐서 연산화)의 30초~1분대 진입 목표는 아직 구현·평가되지 않은 목표이다.",
+              "join_previous": false
+            },
+            "S_limitations_p30_s1": {
+              "action": "replace",
+              "text": "본 연구의 CUDA 최적화 결과는 특정 신경망 구조와 단일 입력 설정에서 관측된 것으로, 다른 모델 크기나 배치 조건으로의 일반화는 제한된다. 신경망 크기가 매우 작고 cuBLAS·cuSPARSE의 동작 방식에서 오버헤드가 발생한 점은, 작은 연산 규모에서는 라이브러리 호출과 설정 비용이 실제 계산 이득보다 크게 작용할 수 있음을 보여준다. 따라서 관측된 실행 시간 단축을 라이브러리 가속의 일반적 효용으로 해석하기는 어렵다. 또한 여러 최적화 기법을 동시에 적용·제거하는 방식으로 진행되어 개별 기법의 효과를 분리하기 어렵고, ablation study가 수행되지 않아 각 변경의 독립적 기여는 확인되지 않았다. backward_only 방식이 빠른 이유나 pinned 메모리 측정 결과의 불일치 등 일부 관찰은 원인 해석이 남아 있으며, 실시간성 목표 달성 여부도 확정적으로 정리되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p31_s1": {
+              "action": "replace",
+              "text": "최적화 과정에서는 메모리 풀, warmup, 커널 회귀, 커널 퓨전, 복사 경로 축소 등 여러 변경이 함께 적용되었기 때문에, 개별 기법의 효과를 분리하여 해석하기 어렵다. 특히 preload와 warmup 관련 실행 시간 감소는 가중치 활용 효과라기보다 CUDA 컨텍스트 초기화 비용이 측정 구간 밖으로 이동한 결과로 해석되며, 이 점은 공정 비교와 요인 분리의 한계를 드러낸다.",
+              "join_previous": false
+            },
+            "S_limitations_p32_s1": {
+              "action": "replace",
+              "text": "작은 신경망에서는 only_GPU에서 GPU로 처리하던 일부 함수를 hybrid에서 CPU로 되돌리는 것만으로도 전체 시간이 줄어들었으며, 이는 GPU 커널 유지 자체가 항상 유리하지 않을 수 있음을 시사한다. 다만 이러한 비교는 구성 요소 단위 변경과 전체 처리 과정 변경이 동시에 이루어진 사례여서, 어떤 변경이 속도 변화에 얼마나 기여했는지 개별적으로 단정하기 어렵다.",
+              "join_previous": false
+            },
+            "S_limitations_p33_s1": {
+              "action": "replace",
+              "text": "본 연구의 실행 시간 결과는 모두 단일 실행 기준으로 기록되어 반복 측정 기반의 통계 해석이 제시되지 않았다. HYBRID 모드(201.670100 ms)와 HYBRID V2 모드(85.785300 ms)는 서로 다른 설정이며, backward 메모리 복사 제거 및 초기화 최적화 적용 후 관측된 13.939000 ms 역시 단일 실행 결과라는 점에서 조건별 비교나 재현성 판단에는 한계가 있다. 특히 HYBRID와 HYBRID V2의 실행 시간 차이는 단순 재현성 문제만이 아니라 모드 간 조건 차이가 결과 차이에 포함될 수 있으므로, 두 수치를 같은 단일 실행 한계만으로 묶어 일반화할 때 조건 혼동에 주의해야 한다. 작은 신경망에서는 cuBLAS·cuSparse 호출 자체의 오버헤드가 상대적으로 커질 수 있고, pinned 메모리 관련 측정 결과는 조건 간 불일치가 남아 있어 개별 효과의 분리 해석이 어렵다. 각 최적화 기법을 체계적으로 분리한 ablation study가 수행되지 않아 어떤 변경이 실행 시간 감소에 기여했는지 단정하기 어렵다. 실시간성 목표 달성 여부를 확정적으로 판단하기에는 근거가 부족하며, backward_only 방식이 왜 빠른지와 같은 개별 기법의 효과 원인도 아직 명확히 설명되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p34_s1": {
+              "action": "replace",
+              "text": "결과 해석 범위는 제한적이다. 여러 최적화 기법을 동시에 적용했기 때문에 개별 변경의 효과를 분리하기 어렵고, 작은 신경망에서는 cuBLAS·cuSparse 오버헤드가 상대적으로 두드러질 수 있다. pinned 메모리 관련 측정 결과는 일관성이 낮아 해석에 주의가 필요하며, 각 최적화 기법을 체계적으로 분리한 ablation study는 수행되지 않았다. memcpy 병목이 핵심 과제로 지적되었으나, 이를 해결하여 CPU보다 빠른 실행을 안정적으로 달성할 수 있는지는 아직 확정되지 않았다. backward_only가 왜 더 빠른지, 커널 호출 횟수 감소와 실행 시간 감소 사이의 관계가 왜 직관과 다르게 나타나는지, 그리고 단일 테스트에서 기대된 forward와 backward 간 차이가 다중 데이터 반복 조건에서 왜 다르게 관측되는지에 대해서도 명확한 원인 분리는 이루어지지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p35_s1": {
+              "action": "replace",
+              "text": "본 연구의 결과는 특정 구현 경로와 측정 조건 아래에서 얻어진 것으로, 개별 최적화 기법의 효과를 분리해 해석하기 어렵다. 실험 과정에서 forward의 플래그를 중간 결과(layer_bound 복사용), final_affine 복사용, 최종 결과 복사용의 3개로 늘리고, backward의 플래그도 layer_bound와 affine_bound 복사 제어용으로 각각 2개로 분리했으며, forward 최종 계산(result → lower/upper bounds)의 D2H 복사 과정에서 비효율적인 부분을 정확한 테스트 목적으로 최적화했다. 그러나 이러한 변경이 동시에 누적되어 적용·조정되었기 때문에 최종 결과의 해석 범위는 복합 변경의 누적 효과로 이해되어야 한다. 또한 각 최적화 기법을 체계적으로 분리해 평가하는 ablation study는 수행되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p36_s1": {
+              "action": "replace",
+              "text": "이러한 설계·최적화 진행과 판단은 기록자의 해석에 기반하며, 분리 후 정량 성능 수치나 반복 측정 기반 통계로 별도 제시되지는 않는다. 복사 대상 수에 대해서도 초기에는 입력 데이터 ±eps, 가중치, bias, upper bound 결과, lower bound 결과를 포함해 총 6개로 가정했으나, 가중치와 bias가 nvtx 촬영 전에 한 번에 올라간다는 점을 고려해 입력 데이터 ±eps, upper bound, lower bound 결과 총 4회만 복사하면 된다고 재검토했고, CROWN 기준으로는 입력 데이터 ±eps와 upper/lower bound를 포함해 총 6개의 복사 대상이 있다고 정리되었다. 이 내용은 복사 대상 수에 대한 사고 과정과 재검토·정리 기록이며, 실제 복사 횟수 측정이나 전체 프로그램 수준 해석과는 별도 문맥이 필요하다.",
+              "join_previous": false
+            },
+            "S_limitations_p37_s1": {
+              "action": "replace",
+              "text": "또한 작은 신경망에서의 cuBLAS/cuSparse 오버헤드, pinned 메모리 측정 결과 불일치, 실시간성 목표 달성 여부 확정 부족, backward_only가 왜 빠른지 등 미해결 과제는 본 연구의 결과 해석 범위를 제한한다.",
+              "join_previous": false
+            },
+            "S_limitations_p38_s1": {
+              "action": "replace",
+              "text": "복사 대상 수에 대한 판단은 재검토를 거쳤다. 초기에는 입력 데이터 ±eps, 가중치, bias, upper bound 결과, lower bound 결과를 포함해 총 6개의 복사 대상이 있다고 보았으나, 가중치와 bias가 nvtx 촬영 전에 한 번에 올라간다는 점을 고려해 입력 데이터 ±eps, upper bound, lower bound 결과 총 4회만 복사하면 된다고 재검토했다. 한편 CROWN 기준으로는 입력 데이터 ±eps와 upper/lower bound를 포함해 총 6개의 복사 대상이 있다고 정리되기도 하여, 복사 대상 수에 대한 서술은 문맥에 따라 달라질 수 있다.",
+              "join_previous": false
+            },
+            "S_limitations_p39_s1": {
+              "action": "replace",
+              "text": "결과 해석 범위는 제한적이다. 최적화 과정에서 여러 기법이 함께 적용·제거되어 개별 효과의 분리가 어렵고, 작은 신경망에서는 cuBLAS·cuSparse 오버헤드가 두드러질 수 있다. pinned 메모리 측정 결과는 불일치가 관찰되었으며, 각 최적화 기법을 체계적으로 분리한 ablation study는 수행되지 않았다. backward_only가 빠른 이유 등 일부 현상은 아직 설명되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p40_s1": {
+              "action": "replace",
+              "text": "실시간성 목표 달성 여부는 확정적으로 판단하기 어렵다. 본 연구는 CPU 환경에서 느렸던 CROWN 검증을 CUDA로 구현해 실시간 환경의 대규모 연산을 따라잡을 수 있는지를 살펴보는 데 초점이 있으며, 이는 사용자 설명 범위에서 반영된 배경이다. 다만 세부 기준·수치·실험 조건은 원문에 직접 확인되지 않으므로, 이 해석의 범위는 제한적으로 남는다.",
+              "join_previous": false
+            },
+            "S_limitations_p41_s1": {
+              "action": "replace",
+              "text": "forward 최적화를 통해 backward보다 forward가 느렸던 문제는 해결되었다고 판단되지만, 이 판단은 기록자의 해석에 기반하며 정량 성능 수치나 반복 측정 기반 통계로 별도 제시되지는 않는다. 또한 작은 신경망과 배치 크기 1 환경에서는 cuBLAS/cuSparse 관련 오버헤드가 두드러질 수 있고, pinned 메모리 측정 결과는 불일치가 관찰되어 절대값으로 단정하기 어렵다. 실시간성 목표 달성 여부도 확정적으로 정리되지 않았으며, backward_only가 왜 빠른지와 같은 개별 기제의 이유는 아직 설명되지 않은 채로 남아 있다.",
+              "join_previous": false
+            },
+            "S_limitations_p42_s1": {
+              "action": "replace",
+              "text": "본 연구의 CUDA 최적화 결과는 여러 변경 사항이 동시에 적용된 상태에서 관측된 것이므로, 개별 최적화 기법의 효과를 분리하여 해석하기 어렵다. 예를 들어 커널 memcpy에서는 기존에 MAXDIM 512 float 고정 복사 대신 필요한 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 커져 시간이 늘어난 것으로 관찰되었다. 이 시간 증가의 원인이 memcpy 변경인지 다른 요인인지는 정량적으로 분리되지 않았다. 한편 forward_cuda_graph의 전체 시간이 약 983초인 반면, CPU에서 필요한 만큼만 계산한 뒤 복사한 버전은 1055초로 72초 더 느렸는데, 두 버전 간 차이의 구체적 원인 역시 분해된 결과로 확인되지 않는다. 이러한 동시 변경의 제약은 작은 신경망에서 cuBLAS나 cuSparse 관련 오버헤드가 두드러질 수 있는 조건과 함께, 각 최적화 기법의 개별 기여도를 체계적으로 분리한 ablation study가 수행되지 않았다는 점과 맞물려 결과 해석의 범위를 제한한다. 아울러 pinned 메모리 관련 측정에서 결과가 일관되지 않게 나타난 점도 해석상의 불확실성을 남긴다. 따라서 실시간성 목표 달성 여부를 확정적으로 판단하기 어렵고, backward_only가 왜 빠른지와 같은 개별 기법의 효과 원인에 대해서도 추가 검증이 필요하다. 한편 코드 변경 과정에서는 switch 문 안에서 구조체를 선언과 동시에 생성하도록 시도하거나, case 레이블에 따른 fwd·bwd 초기화 생략 문제를 작은 스코프로 해결하는 등 컴파일 제약에 따른 조정이 있었으나, 이는 정량 성능 수치와 직접 연결되지 않는 구현상의 관찰로 남는다.",
+              "join_previous": false
+            },
+            "S_limitations_p43_s1": {
+              "action": "replace",
+              "text": "본 연구의 CUDA 최적화 결과는 특정 신경망(256-491-491-16)과 기존 신경망 검증팀이 사용하던 입력 데이터셋·eps_list, 배치 크기 1, CROWN의 forward·forward+backward·backward_only 실행 방식이라는 조건 아래에서 관측되었다. 가중치 사전 업로드(PRELOAD ON GPU) 적용 후 실행 시간은 149~155ms 범위로 기록되었고, MEMPOOL + Weights PRELOAD ON GPU 모드에서 eps=1e-06, 출력 차원 16 조건으로 CROWN Verification을 실행한 단일 결과는 149.820400ms로 기록되었다. 이 범위는 기록자가 요약한 결과이며, 단일 실행의 정밀 수치나 반복 측정 통계는 현재 페이지에 없다. 또한 이 수치는 해당 모드의 단일 실행 결과이며, CPU 버전이나 다른 GPU 모드와의 반복 측정 기반 통계는 현재 페이지에 없다.",
+              "join_previous": false
+            },
+            "S_limitations_p44_s1": {
+              "action": "replace",
+              "text": "최적화 과정에서는 memcpy 제거, 함수 단위 CPU/GPU 회귀, 커널 통합, 메모리 풀 활용, 복사 경로 최소화 등 여러 변경이 적용되었다. forward 함수에서 DTOH하는 memcpy를 극단적으로 없앤 뒤 CROWN Verification 실행 시간이 64.716000ms로 기록되었으나, 현재 페이지는 memcpy 제거 후 단일 실행 결과만 기록하며 이전 조건과의 반복 측정 기반 통계나 비교 해석은 포함하지 않는다. make_zero_matrix와 make_zero_vector를 CPU 실행으로 회귀한 결과 22~25ms 정도 줄었다고 기록되었고, 영벡터 만들기를 다시 GPU로 시도했을 때는 3~5ms 정도 시간이 늘어나 CPU로 두는 것이 좋을 것이라고 기록되었다. 이 수치와 판단은 기록자가 요약한 감소 폭과 정성적 판단이며, GPU/CPU 간 정량 비교의 반복 측정 통계는 현재 페이지에 제시되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p45_s1": {
+              "action": "replace",
+              "text": "메모리·복사 관련 변경으로는 forward-backward 간 전달되는 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했으며, bias도 메모리 풀에서 관리하도록 변경하였다. 또한 backward_bound_gpu에서 affine 중복 계산을 삭제해 커널 2개 함수가 줄어들었고, backward에서 사용하는 행렬곱 커널 2개를 backward_matmul_pair_gpu로 통합했으며, affine_min/max까지 backward_bound_gpu에서 실행되도록 개선해 GPU→CPU 메모리 복사를 최소화하였다. Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용해 H2D 복사를 제거하고, default 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성해 PCIe 통신 오버헤드를 최소화했으며, fp32에 단정밀도 연산으로 바꿔보기도 하였으나 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. 이 변경들은 변경 내용과 단일 실행 결과 또는 관측된 경향만 기록하며, 반복 측정 통계나 다른 조건과의 정량 비교, 그리고 bias 변경의 성능 최고점 상승 여부는 현재 페이지에 제시되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p46_s1": {
+              "action": "replace",
+              "text": "CUDA 커널 인자 전달 방식과 관련해서는 포인터(배열)는 cudaMalloc·cudaMemcpy로 VRAM에 올린 주소를 넘겨야 하고, 스칼라(단일 숫자/열거형)는 CPU 메모리 값을 커널 실행 시 Parameter Bank/Constant Memory에 함께 실어 보낼 수 있으며, 포인터 변수는 크기가 커서 CPU가 커널 매개변수 주머니에 값을 직접 넣어줄 수 없으므로 memcpy로 올려야 하고 4~8바이트 수준의 값만 CPU가 직접 참조해 보낼 수 있다고 정리되었다. 이는 CUDA 인자 전달 방식에 대한 설명·정리이며, 실제 성능·정확도 결과는 포함하지 않는다.",
+              "join_previous": false
+            },
+            "S_limitations_p47_s1": {
+              "action": "replace",
+              "text": "실행 시간 해석에서는 40000번의 루프에서 backward보다 forward가 느린 것을 확인했고, 원인은 중간 레이어 결과를 저장하느냐/마느냐의 플래그에 있었으며, forward_bound_impl의 플래그를 true로 두면 중간 결과가 복사되고 이 플래그가 forward에서 중간 계산 결과, final_affine, 최종 결과 복사를 제어하는 역할을 한다고 기록되었다. 단일 실행에서는 D2H 오버헤드가 연산 오버헤드를 뛰어넘지 않았으나, 40000번 루프 반복 시 D2H 복사 오버헤드가 backward 대비 forward 계산의 이득을 초과하여 forward가 더 느려지는 현상이 관측되었다. 단일 데이터에 대한 memcpy 호출 횟수는 forward와 backward 각각 6번으로 확인되었고, Forward와 Backward의 cudaMemcpy 호출 횟수는 동일함에도 Forward 전체 실행 시간은 약 64s, Backward 전체 실행 시간은 약 98s로, 동일한 호출 횟수임에도 forward의 cudaMemcpy 시간이 많이 잡히는 점이 눈에 띄었다. 또한 중간 작업으로 커맨드라인 실행 인자를 받아 forward 또는 backward를 실행하도록 코드를 변경한 뒤 실행 결과가 2164s로 기존 backward 실행 결과 1560s보다 느려졌고, 이게 backward 계산 시간이라고 확인되었다. 이 관측들은 단일 실행 관측 기록이거나 특정 반복 조건에서의 현상이며, 반복 측정 통계나 조건별 분리 측정, 그리고 코드 변경 후 느려진 원인에 대한 확정적 분석은 현재 페이지에 제시되지 않았다.",
+              "join_previous": false
+            },
+            "S_limitations_p48_s1": {
+              "action": "replace",
+              "text": "network_forward()는 전체 타이머에 포함되지만, 현재 cuSPARSE pipeline이 완성된 상태가 아니며 SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가된다고 기록되었다. 현재 구현과 antenna_lirpa의 속도 차이는 스트림 개수보다 연산기(텐서 코어 대 일반 코어)와 커널 호출 방식(3D 텐서 배치 대 단일 샘플 반복)의 체급 차이에서 비롯된다고 해석되었으나, 이 진술은 figure 캡션에 기록된 원인 해석이며 정량 분리 실험 결과는 포함하지 않는다. 또한 GPU 클록을 고정하고 다시 실험하기로 하여 GPU 클록 자동 잠금·자동 해제용 RAII 구조체(ScopedGpuClockLock)를 작성했고, 클록을 2800MHz로 고정하고 돌린 결과(기존 HostRegister)가 기록되었으며, cuda 강의 19장의 GPU 클록 고정을 참고했고, 현재 클록 확인은 nvidia-smi -q -d CLOCK로, 클록 고정은 sudo nvidia-smi -pm 1(Persistence mode)과 sudo nvidia-smi -lgc 1410(Lock graphics clock)으로 수행하며, 측정 환경 설정으로 Persistence mode(초기화 지연 제거)를 위해 sudo nvidia-smi -pm 1을 사용한다고 기록되었다. 이 내용들은 실험 재시도 방향·코드 구조·참고 출처·명령어 예시·측정 환경 설정 코드만 포함하며, 실제 클록 고정 후 측정 결과나 적용 결과는 이 요소들만으로는 제시되지 않는다.",
+              "join_previous": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

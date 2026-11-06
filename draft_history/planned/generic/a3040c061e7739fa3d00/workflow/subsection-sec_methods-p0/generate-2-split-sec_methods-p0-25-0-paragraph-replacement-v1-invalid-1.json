@@ -1,0 +1,21 @@
+{
+  "response": {
+    "parts": {
+      "p0": {
+        "evidence_ids": [
+          "H85ca0e507c4e_88",
+          "H85ca0e507c4e_89",
+          "E00037",
+          "E00033",
+          "E00038",
+          "E00130",
+          "E00137",
+          "E00138",
+          "E00051"
+        ],
+        "text": "평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기는 256-491-491-16, 배치 크기는 1로 설정하였다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 실행 방식은 forward, forward+backward, backward_only의 세 가지로 구분하였다. 정확도 지표는 기존 검증팀 프로그램과의 검증 결과 일치 여부로 확인하였으며, 결과는 모두 동일하였다. 구성 요소별 역할은 cuBLAS가 NVIDIA GPU의 선형대수 연산을 가속하고, 메모리 풀은 함수 호출마다의 할당·해제를 없애기 위해 큰 공간을 미리 할당해 빌려주는 방식으로 사용되며, 가중치 GPU 사전 업로드는 고정된 가중치를 네트워크 로드 시점에 미리 올려 matmul 호출마다의 memcpy를 줄이려는 목적이고, 벡터 연산을 CPU로 돌리는 것은 matmul만 GPU로 실행하는 하이브리드 구성을 만들기 위한 것이다. 결합 방식은 초기에 cuBLAS로 matmul을 대체하고 메모리 풀을 사용하며 벡터 연산을 CPU로 돌리는 GPU OPTIMIZED 모드에서, 이후 matmul만 GPU로 남기고 나머지 GPU 커널을 CPU for문으로 되돌린 HYBRID 모드로 전환되었다. hybrid는 새로 추가된 요소 없이 GPU 코드를 삭제하여 빨라진 케이스로 정리되었다. 이후 v2/v4 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 memcpy 범위 축소가 추가로 결합되었다. 또한 forward-backward 간 전달되는 alpha/beta를 메모리 풀에 올려 전달 과정을 삭제하고, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하여 backward가 host에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경하였으며, affine_min/max까지 backward_bound_gpu에서 실행되도록 개선하여 GPU→CPU 복사를 최소화하였다. v1-1-3(crown_test_preload_fix)에서는 미리 로드한 W 가중치를 제대로 활용하도록 고쳤으며, 신경망에 GPU 주소를 저장하던 double* 타입을 Matrix* 타입으로 바꾸고, pre_upload_weights_to_gpu도 memcpy2D 사용이 아니라 Matrix를 할당·복사하도록 변경하였다. 이에 따라 positive_part와 negative_part의 W 복사 스킵, matmul의 B행렬 복사 스킵(backward), matvec의 A행렬 복사 스킵(forward)이 적용되었다. 다만 가중치 사전 업로드의 실제 효과는 연구 기록에서 크게 의미를 못 미친다고 평가되어, 역할 대비 성과가 제한적임이 함께 확인된다. GPU 클록 고정은 연구 일지에서 나중에 고정된 사항이고, warm up은 초기에 적용되었다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 하지 못한 점은 한계로 남는다."
+      }
+    }
+  },
+  "reason": "교체 문단이 허용 분량 509자를 넘었습니다."
+}

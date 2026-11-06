@@ -40,14 +40,19 @@ def part_context(packet, key):
     if any(not item.get("guideline_ids") for item in section["required_items"]):
         linked = []
     tables = [copy.deepcopy(t) for t in packet.get("tables", [])
-              if set(t["evidence_ids"]) <= set(assignment["evidence_ids"])]
+              if set(t["evidence_ids"]) <= set(assignment["evidence_ids"])
+              and ("table_ids" not in assignment or t["id"] in assignment["table_ids"])]
     section["table_ids"] = [t["id"] for t in tables]
+    if "table_placements" in section:
+        section["table_placements"] = [{**p, "subsection_index": 0} for p in section["table_placements"]
+                                       if p["table_id"] in section["table_ids"]]
     return {"paper_title": packet["paper_title"], "section_plan": section,
             "target_part": key, "target_heading": assignment["heading"], "subsection_headings": [],
             "facts": facts, "tables": tables,
             "reference_guides": _guides(packet["reference_guides"], linked),
             "context": copy.deepcopy(packet["context"]), "allocation": assignment["allocation"],
             "human_guidance": copy.deepcopy(packet.get("human_guidance", [])),
+            **({"composition_policy": copy.deepcopy(packet["composition_policy"])} if "composition_policy" in packet else {}),
             **({"writing_budget": copy.deepcopy(assignment["writing_budget"])} if "writing_budget" in assignment else {})}
 
 
@@ -85,11 +90,16 @@ def build_contexts(plan, research, catalog):
             if not mapped:
                 ids = set(section["evidence_ids"])
             explicit_ids = ids.copy()
+            local_tables = tables
+            if "table_placements" in section:
+                selected_tables = {p["table_id"] for p in section["table_placements"] if p["subsection_index"] == i}
+                local_tables = [t for t in tables if t["id"] in selected_tables]
+                ids.update(key for t in local_tables for key in t["evidence_ids"])
             # A table comparison must retain both sides, not only the matched cell.
             changed = True
             while changed:
                 previous = len(ids)
-                for table in tables:
+                for table in local_tables:
                     if ids & set(table["evidence_ids"]):
                         ids.update(table["evidence_ids"])
                 changed = len(ids) != previous
@@ -102,6 +112,8 @@ def build_contexts(plan, research, catalog):
                 "shared_evidence_ids": [] if mapped else [key for key in section["evidence_ids"] if key not in required_facts],
                 "table_expanded_evidence_ids": [key for key in section["evidence_ids"] if key in ids - explicit_ids],
                 "allocation": "explicit" if mapped else "section_fallback"}
+            if "table_placements" in section:
+                assignments[f"p{i}"]["table_ids"] = [t["id"] for t in local_tables]
         packet = {"paper_title": plan["title"], "section_plan": section, "subsection_headings": headings,
                   "human_guidance": copy.deepcopy(research.get("human_guidance", [])),
                   "facts": facts, "tables": tables, "reference_guides": guides,

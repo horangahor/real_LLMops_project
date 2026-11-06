@@ -21,7 +21,7 @@ ASSEMBLY_BATCH_TEXT_BYTES = 24000
 PRESERVATION_INSTRUCTION = """\n장·소절 전체를 삭제하거나 빈 본문으로 만들지 않는다. 소절 제목 칸만 남기는 것도 금지한다.
 중복 문장·문단은 줄일 수 있지만 각 소절의 목적·핵심 설명·조건·한계가 담긴 본문을 반드시 남긴다.
 다른 소절과 내용이 겹치면 현재 소절의 역할에 맞게 간결히 다시 쓰며 다른 소절로 통째로 옮기지 않는다.
-같은 소절의 모든 구간에 delete를 지정하지 않는다. 분량 목표보다 소절과 핵심 내용 보존이 우선한다."""
+같은 소절의 모든 구간에 delete를 지정하지 않는다. 각 소절의 핵심 내용과 구조를 보존한다."""
 
 
 class SubsectionRemovalError(ValueError):
@@ -200,9 +200,8 @@ def _edit_batches(engine, folder, name, previous, packets, packet, parts, origin
         "status=deleted인 구간은 이미 삭제됐다. editable_spans의 구간 칸만 반환한다. " \
         "다른 구간을 출력하거나 앞 묶음에서 정리한 내용을 다시 만들지 않는다. " \
         "문단 첫 구간 여부는 전체 source_parts의 paragraph_id로 판단한다."
-    if packet.get("writing_targets"):
-        from writing_length import EDITORIAL_INSTRUCTION
-        system += EDITORIAL_INSTRUCTION
+    if packet.get("composition_guidance"):
+        system += packet["composition_guidance"]
     system += PRESERVATION_INSTRUCTION
     combined = {"sections": {sid: {"parts": {key: {u["id"]: {
         "action": "keep", "text": "", "join_previous": False} for u in units}
@@ -408,11 +407,10 @@ def _edit_fixed_slots(engine, folder, name, level, previous, packets, report=Non
     packet = {"operation": "editorial_assembly" if initial else "editorial_revision",
         "output_mode": "fixed_spans" if initial else "fixed_slots", "review_policy": policy,
         "workflow_stage": level, "base_fingerprint": fingerprint(previous), "outline": outline, "source_parts": parts}
-    from writing_length import EDITORIAL_INSTRUCTION, editorial_targets
-    targets = editorial_targets(packets)
-    if targets:
-        packet["writing_targets"] = targets
-        system += EDITORIAL_INSTRUCTION
+    guidance = list(dict.fromkeys(p["editorial_guidance"] for p in packets.values() if p.get("editorial_guidance")))
+    if guidance:
+        packet["composition_guidance"] = "\n".join(guidance)
+        system += packet["composition_guidance"]
     system += PRESERVATION_INSTRUCTION
     if not initial:
         packet["revision"] = {"review": {"checks": [], "issues": [{k: copy.deepcopy(i[k]) for k in

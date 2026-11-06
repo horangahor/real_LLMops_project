@@ -1,0 +1,33 @@
+{
+  "id": "ebf2b29f-2f35-44f2-a777-c6f4eadc3075",
+  "object": "chat.completion",
+  "created": 1793989576,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"parts\": {\n    \"p0\": {\n      \"evidence_ids\": [\"E00115\", \"E00326\", \"E00329\", \"E00366\", \"E00122\", \"E00124\", \"E00130\", \"E00146\", \"E00147\", \"E00148\", \"E00149\", \"E00150\", \"E00165\", \"E00232\", \"E00066\", \"E00067\"],\n      \"text\": \"CROWN Verification은 eps=1e-6, 출력 차원 16 조건에서 실행되었으며, CPU 전용 계산 버전과 GPU 버전을 만들어 신경망 정방향 통과 및 backward 계산 시간을 측정했다. 측정 구간은 추론·bound 계산·검증 각 단계 종료 시점에 시간을 기록해 E2E 기준으로 각각 시간을 재도록 구성했다. 평가 대상은 CROWN을 구현한 C++ 프로그램이며, 신경망 크기 256-491-491-16, 배치 사이즈 1, 실행 방식은 forward, forward+backward, backward_only의 세 가지 방법을 사용했다. 입력 데이터셋과 eps_list는 기존 신경망 검증팀이 사용하던 값을 사용했고, 정확도 지표는 기존 검증팀 프로그램과 검증 결과·비율의 차이를 확인하는 방식으로 모두 동일하게 나타났다. GPU 클록 고정은 연구 일지에서 확인된 대로 나중에 고정된 사항이며, warm up은 초기에 적용되었다. 현재 network_forward()는 전체 타이머에 포함되지만 cuSPARSE 파이프라인이 완성되지 않아 SpMV/SpMM 호출마다 descriptor와 buffer 처리 비용이 추가되며, 모델과 레이어 수가 작아 실제 sparse 연산보다 setup/launch 비용이 더 크게 나타난다. CUDA Context 생성 및 런타임 오버헤드로 프로파일러 VRAM 사용량이 코드 계산값보다 작게 보이는 점도 확인되었다. memcpy 병목을 잡아야 CPU보다 빨라질 수 있다는 판단 아래, 동기화(cudaDeviceSynchronize) 제거, mempool + warmup 적용, 커널 퓨전 및 affine 중복 계산 삭제, 포인터 스와핑, 행렬곱 커널 통합 등 구현 변경이 비교 결과에 영향을 주는 요소로 나타났다. backward_bound_gpu()에 커널 퓨전을 먼저 진행해 23ms 후반대까지의 실행 시간이 관측되었고, 컴퓨터 사정에 따라 26까지 뛰는 경우도 있지만 중요한 것은 23ms 정도가 보인다는 점이 기록되었다. 이후 backward_bound_gpu에서 사용하는 affine 중복 계산을 삭제해 커널 2개 함수가 줄어들었고, backward에서 사용하는 행렬곱 커널 2개를 하나로 합친 backward_matmul_pair_gpu 함수를 만들었다. forward-backward 간 전달되는 alpha, beta 값을 메모리 풀에 올려 전달 과정을 삭제했으며, 레이어별 alpha/beta GPU 버퍼를 메모리 풀에 추가하고 forward에서 GPU에 레이어별로 저장한 뒤 backward가 host ForwardBoundResult에서 H2D 복사하지 않고 GPU 버퍼를 직접 사용하도록 변경했다. alpha/beta 저장용 D2D 복사 4회는 cache_relaxation_layer_gpu 1회로 통합되었다. Backward 메모리 복사 제거 및 초기화 최적화에서는 Forward 단계의 입력 버퍼(x0 ± eps)를 Backward에서 재사용해 H2D 복사를 제거했고, default 초기 상태(단위행렬/영벡터)를 GPU 커널에서 직접 생성해 PCIe 통신 오버헤드를 최소화했다. 이 최적화 적용 후 CROWN Verification 실행 결과 Elapsed time이 13.939000 ms로 기록되었으며, 출력 차원은 16이다. 실행 시간이 13ms 후반 거의 14ms 정도로 관측되었고, fp32에 단정밀도 연산으로 바꿔보기도 했으며 이 부분은 fp32에 대한 고찰에 있다고 기록되었다. Forward와 Backward의 cudaMemcpy 호출 횟수는 동일하다는 관측도 있었다. 수행 작업으로는 성능이 개선된 프로그램(CPU보다 빠르도록)을 가져가기로 했으며, 지금까지 테스트한 것들을 가져가면 될 듯하고 더 찾아보기로 했다. 추가 최적화 후보로 infer의 크기 계산 주석 처리(벡터라 크지 않다는 점)와 certify의 heap 재변경 여부가 검토되었다. cuBlas도 그렇게 영향을 미치지는 못하는 것 같다고 판단되었으며, mempool(v1-1-1)에서 미리 ensure_pool()을 활용해 메모리 할당을 하는 것은 큰 영향을 미치지만, cuBlas를 쓰고 warm up 하는 것과 그렇게 차이나지 않는다고 기록되었다. 각 최적화 기법을 체계적으로 분리하며 ablation study를 해보지 못한 것이 한계로 남는다.\"\n    }\n  }\n}"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 22877,
+    "completion_tokens": 888,
+    "total_tokens": 23765,
+    "prompt_tokens_details": {
+      "cached_tokens": 8704,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}
