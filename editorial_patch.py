@@ -228,6 +228,9 @@ def _edit_batches(engine, folder, name, previous, packets, packet, parts, origin
                 "editable_spans": {sid: {key: [u["id"] for u in units] for key, units in rows.items()}
                                    for sid, rows in targets.items()},
                 "batch": {"index": index, "total": len(batches)}}
+        if "editing_targets" in packet:
+            from writing_policy import editorial_targets
+            body["editing_targets"] = editorial_targets(value, packets)
         if revising:
             pids = {u["paragraph_id"] for rows in targets.values() for units in rows.values() for u in units}
             body["revision"] = {**packet["revision"], "review": {"checks": [], "issues": [
@@ -411,6 +414,12 @@ def _edit_fixed_slots(engine, folder, name, level, previous, packets, report=Non
     if guidance:
         packet["composition_guidance"] = "\n".join(guidance)
         system += packet["composition_guidance"]
+    if any(p.get("editing_policy") for p in packets.values()):
+        from writing_policy import editorial_targets
+        packet["editing_targets"] = editorial_targets(previous, packets)
+        write_json(Path(folder) / f"{name}-editing-input.json", {
+            "workflow_stage": level, "editing_policies": {sid: p.get("editing_policy") for sid, p in packets.items()},
+            "composition_guidance": packet.get("composition_guidance", ""), "editing_targets": packet["editing_targets"]})
     system += PRESERVATION_INSTRUCTION
     if not initial:
         packet["revision"] = {"review": {"checks": [], "issues": [{k: copy.deepcopy(i[k]) for k in

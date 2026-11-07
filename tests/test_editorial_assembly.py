@@ -87,6 +87,23 @@ class EditorialAssemblyTests(unittest.TestCase):
             self.assertEqual(edit_editorial(engine, Path(tmp), "generate-0", "section", previous, {"s1": packet}), old)
         self.assertEqual(len(calls), 1)
 
+    def test_rule_aware_edit_does_not_reuse_legacy_cache_that_omitted_rules(self):
+        from writing_policy import refresh_editorial_policy
+        _, packet, previous, _ = fixture()
+        calls = []
+        def client(system, body, schema, path):
+            calls.append(body)
+            return editorial_reply(body)
+        with TemporaryDirectory() as tmp:
+            engine = PlannedPaper(tmp, client)
+            _edit_editorial_legacy(engine, Path(tmp), "generate-0", "section", previous, {"s1": packet})
+            refresh_editorial_policy({"sections": {"s1": packet}})
+            edit_editorial(engine, Path(tmp), "generate-0", "section", previous, {"s1": packet})
+        self.assertEqual(len(calls), 2)
+        self.assertNotIn("output_mode", calls[0])
+        self.assertEqual(calls[1]["output_mode"], "fixed_spans")
+        self.assertIn("editing_targets", calls[1])
+
     def test_timed_out_legacy_request_is_preserved_and_new_request_uses_fixed_spans(self):
         _, packet, previous, _ = fixture()
         native_paths = []
@@ -108,6 +125,27 @@ class EditorialAssemblyTests(unittest.TestCase):
             self.assertEqual(native_paths[0].read_bytes(), native)
             self.assertEqual(len(calls), 1)
             self.assertIn(ASSEMBLY_POLICY, calls[0])
+
+    def test_batched_edit_updates_current_lengths_but_keeps_original_targets(self):
+        from writing_policy import refresh_editorial_policy
+        _, packet, previous, _ = fixture()
+        previous["s1"]["parts"]["p0"] = "\n\n".join("반복된 설명이다. " * 10 + f"문단 {i}. [근거:F1]" for i in range(28))
+        for assignment in packet["subsection_assignments"].values():
+            assignment["writing_budget"] = {"target_chars": 500}
+        refresh_editorial_policy({"sections": {"s1": packet}})
+        calls = []
+        def client(system, body, schema, path):
+            calls.append(copy.deepcopy(body["editing_targets"]))
+            raw = editorial_reply(body)
+            if body["batch"]["index"] == 0:
+                first = body["source_parts"]["s1"]["p0"][0]
+                raw["sections"]["s1"]["parts"]["p0"][first["id"]].update(action="replace", text="간결한 설명이다.")
+            return raw
+        with TemporaryDirectory() as tmp:
+            edit_editorial(PlannedPaper(tmp, client), Path(tmp), "generate-0", "section", previous, {"s1": packet})
+        self.assertGreater(len(calls), 1)
+        self.assertLess(calls[1]["s1"]["parts"]["p0"]["current_chars"], calls[0]["s1"]["parts"]["p0"]["current_chars"])
+        self.assertTrue(all(c["s1"]["parts"]["p0"]["target_chars"] == 500 for c in calls))
 
     def test_flat_schema_avoids_repeated_wrappers_and_rejects_join_in_nonfirst_span(self):
         _, packet, previous, _ = fixture()

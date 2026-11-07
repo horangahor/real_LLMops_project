@@ -2,7 +2,7 @@
 
 기계 추출·원문 대조 결과이며 독립적인 사실 검증이 아닙니다.
 
-후보 1123개 / 작성용 1001개
+후보 1123개 / 작성용 999개
 
 원문 대조: 84/84쪽, 953/953개 요소
 
@@ -28951,6 +28951,8 @@ Host Alloc(cudaHostAlloc) 방식의 페이즈별 소요 시간은 infer 132,586�
 - 정성 관찰: infer : 132,586s (16.4%)
 - 정성 관찰: bound : 670.122s (83.1%)
 - 정성 관찰: certify : 2,077s (0.3%)
+- 문장 수치 검사: 소수 쉼표 의심(comprehensive-decimal-comma-v1): 원문 '132,586s'를 132586s로 정규화함. 132.586s일 가능성. 근거: 천 단위로 읽으면 132586s가 total elapsed 806.54s보다 큼; 소수로 읽은 132.586s가 total 대비 16.4%와 일치
+- 문장 수치 검사: 소수 쉼표 의심(comprehensive-decimal-comma-v1): 원문 '2,077s'를 2077s로 정규화함. 2.077s일 가능성. 근거: 천 단위로 읽으면 2077s가 total elapsed 806.54s보다 큼; 소수로 읽은 2.077s가 total 대비 0.3%와 일치
 - 측정: infer phase elapsed = 132586 s (cudaHostAlloc, all eps × all data) / p76:e591
 - 측정: infer phase ratio = 16.4 % (cudaHostAlloc, all eps × all data) / p76:e591
 - 측정: bound phase elapsed = 670.122 s (cudaHostAlloc, all eps × all data) / p76:e591
@@ -29038,6 +29040,8 @@ No-Pin(Pageable Memory) 방식의 페이즈별 소요 시간은 infer 119,466초
 - 정성 관찰: infer : 119,466s (15.1%)
 - 정성 관찰: bound : 667.611s (84.4%)
 - 정성 관찰: certify : 2,004s (0.3%)
+- 문장 수치 검사: 소수 쉼표 의심(comprehensive-decimal-comma-v1): 원문 '119,466s'를 119466s로 정규화함. 119.466s일 가능성. 근거: 천 단위로 읽으면 119466s가 total elapsed 790.64s보다 큼; 소수로 읽은 119.466s가 total 대비 15.1%와 일치
+- 문장 수치 검사: 소수 쉼표 의심(comprehensive-decimal-comma-v1): 원문 '2,004s'를 2004s로 정규화함. 2.004s일 가능성. 근거: 천 단위로 읽으면 2004s가 total elapsed 790.64s보다 큼; 소수로 읽은 2.004s가 total 대비 0.3%와 일치
 - 측정: infer phase elapsed = 119466 s (Pageable Memory / NO PINNING, all eps × all data) / p76:e593
 - 측정: infer phase ratio = 15.1 % (Pageable Memory / NO PINNING, all eps × all data) / p76:e593
 - 측정: bound phase elapsed = 667.611 s (Pageable Memory / NO PINNING, all eps × all data) / p76:e593
@@ -29100,6 +29104,8 @@ Host Alloc와 No-Pin의 infer 단계 소요 시간 차이는 약 13초(132,586�
 - 정성 관찰: No-Pin infer: 119,466s
 - 정성 관찰: 차이 약 13초(132초 VS 119초)로 서술됨
 - 문장 수치 검사: limits의 원문 미확인 수치: 13,120
+- 문장 수치 검사: 소수 쉼표 의심(comprehensive-decimal-comma-v1): 원문 '132,586s'를 132586s로 정규화함. 132.586s일 가능성. 근거: 천 단위로 읽으면 132586s가 total elapsed 806.54s보다 큼; 소수로 읽은 132.586s가 total 대비 16.4%와 일치
+- 문장 수치 검사: 소수 쉼표 의심(comprehensive-decimal-comma-v1): 원문 '119,466s'를 119466s로 정규화함. 119.466s일 가능성. 근거: 천 단위로 읽으면 119466s가 total elapsed 790.64s보다 큼; 소수로 읽은 119.466s가 total 대비 15.1%와 일치
 - 측정: Host Alloc infer phase elapsed = 132586 s (cudaHostAlloc, all eps × all data) / p76:e591
 - 측정: No-Pin infer phase elapsed = 119466 s (Pageable Memory / NO PINNING, all eps × all data) / p76:e593
 - 측정: infer phase 차이(서술값) = 13 초 (Host Alloc vs No-Pin infer 비교) / p77:e603, p77:enh:e9

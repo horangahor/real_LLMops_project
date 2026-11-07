@@ -81,6 +81,19 @@ class WorkspaceCacheTests(unittest.TestCase):
             self.assertEqual(prepare(base, verify_only=True)["relocated_files"], 0)
             self.assertEqual((folder / "approved.json").read_bytes(), before)
 
+    def test_portable_snapshot_does_not_require_ignored_web_runtime_or_tex_tools(self):
+        with TemporaryDirectory() as tmp:
+            old, new = Path(tmp) / "old", Path(tmp) / "new"
+            self.setup_cache(old)
+            local = old / "draft_history/web-ui/latex-validation/tools"
+            local.mkdir(parents=True)
+            (local / "compiler.exe").write_bytes(b"local QA tool")
+            snapshot(old)
+            manifest = json.loads((old / MANIFEST).read_bytes())
+            self.assertFalse(any(r["path"].startswith("draft_history/web-ui/") for r in manifest["files"]))
+            shutil.copytree(old, new, ignore=shutil.ignore_patterns("web-ui"))
+            self.assertTrue(prepare(new)["verified"])
+
 
 if __name__ == "__main__":
     unittest.main()

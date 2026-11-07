@@ -234,6 +234,12 @@ def _edit_editorial_legacy(engine, folder, name, level, previous, packets, repor
 
 def edit_editorial(engine, folder, name, level, previous, packets, report=None):
     """Reuse completed legacy edits; new assemblies return fixed-slot changes."""
+    if any(p.get("editing_policy") for p in packets.values()):
+        # Legacy provenance requests omitted common editing rules. They cannot
+        # satisfy an edit requested under the current rule/length policy.
+        from editorial_patch import assemble_editorial_patch, revise_editorial_patch
+        return (revise_editorial_patch(engine, folder, name, level, previous, packets, report) if report is not None
+                else assemble_editorial_patch(engine, folder, name, level, previous, packets))
     if report is not None:
         return _edit_editorial_legacy(engine, folder, name, level, previous, packets, report)
     class CachedEngine:

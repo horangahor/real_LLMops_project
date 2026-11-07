@@ -1,14 +1,25 @@
 [
   {
+    "event": "checkpoint_revalidation",
+    "stage": "section-sec_conclusion",
+    "status": "requires_revision",
+    "reason": "input_changed",
+    "checkpoint_sha256": "a5e6c30f5ea66788c6a33f0b4b6fa95585c1c06c83e94a77efd4ed31dbe52b7c",
+    "current_input_fingerprint": "805983f871291dc44c3c90aa54a05ab4188ea6fc5a5e83cd25e80260f5eaf64b",
+    "stored_input_fingerprint": "41be0b74314b0fd0f6bb9c8c26ed51a6f985baa1806d040a2ee33f15698eff6d",
+    "review": null,
+    "feedback": null
+  },
+  {
     "review_policy": "editorial-v1",
     "review_kind": "editorial",
     "issues": [
       {
         "section_id": "sec_conclusion",
         "paragraph_id": "sec_conclusion_p2",
-        "category": "duplication",
-        "severity": "error",
-        "reason": "sec_conclusion_p3과 최적화 구성 요소 및 수행 순서 서술이 중복된다. p2에서 '메모리 풀과 warm up 조합만으로 거의 200ms가 단축'을 서술한 뒤, p3에서 다시 커널 퓨전·DTOH memcpy 제거·실행 시간 64.716ms를 서술해 동일 흐름의 최적화가 두 문단에 나뉘어 반복된다.",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "GPU 포팅 이후 구성 요소 결합의 흐름을 서술했으나, '초기 하이브리드 시도 → cuBLAS 예열/사전 업로드/부분 복사 정리'로 이어지는 순서가 '메모리 전송과 커널 호출 구조를 함께 조정'이라는 서두 문장과 명시적으로 연결되지 않아 결합 방식의 논리가 다소 느슨하다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -17,9 +28,9 @@
       {
         "section_id": "sec_conclusion",
         "paragraph_id": "sec_conclusion_p3",
-        "category": "duplication",
-        "severity": "error",
-        "reason": "p2에서 이미 정리된 최적화 흐름(GPU 포팅, 하이브리드 시도, cuBLAS 예열, 가중치 사전 업로드, memcpy 병목 인식)과 결합 방식이 p3에서 다시 서술되며, '지금까지 수행한 최적화' 목록이 p2·p3에 걸쳐 중복 배치된다.",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "DTOH memcpy 제거와 커널 퓨전(affine_min/max 병합)을 한 문단에 함께 제시했지만, 두 최적화가 시간상·의존상 어떤 순서로 누적되었는지 독자가 추적하기 어렵다. p2의 'memcpy가 핵심 병목'이라는 인식과 p3의 'DTOH memcpy 극단적 제거' 사이의 연결이 약하다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -29,8 +40,8 @@
         "section_id": "sec_conclusion",
         "paragraph_id": "sec_conclusion_p4",
         "category": "flow",
-        "severity": "error",
-        "reason": "cudaHostRegister와 No Pinning의 Bound/Infer 단계별 역전 서술이 p5의 실시간성·지연 관점과 연결되지 않고 독립적으로 제시된다. p4의 단계별 시간 역전 설명이 p5의 '평균은 No-Pin이 빠르지만 실시간성은 Pinned가 유리'라는 결론으로 자연스럽게 이어지지 않는다.",
+        "severity": "warning",
+        "reason": "Bound 단계와 Infer 단계의 역전 현상을 수치로 제시했으나, 이 비교가 앞선 'memcpy 병목 인식' 및 '메모리 전송 방식 선택'이라는 결론의 서사와 어떻게 맞물리는지 한 문장 정도의 해석이 없어 독립된 수치 보고처럼 읽힌다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -40,8 +51,8 @@
         "section_id": "sec_conclusion",
         "paragraph_id": "sec_conclusion_p5",
         "category": "flow",
-        "severity": "error",
-        "reason": "p4의 Bound/Infer 역전 설명 없이 p5에서 바로 '평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만 실시간성에서는 Pinned가 안정적'이라는 대비가 나와, 독자가 두 문단의 인과 관계를 파악하기 어렵다.",
+        "severity": "warning",
+        "reason": "평균 처리 속도(No-Pin 약 13초 빠름)와 실시간성 지표(최대 지연, 지터)의 대비가 명확하지만, p4의 Bound/Infer 역전 서술과 p5의 Pinned vs No-Pin 비교가 서로 다른 관점(전체 시간 vs 지연/지터)임을 명시적으로 구분하지 않아 독자가 두 문단의 관계를 혼동할 수 있다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -51,8 +62,8 @@
         "section_id": "sec_conclusion",
         "paragraph_id": "sec_conclusion_p6",
         "category": "flow",
-        "severity": "error",
-        "reason": "싱글 스트림 antenna_lirpa의 cuBLAS Batched GEMM·텐서 코어 활용 서술과 멀티스트림 배칭(method A)의 SM 포화 한계 서술이 한 문단에 섞여 있어, '싱글 스트림 고속화'와 '멀티스트림 배칭의 한계'가 구분되지 않는다.",
+        "severity": "warning",
+        "reason": "커널 감소 내역(forward/backward, method 0/method 1, 8→5, 15회 감소, 12회 감소 등)이 매우 밀집되어 있어, '싱글 스트림 antenna_lirpa의 4배 가속'이라는 앞 문장의 핵심 주장과 커널 감소 세부 사항 사이의 강조 균형이 무너진다. 세부 수치가 서사의 속도를 떨어뜨린다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -63,18 +74,18 @@
         "paragraph_id": "sec_conclusion_p8",
         "category": "flow",
         "severity": "error",
-        "reason": "실행 시간 결과 나열이 조건 설명 없이 긴 목록으로만 제시된다. CPU ONLY, GPU 버전, GPU OPTIMIZED, HYBRID, HYBRID V2, mempool+warmup 등 단계별 조건이 결과값과 함께 정리되지 않아 p2·p3의 최적화 서사와 연결되지 않는다.",
+        "reason": "결론 절에서 실행 시간 목록을 거의 나열식으로 길게 제시하고 있으며, '단일 실행 또는 요약값이며 반복 측정 통계는 없다'는 단서가 수치 목록 중간에 묻혀 있다. 결론의 종합 목적에 맞게 주요 결과만 추리고, 통계 부재 단서는 별도의 짧은 문장으로 분리하는 편이 적절하다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
-        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 152.902900ms, mempool+warmup+결과 벡터 memcpy 제거 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms, Backward 메모리 복사 제거 및 초기화 최적화 후 13.939000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]"
+        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]"
       },
       {
         "section_id": "sec_conclusion",
         "paragraph_id": "sec_conclusion_p9",
-        "category": "duplication",
+        "category": "flow",
         "severity": "warning",
-        "reason": "forward_cuda_graph 전체 시간, infer, bound 수치가 p8의 backward_only_cuda_graph 및 다른 실행 시간 서술과 같은 '실행 시간 결과' 범주에 속하는데, 별도 문단으로 분리되어 결과 제시가 분산된다.",
+        "reason": "forward_cuda_graph, infer, bound의 초 단위 수치를 제시하지만, 이 값이 p8의 ms 단위 실행 시간 계열 및 p4·p5의 메모리 전송 비교와 어떤 관계에 있는지 연결 문장이 없어 결론 내부에서 표가 분절된 느낌을 준다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -85,7 +96,7 @@
         "paragraph_id": "sec_conclusion_p11",
         "category": "flow",
         "severity": "warning",
-        "reason": "'이 제약은 별도 분기로 보관해 두었다'는 표현이 결론의 종합 문장으로 남아 있어, 향후 방향 서술과 어울리지 않고 문체가 abruptly해진다.",
+        "reason": "'이 제약은 별도 분기로 보관해 두었다'는 표현이 결론의 종합 문장으로서는 abrupt하며, 실시간 멀티스트림 배칭의 시사점이 무엇인지 한 단계 더 정리되지 않아 절의 마무리 흐름이 약하다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -94,9 +105,9 @@
       {
         "section_id": "sec_conclusion",
         "paragraph_id": "sec_conclusion_p12",
-        "category": "duplication",
+        "category": "flow",
         "severity": "warning",
-        "reason": "Pinned Memory의 WCET 1.64ms, 지터 안정화, Pageable의 최대 11.6ms 지연 스파이크 서술이 p5의 실시간성 대비와 실질적으로 중복된다. p5와 p12의 실시간성·메모리 전송 결론이 분리돼 반복된다.",
+        "reason": "p5에서 이미 Pinned vs No-Pin의 실시간성 우위를 서술했는데, p12에서 Pageable의 지연 스파이크와 WCET·지터 안정화를 다시 강조해 내용이 중복된다. 결론에서는 두 문단을 통합하거나, p12를 p5의 재진술이 아니라 실시간성 관점의 최종 정리로 명확히 차별화해야 한다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -107,7 +118,7 @@
         "paragraph_id": "sec_conclusion_p13",
         "category": "flow",
         "severity": "warning",
-        "reason": "향후 방향(3D 텐서 레이아웃, cublasSgemmBatched, 텐서 코어 100% 활용, 30초~1분대 목표)과 함께 '계획·제안 성격이며 실제 수행 결과로 대체하지 않는다'는 단서가 붙어, 결론의 시사점과 향후 방향 구분이 모호해진다.",
+        "reason": "검토·제안 대상과 차기 로드맵(3D 텐서 레이아웃, cublasSgemmBatched, 텐서 코어 100% 활용, 30초~1분대 목표)을 한 문단에 함께 넣어 '계획·제안 성격'이라는 단서로 마무리하고 있으나, 현재 수행 결과와 향후 방향을 구분하는 경계가 덜 선명하다. 향후 방향만 짧게 분리하고, 학습·조사 항목은 압축하는 편이 결론의 초점에 맞는다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -118,7 +129,7 @@
         "paragraph_id": "none",
         "category": "terminology",
         "severity": "warning",
-        "reason": "동일 절 내에서 'Pinned Memory', 'No Pinning', 'Pageable 메모리', 'No-Pin' 등 메모리 전송 방식 명칭이 통일되지 않는다. 또한 'cudaHostRegister'와 'Pinned Memory'의 관계도 문단마다 표현 차이가 있어 용어 정리가 필요하다.",
+        "reason": "같은 절 안에서 'cudaHostRegister', 'No Pinning', 'No-Pin', 'Pinned Memory', 'Pageable 메모리' 등 메모리 전송 관련 표기가 혼용되어 있어, 결론의 비교 서술을 읽을 때 동일한 개념을 가리키는지 한눈에 파악하기 어렵다. 대표 표기를 정해 통일하는 것이 좋다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -129,7 +140,7 @@
         "paragraph_id": "none",
         "category": "flow",
         "severity": "warning",
-        "reason": "절 전체 구성에서 '핵심 구성 요소와 결합 방식(p2·p3)', '주요 실행 시간 결과와 조건(p4·p6·p8·p9)', '실시간성 관점의 시사점과 향후 방향(p5·p11·p12·p13)'이 개요 목적과 완전히 정렬되지 않는다. 특히 p6의 커널 감소 횟수 서술은 실행 시간 결과보다 방법 설명에 가까워 위치와 요약 수준을 재조정할 여지가 있다.",
+        "reason": "절 전체 구성에서 (1) 핵심 구성 요소와 결합 방식, (2) 주요 실행 시간 결과와 조건, (3) 실시간성 시사점과 향후 방향이 모두 등장하지만, 문단 배열이 결합 방식 → 수치 나열 → 실시간성 해석 → 향후 방향 순으로 섞여 있어 세 하위 목적이 깔끔하게 분리되지 않는다. 특히 실행 시간 목록(p8)과 실시간성 해석(p5·p12)이 교차 배치되어 종합의 흐름이 끊긴다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -569,10 +580,70 @@
     "editorial_warnings": [
       {
         "section_id": "sec_conclusion",
-        "paragraph_id": "sec_conclusion_p9",
-        "category": "duplication",
+        "paragraph_id": "sec_conclusion_p2",
+        "category": "flow",
         "severity": "warning",
-        "reason": "forward_cuda_graph 전체 시간, infer, bound 수치가 p8의 backward_only_cuda_graph 및 다른 실행 시간 서술과 같은 '실행 시간 결과' 범주에 속하는데, 별도 문단으로 분리되어 결과 제시가 분산된다.",
+        "reason": "GPU 포팅 이후 구성 요소 결합의 흐름을 서술했으나, '초기 하이브리드 시도 → cuBLAS 예열/사전 업로드/부분 복사 정리'로 이어지는 순서가 '메모리 전송과 커널 호출 구조를 함께 조정'이라는 서두 문장과 명시적으로 연결되지 않아 결합 방식의 논리가 다소 느슨하다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "CUDA 기반 CROWN 검증 최적화에서는 GPU 포팅 이후 메모리 전송과 커널 호출 구조를 함께 조정하는 방향으로 구성 요소를 결합했다. 초기에는 GPU OPTIMIZED 모드에서도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 방식을 시도했고, 이후 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방식이 정리되었다. 실행 과정에서 가장 중요한 병목은 memcpy로 인식되었으며, 메모리 풀과 warm up 조합만으로 거의 200ms가 단축되는 효과가 관측되었다. [근거:E00030,E00033,E00073,E00071]",
+        "stage": "section-sec_conclusion"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "paragraph_id": "sec_conclusion_p3",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "DTOH memcpy 제거와 커널 퓨전(affine_min/max 병합)을 한 문단에 함께 제시했지만, 두 최적화가 시간상·의존상 어떤 순서로 누적되었는지 독자가 추적하기 어렵다. p2의 'memcpy가 핵심 병목'이라는 인식과 p3의 'DTOH memcpy 극단적 제거' 사이의 연결이 약하다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "이후 forward 함수에서 DTOH memcpy를 극단적으로 제거해 CROWN Verification 실행 시간이 64.716ms로 기록되었고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 성능을 개선했다. 미리 작성해둔 퓨전 함수를 사용해 affine_min과 affine_max를 하나의 커널로 병합하는 커널 퓨전이 완료되었으며, 지금까지 수행한 최적화로 제로 memcpy, 커널 자체 실행 횟수 감소, 커널 퓨전, 커널 graph, GPU SM 구조를 고려한 FP64→FP32 및 double→float 변경이 진행되었다. [근거:E00083,E00118,E00143,E00212]",
+        "stage": "section-sec_conclusion"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "paragraph_id": "sec_conclusion_p4",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "Bound 단계와 Infer 단계의 역전 현상을 수치로 제시했으나, 이 비교가 앞선 'memcpy 병목 인식' 및 '메모리 전송 방식 선택'이라는 결론의 서사와 어떻게 맞물리는지 한 문장 정도의 해석이 없어 독립된 수치 보고처럼 읽힌다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. [근거:E00277,E00278]",
+        "stage": "section-sec_conclusion"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "paragraph_id": "sec_conclusion_p5",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "평균 처리 속도(No-Pin 약 13초 빠름)와 실시간성 지표(최대 지연, 지터)의 대비가 명확하지만, p4의 Bound/Infer 역전 서술과 p5의 Pinned vs No-Pin 비교가 서로 다른 관점(전체 시간 vs 지연/지터)임을 명시적으로 구분하지 않아 독자가 두 문단의 관계를 혼동할 수 있다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "CUDA 포팅과 메모리 전송 방식 선택이 핵심 구성 요소이며, 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만 실시간성에서는 No-Pin의 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적이었다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. [근거:E00292,E00293,E00294,E00301,E00321]",
+        "stage": "section-sec_conclusion"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "paragraph_id": "sec_conclusion_p6",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "커널 감소 내역(forward/backward, method 0/method 1, 8→5, 15회 감소, 12회 감소 등)이 매우 밀집되어 있어, '싱글 스트림 antenna_lirpa의 4배 가속'이라는 앞 문장의 핵심 주장과 커널 감소 세부 사항 사이의 강조 균형이 무너진다. 세부 수치가 서사의 속도를 떨어뜨린다.",
+        "evidence_ids": [],
+        "failure_owner": "editor",
+        "review_stage": "editorial",
+        "quote": "싱글 스트림으로 동작하는 antenna_lirpa는 cuBLAS Batched GEMM과 텐서 코어를 활용해 현재 C++ 멀티스트림(8분)보다 약 4배 빠르게 동작한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 커널 감소 측면에서는 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회로 줄었고, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. [근거:E00261,E00263,E00314]",
+        "stage": "section-sec_conclusion"
+      },
+      {
+        "section_id": "sec_conclusion",
+        "paragraph_id": "sec_conclusion_p9",
+        "category": "flow",
+        "severity": "warning",
+        "reason": "forward_cuda_graph, infer, bound의 초 단위 수치를 제시하지만, 이 값이 p8의 ms 단위 실행 시간 계열 및 p4·p5의 메모리 전송 비교와 어떤 관계에 있는지 연결 문장이 없어 결론 내부에서 표가 분절된 느낌을 준다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -584,7 +655,7 @@
         "paragraph_id": "sec_conclusion_p11",
         "category": "flow",
         "severity": "warning",
-        "reason": "'이 제약은 별도 분기로 보관해 두었다'는 표현이 결론의 종합 문장으로 남아 있어, 향후 방향 서술과 어울리지 않고 문체가 abruptly해진다.",
+        "reason": "'이 제약은 별도 분기로 보관해 두었다'는 표현이 결론의 종합 문장으로서는 abrupt하며, 실시간 멀티스트림 배칭의 시사점이 무엇인지 한 단계 더 정리되지 않아 절의 마무리 흐름이 약하다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -594,9 +665,9 @@
       {
         "section_id": "sec_conclusion",
         "paragraph_id": "sec_conclusion_p12",
-        "category": "duplication",
+        "category": "flow",
         "severity": "warning",
-        "reason": "Pinned Memory의 WCET 1.64ms, 지터 안정화, Pageable의 최대 11.6ms 지연 스파이크 서술이 p5의 실시간성 대비와 실질적으로 중복된다. p5와 p12의 실시간성·메모리 전송 결론이 분리돼 반복된다.",
+        "reason": "p5에서 이미 Pinned vs No-Pin의 실시간성 우위를 서술했는데, p12에서 Pageable의 지연 스파이크와 WCET·지터 안정화를 다시 강조해 내용이 중복된다. 결론에서는 두 문단을 통합하거나, p12를 p5의 재진술이 아니라 실시간성 관점의 최종 정리로 명확히 차별화해야 한다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -608,7 +679,7 @@
         "paragraph_id": "sec_conclusion_p13",
         "category": "flow",
         "severity": "warning",
-        "reason": "향후 방향(3D 텐서 레이아웃, cublasSgemmBatched, 텐서 코어 100% 활용, 30초~1분대 목표)과 함께 '계획·제안 성격이며 실제 수행 결과로 대체하지 않는다'는 단서가 붙어, 결론의 시사점과 향후 방향 구분이 모호해진다.",
+        "reason": "검토·제안 대상과 차기 로드맵(3D 텐서 레이아웃, cublasSgemmBatched, 텐서 코어 100% 활용, 30초~1분대 목표)을 한 문단에 함께 넣어 '계획·제안 성격'이라는 단서로 마무리하고 있으나, 현재 수행 결과와 향후 방향을 구분하는 경계가 덜 선명하다. 향후 방향만 짧게 분리하고, 학습·조사 항목은 압축하는 편이 결론의 초점에 맞는다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -620,7 +691,7 @@
         "paragraph_id": "none",
         "category": "terminology",
         "severity": "warning",
-        "reason": "동일 절 내에서 'Pinned Memory', 'No Pinning', 'Pageable 메모리', 'No-Pin' 등 메모리 전송 방식 명칭이 통일되지 않는다. 또한 'cudaHostRegister'와 'Pinned Memory'의 관계도 문단마다 표현 차이가 있어 용어 정리가 필요하다.",
+        "reason": "같은 절 안에서 'cudaHostRegister', 'No Pinning', 'No-Pin', 'Pinned Memory', 'Pageable 메모리' 등 메모리 전송 관련 표기가 혼용되어 있어, 결론의 비교 서술을 읽을 때 동일한 개념을 가리키는지 한눈에 파악하기 어렵다. 대표 표기를 정해 통일하는 것이 좋다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -632,7 +703,7 @@
         "paragraph_id": "none",
         "category": "flow",
         "severity": "warning",
-        "reason": "절 전체 구성에서 '핵심 구성 요소와 결합 방식(p2·p3)', '주요 실행 시간 결과와 조건(p4·p6·p8·p9)', '실시간성 관점의 시사점과 향후 방향(p5·p11·p12·p13)'이 개요 목적과 완전히 정렬되지 않는다. 특히 p6의 커널 감소 횟수 서술은 실행 시간 결과보다 방법 설명에 가까워 위치와 요약 수준을 재조정할 여지가 있다.",
+        "reason": "절 전체 구성에서 (1) 핵심 구성 요소와 결합 방식, (2) 주요 실행 시간 결과와 조건, (3) 실시간성 시사점과 향후 방향이 모두 등장하지만, 문단 배열이 결합 방식 → 수치 나열 → 실시간성 해석 → 향후 방향 순으로 섞여 있어 세 하위 목적이 깔끔하게 분리되지 않는다. 특히 실행 시간 목록(p8)과 실시간성 해석(p5·p12)이 교차 배치되어 종합의 흐름이 끊긴다.",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -665,31 +736,9 @@
       {
         "section_id": "sec_conclusion",
         "category": "flow",
-        "severity": "error",
-        "reason": "cudaHostRegister와 No Pinning의 Bound/Infer 단계별 역전 서술이 p5의 실시간성·지연 관점과 연결되지 않고 독립적으로 제시된다. p4의 단계별 시간 역전 설명이 p5의 '평균은 No-Pin이 빠르지만 실시간성은 Pinned가 유리'라는 결론으로 자연스럽게 이어지지 않는다.",
-        "paragraph_id": "sec_conclusion_p3",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. 이 역전 때문에 전체 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 실시간성 관점에서는 다른 해석이 필요하다. [근거:E00277,E00278]"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "error",
-        "reason": "p4의 Bound/Infer 역전 설명 없이 p5에서 바로 '평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만 실시간성에서는 Pinned가 안정적'이라는 대비가 나와, 독자가 두 문단의 인과 관계를 파악하기 어렵다.",
-        "paragraph_id": "sec_conclusion_p4",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "실시간성 관점에서는 Pinned Memory가 No-Pin보다 유리하다. Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적인 반면, No-Pin은 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정하다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. 즉 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최악 지연(WCET)과 지터 안정성에서는 Pinned Memory가 더 유리하다. [근거:E00292,E00293,E00294,E00301,E00321]"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "error",
-        "reason": "싱글 스트림 antenna_lirpa의 cuBLAS Batched GEMM·텐서 코어 활용 서술과 멀티스트림 배칭(method A)의 SM 포화 한계 서술이 한 문단에 섞여 있어, '싱글 스트림 고속화'와 '멀티스트림 배칭의 한계'가 구분되지 않는다.",
-        "paragraph_id": "sec_conclusion_p5",
+        "severity": "warning",
+        "reason": "커널 감소 내역(forward/backward, method 0/method 1, 8→5, 15회 감소, 12회 감소 등)이 매우 밀집되어 있어, '싱글 스트림 antenna_lirpa의 4배 가속'이라는 앞 문장의 핵심 주장과 커널 감소 세부 사항 사이의 강조 균형이 무너진다. 세부 수치가 서사의 속도를 떨어뜨린다.",
+        "paragraph_id": "sec_conclusion_p6",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -698,20 +747,9 @@
       {
         "section_id": "sec_conclusion",
         "category": "flow",
-        "severity": "error",
-        "reason": "실행 시간 결과 나열이 조건 설명 없이 긴 목록으로만 제시된다. CPU ONLY, GPU 버전, GPU OPTIMIZED, HYBRID, HYBRID V2, mempool+warmup 등 단계별 조건이 결과값과 함께 정리되지 않아 p2·p3의 최적화 서사와 연결되지 않는다.",
-        "paragraph_id": "sec_conclusion_p7",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 152.902900ms, mempool+warmup+결과 벡터 memcpy 제거 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms, Backward 메모리 복사 제거 및 초기화 최적화 후 13.939000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. 실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간은 1055.282초, infer는 131.7986초, bound는 920.8438초로 측정되었다. 이 수치는 표의 단일 행에 제시된 값이며, 반복 측정 통계나 다른 조건과의 비교 해석은 포함하지 않는다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "duplication",
         "severity": "warning",
-        "reason": "forward_cuda_graph 전체 시간, infer, bound 수치가 p8의 backward_only_cuda_graph 및 다른 실행 시간 서술과 같은 '실행 시간 결과' 범주에 속하는데, 별도 문단으로 분리되어 결과 제시가 분산된다.",
-        "paragraph_id": "sec_conclusion_p9",
+        "reason": "'이 제약은 별도 분기로 보관해 두었다'는 표현이 결론의 종합 문장으로서는 abrupt하며, 실시간 멀티스트림 배칭의 시사점이 무엇인지 한 단계 더 정리되지 않아 절의 마무리 흐름이 약하다.",
+        "paragraph_id": "sec_conclusion_p11",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -721,30 +759,19 @@
         "section_id": "sec_conclusion",
         "category": "flow",
         "severity": "warning",
-        "reason": "'이 제약은 별도 분기로 보관해 두었다'는 표현이 결론의 종합 문장으로 남아 있어, 향후 방향 서술과 어울리지 않고 문체가 abruptly해진다.",
-        "paragraph_id": "sec_conclusion_p9",
+        "reason": "p5에서 이미 Pinned vs No-Pin의 실시간성 우위를 서술했는데, p12에서 Pageable의 지연 스파이크와 WCET·지터 안정화를 다시 강조해 내용이 중복된다. 결론에서는 두 문단을 통합하거나, p12를 p5의 재진술이 아니라 실시간성 관점의 최종 정리로 명확히 차별화해야 한다.",
+        "paragraph_id": "sec_conclusion_p12",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
-        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "duplication",
-        "severity": "warning",
-        "reason": "Pinned Memory의 WCET 1.64ms, 지터 안정화, Pageable의 최대 11.6ms 지연 스파이크 서술이 p5의 실시간성 대비와 실질적으로 중복된다. p5와 p12의 실시간성·메모리 전송 결론이 분리돼 반복된다.",
-        "paragraph_id": "sec_conclusion_p4",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "실시간성 관점에서는 Pinned Memory가 No-Pin보다 유리하다. Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적인 반면, No-Pin은 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정하다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. 즉 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최악 지연(WCET)과 지터 안정성에서는 Pinned Memory가 더 유리하다. [근거:E00292,E00293,E00294,E00301,E00321]"
+        "quote": "메모리 전송 측면에서는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다. 초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나, 최악 지연과 지터 안정성 측면에서는 더 유리하므로 실시간성 관점에서는 Pinned Memory 도입이 중요하다. [근거:E00296]"
       },
       {
         "section_id": "sec_conclusion",
         "category": "flow",
         "severity": "warning",
-        "reason": "향후 방향(3D 텐서 레이아웃, cublasSgemmBatched, 텐서 코어 100% 활용, 30초~1분대 목표)과 함께 '계획·제안 성격이며 실제 수행 결과로 대체하지 않는다'는 단서가 붙어, 결론의 시사점과 향후 방향 구분이 모호해진다.",
-        "paragraph_id": "sec_conclusion_p10",
+        "reason": "검토·제안 대상과 차기 로드맵(3D 텐서 레이아웃, cublasSgemmBatched, 텐서 코어 100% 활용, 30초~1분대 목표)을 한 문단에 함께 넣어 '계획·제안 성격'이라는 단서로 마무리하고 있으나, 현재 수행 결과와 향후 방향을 구분하는 경계가 덜 선명하다. 향후 방향만 짧게 분리하고, 학습·조사 항목은 압축하는 편이 결론의 초점에 맞는다.",
+        "paragraph_id": "sec_conclusion_p13",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -754,7 +781,7 @@
         "section_id": "sec_conclusion",
         "category": "terminology",
         "severity": "warning",
-        "reason": "동일 절 내에서 'Pinned Memory', 'No Pinning', 'Pageable 메모리', 'No-Pin' 등 메모리 전송 방식 명칭이 통일되지 않는다. 또한 'cudaHostRegister'와 'Pinned Memory'의 관계도 문단마다 표현 차이가 있어 용어 정리가 필요하다.",
+        "reason": "같은 절 안에서 'cudaHostRegister', 'No Pinning', 'No-Pin', 'Pinned Memory', 'Pageable 메모리' 등 메모리 전송 관련 표기가 혼용되어 있어, 결론의 비교 서술을 읽을 때 동일한 개념을 가리키는지 한눈에 파악하기 어렵다. 대표 표기를 정해 통일하는 것이 좋다.",
         "paragraph_id": "none",
         "evidence_ids": [],
         "failure_owner": "editor",
@@ -765,652 +792,7 @@
         "section_id": "sec_conclusion",
         "category": "flow",
         "severity": "warning",
-        "reason": "절 전체 구성에서 '핵심 구성 요소와 결합 방식(p2·p3)', '주요 실행 시간 결과와 조건(p4·p6·p8·p9)', '실시간성 관점의 시사점과 향후 방향(p5·p11·p12·p13)'이 개요 목적과 완전히 정렬되지 않는다. 특히 p6의 커널 감소 횟수 서술은 실행 시간 결과보다 방법 설명에 가까워 위치와 요약 수준을 재조정할 여지가 있다.",
-        "paragraph_id": "none",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": ""
-      }
-    ],
-    "content_warnings": [
-      {
-        "section_id": "sec_conclusion",
-        "severity": "warning",
-        "quote": "",
-        "reason": "필수 내용 ri_conc_1: missing. 검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다. 누락 근거=E00262,E00296,E00297,E00299,E00300",
-        "evidence_ids": [
-          "E00262",
-          "E00296",
-          "E00297",
-          "E00299",
-          "E00300"
-        ],
-        "validation_code": "required_content",
-        "item_id": "ri_conc_1",
-        "review_stage": "required_evidence_validation",
-        "failure_owner": "writer",
-        "original_severity": "error",
-        "deferred": true,
-        "stage": "subsection-sec_conclusion-p0"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "part": "p0",
-        "paragraph_id": "sec_conclusion_p5",
-        "evidence_ids": [
-          "E00261",
-          "E00262",
-          "E00263",
-          "E00314"
-        ],
-        "severity": "warning",
-        "original_severity": "error",
-        "deferred": true,
-        "validation_code": "paragraph_revision_deferred",
-        "review_stage": "generation_completion",
-        "failure_owner": "writer",
-        "repair_attempts": 1,
-        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
-        "stage": "subsection-sec_conclusion-p0"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "paragraph_id": "none",
-        "part": "p0",
-        "severity": "warning",
-        "category": "organization",
-        "evidence_ids": [],
-        "quote": "",
-        "validation_code": "composition_length",
-        "review_stage": "composition",
-        "failure_owner": "writer",
-        "reason": "### 6.1 핵심 구성 요소와 결합 방식: 본문 1893자 / 목표 1111자 / 허용 상한 1388자로 허용 범위를 초과했습니다. 핵심 설명·조건·반례·한계를 남기고 반복·로그·수치 열거를 줄여 목표 분량에 맞추세요. 소절 삭제나 긴 한 문단으로 합치는 방식은 쓰지 마세요.",
-        "original_severity": "error",
-        "deferred": true,
-        "stage": "subsection-sec_conclusion-p0"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "severity": "warning",
-        "paragraph_id": "sec_conclusion_p1",
-        "reason": "ri_conc_2에 명시된 CPU ONLY 101.237800ms, mempool+warmup 152.902900ms, Backward 메모리 복사 제거 및 초기화 최적화 후 13.939000ms가 본문에 포함되지 않았다. 또한 mempool+warmup은 128.894800ms로, forward 함수 DTOH memcpy 제거 후는 64.716000ms로, alpha/beta 메모리 풀 적용 후는 21.018800ms로, affine_min/max 커널 퓨전 완료 후는 15.751000ms로 기재되어 ri_conc_2의 수치와 불일치한다. backward_only_cuda_graph 787.8832s가 forward 1029s·forward+backward 1138s보다 빠르다는 관찰도 본문에 포함되지 않았다.",
-        "evidence_ids": [
-          "E00021",
-          "E00027",
-          "E00029",
-          "E00031",
-          "E00035",
-          "E00044",
-          "E00046",
-          "E00064",
-          "E00075",
-          "E00083",
-          "E00106",
-          "E00119",
-          "E00131",
-          "E00139",
-          "E00144",
-          "E00166",
-          "E00216",
-          "E00252",
-          "E00257",
-          "E00274",
-          "E00358",
-          "E00361",
-          "E00368",
-          "E00375"
-        ],
-        "failure_owner": "writer",
-        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
-        "original_severity": "error",
-        "deferred": true,
-        "stage": "subsection-sec_conclusion-p1"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "severity": "warning",
-        "paragraph_id": "sec_conclusion_p1",
-        "reason": "ri_conc_2에 명시된 backward_only_cuda_graph 787.8832s가 forward 1029s·forward+backward 1138s보다 빠르다는 관찰이 본문에 포함되지 않았다.",
-        "evidence_ids": [
-          "E00274",
-          "E00358"
-        ],
-        "failure_owner": "writer",
-        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
-        "original_severity": "error",
-        "deferred": true,
-        "stage": "subsection-sec_conclusion-p1"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "severity": "warning",
-        "paragraph_id": "sec_conclusion_p1",
-        "reason": "ri_conc_2에 명시된 CPU ONLY 101.237800ms가 본문에 포함되지 않았다.",
-        "evidence_ids": [
-          "E00021"
-        ],
-        "failure_owner": "writer",
-        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
-        "original_severity": "error",
-        "deferred": true,
-        "stage": "subsection-sec_conclusion-p1"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "severity": "warning",
-        "paragraph_id": "sec_conclusion_p1",
-        "reason": "ri_conc_2에 명시된 mempool+warmup 152.902900ms가 본문에 포함되지 않았고, 대신 128.894800ms가 기재되어 수치 불일치가 있다.",
-        "evidence_ids": [
-          "E00075"
-        ],
-        "failure_owner": "writer",
-        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
-        "original_severity": "error",
-        "deferred": true,
-        "stage": "subsection-sec_conclusion-p1"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "severity": "warning",
-        "paragraph_id": "sec_conclusion_p1",
-        "reason": "ri_conc_2에 명시된 Backward 메모리 복사 제거 및 초기화 최적화 후 13.939000ms가 본문에 포함되지 않았다.",
-        "evidence_ids": [
-          "E00166"
-        ],
-        "failure_owner": "writer",
-        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
-        "original_severity": "error",
-        "deferred": true,
-        "stage": "subsection-sec_conclusion-p1"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "part": "p0",
-        "paragraph_id": "sec_conclusion_p1",
-        "evidence_ids": [
-          "E00021",
-          "E00027",
-          "E00029",
-          "E00031",
-          "E00035",
-          "E00044",
-          "E00046",
-          "E00064",
-          "E00075",
-          "E00083",
-          "E00106",
-          "E00119",
-          "E00131",
-          "E00139",
-          "E00144",
-          "E00166",
-          "E00216",
-          "E00252",
-          "E00257",
-          "E00274",
-          "E00358",
-          "E00361",
-          "E00368"
-        ],
-        "severity": "warning",
-        "original_severity": "error",
-        "deferred": true,
-        "validation_code": "paragraph_revision_deferred",
-        "review_stage": "generation_completion",
-        "failure_owner": "writer",
-        "repair_attempts": 1,
-        "reason": "문단 교체 보정 후에도 문단 수·분량이 늘어나 기존 문단을 보존했습니다.",
-        "stage": "subsection-sec_conclusion-p1"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "severity": "warning",
-        "paragraph_id": "sec_conclusion_p1",
-        "reason": "배칭 구현으로 속도가 빨라지는 관측과 실시간 환경 제약 인식, 별도 분기 보관은 E00211에 근거해 반영되었으나, '단일 샘플 커널을 유지하는 멀티스트림 배칭'이라는 표현은 원문에 직접 확인되지 않는 서술이 섞여 있다.",
-        "evidence_ids": [
-          "E00211"
-        ],
-        "failure_owner": "none",
-        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
-        "stage": "subsection-sec_conclusion-p2"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "severity": "warning",
-        "paragraph_id": "sec_conclusion_p2",
-        "reason": "Pageable 메모리의 최대 11.6ms 지연 스파이크, Pinned Memory의 WCET 1.64ms, 지터 60% 이상 안정화는 E00296에 근거해 반영되었으나, '초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나'라는 비교 서술은 E00296의 원문 범위를 벗어나며, 해당 평균 속도 불리함의 직접 근거가 이 절에서 확인되지 않는다.",
-        "evidence_ids": [
-          "E00296"
-        ],
-        "failure_owner": "none",
-        "quote": "메모리 전송 측면에서는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다. 초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나, 최악 지연과 지터 안정성 측면에서는 더 유리하므로 실시간성 관점에서는 Pinned Memory 도입이 중요하다. [근거:E00296]",
-        "stage": "subsection-sec_conclusion-p2"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "severity": "warning",
-        "paragraph_id": "sec_conclusion_p3",
-        "reason": "memcpy 병목 해소 판단, 향후 학습·측정 계획, 3D 텐서 레이아웃 변환과 cublasSgemmBatched 호출, 텐서 코어 100% 활용, 30초~1분대 진입 목표, 전체 40,000개 규모 등은 E00262·E00296·E00211에 근거해 계획·제안 성격으로 정리되었으나, 'global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습, FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정' 등 세부 항목 다수는 원문에 직접 기록된 범위를 넘어 계획·제안 항목을 확장 서술한 것으로 보인다.",
-        "evidence_ids": [
-          "E00262",
-          "E00296",
-          "E00211"
-        ],
-        "failure_owner": "none",
-        "quote": "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]",
-        "stage": "subsection-sec_conclusion-p2"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "severity": "warning",
-        "paragraph_id": "sec_conclusion_p3",
-        "reason": "E00262는 p68 figure 캡션의 로드맵상 목표·방식이며 실제 구현·평가 결과가 아니고, 30초~1분대 진입은 목표치이지 실측값이 아니며 전체 40,000개 규모에서의 실현 여부는 검증되지 않았다는 한계가 있다. 이 한계 표기가 결론 본문에서 충분히 드러나지 않는다.",
-        "evidence_ids": [
-          "E00262"
-        ],
-        "failure_owner": "none",
-        "quote": "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]",
-        "stage": "subsection-sec_conclusion-p2"
-      }
-    ],
-    "content_status": "needs_attention",
-    "content_approved": false,
-    "approved": false,
-    "checks": [
-      {
-        "item_id": "ri_conc_1",
-        "verdict": "missing",
-        "paragraph_ids": [
-          "sec_conclusion_p1",
-          "sec_conclusion_p2",
-          "sec_conclusion_p3",
-          "sec_conclusion_p4",
-          "sec_conclusion_p5"
-        ],
-        "evidence_ids": [
-          "E00030",
-          "E00033",
-          "E00073",
-          "E00071",
-          "E00083",
-          "E00118",
-          "E00143",
-          "E00212",
-          "E00261",
-          "E00262",
-          "E00263",
-          "E00277",
-          "E00278",
-          "E00292",
-          "E00293",
-          "E00294",
-          "E00296",
-          "E00297",
-          "E00299",
-          "E00300",
-          "E00301",
-          "E00314",
-          "E00321"
-        ],
-        "quote": "CUDA 기반 CROWN 검증 최적화에서는 GPU 포팅 이후 메모리 전송과 커널 호출 구조를 함께 조정하는 방향으로 구성 요소를 결합했다. 초기에는 GPU OPTIMIZED 모드에서도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 방식을 시도했고, 이후 v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방식이 정리되었다. 실행 과정에서 가장 중요한 병목은 memcpy로 인식되었으며, 메모리 풀과 warm up 조합만으로 거의 200ms가 단축되는 효과가 관측되었다. [근거:E00030,E00033,E00073,E00071]",
-        "paragraph_quotes": [
-          "CUDA 기반 CROWN 검증 최적화에서는 GPU 포팅 이후 메모리 전송과 커널 호출 구조를 함께 조정하는 방향으로 구성 요소를 결합했다. 초기에는 GPU OPTIMIZED 모드에서도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 방식을 시도했고, 이후 v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방식이 정리되었다. 실행 과정에서 가장 중요한 병목은 memcpy로 인식되었으며, 메모리 풀과 warm up 조합만으로 거의 200ms가 단축되는 효과가 관측되었다. [근거:E00030,E00033,E00073,E00071]",
-          "이후 forward 함수에서 DTOH memcpy를 극단적으로 제거해 CROWN Verification 실행 시간이 64.716ms로 기록되었고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 성능을 개선했다. 미리 작성해둔 퓨전 함수를 사용해 affine_min과 affine_max를 하나의 커널로 병합하는 커널 퓨전이 완료되었으며, 지금까지 수행한 최적화로 제로 memcpy, 커널 자체 실행 횟수 감소, 커널 퓨전, 커널 graph, GPU SM 구조를 고려한 FP64→FP32 및 double→float 변경이 진행되었다. [근거:E00083,E00118,E00143,E00212]",
-          "메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. [근거:E00277,E00278]",
-          "CUDA 포팅과 메모리 전송 방식 선택이 핵심 구성 요소이며, 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만 실시간성에서는 No-Pin의 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적이었다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. [근거:E00292,E00293,E00294,E00301,E00321]",
-          "CUDA 기반 CROWN 검증 최적화에서는 싱글 스트림으로 동작하는 antenna_lirpa가 cuBLAS Batched GEMM과 텐서 코어를 활용해 현재 C++ 멀티스트림(8분)보다 약 4배 빠르게 동작한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 커널 감소 측면에서는 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회로 줄었고, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. [근거:E00261,E00263,E00314]"
-        ],
-        "guideline_ids": [
-          "ref1_conclusion_required_1"
-        ],
-        "used_non_candidate_evidence_ids": [],
-        "unused_candidate_evidence_ids": [
-          "E00262",
-          "E00296",
-          "E00297",
-          "E00299",
-          "E00300"
-        ],
-        "model_verdict": "met",
-        "missing_review_evidence_ids": [],
-        "missing_body_evidence_ids": [
-          "E00262",
-          "E00296",
-          "E00297",
-          "E00299",
-          "E00300"
-        ],
-        "missing_section_evidence_ids": [
-          "E00262",
-          "E00296",
-          "E00297",
-          "E00299",
-          "E00300"
-        ],
-        "unselected_cited_evidence_ids": [],
-        "failure_owner": "writer",
-        "validation_note": "검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다.",
-        "inherited": true,
-        "verification_scope": "subsection"
-      },
-      {
-        "item_id": "ri_conc_2",
-        "verdict": "met",
-        "paragraph_ids": [
-          "sec_conclusion_p1",
-          "sec_conclusion_p2"
-        ],
-        "evidence_ids": [
-          "E00021",
-          "E00027",
-          "E00029",
-          "E00031",
-          "E00035",
-          "E00044",
-          "E00046",
-          "E00064",
-          "E00075",
-          "E00083",
-          "E00106",
-          "E00119",
-          "E00131",
-          "E00139",
-          "E00144",
-          "E00166",
-          "E00216",
-          "E00252",
-          "E00257",
-          "E00274",
-          "E00358",
-          "E00361",
-          "E00368",
-          "E00375"
-        ],
-        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
-        "paragraph_quotes": [
-          "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
-          "실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간은 1055.282초, infer는 131.7986초, bound는 920.8438초로 측정되었다. 이 수치는 표의 단일 행에 제시된 값이며, 반복 측정 통계나 다른 조건과의 비교 해석은 포함하지 않는다. [근거:E00375]"
-        ],
-        "guideline_ids": [
-          "ref1_conclusion_required_2"
-        ],
-        "used_non_candidate_evidence_ids": [],
-        "unused_candidate_evidence_ids": [
-          "E00261",
-          "E00262",
-          "E00263",
-          "E00277",
-          "E00278"
-        ],
-        "inherited": true,
-        "verification_scope": "subsection"
-      },
-      {
-        "item_id": "ri_conc_3",
-        "verdict": "met",
-        "paragraph_ids": [
-          "sec_conclusion_p1",
-          "sec_conclusion_p2",
-          "sec_conclusion_p3"
-        ],
-        "evidence_ids": [
-          "E00211",
-          "E00296",
-          "E00262"
-        ],
-        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
-        "paragraph_quotes": [
-          "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
-          "메모리 전송 측면에서는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다. 초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나, 최악 지연과 지터 안정성 측면에서는 더 유리하므로 실시간성 관점에서는 Pinned Memory 도입이 중요하다. [근거:E00296]",
-          "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]"
-        ],
-        "guideline_ids": [
-          "ref1_conclusion_required_3",
-          "ref2_conclusion_required_4"
-        ],
-        "used_non_candidate_evidence_ids": [],
-        "unused_candidate_evidence_ids": [],
-        "inherited": true,
-        "verification_scope": "subsection"
-      }
-    ],
-    "reference_checks": [
-      {
-        "section_id": "sec_conclusion",
-        "reference_id": "ref1_conclusion",
-        "verdict": "partial",
-        "paragraph_ids": [
-          "sec_conclusion_p1",
-          "sec_conclusion_p2"
-        ],
-        "reason": "주요 정량 결과와 적용 조건은 대체로 정리되었으나, ri_conc_2에 명시된 일부 결과(CPU ONLY 101.237800ms, mempool+warmup 152.902900ms, mempool+warmup+결과 벡터 memcpy 제거 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms, Backward 메모리 복사 제거 및 초기화 최적화 후 13.939000ms, backward_only_cuda_graph 787.8832s가 forward 1029s·forward+backward 1138s보다 빠르다는 관찰)가 본문에 포함되지 않거나 다르게 서술되어 있다. 특히 CPU ONLY 101.237800ms, mempool+warmup 152.902900ms, Backward 메모리 복사 제거 및 초기화 최적화 후 13.939000ms는 본문에 나타나지 않으며, mempool+warmup은 128.894800ms로, forward 함수 DTOH memcpy 제거 후는 64.716000ms로, alpha/beta 메모리 풀 적용 후는 21.018800ms로, affine_min/max 커널 퓨전 완료 후는 15.751000ms로 각각 기재되어 있어 ri_conc_2의 수치와 불일치한다. 또한 backward_only_cuda_graph 787.8832s가 forward 1029s·forward+backward 1138s보다 빠르다는 관찰은 본문에 포함되지 않았다. 반복 측정 통계가 없다는 조건은 명시되어 있다.",
-        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
-        "paragraph_quotes": [
-          "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
-          "실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간은 1055.282초, infer는 131.7986초, bound는 920.8438초로 측정되었다. 이 수치는 표의 단일 행에 제시된 값이며, 반복 측정 통계나 다른 조건과의 비교 해석은 포함하지 않는다. [근거:E00375]"
-        ],
-        "inherited": true
-      },
-      {
-        "section_id": "sec_conclusion",
-        "reference_id": "ref2_conclusion",
-        "verdict": "not_visible",
-        "paragraph_ids": [],
-        "reason": "ref2_conclusion의 구성 요소 변경 효과와 전체 처리 과정 변경 효과 구분, 정확도·지연 시간 trade-off, 향후 작업 방향 정리 역할은 사용자 승인 범위에서만 반영해야 하나, 현재 본문에는 해당 내용이 확인되지 않는다.",
-        "quote": "",
-        "paragraph_quotes": [],
-        "inherited": true
-      }
-    ],
-    "editorial_warnings": [
-      {
-        "section_id": "sec_conclusion",
-        "category": "duplication",
-        "severity": "warning",
-        "reason": "forward_cuda_graph 전체 시간, infer, bound 수치가 p8의 backward_only_cuda_graph 및 다른 실행 시간 서술과 같은 '실행 시간 결과' 범주에 속하는데, 별도 문단으로 분리되어 결과 제시가 분산된다.",
-        "paragraph_id": "sec_conclusion_p9",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
-        "stage": "section-sec_conclusion"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "'이 제약은 별도 분기로 보관해 두었다'는 표현이 결론의 종합 문장으로 남아 있어, 향후 방향 서술과 어울리지 않고 문체가 abruptly해진다.",
-        "paragraph_id": "sec_conclusion_p9",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
-        "stage": "section-sec_conclusion"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "duplication",
-        "severity": "warning",
-        "reason": "Pinned Memory의 WCET 1.64ms, 지터 안정화, Pageable의 최대 11.6ms 지연 스파이크 서술이 p5의 실시간성 대비와 실질적으로 중복된다. p5와 p12의 실시간성·메모리 전송 결론이 분리돼 반복된다.",
-        "paragraph_id": "sec_conclusion_p4",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "실시간성 관점에서는 Pinned Memory가 No-Pin보다 유리하다. Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적인 반면, No-Pin은 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정하다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. 즉 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최악 지연(WCET)과 지터 안정성에서는 Pinned Memory가 더 유리하다. [근거:E00292,E00293,E00294,E00301,E00321]",
-        "stage": "section-sec_conclusion"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "향후 방향(3D 텐서 레이아웃, cublasSgemmBatched, 텐서 코어 100% 활용, 30초~1분대 목표)과 함께 '계획·제안 성격이며 실제 수행 결과로 대체하지 않는다'는 단서가 붙어, 결론의 시사점과 향후 방향 구분이 모호해진다.",
-        "paragraph_id": "sec_conclusion_p10",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]",
-        "stage": "section-sec_conclusion"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "terminology",
-        "severity": "warning",
-        "reason": "동일 절 내에서 'Pinned Memory', 'No Pinning', 'Pageable 메모리', 'No-Pin' 등 메모리 전송 방식 명칭이 통일되지 않는다. 또한 'cudaHostRegister'와 'Pinned Memory'의 관계도 문단마다 표현 차이가 있어 용어 정리가 필요하다.",
-        "paragraph_id": "none",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "",
-        "stage": "section-sec_conclusion"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "절 전체 구성에서 '핵심 구성 요소와 결합 방식(p2·p3)', '주요 실행 시간 결과와 조건(p4·p6·p8·p9)', '실시간성 관점의 시사점과 향후 방향(p5·p11·p12·p13)'이 개요 목적과 완전히 정렬되지 않는다. 특히 p6의 커널 감소 횟수 서술은 실행 시간 결과보다 방법 설명에 가까워 위치와 요약 수준을 재조정할 여지가 있다.",
-        "paragraph_id": "none",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "",
-        "stage": "section-sec_conclusion"
-      }
-    ],
-    "editorial_status": "needs_revision",
-    "required_content_coverage": {
-      "met": 2,
-      "total": 3,
-      "value": 0.6666666666666666,
-      "scope": "inherited_subsection_reviews",
-      "rechecked": false
-    },
-    "reference_application": {
-      "applied": 0,
-      "partial": 1,
-      "not_visible": 1,
-      "total": 2,
-      "scope": "inherited_subsection_reviews",
-      "rechecked": false
-    },
-    "assessment": "Editorial quality only; content/reference judgments are inherited from child reviews."
-  },
-  {
-    "review_policy": "editorial-v1",
-    "review_kind": "editorial",
-    "issues": [
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "cudaHostRegister와 No Pinning의 Bound/Infer 단계별 역전 서술이 p5의 실시간성·지연 관점과 연결되지 않고 독립적으로 제시된다. p4의 단계별 시간 역전 설명이 p5의 '평균은 No-Pin이 빠르지만 실시간성은 Pinned가 유리'라는 결론으로 자연스럽게 이어지지 않는다.",
-        "paragraph_id": "sec_conclusion_p3",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. 이 역전 때문에 전체 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 실시간성 관점에서는 다른 해석이 필요하다. [근거:E00277,E00278]",
-        "original_severity": "error",
-        "deferred": true
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "p4의 Bound/Infer 역전 설명 없이 p5에서 바로 '평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만 실시간성에서는 Pinned가 안정적'이라는 대비가 나와, 독자가 두 문단의 인과 관계를 파악하기 어렵다.",
-        "paragraph_id": "sec_conclusion_p4",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "실시간성 관점에서는 Pinned Memory가 No-Pin보다 유리하다. Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적인 반면, No-Pin은 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정하다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. 즉 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최악 지연(WCET)과 지터 안정성에서는 Pinned Memory가 더 유리하다. [근거:E00292,E00293,E00294,E00301,E00321]",
-        "original_severity": "error",
-        "deferred": true
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "싱글 스트림 antenna_lirpa의 cuBLAS Batched GEMM·텐서 코어 활용 서술과 멀티스트림 배칭(method A)의 SM 포화 한계 서술이 한 문단에 섞여 있어, '싱글 스트림 고속화'와 '멀티스트림 배칭의 한계'가 구분되지 않는다.",
-        "paragraph_id": "sec_conclusion_p5",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "싱글 스트림으로 동작하는 antenna_lirpa는 cuBLAS Batched GEMM과 텐서 코어를 활용해 현재 C++ 멀티스트림(8분)보다 약 4배 빠르게 동작한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 커널 감소 측면에서는 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회로 줄었고, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. [근거:E00261,E00263,E00314]",
-        "original_severity": "error",
-        "deferred": true
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "실행 시간 결과 나열이 조건 설명 없이 긴 목록으로만 제시된다. CPU ONLY, GPU 버전, GPU OPTIMIZED, HYBRID, HYBRID V2, mempool+warmup 등 단계별 조건이 결과값과 함께 정리되지 않아 p2·p3의 최적화 서사와 연결되지 않는다.",
-        "paragraph_id": "sec_conclusion_p7",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 152.902900ms, mempool+warmup+결과 벡터 memcpy 제거 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms, Backward 메모리 복사 제거 및 초기화 최적화 후 13.939000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. 실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간은 1055.282초, infer는 131.7986초, bound는 920.8438초로 측정되었다. 이 수치는 표의 단일 행에 제시된 값이며, 반복 측정 통계나 다른 조건과의 비교 해석은 포함하지 않는다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
-        "original_severity": "error",
-        "deferred": true
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "duplication",
-        "severity": "warning",
-        "reason": "forward_cuda_graph 전체 시간, infer, bound 수치가 p8의 backward_only_cuda_graph 및 다른 실행 시간 서술과 같은 '실행 시간 결과' 범주에 속하는데, 별도 문단으로 분리되어 결과 제시가 분산된다.",
-        "paragraph_id": "sec_conclusion_p9",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "'이 제약은 별도 분기로 보관해 두었다'는 표현이 결론의 종합 문장으로 남아 있어, 향후 방향 서술과 어울리지 않고 문체가 abruptly해진다.",
-        "paragraph_id": "sec_conclusion_p9",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "duplication",
-        "severity": "warning",
-        "reason": "Pinned Memory의 WCET 1.64ms, 지터 안정화, Pageable의 최대 11.6ms 지연 스파이크 서술이 p5의 실시간성 대비와 실질적으로 중복된다. p5와 p12의 실시간성·메모리 전송 결론이 분리돼 반복된다.",
-        "paragraph_id": "sec_conclusion_p4",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "실시간성 관점에서는 Pinned Memory가 No-Pin보다 유리하다. Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적인 반면, No-Pin은 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정하다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. 즉 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최악 지연(WCET)과 지터 안정성에서는 Pinned Memory가 더 유리하다. [근거:E00292,E00293,E00294,E00301,E00321]"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "향후 방향(3D 텐서 레이아웃, cublasSgemmBatched, 텐서 코어 100% 활용, 30초~1분대 목표)과 함께 '계획·제안 성격이며 실제 수행 결과로 대체하지 않는다'는 단서가 붙어, 결론의 시사점과 향후 방향 구분이 모호해진다.",
-        "paragraph_id": "sec_conclusion_p10",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "terminology",
-        "severity": "warning",
-        "reason": "동일 절 내에서 'Pinned Memory', 'No Pinning', 'Pageable 메모리', 'No-Pin' 등 메모리 전송 방식 명칭이 통일되지 않는다. 또한 'cudaHostRegister'와 'Pinned Memory'의 관계도 문단마다 표현 차이가 있어 용어 정리가 필요하다.",
-        "paragraph_id": "none",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": ""
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "절 전체 구성에서 '핵심 구성 요소와 결합 방식(p2·p3)', '주요 실행 시간 결과와 조건(p4·p6·p8·p9)', '실시간성 관점의 시사점과 향후 방향(p5·p11·p12·p13)'이 개요 목적과 완전히 정렬되지 않는다. 특히 p6의 커널 감소 횟수 서술은 실행 시간 결과보다 방법 설명에 가까워 위치와 요약 수준을 재조정할 여지가 있다.",
+        "reason": "절 전체 구성에서 (1) 핵심 구성 요소와 결합 방식, (2) 주요 실행 시간 결과와 조건, (3) 실시간성 시사점과 향후 방향이 모두 등장하지만, 문단 배열이 결합 방식 → 수치 나열 → 실시간성 해석 → 향후 방향 순으로 섞여 있어 세 하위 목적이 깔끔하게 분리되지 않는다. 특히 실행 시간 목록(p8)과 실시간성 해석(p5·p12)이 교차 배치되어 종합의 흐름이 끊긴다.",
         "paragraph_id": "none",
         "evidence_ids": [],
         "failure_owner": "editor",
@@ -1662,7 +1044,164 @@
     "content_status": "needs_attention",
     "content_approved": false,
     "approved": true,
-    "checks": [],
+    "checks": [
+      {
+        "item_id": "ri_conc_1",
+        "verdict": "missing",
+        "paragraph_ids": [
+          "sec_conclusion_p1",
+          "sec_conclusion_p2",
+          "sec_conclusion_p3",
+          "sec_conclusion_p4",
+          "sec_conclusion_p5"
+        ],
+        "evidence_ids": [
+          "E00030",
+          "E00033",
+          "E00073",
+          "E00071",
+          "E00083",
+          "E00118",
+          "E00143",
+          "E00212",
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278",
+          "E00292",
+          "E00293",
+          "E00294",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300",
+          "E00301",
+          "E00314",
+          "E00321"
+        ],
+        "quote": "CUDA 기반 CROWN 검증 최적화에서는 GPU 포팅 이후 메모리 전송과 커널 호출 구조를 함께 조정하는 방향으로 구성 요소를 결합했다. 초기에는 GPU OPTIMIZED 모드에서도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 방식을 시도했고, 이후 v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방식이 정리되었다. 실행 과정에서 가장 중요한 병목은 memcpy로 인식되었으며, 메모리 풀과 warm up 조합만으로 거의 200ms가 단축되는 효과가 관측되었다. [근거:E00030,E00033,E00073,E00071]",
+        "paragraph_quotes": [
+          "CUDA 기반 CROWN 검증 최적화에서는 GPU 포팅 이후 메모리 전송과 커널 호출 구조를 함께 조정하는 방향으로 구성 요소를 결합했다. 초기에는 GPU OPTIMIZED 모드에서도 CPU보다 느려 matmul만 GPU로 실행하는 하이브리드 방식을 시도했고, 이후 v2 적용 방안으로 cuBLAS 예열, 가중치 GPU 사전 업로드, 16×491 행렬 등 필요한 부분만 복사하는 방식이 정리되었다. 실행 과정에서 가장 중요한 병목은 memcpy로 인식되었으며, 메모리 풀과 warm up 조합만으로 거의 200ms가 단축되는 효과가 관측되었다. [근거:E00030,E00033,E00073,E00071]",
+          "이후 forward 함수에서 DTOH memcpy를 극단적으로 제거해 CROWN Verification 실행 시간이 64.716ms로 기록되었고, lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 성능을 개선했다. 미리 작성해둔 퓨전 함수를 사용해 affine_min과 affine_max를 하나의 커널로 병합하는 커널 퓨전이 완료되었으며, 지금까지 수행한 최적화로 제로 memcpy, 커널 자체 실행 횟수 감소, 커널 퓨전, 커널 graph, GPU SM 구조를 고려한 FP64→FP32 및 double→float 변경이 진행되었다. [근거:E00083,E00118,E00143,E00212]",
+          "메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. [근거:E00277,E00278]",
+          "CUDA 포팅과 메모리 전송 방식 선택이 핵심 구성 요소이며, 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만 실시간성에서는 No-Pin의 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정한 반면, Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적이었다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. [근거:E00292,E00293,E00294,E00301,E00321]",
+          "CUDA 기반 CROWN 검증 최적화에서는 싱글 스트림으로 동작하는 antenna_lirpa가 cuBLAS Batched GEMM과 텐서 코어를 활용해 현재 C++ 멀티스트림(8분)보다 약 4배 빠르게 동작한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 커널 감소 측면에서는 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회로 줄었고, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. [근거:E00261,E00263,E00314]"
+        ],
+        "guideline_ids": [
+          "ref1_conclusion_required_1"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [
+          "E00262",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300"
+        ],
+        "model_verdict": "met",
+        "missing_review_evidence_ids": [],
+        "missing_body_evidence_ids": [
+          "E00262",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300"
+        ],
+        "missing_section_evidence_ids": [
+          "E00262",
+          "E00296",
+          "E00297",
+          "E00299",
+          "E00300"
+        ],
+        "unselected_cited_evidence_ids": [],
+        "failure_owner": "writer",
+        "validation_note": "검토자가 사용했다고 보고한 근거의 인용이 본문 전체에서 누락됐습니다.",
+        "inherited": true,
+        "verification_scope": "subsection"
+      },
+      {
+        "item_id": "ri_conc_2",
+        "verdict": "met",
+        "paragraph_ids": [
+          "sec_conclusion_p1",
+          "sec_conclusion_p2"
+        ],
+        "evidence_ids": [
+          "E00021",
+          "E00027",
+          "E00029",
+          "E00031",
+          "E00035",
+          "E00044",
+          "E00046",
+          "E00064",
+          "E00075",
+          "E00083",
+          "E00106",
+          "E00119",
+          "E00131",
+          "E00139",
+          "E00144",
+          "E00166",
+          "E00216",
+          "E00252",
+          "E00257",
+          "E00274",
+          "E00358",
+          "E00361",
+          "E00368",
+          "E00375"
+        ],
+        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
+        "paragraph_quotes": [
+          "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
+          "실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간은 1055.282초, infer는 131.7986초, bound는 920.8438초로 측정되었다. 이 수치는 표의 단일 행에 제시된 값이며, 반복 측정 통계나 다른 조건과의 비교 해석은 포함하지 않는다. [근거:E00375]"
+        ],
+        "guideline_ids": [
+          "ref1_conclusion_required_2"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [
+          "E00261",
+          "E00262",
+          "E00263",
+          "E00277",
+          "E00278"
+        ],
+        "inherited": true,
+        "verification_scope": "subsection"
+      },
+      {
+        "item_id": "ri_conc_3",
+        "verdict": "met",
+        "paragraph_ids": [
+          "sec_conclusion_p1",
+          "sec_conclusion_p2",
+          "sec_conclusion_p3"
+        ],
+        "evidence_ids": [
+          "E00211",
+          "E00296",
+          "E00262"
+        ],
+        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
+        "paragraph_quotes": [
+          "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
+          "메모리 전송 측면에서는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다. 초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나, 최악 지연과 지터 안정성 측면에서는 더 유리하므로 실시간성 관점에서는 Pinned Memory 도입이 중요하다. [근거:E00296]",
+          "memcpy 병목을 줄여야 CPU 대비 속도 우위를 확보할 수 있다는 판단 아래, global memory·SM 병목, Nsight Compute, shared memory, 타일링, cudaGraph 원리 학습과 FP32 변경 및 Nsight Compute 분석, backward_only 속도 원인 조사, pinned memory 성능 측정, 추론·bound·검증 분리 측정 등이 검토·제안 대상으로 남아 있다. 또한 CROWN 행렬식을 3D 텐서 레이아웃으로 변환해 cublasSgemmBatched를 호출하고 텐서 코어를 100% 활용하는 방향은 antenna_lirpa의 2분을 넘어 30초~1분대(전체 40,000개) 진입을 목표로 하는 차기 로드맵의 과제로 정리된다. 이러한 방향은 계획·제안 성격이며 실제 수행 결과로 대체하지 않는다. [근거:E00262,E00296,E00211]"
+        ],
+        "guideline_ids": [
+          "ref1_conclusion_required_3",
+          "ref2_conclusion_required_4"
+        ],
+        "used_non_candidate_evidence_ids": [],
+        "unused_candidate_evidence_ids": [],
+        "inherited": true,
+        "verification_scope": "subsection"
+      }
+    ],
     "reference_checks": [
       {
         "section_id": "sec_conclusion",
@@ -1696,64 +1235,20 @@
         "section_id": "sec_conclusion",
         "category": "flow",
         "severity": "warning",
-        "reason": "cudaHostRegister와 No Pinning의 Bound/Infer 단계별 역전 서술이 p5의 실시간성·지연 관점과 연결되지 않고 독립적으로 제시된다. p4의 단계별 시간 역전 설명이 p5의 '평균은 No-Pin이 빠르지만 실시간성은 Pinned가 유리'라는 결론으로 자연스럽게 이어지지 않는다.",
-        "paragraph_id": "sec_conclusion_p3",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "메모리 전송 방식 비교에서는 cudaHostRegister와 No Pinning의 전체 실행 시간 차이가 787.88초 대 776.70초로 약 1.4%(약 11초)에 불과했고, 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이로 나타났다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐으나, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 구간에서 역전되었다. 이 역전 때문에 전체 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 실시간성 관점에서는 다른 해석이 필요하다. [근거:E00277,E00278]",
-        "original_severity": "error",
-        "deferred": true,
-        "stage": "section-sec_conclusion"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "p4의 Bound/Infer 역전 설명 없이 p5에서 바로 '평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만 실시간성에서는 Pinned가 안정적'이라는 대비가 나와, 독자가 두 문단의 인과 관계를 파악하기 어렵다.",
-        "paragraph_id": "sec_conclusion_p4",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "실시간성 관점에서는 Pinned Memory가 No-Pin보다 유리하다. Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적인 반면, No-Pin은 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정하다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. 즉 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최악 지연(WCET)과 지터 안정성에서는 Pinned Memory가 더 유리하다. [근거:E00292,E00293,E00294,E00301,E00321]",
-        "original_severity": "error",
-        "deferred": true,
-        "stage": "section-sec_conclusion"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "flow",
-        "severity": "warning",
-        "reason": "싱글 스트림 antenna_lirpa의 cuBLAS Batched GEMM·텐서 코어 활용 서술과 멀티스트림 배칭(method A)의 SM 포화 한계 서술이 한 문단에 섞여 있어, '싱글 스트림 고속화'와 '멀티스트림 배칭의 한계'가 구분되지 않는다.",
-        "paragraph_id": "sec_conclusion_p5",
+        "reason": "커널 감소 내역(forward/backward, method 0/method 1, 8→5, 15회 감소, 12회 감소 등)이 매우 밀집되어 있어, '싱글 스트림 antenna_lirpa의 4배 가속'이라는 앞 문장의 핵심 주장과 커널 감소 세부 사항 사이의 강조 균형이 무너진다. 세부 수치가 서사의 속도를 떨어뜨린다.",
+        "paragraph_id": "sec_conclusion_p6",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
         "quote": "싱글 스트림으로 동작하는 antenna_lirpa는 cuBLAS Batched GEMM과 텐서 코어를 활용해 현재 C++ 멀티스트림(8분)보다 약 4배 빠르게 동작한다. 방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. 커널 감소 측면에서는 Forward에서 lower/upper matmul 2→1, lower/upper bias matvec 2→1, matrix scaling + vector affine 2→1로 method 0 기준 레이어당 8→5회, Backward에서 split_pos_neg + bias accumulation 2→1 및 레이어당 backward 단계 5→4회로 줄었고, method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 backward 단계의 split/bias kernel 통합으로 총 12회 감소했다. [근거:E00261,E00263,E00314]",
-        "original_severity": "error",
-        "deferred": true,
         "stage": "section-sec_conclusion"
       },
       {
         "section_id": "sec_conclusion",
         "category": "flow",
         "severity": "warning",
-        "reason": "실행 시간 결과 나열이 조건 설명 없이 긴 목록으로만 제시된다. CPU ONLY, GPU 버전, GPU OPTIMIZED, HYBRID, HYBRID V2, mempool+warmup 등 단계별 조건이 결과값과 함께 정리되지 않아 p2·p3의 최적화 서사와 연결되지 않는다.",
-        "paragraph_id": "sec_conclusion_p7",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "CUDA 기반 CROWN 검증 최적화는 CPU 전용 실행의 느린 처리 시간을 줄이고 실시간 환경 대응을 목표로 진행되었다. 주요 실행 시간 결과는 단일 실행 또는 요약값이며 반복 측정 통계는 없다. CPU ONLY 101.237800ms, GPU 버전 353.057200ms, GPU OPTIMIZED 229.691800ms, HYBRID 201.670100ms, HYBRID V2 85.785300ms, mempool+warmup 152.902900ms, mempool+warmup+결과 벡터 memcpy 제거 128.894800ms, forward 함수 DTOH memcpy 제거 후 64.716000ms, alpha/beta 메모리 풀 적용 후 21.018800ms, affine_min/max 커널 퓨전 완료 후 15.751000ms, Backward 메모리 복사 제거 및 초기화 최적화 후 13.939000ms가 기록되었다. backward_only_cuda_graph 787.8832s는 forward 1029s, forward+backward 1138s보다 빠른 것으로 관측되었다. 실시간 멀티스트림 구성에서 forward_cuda_graph의 전체 시간은 1055.282초, infer는 131.7986초, bound는 920.8438초로 측정되었다. 이 수치는 표의 단일 행에 제시된 값이며, 반복 측정 통계나 다른 조건과의 비교 해석은 포함하지 않는다. [근거:E00021,E00027,E00029,E00031,E00035,E00044,E00046,E00064,E00075,E00083,E00106,E00119,E00131,E00139,E00144,E00166,E00216,E00252,E00257,E00274,E00358,E00361,E00368]",
-        "original_severity": "error",
-        "deferred": true,
-        "stage": "section-sec_conclusion"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "duplication",
-        "severity": "warning",
-        "reason": "forward_cuda_graph 전체 시간, infer, bound 수치가 p8의 backward_only_cuda_graph 및 다른 실행 시간 서술과 같은 '실행 시간 결과' 범주에 속하는데, 별도 문단으로 분리되어 결과 제시가 분산된다.",
-        "paragraph_id": "sec_conclusion_p9",
+        "reason": "'이 제약은 별도 분기로 보관해 두었다'는 표현이 결론의 종합 문장으로서는 abrupt하며, 실시간 멀티스트림 배칭의 시사점이 무엇인지 한 단계 더 정리되지 않아 절의 마무리 흐름이 약하다.",
+        "paragraph_id": "sec_conclusion_p11",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -1764,32 +1259,20 @@
         "section_id": "sec_conclusion",
         "category": "flow",
         "severity": "warning",
-        "reason": "'이 제약은 별도 분기로 보관해 두었다'는 표현이 결론의 종합 문장으로 남아 있어, 향후 방향 서술과 어울리지 않고 문체가 abruptly해진다.",
-        "paragraph_id": "sec_conclusion_p9",
+        "reason": "p5에서 이미 Pinned vs No-Pin의 실시간성 우위를 서술했는데, p12에서 Pageable의 지연 스파이크와 WCET·지터 안정화를 다시 강조해 내용이 중복된다. 결론에서는 두 문단을 통합하거나, p12를 p5의 재진술이 아니라 실시간성 관점의 최종 정리로 명확히 차별화해야 한다.",
+        "paragraph_id": "sec_conclusion_p12",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
-        "quote": "실시간 무선 안테나 선택 환경에서 CROWN 검증의 CUDA 가속은 연산기 활용 방식과 메모리 전송 특성을 함께 고려해야 한다. 본 연구의 최적화 과정은 단일 샘플 커널을 유지하는 멀티스트림 배칭과 텐서 코어 기반 배치 GEMM을 구분해 검토했으며, 배칭 구현으로 처리 속도가 빨라지는 관측과 함께 실시간 환경에서는 데이터셋을 가득 채우기 어렵다는 제약을 확인했다. 이 제약은 별도 분기로 보관해 두었다. [근거:E00211]",
-        "stage": "section-sec_conclusion"
-      },
-      {
-        "section_id": "sec_conclusion",
-        "category": "duplication",
-        "severity": "warning",
-        "reason": "Pinned Memory의 WCET 1.64ms, 지터 안정화, Pageable의 최대 11.6ms 지연 스파이크 서술이 p5의 실시간성 대비와 실질적으로 중복된다. p5와 p12의 실시간성·메모리 전송 결론이 분리돼 반복된다.",
-        "paragraph_id": "sec_conclusion_p4",
-        "evidence_ids": [],
-        "failure_owner": "editor",
-        "review_stage": "editorial",
-        "quote": "실시간성 관점에서는 Pinned Memory가 No-Pin보다 유리하다. Pinned Memory는 최대 지연 1.64ms, 지터 47μs로 안정적인 반면, No-Pin은 최대 지연이 8.8~11.6ms로 치명적이고 지터가 118μs로 불안정하다. 이 차이는 1KB 수준의 작은 데이터를 매 루프마다 전송할 때 Pinned가 매번 하드웨어 DMA 셋업을 수행해 총 소요 시간이 더 길게 나온 데 기인한다. 다만 pinned memory 입력층은 제거했고, Graph manager에는 필요에 따라 pinned memory를 선택 할당 가능하도록 남겨 두었다. 즉 평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최악 지연(WCET)과 지터 안정성에서는 Pinned Memory가 더 유리하다. [근거:E00292,E00293,E00294,E00301,E00321]",
+        "quote": "메모리 전송 측면에서는 Pageable 메모리가 OS 페이징 간섭으로 최대 11.6ms의 지연 스파이크를 유발할 수 있는 반면, Pinned Memory는 최악 지연시간(WCET)을 1.64ms로 제한하고 지터를 60% 이상 안정화한다. 초소형 실시간 데이터 환경에서는 Pinned Memory의 평균 전송 속도가 미세하게 불리할 수 있으나, 최악 지연과 지터 안정성 측면에서는 더 유리하므로 실시간성 관점에서는 Pinned Memory 도입이 중요하다. [근거:E00296]",
         "stage": "section-sec_conclusion"
       },
       {
         "section_id": "sec_conclusion",
         "category": "flow",
         "severity": "warning",
-        "reason": "향후 방향(3D 텐서 레이아웃, cublasSgemmBatched, 텐서 코어 100% 활용, 30초~1분대 목표)과 함께 '계획·제안 성격이며 실제 수행 결과로 대체하지 않는다'는 단서가 붙어, 결론의 시사점과 향후 방향 구분이 모호해진다.",
-        "paragraph_id": "sec_conclusion_p10",
+        "reason": "검토·제안 대상과 차기 로드맵(3D 텐서 레이아웃, cublasSgemmBatched, 텐서 코어 100% 활용, 30초~1분대 목표)을 한 문단에 함께 넣어 '계획·제안 성격'이라는 단서로 마무리하고 있으나, 현재 수행 결과와 향후 방향을 구분하는 경계가 덜 선명하다. 향후 방향만 짧게 분리하고, 학습·조사 항목은 압축하는 편이 결론의 초점에 맞는다.",
+        "paragraph_id": "sec_conclusion_p13",
         "evidence_ids": [],
         "failure_owner": "editor",
         "review_stage": "editorial",
@@ -1800,7 +1283,7 @@
         "section_id": "sec_conclusion",
         "category": "terminology",
         "severity": "warning",
-        "reason": "동일 절 내에서 'Pinned Memory', 'No Pinning', 'Pageable 메모리', 'No-Pin' 등 메모리 전송 방식 명칭이 통일되지 않는다. 또한 'cudaHostRegister'와 'Pinned Memory'의 관계도 문단마다 표현 차이가 있어 용어 정리가 필요하다.",
+        "reason": "같은 절 안에서 'cudaHostRegister', 'No Pinning', 'No-Pin', 'Pinned Memory', 'Pageable 메모리' 등 메모리 전송 관련 표기가 혼용되어 있어, 결론의 비교 서술을 읽을 때 동일한 개념을 가리키는지 한눈에 파악하기 어렵다. 대표 표기를 정해 통일하는 것이 좋다.",
         "paragraph_id": "none",
         "evidence_ids": [],
         "failure_owner": "editor",
@@ -1812,7 +1295,7 @@
         "section_id": "sec_conclusion",
         "category": "flow",
         "severity": "warning",
-        "reason": "절 전체 구성에서 '핵심 구성 요소와 결합 방식(p2·p3)', '주요 실행 시간 결과와 조건(p4·p6·p8·p9)', '실시간성 관점의 시사점과 향후 방향(p5·p11·p12·p13)'이 개요 목적과 완전히 정렬되지 않는다. 특히 p6의 커널 감소 횟수 서술은 실행 시간 결과보다 방법 설명에 가까워 위치와 요약 수준을 재조정할 여지가 있다.",
+        "reason": "절 전체 구성에서 (1) 핵심 구성 요소와 결합 방식, (2) 주요 실행 시간 결과와 조건, (3) 실시간성 시사점과 향후 방향이 모두 등장하지만, 문단 배열이 결합 방식 → 수치 나열 → 실시간성 해석 → 향후 방향 순으로 섞여 있어 세 하위 목적이 깔끔하게 분리되지 않는다. 특히 실행 시간 목록(p8)과 실시간성 해석(p5·p12)이 교차 배치되어 종합의 흐름이 끊긴다.",
         "paragraph_id": "none",
         "evidence_ids": [],
         "failure_owner": "editor",
@@ -1837,13 +1320,6 @@
       "scope": "inherited_subsection_reviews",
       "rechecked": false
     },
-    "assessment": "Editorial quality only; content/reference judgments are inherited from child reviews.",
-    "revision_result": "unchanged",
-    "editorial_completion": {
-      "policy": "editorial-fixed-slots-v1",
-      "status": "needs_attention",
-      "revisions": 2,
-      "reason": "unchanged"
-    }
+    "assessment": "Editorial quality only; content/reference judgments are inherited from child reviews."
   }
 ]

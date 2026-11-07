@@ -8,6 +8,66 @@
 검증한 의존성은 `requirements.txt`, 비밀 값이 없는 설정 예시는 `.env.example`에 있다.
 아키텍처와 실제 실행 흐름의 PNG/SVG는 `docs/diagrams/`에 있다.
 
+## React 작업실 (추가 UI)
+
+기존 Streamlit과 같은 Python 파이프라인·캐시를 사용하는 React UI를 `frontend/`에 추가했다.
+PDF 선택·업로드, A/B 근거 수집, 요구사항 생성, 저장 근거 검색·원문 확인,
+사용자 지시·임시 승인 후 재개, 사실·측정값 승인/제외/복원, 중복 검토,
+작성 계획·초안 생성, 진행 기록, Markdown 미리보기, 경고·산출물 다운로드를 지원한다.
+`web_api.py`와 `web_workspace.py`는 호출·진행 상황을 연결하며 작성 에이전트나 검토 흐름을 변경하지 않는다.
+
+최초 설치와 빌드 (Node 22.12 이상 또는 20.19 이상):
+
+```powershell
+python -m pip install -r requirements-web.txt
+npm --prefix frontend ci
+npm --prefix frontend run build
+python -m uvicorn web_api:app --host 127.0.0.1 --port 8000
+```
+
+브라우저에서 **http://127.0.0.1:8000**으로 접속한다. API 키는 기존 `.env`를 사용하며 브라우저로 전달하지 않는다.
+개발 중에는 위 API 서버와 별도 터미널에서 `npm --prefix frontend run dev`를 실행해
+**http://127.0.0.1:5173**에 접속한다. Vite가 `/api` 요청을 8000 포트로 연결한다.
+UI 개발 서버만 재시작해도 실행 중인 Python 작업은 계속된다. Python 서버는 작업 중 `--reload` 없이 실행한다.
+
+React에서 시작한 작업 상태는 `draft_history/web-ui/<작업 ID>/job.json`에 저장된다.
+서비스 재시작 후 자동 재전송하지 않으며 실행 기록에서 같은 요청을 재개할 수 있다.
+실제 단계별 캐시는 기존 `draft_history/parse-api-v1/`와 `draft_history/planned/`에 저장된다.
+작업은 한 번에 하나씩 실행한다. **같은 프로젝트에서 Streamlit과 React의 생성 작업을 동시에 실행하지 않는다.**
+작업실은 인증 없는 로컬 전용 UI이며 127.0.0.1로 실행한다. 기존 Streamlit 실행 방식도 그대로 사용할 수 있다.
+
+API 경계 검증은 `python -m unittest discover -s tests -p test_web_api.py`로 실행한다.
+이 검증은 외부 모델을 호출하지 않는다.
+
+**절 단위 생성:** ‘작성 계획’ 화면의 각 절에서 **이 절만 생성·재개**를 누르면
+해당 소절들의 작성·검토 → 1차 편집 → 절 편집 검토까지만 수행한다.
+계획에 저장된 PDF·수집 모드와 일치하는 자료를 선택해야 하며, 계획 생성·다른 절·전체 2차 편집은 호출하지 않는다.
+이 작업에는 현재 설정 창의 새 분량 대신 해당 계획에 이미 배정된 분량·소절 작성 지침·근거를 사용한다.
+1·2차 편집자에는 현재 `writing_policy.json`의 `editing` 규칙과 각 소절의 현재 분량·저장된 목표·상한을 전달한다.
+편집 규칙을 수정하고 같은 절을 생성·재개하면 계획·소절 입력을 다시 만들지 않고 해당 편집 단계에 새 규칙을 적용한다.
+숫자 분량은 축약 지침이며 새로운 편집 차단 검사를 추가하지 않는다. 보완 횟수·경고 완료 정책도 유지한다.
+실제 전달한 규칙과 분량은 각 편집 단계의 `generate-*-editing-input.json`에서 확인할 수 있다.
+완료한 소절·절 체크포인트는 재사용하며 나중에 전체 초안 생성에서도 이어서 사용한다.
+기존 전체 `draft.md`, `sections.json`, 전체 검토·경고·분량 보고서와 최신 초안 포인터는 덮어쓰지 않는다.
+선택한 절의 결과·진행·경고·원문 연결은 `draft_history/planned/<project>/<run>/section-runs/<section_id>/`에 저장한다.
+화면의 **문단 → 근거 → 원문**에서 초안 문단, 추출 사실, 원문 인용·페이지를 확인하고 JSON으로 내려받을 수 있다.
+문장별 출처를 새로 추정하지 않고 기존 문단별 근거 연결을 표시한다.
+
+**Overleaf용 LaTeX 내보내기:** 전체 초안 상단과 각 절의 결과 화면에서 **Overleaf ZIP**을 누른다.
+완료된 저장 결과만 변환하며 추출·계획·작성·검토 에이전트를 호출하지 않는다.
+ZIP 루트에 `main.tex`, 본문 조각 `content.tex`, `latexmkrc`, 사용 안내, 원본 Markdown,
+문단별 근거 연결 `provenance.json`과 변환 기록 `export.json`을 포함한다.
+Overleaf의 **New project → Existing project (.zip)** (또는 Upload project)에서 가져온 뒤
+**Compiler: XeLaTeX / Main document: main.tex**로 컴파일한다.
+UTF-8 한글, 기존 장·소절 번호, Markdown 표·목록·강조·링크·코드와 일반 LaTeX 수식을 변환한다.
+표는 위치를 유지하는 `longtable`로 변환하며 긴 표는 페이지를 나눌 수 있다.
+기존 프로젝트에 절만 넣으려면 `content.tex`를 가져오고 `main.tex`의 패키지 설정을 참고한다.
+근거 ID를 새 참고문헌·DOI로 만들지 않으며 원문 연결은 JSON에 보존한다.
+원본 PDF·API 키·전체 API 응답은 ZIP에 넣지 않는다. 그림 파일은 자동 수집하지 않고 변환 기록에 표시한다.
+내보내기 기능은 로컬 다운로드까지 수행하며 Overleaf 업로드는 사용자가 진행한다.
+공식 안내: [프로젝트 ZIP 업로드](https://docs.overleaf.com/managing-projects-and-files/uploading-a-project),
+[한글과 XeLaTeX](https://www.overleaf.com/learn/latex/Korean).
+
 ## 연구별 작성 계획 (앱 기본값)
 
 `paper_plan.py`는 연구 근거·작성 계획의 연결을 검증하고, `planned_paper.py`는 계획·작성·검토를 실행한다.

@@ -47,14 +47,24 @@ REVIEW_FOCUS = {
 }
 
 
-def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress=None):
+def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress=None, *, only_section=None):
     from planned_paper import (GROUNDING, WRITER, REVIEWER, REVIEWER_CACHE_IDENTITY, fingerprint, parts_schema,
         clean_part, compose_parts, validate_body, index_paragraphs, review_schema)
     from paper_context import part_context
     from writing_length import POLICY as LENGTH_POLICY, narrative_chars
-    from writing_policy import composition_issues, COMPOSITION_CODES
+    from writing_policy import composition_issues, COMPOSITION_CODES, refresh_editorial_policy
 
     folder = Path(folder)
+    # Editing-policy updates affect parent checkpoints only. Saved leaf inputs,
+    # planning bindings and their allocated budgets stay byte-for-byte reusable.
+    contexts = copy.deepcopy(contexts)
+    refresh_editorial_policy(contexts)
+    if only_section is not None and only_section not in plan["generation_order"]:
+        raise ValueError("생성 가능한 절을 작성 계획에서 선택해주세요.")
+    order = [only_section] if only_section is not None else plan["generation_order"]
+    # Stage checkpoints keep their original identity and remain reusable by a
+    # later full run. Partial summaries must never replace the full-paper ones.
+    summary_folder = folder / "section-runs" / only_section if only_section is not None else folder
     stages = []
     warning_stages = []
     length_rows = []
@@ -69,6 +79,8 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                   "subsections": copy.deepcopy(length_rows),
                   "allocated_target_chars": sum(row["target_chars"] for row in length_rows),
                   "over_target_count": sum(row["over_target"] for row in length_rows)}
+        if only_section is not None:
+            report.update(scope="section", section_id=only_section)
         if final:
             report["actual_final_chars"] = sum(row["final_chars"] for row in length_rows)
             maximum = contexts.get("composition_policy", {}).get("max_section_chars", 0)
@@ -81,16 +93,17 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                 report["actual_final_chars"] > report["paper_target_chars"] * ratio or any(
                     row["final_chars"] > row["target_chars"] * ratio for row in length_rows)
                 or any(row["max_chars"] and row["final_chars"] > row["max_chars"] for row in report["sections"])) else "within_tolerance"
-        write_json(folder / "writing-length-report.json", report)
+        write_json(summary_folder / "writing-length-report.json", report)
         return report
 
     def warning_summary():
         return {"policy": CONTENT_POLICY, "status": "needs_attention" if warning_stages else "reviewed",
-                "scope": "Saved review snapshots; not a new review of the final edited paper.",
+                "scope": ("Saved review snapshots of section " + only_section if only_section is not None else
+                          "Saved review snapshots; not a new review of the final edited paper."),
                 "warning_count": sum(len(s["warnings"]) for s in warning_stages),
                 "stages": copy.deepcopy(warning_stages)}
     by_id = {s["id"]: s for s in plan["sections"]}
-    total = sum(len(contexts["subsections"][key]) + 1 for key in plan["generation_order"]) + 1
+    total = sum(len(contexts["subsections"][key]) + 1 for key in order) + (only_section is None)
 
     def scoped_plan(section):
         return {**copy.deepcopy(plan), "sections": [copy.deepcopy(section)],
@@ -192,12 +205,12 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                     "snapshot": review_diagnostics(name, review_plan, local_research, bodies, report),
                     "evidence": [copy.deepcopy(f) for f in local_research["facts"] if f["id"] in evidence_ids],
                     "completion": report.get("content_completion" if level == "subsection" else "editorial_completion")})
-            write_json(folder / "review-warnings.json", warning_summary())
+            write_json(summary_folder / "review-warnings.json", warning_summary())
             stages.append({"id": name, "level": level, "approved": True,
                            "content_status": report.get("content_status"),
                            "warning_count": len(warnings),
                            "input_fingerprint": identity, "review_path": str(root / "reviews.json")})
-            write_json(folder / "workflow.json", {"version": VERSION, "stages": stages})
+            write_json(summary_folder / "workflow.json", {"version": VERSION, "stages": stages})
             if progress:
                 status = "경고를 남기고 완료" if warnings else "검토 완료"
                 progress(20 + int(65 * len(stages) / total), f"{label} {status} · {heading}")
@@ -291,7 +304,7 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
             write_json(revalidation_path, revalidation)
             if approved_path.is_file():
                 approved_path.unlink()
-            write_json(folder / "workflow.json", {"version": VERSION, "stages": stages})
+            write_json(summary_folder / "workflow.json", {"version": VERSION, "stages": stages})
             reviews.append({"event": "checkpoint_revalidation", **revalidation, "feedback": feedback})
             write_json(root / "reviews.json", reviews)
             if progress:
@@ -428,7 +441,7 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
                          f"근거별 원문 위치·임시 승인 여부·검토 사유: {root / 'failure-details.md'}. 후보와 지적을 {root}에 저장했습니다.")
 
     assembled, drafts, section_reviews = {}, {}, {}
-    for sid in plan["generation_order"]:
+    for sid in order:
         packet = contexts["sections"][sid]
         children, child_reviews = {}, {}
         for key, child_packet in contexts["subsections"][sid].items():
@@ -450,10 +463,15 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
         assembled.update(value)
         section_reviews[sid] = section_review
 
-    packets = contexts["sections"]
-    value, bodies, report, history = stage("paper", "paper", packets, plan, PAPER,
-        {"research": scoped_research(packets), "plan": plan, "sections": assembled,
-         "section_packets": packets, "reference_guides": catalog}, children_reviews=section_reviews)
+    if only_section is not None:
+        value, bodies = normalize(assembled, {only_section: contexts["sections"][only_section]})
+        report, history = section_review, [section_review]
+        packets = {only_section: contexts["sections"][only_section]}
+    else:
+        packets = contexts["sections"]
+        value, bodies, report, history = stage("paper", "paper", packets, plan, PAPER,
+            {"research": scoped_research(packets), "plan": plan, "sections": assembled,
+             "section_packets": packets, "reference_guides": catalog}, children_reviews=section_reviews)
     for row in length_rows:
         body = value[row["section_id"]]["parts"][row["part"]]
         row["final_chars"] = narrative_chars(body)
@@ -461,7 +479,7 @@ def run_hierarchical(engine, folder, research, plan, contexts, catalog, progress
         row["paragraph_count"] = len(paragraphs)
         row["max_paragraph_chars"] = max(map(narrative_chars, paragraphs), default=0)
         row["over_target"] = row["final_chars"] > row["target_chars"]
-    remaining = composition_issues(value, packets, "paper")
+    remaining = composition_issues(value, packets, "section" if only_section is not None else "paper")
     report["composition_quality"] = {"status": "needs_editing" if remaining else "within_checked_rules",
         "checks": ["narrator_style"],
         "issues": [{**copy.deepcopy(i), "severity": "warning", "original_severity": "error"} for i in remaining]}

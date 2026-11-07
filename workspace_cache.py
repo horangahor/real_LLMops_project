@@ -57,6 +57,11 @@ def snapshot(base=BASE):
     records, timestamps = [], {}
     previous = json.loads((base / MANIFEST).read_bytes()) if (base / MANIFEST).is_file() else {}
     for parent, directories, names in os.walk(base / "draft_history"):
+        if Path(parent) == base / "draft_history":
+            # Local web job state and TeX/compiler QA tools are gitignored.
+            # Durable pipeline inputs/results live under parse-api-v1/planned;
+            # a portable manifest must not require uncommitted local tooling.
+            directories[:] = [name for name in directories if name != "web-ui"]
         directories.sort()
         for name in sorted(names):
             path = Path(parent) / name

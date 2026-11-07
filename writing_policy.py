@@ -35,7 +35,47 @@ def instructions(policy, role):
     bounds = ", ".join(f"{label} {limit}자" for label, limit in limits if limit)
     return "\n공통 논문 구성 규칙:\n" + "\n".join(f"- {rule}" for rule in policy[role]) + (
         f"\n- 공통 분량 상한: {bounds}. 제목·표·인용 표시를 제외하고 공백을 포함한다. 더 작은 writing_budget 목표도 준수한다."
-        if role == "writing" and bounds else "")
+        if role == "writing" and bounds else
+        f"\n- 공통 편집 분량 기준: {bounds}. 제목·표·인용 표시를 제외하고 공백을 포함한다. "
+        "더 작은 소절별 editing_targets 목표가 있으면 그 목표로 중복·부연을 축약한다. "
+        "편집 결과에 글자 수를 맞추는 설명을 쓰거나 소절·조건·한계를 삭제하지 않는다."
+        if role == "editing" and bounds else "")
+
+
+def refresh_editorial_policy(contexts, policy=None):
+    """Current editing rules can update a saved plan without rewriting its leaves."""
+    policy = policy or load_policy()
+    for packet in contexts["sections"].values():
+        packet["editorial_guidance"] = instructions(policy, "editing")
+        packet["editing_policy"] = {key: policy.get(key, 0) for key in (
+            "version", "max_paragraph_chars", "max_subsection_chars", "max_section_chars")}
+
+
+def editorial_targets(previous, packets):
+    """Send frozen subsection shares and current prose size, never new allocations."""
+    from writing_length import narrative_chars
+    result = {}
+    for sid, packet in packets.items():
+        policy = packet.get("editing_policy", {})
+        assignments = packet.get("subsection_assignments", {})
+        parts = {}
+        for key, body in previous[sid]["parts"].items():
+            budget = assignments.get(key, {}).get("writing_budget", {})
+            row = {"current_chars": narrative_chars(body)}
+            if "target_chars" in budget:
+                row["target_chars"] = budget["target_chars"]
+            limits = [v for v in (budget.get("max_chars", 0), policy.get("max_subsection_chars", 0)) if v]
+            if limits:
+                row["max_chars"] = min(limits)
+            parts[key] = row
+        value = {"parts": parts, "current_chars": sum(r["current_chars"] for r in parts.values())}
+        for key in ("max_paragraph_chars", "max_section_chars"):
+            if policy.get(key):
+                value[key] = policy[key]
+        if parts and all("target_chars" in r for r in parts.values()):
+            value["target_chars"] = sum(r["target_chars"] for r in parts.values())
+        result[sid] = value
+    return result
 
 
 def attach_policy(contexts, policy):

@@ -2,16 +2,28 @@
   "changed_parts": [
     {
       "section_id": "sec_components",
-      "part": "p2"
+      "part": "p0"
+    },
+    {
+      "section_id": "sec_components",
+      "part": "p1"
+    },
+    {
+      "section_id": "sec_components",
+      "part": "p3"
+    },
+    {
+      "section_id": "sec_components",
+      "part": "p5"
     }
   ],
   "unchanged_findings": [
     {
       "section_id": "sec_components",
-      "paragraph_id": "sec_components_p4",
+      "paragraph_id": "sec_components_p3",
       "category": "duplication",
       "severity": "error",
-      "reason": "p4에서 설명한 cuBLAS 도입 배경(-lcublas, cublasDgemm, CUDA Toolkit 자동 포함, NVIDIA 가속 라이브러리 정의)이 p13에서 거의 동일한 문장으로 반복된다. p13은 메모리 풀과 cuBLAS 결합 맥락을 다루므로, p4의 일반 설명을 요약하거나 p13으로 통합해 중복을 줄여야 한다.",
+      "reason": "sec_components_p12와 cuBLAS 도입 배경, -lcublas 링크 옵션, CUDA Toolkit 자동 포함, cublasDgemm 사용, NVIDIA 가속 라이브러리 정의 등 거의 동일한 내용이 반복된다. 한 곳으로 통합해야 한다.",
       "evidence_ids": [],
       "failure_owner": "editor",
       "review_stage": "editorial",
@@ -19,21 +31,54 @@
     },
     {
       "section_id": "sec_components",
-      "paragraph_id": "sec_components_p10",
+      "paragraph_id": "sec_components_p21",
       "category": "duplication",
       "severity": "error",
-      "reason": "p10의 pinned memory 측정 결과(전체 787.88초 대 776.70초, Bound/Infer 단계 역전, 1.4%·약 11초 차이, 92만 루프·1회당 약 12μs)는 p24와 거의 동일하게 재진술된다. p10은 방법 A 맥락에서, p24는 전송 방식 비교 맥락에서 쓰였으나 수치 서술이 겹쳐 요약 정리가 필요하다.",
+      "reason": "sec_components_p22와 첫 문장부터 커널 퓨전 적용 목록, 함수 통합 방식, 포인터 스와핑, alpha/beta 전달 삭제, D2H 복사 제거 등 서술이 거의 동일하다. 중복 서술로 보인다.",
       "evidence_ids": [],
       "failure_owner": "editor",
       "review_stage": "editorial",
-      "quote": "방법 A(Multi-Stream 배칭, 현재 구현)는 기존 단일 샘플 커널을 유지해 3.2배 가속(25분→8분)을 얻었으나, 스트림 수의 한계(SM 포화)로 7~8분이 한계선이다. pinned memory 성능 측정을 위해 pinned memory 미적용, my_lirpa에 있는 입력 공간 하나(HostAlloc), 지금 하는 방식(HostRegister) 3가지를 측정하려고 했으며, cudaHostRegister(Pinned/Register)와 No Pinning(일반 메모리) 간 전체 실행 시간 차이는 787.88초 대 776.70초로 약 1.4%(약 11초)이고 92만 번 루프 중 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 더 빨랐고, Infer 단계(전체 15%)에서는 cudaHostRegister가 127.18초로 No Pinning의 111.92초보다 15.26초 더 느려 데이터 전송 직후 동기화가 일어나는 Infer 단계에서 역전되었다. cudaHostRegister가 더 느리게 측정된 이유에 대해 컴퓨터 구조와 GPU 드라이버 레벨에서 3가지 기술적 이유가 있다고 기록되었고, 추론(Infer) 단계에서 시간이 느려졌다는 정성적 관찰도 함께 남았다. [근거:E00276,E00277,E00278,E00279,E00280]"
+      "quote": "커널 퓨전은 여러 단계의 커널 호출을 하나로 묶어 런치 오버헤드를 줄이는 방향으로 적용되었다. lirpa_forward_bound 함수 커널 퓨전, backward_matmul_pair_gpu 커널 통합, build_coeff_pair_fused_gpu·backward_bias_pair_fused_gpu 커널 퓨전이 수행되었고, backward_bound_gpu에서는 affine_min/max까지 함께 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. 함수 통합은 포인터·스칼라 인자 전달 규칙과 메모리 풀을 활용해 중간 복사·포인터 스와핑을 제거하는 방향으로 진행되었다. new_(upper, lower)_p 포인터 스와핑(std::swap)과 forward-backward 간 alpha/beta 메모리 풀 전달 과정 삭제 및 GPU 버퍼 직접 사용, D2H 복사 제거, 기본 초기 상태 GPU 커널 직접 생성이 함께 적용되었다. 지금까지 수행한 최적화에는 제로 memcpy, 커널 자체 실행 횟수 감소(커널 퓨전·커널 graph), GPU SM 구조를 고려한 FP64→FP32·double→float 변경이 포함된다. [근거:E00130,E00137,E00138,E00146,E00147,E00212]"
     },
     {
       "section_id": "sec_components",
-      "paragraph_id": "sec_components_p15",
+      "paragraph_id": "sec_components_p26",
       "category": "duplication",
       "severity": "error",
-      "reason": "p15의 실시간성·지터·최대 지연 스파이크 서술(No-Pin 최대 11.6ms, Pinned 1.64ms, 지터 118μs 대 47μs, DMA 셋업 비용 대 OS 페이징 차단)은 p25와 실질적으로 같은 내용이다. 두 문단이 서로 다른 소제목 아래에 놓이더라도 동일 관찰을 반복하므로 한쪽은 핵심 결론 위주로 압축해야 한다.",
+      "reason": "sec_components_p9와 메모리 전송 방식 비교 수치(cudaHostRegister 787.88초, No Pinning 776.70초, 약 1.4% 차이, Bound/Infer 단계 역전 등)가 거의 동일하게 반복된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "메모리 전송 방식은 cudaHostRegister(Pinned), cudaHostAlloc, No Pinning(일반 메모리) 세 방식으로 비교되었다. 전체 실행 시간은 cudaHostRegister 787.88초, No Pinning 776.70초로 약 1.4%(약 11초) 차이에 그쳤고, 92만 번 루프 기준 1회당 약 12μs 수준의 미세한 차이였다. Bound 단계(전체 85%)에서는 cudaHostRegister가 658.80초로 No Pinning의 663.17초보다 4.37초 빨랐으나, 데이터 전송 직후 동기화가 일어나는 Infer 단계(전체 15%)에서는 cudaHostRegister 127.18초, No Pinning 111.92초로 역전되어 cudaHostRegister가 15.26초 더 느렸다. [근거:E00277,E00278]"
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p27",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "sec_components_p14와 평균 처리 속도, 최대 지연 스파이크, 지터, Pinned의 결정론적 안정성 서술이 중복된다. 동일 관찰을 두 번 설명하는 구조다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "평균 처리 속도에서는 No-Pin이 약 13초 빨랐지만, 최대 지연(Max Spike)은 No-Pin이 8.8~11.6ms로 치명적이었고 Pinned Memory는 1.64ms로 극도로 안정적이었다. 지터도 No-Pin 118μs, Pinned 47μs로 Pinned가 더 안정적이었다. 이는 No-Pin이 평소 CPU L1/L2 캐시 복사로 빠르지만, OS 페이징 정리나 백그라운드 작업이 개입하면 최대 11.6ms까지 스파이크가 발생할 수 있고, Pinned는 매번 DMA 셋업 비용(1~2μs)을 치르는 대신 OS 페이징을 차단해 어떤 상황에서도 1.64ms를 넘지 않는 결정론적 안정성을 보장하기 때문이다. [근거:E00292,E00293,E00294,E00296]"
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p28",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "sec_components_p13과 1KB급 작은 데이터에서 Pinned/No-Pin의 오버헤드 차이, 셋업 지연 지배, 평균 전송 속도 미세 차이 등 핵심 설명이 반복된다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "1KB급 작은 데이터에서는 이 차이가 더 뚜렷하다. Pinned는 매 루프마다 DMA 디스크립터 생성·큐 제출로 약 1.0~1.5μs의 오버헤드가 발생하고, 920,000회 누적 시 약 1.38초에 이른다. 반면 No-Pin은 드라이버가 하드웨어 DMA를 부르지 않고 CPU 캐시로 내부 즉시 복사해 1회 약 0.02~0.05μs(20~50ns)에 끝나며, 누적 오버헤드는 약 0.03초 수준이다. 즉 작은 데이터에서는 대역폭보다 셋업 지연이 지배해 Pinned의 평균 전송 속도가 Pageable 대비 약 1.4% 미세하게 낮게 측정될 수 있다. [근거:E00297,E00301,E00295]"
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p14",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "sec_components_p27과 실시간성, 지연 스파이크, 지터, Pinned 안정성 서술이 중복된다. 두 문단의 정보 우선순위가 비슷해 통합이 필요하다.",
       "evidence_ids": [],
       "failure_owner": "editor",
       "review_stage": "editorial",
@@ -41,14 +86,36 @@
     },
     {
       "section_id": "sec_components",
-      "paragraph_id": "sec_components_p22",
-      "category": "flow",
+      "paragraph_id": "sec_components_p13",
+      "category": "duplication",
       "severity": "error",
-      "reason": "p22는 커널 퓨전·함수 통합·포인터 스와핑·alpha/beta 풀 전달 삭제·D2H 제거·데이터 타입 변경·switch 스코프 문제·MAXDIM 복사 축소 실패 등 여러 주제를 한 문단에 넓게 담아 논리 단위가 크다. 커널 퓨전 적용 내역, memcpy 감소, 실행 시간 관측, switch/복사 관련 시행착오로 소절 또는 문단 분리가 필요하다.",
+      "reason": "sec_components_p28과 작은 데이터 전송 특성 설명이 중복된다. 데이터 규모별 전송 방식 역할 구분은 한 곳에서 정리하고, 다른 곳은 결과 해석으로 제한하는 것이 좋다.",
       "evidence_ids": [],
       "failure_owner": "editor",
       "review_stage": "editorial",
-      "quote": "커널 퓨전은 여러 단계의 커널 호출을 하나로 묶어 런치 오버헤드를 줄이는 방향으로 적용되었다. lirpa_forward_bound 함수 커널 퓨전, backward_matmul_pair_gpu 커널 통합, build_coeff_pair_fused_gpu·backward_bias_pair_fused_gpu 커널 퓨전이 수행되었고, backward_bound_gpu에서는 affine_min/max까지 함께 실행되도록 개선하여 GPU→CPU 메모리 복사를 최소화하였다. 함수 통합은 포인터·스칼라 인자 전달 규칙과 메모리 풀을 활용해 중간 복사·포인터 스와핑을 제거하는 방향으로 진행되었다. new_(upper, lower)_p 포인터 스와핑(std::swap)과 forward-backward 간 alpha/beta 메모리 풀 전달 과정 삭제 및 GPU 버퍼 직접 사용, D2H 복사 제거, 기본 초기 상태 GPU 커널 직접 생성이 함께 적용되었다. 지금까지 수행한 최적화에는 제로 memcpy, 커널 자체 실행 횟수 감소(커널 퓨전·커널 graph), GPU SM 구조를 고려한 FP64→FP32·double→float 변경이 포함된다. lirpa_forward_bound에서 사용하는 함수들을 커널 퓨전해 호출 횟수를 줄였고, backward_bound_gpu에서는 affine 중복 계산을 삭제해 커널 2개 함수를 줄였다. new_(upper, lower)_p는 복사 대신 std::swap으로 포인터 스와핑했으며, backward의 행렬곱 커널 2개는 backward_matmul_pair_gpu로 통합했다. build_coeff_pair_fused_gpu와 backward_bias_pair_fused_gpu에도 커널 퓨전을 적용했다. 이후 1개 커널 호출로 줄일 수 있는 함수들을 계속 퓨전하는 방향으로 진행했다. 커널 퓨전 적용 후 CROWN Verification 실행에서 Elapsed time이 22.342900 ms로 기록되었고, 22ms 초반까지 나오는 경우도 관측되었다. backward_bound_gpu에 먼저 퓨전을 진행했을 때는 23.925200 ms가 관측되었으며, 컴퓨터 사정에 따라 26ms까지 뛰는 경우도 있었지만 23ms 정도가 보인다는 점이 중요하게 기록되었다. 5번까지 적용했을 때 최고 성능이 나왔다고 기록되었다. 커널 감소 내역을 보면 forward에서는 무거운 커널 연산 호출이 9개 줄었고, backward에서는 forward 부분 12개(9+3), 실제 backward 부분 3개가 줄었다. backward_only는 45회에서 33회로 감소해 26.7%로 가장 적게 줄었으며, 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄어 커널 비용도 다르다. memcpy 호출 횟수는 66개에서 56개로 감소했다. switch 문 안에서 구조체를 선언과 동시에 만들도록 변경하려 했으나, switch 안의 선언문은 중괄호로 스코프를 덮어주지 않으면 컴파일되지 않았다. case 레이블에 따라 fwd, bwd 초기화가 생략되는 문제가 발생해, main 함수 scope의 선언문이 레이블에 의해 생략되지 않도록 작은 스코프를 만들어 해결했다. 커널 memcpy에서 기존에 MAXDIM으로 무조건 512개의 float만큼 복사하던 것을 필요한 만큼의 데이터 크기만 복사하도록 변경했으나, CPU 계산 오버헤드가 더 커져 시간이 늘었다. 이 변경은 복사 크기 조정 시도였으나 시간 증가로 이어졌고, CPU 오버헤드 증가의 정량적 분리 측정 결과는 포함되지 않았다. [근거:E00130,E00137,E00138,E00146,E00147,E00212]"
+      "quote": "데이터 규모에 따라 전송 방식의 역할이 갈린다. 수 MB~수백 MB 수준에서는 CPU 복사 속도가 감당이 어려워지고 DMA의 고속 대역폭(1224GB/s)이 압도적이 되어 Pinned Memory가 일반 메모리보다 23배 빠르다. 반면 1KB 수준의 작은 데이터에서는 대역폭보다 셋업 지연시간이 지배해, Pinned는 매번 DMA 디스크립터 생성·큐 제출로 호출 1회당 약 1.0~1.5μs의 오버헤드가 발생하고, No-Pin은 CPU L1/L2 캐시를 이용한 내부 즉시 복사로 약 0.02~0.05μs에 끝나 더 빠르다. [근거:E00290,E00297]"
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p24",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "sec_components_p34와 동일한 커널 감소 통계를 다시 서술해 중복이다. 감소 내역은 한 표 또는 한 문단으로 모으고, 다른 곳에서는 해석만 남기는 편이 낫다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "커널 감소 내역을 보면 forward에서는 무거운 커널 연산 호출이 9개 줄었고, backward에서는 forward 부분 12개(9+3), 실제 backward 부분 3개가 줄었다. backward_only는 45회에서 33회로 감소해 26.7%로 가장 적게 줄었으며, 단순 가중치·bias 복사 커널 6개와 부호 분리 커널 6개가 줄어 커널 비용도 다르다. memcpy 호출 횟수는 66개에서 56개로 감소했다. [근거:E00319,E00339]"
+    },
+    {
+      "section_id": "sec_components",
+      "paragraph_id": "sec_components_p33",
+      "category": "duplication",
+      "severity": "error",
+      "reason": "sec_components_p35와 graph 적용 후 커널 호출 횟수 감소, infer/bound 캡처 구분, infer와 bound 간 시간 상쇄 관찰 등 내용이 겹친다. 특히 infer 약 20초 차이와 bound 보상 서술이 유사하다.",
+      "evidence_ids": [],
+      "failure_owner": "editor",
+      "review_stage": "editorial",
+      "quote": "graph mode=1에서는 샘플당 cudaGraphLaunch가 infer 1회와 bound 1회, 총 2회로 유지되며, 이번 작업에서 그래프 런치 횟수 자체를 줄이지는 않았다. 그럼에도 추론 커널은 그대로 둔 상태에서 샘플 1개 전체 기준으로 Forward 33회→24회, Backward 52회→37회, Backward-only 51회→39회로 커널 호출 횟수가 줄었다. 감소 내역은 Forward에서 lower/upper matmul, lower/upper bias matvec, matrix scaling + vector affine이 각각 2→1로 통합되어 method 0 기준 레이어당 8→5회가 되었고, Backward에서는 split_pos_neg + bias accumulation이 2→1로 줄고 레이어당 backward 단계가 5→4회가 되었다. method 1에서는 forward 쪽 relaxation/cache 통합까지 포함되어 총 15회 감소했으며, Backward-only에서는 각 타깃 레이어의 weight/bias 초기 복사 2회 제거와 split/bias kernel 통합으로 총 12회 감소했다. [근거:E00313,E00314,E00315]"
     }
   ],
   "prose_changed": true

@@ -50,7 +50,7 @@ class CompositionPolicyTests(unittest.TestCase):
                 self.assertNotIn(token, planner_system)
             self.assertEqual((Path(first["run_dir"]) / "plan.json").read_bytes(), original)
 
-    def test_numeric_limits_reach_only_writer_requests_and_never_create_editor_length_findings(self):
+    def test_numeric_targets_reach_both_editors_without_new_length_gates(self):
         client, calls = Client(), []
         def respond(system, packet, schema, path):
             calls.append((system, copy.deepcopy(packet), schema))
@@ -62,10 +62,18 @@ class CompositionPolicyTests(unittest.TestCase):
         self.assertTrue(writers)
         self.assertTrue(editors)
         self.assertTrue(all("공통 분량 상한" in s and p.get("writing_budget") for s, p in writers))
+        self.assertEqual({p["workflow_stage"] for _, p in editors}, {"section", "paper"})
         for system, packet in editors:
             self.assertNotIn("writing_targets", packet)
-            for token in ("공통 분량 상한", "writing_budget", "분량 초과 지적", "소절 전체 축약 과제"):
-                self.assertNotIn(token, system + json.dumps(packet, ensure_ascii=False))
+            self.assertIn("공통 편집 분량 기준", system)
+            self.assertIn("editing_targets", packet)
+            self.assertNotIn("writing_budget", packet)
+            for section in packet["editing_targets"].values():
+                self.assertEqual(section["max_section_chars"], 6000)
+                for part in section["parts"].values():
+                    self.assertIn("target_chars", part)
+                    self.assertEqual(part["max_chars"], 2000)
+                    self.assertGreaterEqual(part["current_chars"], 0)
         self.assertFalse(any(i.get("validation_code") == "composition_length" and stage["level"] != "subsection"
             for stage in result["review_warnings"]["stages"] for i in stage["warnings"]))
         packet = {"composition_policy": load_policy(), "writing_budget": {"target_chars": 1}}
